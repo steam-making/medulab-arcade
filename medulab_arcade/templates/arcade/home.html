@@ -31,25 +31,39 @@
                   --accent: {{ project.accent }};"
            onmouseenter="this.style.boxShadow='0 20px 40px rgba(0,0,0,0.4), 0 0 20px {{ project.accent }}44'"
            onmouseleave="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.3)'">
-            <div class="card-inner">
-                {% if project.thumbnail %}
+            {% if project.thumbnail %}
+                {# ── 썸네일 있는 카드: 전체 배경 + 하단 오버레이 #}
                 <img src="{{ project.thumbnail.url }}" class="card-thumb" alt="{{ project.title }}">
-                {% else %}
-                <div class="card-emoji">{{ project.thumbnail_emoji }}</div>
-                {% endif %}
-                <div class="card-title">{{ project.title }}</div>
-                <div class="card-author">{{ project.author_display_name }}</div>
-                {% if project.tags.all %}
-                <div class="card-tags" style="margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap;">
-                    {% for tag in project.tags.all|slice:":3" %}
-                    <span style="font-size: 10px; color: var(--text-muted); opacity: 0.8;">#{{ tag.name }}</span>
-                    {% endfor %}
-                    {% if project.tags.count > 3 %}
-                    <span style="font-size: 10px; color: var(--text-muted); opacity: 0.6;">...</span>
+                <div class="card-thumb-overlay"></div>
+                <div class="card-inner-thumb">
+                    <div class="card-title">{{ project.title }}</div>
+                    <div class="card-author">{{ project.author_display_name }}</div>
+                    {% if project.tags.all %}
+                    <div style="margin-top:5px; display:flex; gap:4px; flex-wrap:wrap;">
+                        {% for tag in project.tags.all|slice:":3" %}
+                        <span style="font-size:10px; color:rgba(255,255,255,0.55);">#{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
                     {% endif %}
                 </div>
-                {% endif %}
-            </div>
+            {% else %}
+                {# ── 썸네일 없는 카드: 중앙 이모지 레이아웃 #}
+                <div class="card-inner">
+                    <div class="card-emoji">{{ project.thumbnail_emoji }}</div>
+                    <div class="card-title">{{ project.title }}</div>
+                    <div class="card-author">{{ project.author_display_name }}</div>
+                    {% if project.tags.all %}
+                    <div style="margin-top:8px; display:flex; gap:4px; flex-wrap:wrap; justify-content:center;">
+                        {% for tag in project.tags.all|slice:":3" %}
+                        <span style="font-size:10px; color:var(--text-muted); opacity:0.8;">#{{ tag.name }}</span>
+                        {% endfor %}
+                        {% if project.tags.count > 3 %}
+                        <span style="font-size:10px; color:var(--text-muted); opacity:0.6;">...</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
             <div class="card-badges" style="position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; z-index: 5;">
                 {% for cat in project.categories.all %}
                 <div class="card-badge" style="background:{{ project.accent }}; border-radius: 8px; padding: 4px 8px; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);" title="{{ cat.name }}">

@@ -1,0 +1,27 @@
+[
+  {
+    "model": "arcade.category",
+    "pk": 1,
+    "fields": { "name": "Python", "icon": "🐍", "order": 1 }
+  },
+  {
+    "model": "arcade.category",
+    "pk": 2,
+    "fields": { "name": "HTML/JS", "icon": "🌐", "order": 2 }
+  },
+  {
+    "model": "arcade.category",
+    "pk": 3,
+    "fields": { "name": "CSS", "icon": "🎨", "order": 3 }
+  },
+  {
+    "model": "arcade.category",
+    "pk": 4,
+    "fields": { "name": "게임", "icon": "🎮", "order": 4 }
+  },
+  {
+    "model": "arcade.category",
+    "pk": 5,
+    "fields": { "name": "AI/ML", "icon": "🤖", "order": 5 }
+  }
+]

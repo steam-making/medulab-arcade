@@ -1,0 +1,435 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}작품 업로드 - 메듀랩 Arcade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-wrap {
+        max-width: 680px; margin: 40px auto; padding: 0 24px;
+        animation: fadeSlideIn 0.4s ease;
+    }
+    .upload-card {
+        background: var(--bg-card); border-radius: 20px;
+        padding: 40px; box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+        border: 1px solid var(--border);
+    }
+    .upload-title {
+        font: 900 28px 'Orbitron', sans-serif;
+        margin-bottom: 8px;
+        background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+        -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .upload-sub {
+        color: var(--text-muted); font-size: 14px; margin-bottom: 32px;
+    }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+        display: block; color: var(--text-secondary);
+        font-size: 13px; font-weight: 600; margin-bottom: 6px;
+    }
+    .form-group .help {
+        color: var(--text-muted); font-size: 11px; margin-top: 4px;
+    }
+    .form-input {
+        width: 100%; padding: 12px 16px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border); border-radius: 12px;
+        color: #fff; font-size: 14px; outline: none;
+        font-family: 'Noto Sans KR', sans-serif;
+        transition: border-color 0.2s;
+    }
+    .form-input:focus {
+        border-color: rgba(0,255,180,0.4);
+        box-shadow: 0 0 0 3px rgba(0,255,180,0.08);
+    }
+    textarea.form-input { resize: vertical; min-height: 100px; }
+
+    .form-color {
+        width: 60px; height: 40px; border: none;
+        border-radius: 10px; cursor: pointer;
+        background: transparent;
+    }
+    .color-row {
+        display: flex; gap: 16px; align-items: center;
+    }
+    .color-row label { margin-bottom: 0; min-width: 80px; }
+
+    .form-file {
+        width: 100%; padding: 14px;
+        background: rgba(255,255,255,0.03);
+        border: 2px dashed rgba(255,255,255,0.12);
+        border-radius: 12px; color: var(--text-secondary);
+        font-size: 13px; cursor: pointer;
+    }
+    .form-file:hover { border-color: rgba(0,255,180,0.3); }
+
+    .submit-btn {
+        width: 100%; padding: 14px;
+        background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+        border: none; border-radius: 14px; color: var(--bg-primary);
+        font: 700 16px 'Noto Sans KR', sans-serif;
+        cursor: pointer; transition: all 0.2s;
+        margin-top: 8px;
+    }
+    .submit-btn:hover {
+        box-shadow: 0 8px 30px rgba(0,255,180,0.3);
+        transform: translateY(-2px);
+    }
+
+    .errors { color: #ff6b6b; font-size: 12px; margin-top: 4px; }
+
+    /* 업로드 방식 탭 */
+    .method-tabs {
+        display: flex; gap: 8px; margin-bottom: 24px;
+        background: rgba(255,255,255,0.03); padding: 6px; border-radius: 12px;
+    }
+    .method-tab {
+        flex: 1; text-align: center; padding: 10px; border-radius: 8px;
+        font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-muted);
+        transition: all 0.2s;
+    }
+    .method-tab.active {
+        background: rgba(255,255,255,0.08); color: var(--accent-green);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .method-content { display: none; }
+    .method-content.active { display: block; }
+
+    .method-content.active { display: block; }
+
+    /* 카테고리 체크박스 그리드 스타일 */
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px; margin-top: 10px;
+    }
+    .category-item {
+        position: relative;
+    }
+    .category-item input[type="checkbox"] {
+        display: none;
+    }
+    .category-label {
+        display: block; padding: 10px; text-align: center;
+        background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+        border-radius: 12px; font-size: 13px; color: var(--text-muted);
+        cursor: pointer; transition: all 0.2s;
+    }
+    .category-item input[type="checkbox"]:checked + .category-label {
+        background: rgba(0,255,180,0.1); border-color: var(--accent-green);
+        color: var(--accent-green);
+    }
+    .category-label:hover { border-color: rgba(255,255,255,0.2); }
+
+    @media (max-width: 640px) {
+        .upload-card { padding: 24px 20px; }
+    }
+
+    /* ZIP 분석 결과 패널 */
+    .analyze-panel {
+        display: none;
+        margin-bottom: 20px;
+        padding: 16px 20px;
+        background: rgba(0,255,180,0.06);
+        border: 1px solid rgba(0,255,180,0.25);
+        border-radius: 14px;
+        animation: fadeSlideIn 0.3s ease;
+    }
+    .analyze-panel.show { display: block; }
+    .analyze-panel-title {
+        font-size: 13px; font-weight: 700;
+        color: var(--accent-green); margin-bottom: 10px;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .analyze-chips {
+        display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+    }
+    .analyze-chip {
+        padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+        background: rgba(0,255,180,0.12); color: var(--accent-green);
+        border: 1px solid rgba(0,255,180,0.2);
+    }
+    .analyze-chip.cat {
+        background: rgba(100,180,255,0.12); color: #64b4ff;
+        border-color: rgba(100,180,255,0.2);
+    }
+    .analyze-row { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+    .analyze-row strong { color: var(--text-secondary); }
+
+    /* 로딩 오버레이 */
+    .zip-loading {
+        display: none; align-items: center; gap: 10px;
+        margin-top: 8px; font-size: 12px; color: var(--accent-green);
+    }
+    .zip-loading.show { display: flex; }
+    .zip-spinner {
+        width: 14px; height: 14px; border: 2px solid rgba(0,255,180,0.2);
+        border-top-color: var(--accent-green); border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-wrap">
+    <div class="upload-card">
+        <div class="upload-title">
+            {% if is_edit %}💾 작품 수정{% else %}📤 작품 업로드{% endif %}
+        </div>
+        <p class="upload-sub">
+            {% if is_edit %}
+            작품의 제목, 소개 등을 수정할 수 있습니다. 파일을 새로 올리면 기존 폴더는 삭제됩니다.
+            {% else %}
+            작품 파일을 ZIP으로 압축하여 업로드해주세요. index.html이 메인 파일이어야 합니다.
+            {% endif %}
+            {% if not user.is_staff and not is_edit %}
+            <br>선생님 승인 후 공개됩니다.
+            {% endif %}
+        </p>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label>작품명 *</label>
+                {{ form.title }}
+                {% if form.title.errors %}<div class="errors">{{ form.title.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>업로드 방식 선택</label>
+                <div class="method-tabs" id="methodTabs">
+                    <div class="method-tab active" onclick="switchMethod('upload')">📁 파일 업로드</div>
+                    <div class="method-tab" onclick="switchMethod('link')">🔗 외부 링크 연결</div>
+                </div>
+            </div>
+
+            <!-- 파일 업로드 필드 -->
+            <div id="method-upload" class="method-content active">
+                <div class="form-group">
+                    <label>작품 파일 (ZIP) *</label>
+                    {{ form.project_zip }}
+                    <div class="help">HTML/JS/CSS 파일을 ZIP으로 압축하여 업로드 (최대 50MB)</div>
+                    {% if form.project_zip.errors %}<div class="errors">{{ form.project_zip.errors.0 }}</div>{% endif %}
+                    <div class="zip-loading" id="zipLoading">
+                        <div class="zip-spinner"></div>
+                        <span>ZIP 파일 분석 중... 잠시만 기다려주세요</span>
+                    </div>
+                </div>
+
+                <!-- 분석 결과 패널 -->
+                <div class="analyze-panel" id="analyzePanel">
+                    <div class="analyze-panel-title">✅ 자동 분석 완료 — 아래 항목이 자동으로 채워졌습니다</div>
+                    <div class="analyze-row"><strong>감지된 카테고리</strong></div>
+                    <div class="analyze-chips" id="analyzeCategories"></div>
+                    <div class="analyze-row" style="margin-top:10px;"><strong>설정된 태그</strong></div>
+                    <div class="analyze-chips" id="analyzeTags"></div>
+                    <div class="analyze-row" style="margin-top:10px; font-size:11px; color:var(--text-muted);">
+                        ✏️ 내용이 맞지 않으면 아래에서 직접 수정하세요.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>시작 파일명</label>
+                    {{ form.entry_file }}
+                    <div class="help">ZIP 안에서 처음 실행될 파일 (기본값: index.html)</div>
+                </div>
+            </div>
+
+            <!-- 외부 링크 필드 -->
+            <div id="method-link" class="method-content">
+                <div class="form-group">
+                    <label>외부 링크 URL *</label>
+                    {{ form.external_url }}
+                    <div class="help">실행 가능한 외부 주소 (원드라이브, GitHub 등)</div>
+                    {% if form.external_url.errors %}<div class="errors">{{ form.external_url.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>썸네일 이미지 (선택)</label>
+                {{ form.thumbnail }}
+            </div>
+
+            <div class="form-group">
+                <label>썸네일 이모지 (이미지 없을 때)</label>
+                {{ form.thumbnail_emoji }}
+            </div>
+
+            <div class="form-group">
+                <label>카드 색상</label>
+                <div class="color-row">
+                    <label style="font-size:12px;">배경</label>
+                    {{ form.color }}
+                    <label style="font-size:12px;">포인트</label>
+                    {{ form.accent }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>작품 소개 *</label>
+                {{ form.description }}
+                {% if form.description.errors %}<div class="errors">{{ form.description.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>표시 이름 *</label>
+                {{ form.author_display_name }}
+                <div class="help">예: 김민준 (중2)</div>
+            </div>
+
+            <div class="form-group">
+                <label>카테고리 * (여러 개 선택 가능)</label>
+                <div class="category-grid">
+                    {% for checkbox in form.categories %}
+                    <div class="category-item">
+                        {{ checkbox.tag }}
+                        <label for="{{ checkbox.id_for_label }}" class="category-label">
+                            {{ checkbox.choice_label }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>태그 (최대 10개)</label>
+                {{ form.tags_str }}
+                <div class="help">쉼표(,)로 구분하여 입력하세요 (예: Pygame, 액션, 1인용)</div>
+                {% if form.tags_str.errors %}<div class="errors">{{ form.tags_str.errors.0 }}</div>{% endif %}
+            </div>
+
+            <button type="submit" class="submit-btn">
+                {% if is_edit %}✨ 수정 완료하기{% else %}🚀 작품 제출하기{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+{% block extra_js %}
+<script>
+function switchMethod(method) {
+    // 탭 효과 변경
+    document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+    // 클릭된 요소 또는 특정 method 탭 활성화
+    if (event && event.currentTarget && event.currentTarget.classList.contains('method-tab')) {
+        event.currentTarget.classList.add('active');
+    } else {
+        const tabIdx = method === 'upload' ? 0 : 1;
+        document.querySelectorAll('.method-tab')[tabIdx].classList.add('active');
+    }
+
+    // 필드 보이기/숨기기
+    document.querySelectorAll('.method-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(`method-${method}`).classList.add('active');
+}
+
+// 수정 모드일 때 기존 데이터에 맞춰 탭 활성화 (외부 링크가 있으면 링크 탭 활성화)
+window.addEventListener('DOMContentLoaded', () => {
+    const externalUrlInput = document.querySelector('input[name="external_url"]');
+    if (externalUrlInput && externalUrlInput.value) {
+        switchMethod('link');
+    }
+});
+
+// ZIP 분석 및 자동 채우기
+const zipInput = document.querySelector('input[name="project_zip"]');
+if (zipInput) {
+    zipInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file || !file.name.endsWith('.zip')) return;
+
+        const formData = new FormData();
+        formData.append('project_zip', file);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        const submitBtn  = document.querySelector('.submit-btn');
+        const loadingEl  = document.getElementById('zipLoading');
+        const panelEl    = document.getElementById('analyzePanel');
+        const originalBtnText = submitBtn.innerText;
+
+        // 로딩 시작
+        submitBtn.disabled = true;
+        submitBtn.innerText = '⚙️ 분석 중...';
+        loadingEl.classList.add('show');
+        panelEl.classList.remove('show');
+
+        fetch('{% url "analyze_zip" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && res.data) {
+                const d = res.data;
+
+                // ── 필드 채우기 ──
+                if (d.title)       document.querySelector('input[name="title"]').value       = d.title;
+                if (d.description) document.querySelector('textarea[name="description"]').value = d.description;
+                if (d.tags_str)    document.querySelector('input[name="tags_str"]').value    = d.tags_str;
+
+                // 카테고리 체크박스
+                const catIds = d.category_ids || [];
+                const catChips = document.getElementById('analyzeCategories');
+                catChips.innerHTML = '';
+                document.querySelectorAll('.category-item input[type="checkbox"]').forEach(cb => {
+                    const checked = catIds.includes(parseInt(cb.value));
+                    cb.checked = checked;
+                    if (checked) {
+                        const label = cb.closest('.category-item').querySelector('.category-label');
+                        if (label) {
+                            const chip = document.createElement('span');
+                            chip.className = 'analyze-chip cat';
+                            chip.textContent = label.textContent.trim();
+                            catChips.appendChild(chip);
+                        }
+                    }
+                });
+                if (catChips.children.length === 0) {
+                    catChips.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">감지된 카테고리 없음 — 직접 선택해주세요</span>';
+                }
+
+                // 태그 칩 렌더링
+                const tagChips = document.getElementById('analyzeTags');
+                tagChips.innerHTML = '';
+                if (d.tags_str) {
+                    d.tags_str.split(',').map(t => t.trim()).filter(Boolean).forEach(tag => {
+                        const chip = document.createElement('span');
+                        chip.className = 'analyze-chip';
+                        chip.textContent = tag;
+                        tagChips.appendChild(chip);
+                    });
+                }
+
+                // 패널 표시
+                panelEl.classList.add('show');
+                panelEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } else if (res.error) {
+                showZipError(res.error);
+            }
+        })
+        .catch(err => {
+            console.error('ZIP Analysis Error:', err);
+            showZipError('파일 분석 중 오류가 발생했습니다. 직접 입력해주세요.');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalBtnText;
+            loadingEl.classList.remove('show');
+        });
+    });
+}
+
+function showZipError(msg) {
+    const panel = document.getElementById('analyzePanel');
+    panel.style.borderColor = 'rgba(255,100,100,0.3)';
+    panel.style.background  = 'rgba(255,100,100,0.05)';
+    panel.innerHTML = `<div class="analyze-panel-title" style="color:#ff6b6b;">⚠️ 분석 실패</div>
+        <div class="analyze-row">${msg}</div>`;
+    panel.classList.add('show');
+}
+</script>
+{% endblock %}
+{% endblock %}

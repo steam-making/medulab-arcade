@@ -1,0 +1,60 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}회원가입 - 메듀랩 Arcade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-wrap { max-width: 460px; margin: 60px auto; padding: 0 24px; animation: fadeSlideIn 0.4s ease; }
+    .auth-card {
+        background: var(--bg-card); border-radius: 20px; padding: 40px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.3); border: 1px solid var(--border);
+        text-align: center;
+    }
+    .auth-title {
+        font: 900 24px 'Orbitron', sans-serif; margin-bottom: 8px;
+        background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .auth-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; }
+    .form-group { margin-bottom: 16px; text-align: left; }
+    .form-group label { display: block; color: var(--text-secondary); font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .form-input {
+        width: 100%; padding: 12px 16px;
+        background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+        border-radius: 12px; color: #fff; font-size: 14px; outline: none;
+        font-family: 'Noto Sans KR', sans-serif; transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: rgba(0,255,180,0.4); box-shadow: 0 0 0 3px rgba(0,255,180,0.08); }
+    .submit-btn {
+        width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+        border: none; border-radius: 14px; color: var(--bg-primary);
+        font: 700 15px 'Noto Sans KR', sans-serif; cursor: pointer; transition: all 0.2s; margin-top: 8px;
+    }
+    .submit-btn:hover { box-shadow: 0 8px 30px rgba(0,255,180,0.3); transform: translateY(-2px); }
+    .errors { color: #ff6b6b; font-size: 12px; margin-top: 4px; text-align: left; }
+    .auth-link { color: var(--text-muted); font-size: 13px; margin-top: 20px; }
+    .auth-link a { color: var(--accent-green); text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-title">🎮 회원가입</div>
+        <p class="auth-sub">메듀랩 아케이드에서 작품을 공유하세요!</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group">
+                <label>{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="errors">{{ field.errors.0 }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="submit-btn">가입하기</button>
+        </form>
+        <p class="auth-link">이미 계정이 있나요? <a href="{% url 'login' %}">로그인</a></p>
+    </div>
+</div>
+{% endblock %}

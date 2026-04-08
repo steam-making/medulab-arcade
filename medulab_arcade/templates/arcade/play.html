@@ -1,0 +1,332 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}{{ project.title }} - 메듀랩 Arcade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .play-wrapper {
+        max-width: 1200px; margin: 24px auto;
+        padding: 0 24px;
+        animation: fadeSlideIn 0.4s ease;
+    }
+    /* 게임 컨테이너 */
+    .game-container {
+        background: var(--bg-card); border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+    .game-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 20px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border);
+    }
+    .game-header-left {
+        display: flex; align-items: center; gap: 12px;
+    }
+    .game-header-emoji { font-size: 28px; }
+    .game-header-title { font-weight: 700; font-size: 16px; }
+    .game-header-author { color: var(--text-muted); font-size: 12px; }
+    .back-btn {
+        display: flex; align-items: center; gap: 6px;
+        background: rgba(255,255,255,0.08); border: none; color: var(--text-secondary);
+        padding: 8px 16px; border-radius: 10px; cursor: pointer;
+        font-size: 13px; font-family: 'Noto Sans KR', sans-serif;
+        transition: all 0.2s; text-decoration: none;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+    /* iframe 영역 */
+    .game-frame-wrap {
+        position: relative;
+        width: 100%; aspect-ratio: 16/9;
+        background: {{ project.color }};
+    }
+    .game-frame-wrap iframe {
+        position: absolute; inset: 0;
+        width: 100%; height: 100%; border: none;
+    }
+    .fullscreen-btn {
+        position: absolute; bottom: 12px; right: 12px;
+        background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15);
+        color: #fff; padding: 8px 12px; border-radius: 8px;
+        cursor: pointer; font-size: 14px; z-index: 10;
+        transition: background 0.2s;
+    }
+    .fullscreen-btn:hover { background: rgba(0,0,0,0.8); }
+
+    .external-link-btn {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: var(--accent-green); color: var(--bg-primary);
+        padding: 14px 28px; border-radius: 12px; font-weight: 700;
+        text-decoration: none; display: flex; align-items: center; gap: 10px;
+        box-shadow: 0 4px 20px rgba(0,255,180,0.3);
+        transition: all 0.2s; z-index: 11;
+    }
+    .external-link-btn:hover {
+        transform: translate(-50%, -50%) scale(1.05);
+        filter: brightness(1.1);
+    }
+    .open-new-tab {
+        position: absolute; bottom: 12px; left: 12px;
+        background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+        color: #fff; padding: 8px 12px; border-radius: 8px;
+        cursor: pointer; font-size: 13px; z-index: 10;
+        transition: all 0.2s; text-decoration: none;
+    }
+    .open-new-tab:hover { background: rgba(255,255,255,0.2); }
+    
+    /* 대용량 다운로드 카드 */
+    .download-card {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 20px; text-align: center; padding: 40px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    }
+    .download-card .icon { font-size: 64px; animation: bounce 2s infinite; }
+    .download-card h2 { font-size: 24px; font-weight: 800; color: #fff; margin: 0; }
+    .download-card p { color: var(--text-secondary); max-width: 400px; line-height: 1.6; }
+    .download-btn {
+        background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+        color: var(--bg-primary); padding: 18px 40px; border-radius: 16px;
+        font-weight: 800; font-size: 18px; text-decoration: none;
+        box-shadow: 0 10px 30px rgba(0,255,180,0.3);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .download-btn:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 15px 40px rgba(0,255,180,0.4);
+    }
+    .download-help { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    /* 하단 정보 */
+    .game-info {
+        padding: 20px 24px;
+        border-top: 2px solid {{ project.accent }}22;
+    }
+    .game-info-top {
+        display: flex; justify-content: space-between;
+        align-items: flex-start; gap: 16px; flex-wrap: wrap;
+    }
+    .game-desc {
+        flex: 1; min-width: 250px;
+    }
+    .game-desc p {
+        color: var(--text-secondary); font-size: 14px; line-height: 1.7;
+        margin-bottom: 12px;
+    }
+    .game-tags {
+        display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .tag {
+        font: 600 11px 'JetBrains Mono', monospace;
+        padding: 4px 12px; border-radius: 20px;
+    }
+    .tag-category {
+        background: {{ project.accent }}22;
+        color: {{ project.accent }};
+    }
+    .tag-custom {
+        background: rgba(255,255,255,0.05);
+        color: var(--text-secondary);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .tag-plays {
+        background: rgba(255,255,255,0.06);
+        color: var(--text-muted);
+        font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    /* 좋아요/즐겨찾기 버튼 */
+    .action-btns { display: flex; gap: 10px; }
+    .action-btn {
+        display: flex; align-items: center; gap: 8px;
+        padding: 10px 20px; border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.04);
+        color: var(--text-secondary);
+        font-size: 14px; cursor: pointer;
+        font-family: 'Noto Sans KR', sans-serif;
+        transition: all 0.2s;
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.08); }
+    .action-btn.liked {
+        background: {{ project.accent }}18;
+        border-color: {{ project.accent }}55;
+        color: {{ project.accent }};
+    }
+    .action-btn.bookmarked {
+        background: rgba(255,200,0,0.1);
+        border-color: rgba(255,200,0,0.35);
+        color: #ffc800;
+    }
+    .action-btn .count { font-size: 13px; font-weight: 600; }
+
+    /* 상세 설명 섹션 추가 */
+    .info-toolbar {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .description-section {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border);
+        border-radius: 16px; padding: 24px;
+    }
+    .description-section h3 {
+        font-size: 16px; font-weight: 700; margin-bottom: 16px;
+        color: var(--accent-green); display: flex; align-items: center; gap: 8px;
+    }
+    .description-section h3::before { content: '📝'; font-size: 18px; }
+    .description-content {
+        color: var(--text-secondary); font-size: 14px; line-height: 1.8;
+        white-space: pre-line; /* 줄바꿈 유지 */
+    }
+
+    @media (max-width: 768px) {
+        .play-wrapper { padding: 0 12px; margin: 16px auto; }
+        .info-toolbar { flex-direction: column-reverse; align-items: stretch; }
+        .game-frame-wrap { aspect-ratio: 4/3; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="play-wrapper">
+    <div class="game-container">
+        <!-- 헤더 -->
+        <div class="game-header">
+            <div class="game-header-left">
+                {% if project.thumbnail %}
+                <img src="{{ project.thumbnail.url }}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;" alt="">
+                {% else %}
+                <span class="game-header-emoji">{{ project.thumbnail_emoji }}</span>
+                {% endif %}
+                <div>
+                    <div class="game-header-title">{{ project.title }}</div>
+                    <div class="game-header-author">제작: {{ project.author_display_name }}</div>
+                </div>
+            </div>
+            <a href="{% url 'home' %}" class="back-btn">← 목록으로</a>
+        </div>
+
+        <!-- 게임 프레임 -->
+        <div class="game-frame-wrap" id="gameWrap" style="background: {% if project.external_url %}rgba(255,255,255,0.03){% else %}{{ project.color }}{% endif %};">
+            {% if project.external_url %}
+                <div class="download-card">
+                    <span class="icon">📥</span>
+                    <h2>대용량 파일 다운로드</h2>
+                    <p>이 작품은 외부 저장소에 대용량 파일이 보관되어 있습니다.<br>아래 버튼을 눌러 안전하게 다운로드 받으세요.</p>
+                    <a href="{{ project.external_url }}" target="_blank" class="download-btn">🚀 파일 다운로드 받기</a>
+                    <div class="download-help">원드라이브, Google Drive 등 외부 링크로 이동합니다.</div>
+                </div>
+            {% elif project.play_url %}
+                <iframe src="{{ project.play_url }}" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+            {% else %}
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+                <span style="font-size:72px;">{{ project.thumbnail_emoji }}</span>
+                <span style="color:#fff;font-size:16px;font-weight:700;">작품 파일을 준비 중입니다...</span>
+            </div>
+            {% endif %}
+            
+            
+            {% if not project.external_url %}
+            <button class="fullscreen-btn" onclick="toggleFullscreen()" title="전체화면">⛶</button>
+            {% endif %}
+        </div>
+
+        <!-- 하단 정보 -->
+        <div class="game-info">
+            <!-- 툴바: 태그 및 액션 버튼 -->
+            <div class="info-toolbar">
+                <div class="game-tags">
+                    {% for cat in project.categories.all %}
+                    <span class="tag tag-category">{{ cat.icon }} {{ cat.name }}</span>
+                    {% endfor %}
+                    {% for tag in project.tags.all %}
+                    <span class="tag tag-custom">#{{ tag.name }}</span>
+                    {% endfor %}
+                    <span class="tag tag-plays">▶ {{ project.play_count|add:1 }}회 플레이</span>
+                </div>
+                <div class="action-btns">
+                    <button class="action-btn {% if user_liked %}liked{% endif %}" id="likeBtn"
+                            onclick="toggleAction('like', {{ project.id }})" {% if not user.is_authenticated %}disabled title="로그인이 필요합니다"{% endif %}>
+                        <span id="likeIcon">{% if user_liked %}❤️{% else %}🤍{% endif %}</span>
+                        <span class="count" id="likeCount">{{ project.like_count }}</span>
+                    </button>
+                    <button class="action-btn {% if user_bookmarked %}bookmarked{% endif %}" id="bookmarkBtn"
+                            onclick="toggleAction('bookmark', {{ project.id }})" {% if not user.is_authenticated %}disabled title="로그인이 필요합니다"{% endif %}>
+                        <span id="bookmarkIcon">{% if user_bookmarked %}★{% else %}☆{% endif %}</span>
+                        <span style="font-size:13px;">즐겨찾기</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 작품 소개 본문 -->
+            <div class="description-section">
+                <h3>작품 소개</h3>
+                <div class="description-content">
+                    {{ project.description|linebreaksbr }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleFullscreen() {
+    const wrap = document.getElementById('gameWrap');
+    if (!document.fullscreenElement) {
+        wrap.requestFullscreen().catch(err => console.log(err));
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+function toggleAction(type, projectId) {
+    const url = type === 'like'
+        ? `/api/like/${projectId}/`
+        : `/api/bookmark/${projectId}/`;
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (type === 'like') {
+            const btn = document.getElementById('likeBtn');
+            const icon = document.getElementById('likeIcon');
+            const count = document.getElementById('likeCount');
+            btn.classList.toggle('liked', data.liked);
+            icon.textContent = data.liked ? '❤️' : '🤍';
+            count.textContent = data.count;
+        } else {
+            const btn = document.getElementById('bookmarkBtn');
+            const icon = document.getElementById('bookmarkIcon');
+            btn.classList.toggle('bookmarked', data.bookmarked);
+            icon.textContent = data.bookmarked ? '★' : '☆';
+        }
+    })
+    .catch(err => console.error(err));
+}
+
+function getCookie(name) {
+    let v = null;
+    document.cookie.split(';').forEach(c => {
+        c = c.trim();
+        if (c.startsWith(name + '=')) v = decodeURIComponent(c.substring(name.length + 1));
+    });
+    return v;
+}
+</script>
+{% endblock %}

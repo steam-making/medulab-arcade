@@ -1,0 +1,21 @@
+# /etc/systemd/system/medulab.service
+
+[Unit]
+Description=MeduLab Arcade Django App
+After=network.target
+
+[Service]
+User=deploy
+Group=www-data
+WorkingDirectory=/home/deploy/medulab_arcade
+ExecStart=/home/deploy/medulab_arcade/venv/bin/gunicorn \
+    --workers 3 \
+    --bind 127.0.0.1:8000 \
+    --timeout 120 \
+    medulab_arcade.wsgi:application
+
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

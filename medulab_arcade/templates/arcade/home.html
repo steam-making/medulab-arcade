@@ -1,0 +1,73 @@
+{% extends 'arcade/base.html' %}
+
+{% block content %}
+<div class="main">
+    <!-- 히어로 -->
+    <div class="hero">
+        <h1>STUDENT ARCADE</h1>
+        <p>메듀랩 학생들이 직접 만든 작품을 플레이해보세요!</p>
+        <div class="stats" style="justify-content:center; margin-top:16px;">
+            <span><span class="num" style="color:var(--accent-green);">{{ total_projects }}</span> 작품</span>
+            <span><span class="num" style="color:var(--accent-blue);">{{ total_plays|default:0 }}</span> 플레이</span>
+        </div>
+    </div>
+
+    <!-- 카테고리 필터 -->
+    <div class="filters">
+        <a href="{% url 'home' %}" class="filter-btn {% if not current_category %}active{% endif %}">전체</a>
+        {% for cat in categories %}
+        <a href="?category={{ cat.name }}" class="filter-btn {% if current_category == cat.name %}active{% endif %}">
+            {{ cat.icon }} {{ cat.name }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- 작품 그리드 -->
+    <div class="grid">
+        {% for project in projects %}
+        <a href="{% url 'play' project.slug %}" class="card"
+           style="background:{{ project.color }};
+                  animation-delay: {{ forloop.counter0|divisibleby:1 }}ms;
+                  --accent: {{ project.accent }};"
+           onmouseenter="this.style.boxShadow='0 20px 40px rgba(0,0,0,0.4), 0 0 20px {{ project.accent }}44'"
+           onmouseleave="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.3)'">
+            <div class="card-inner">
+                {% if project.thumbnail %}
+                <img src="{{ project.thumbnail.url }}" class="card-thumb" alt="{{ project.title }}">
+                {% else %}
+                <div class="card-emoji">{{ project.thumbnail_emoji }}</div>
+                {% endif %}
+                <div class="card-title">{{ project.title }}</div>
+                <div class="card-author">{{ project.author_display_name }}</div>
+                {% if project.tags.all %}
+                <div class="card-tags" style="margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap;">
+                    {% for tag in project.tags.all|slice:":3" %}
+                    <span style="font-size: 10px; color: var(--text-muted); opacity: 0.8;">#{{ tag.name }}</span>
+                    {% endfor %}
+                    {% if project.tags.count > 3 %}
+                    <span style="font-size: 10px; color: var(--text-muted); opacity: 0.6;">...</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-badges" style="position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; z-index: 5;">
+                {% for cat in project.categories.all %}
+                <div class="card-badge" style="background:{{ project.accent }}; border-radius: 8px; padding: 4px 8px; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);" title="{{ cat.name }}">
+                    {{ cat.icon }}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="card-bar" style="background:{{ project.accent }};"></div>
+        </a>
+        {% empty %}
+        <div class="empty" style="grid-column: 1/-1;">
+            {% if search_query %}
+                "{{ search_query }}"에 대한 검색 결과가 없습니다 😢
+            {% else %}
+                아직 등록된 작품이 없습니다. 첫 번째 작품을 업로드해보세요! 🚀
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

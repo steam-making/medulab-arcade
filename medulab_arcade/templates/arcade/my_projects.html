@@ -1,0 +1,105 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}내 작품 - 메듀랩 Arcade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .my-wrap { max-width: 900px; margin: 40px auto; padding: 0 24px; animation: fadeSlideIn 0.4s ease; }
+    .my-title {
+        font: 900 28px 'Orbitron', sans-serif; margin-bottom: 24px;
+        background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+        -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .project-row {
+        display: flex; align-items: center; gap: 16px;
+        padding: 16px 20px; background: var(--bg-card);
+        border-radius: 14px; margin-bottom: 12px;
+        border: 1px solid var(--border);
+        transition: all 0.2s;
+    }
+    .project-row:hover { border-color: rgba(255,255,255,0.15); }
+    .project-row .emoji { font-size: 32px; }
+    .project-row .info { flex: 1; }
+    .project-row .info h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+    .project-row .info p { color: var(--text-muted); font-size: 12px; }
+    .status-badge {
+        padding: 4px 12px; border-radius: 20px;
+        font-size: 11px; font-weight: 700;
+    }
+    .status-pending { background: rgba(255,200,0,0.15); color: #ffc800; }
+    .status-approved { background: rgba(0,255,180,0.12); color: var(--accent-green); }
+    .status-rejected { background: rgba(255,60,60,0.12); color: #ff6b6b; }
+    .play-count { color: var(--text-muted); font-size: 12px; }
+    .action-group { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .btn-sm {
+        padding: 6px 12px; border-radius: 8px; font-size: 12px;
+        cursor: pointer; transition: all 0.2s; text-decoration: none;
+        display: inline-flex; align-items: center;
+    }
+    .edit-btn {
+        background: rgba(0,255,180,0.1); border: 1px solid rgba(0,255,180,0.3);
+        color: var(--accent-green);
+    }
+    .edit-btn:hover { background: rgba(0,255,180,0.2); border-color: var(--accent-green); }
+    .approve-btn {
+        background: var(--accent-green); border: 1px solid var(--accent-green);
+        color: var(--bg-primary); font-weight: 700; margin-right: 4px;
+    }
+    .approve-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,255,180,0.3); }
+    .delete-btn {
+        background: transparent; border: 1px solid rgba(255, 60, 60, 0.3);
+        color: #ff6b6b;
+    }
+    .delete-btn:hover { background: rgba(255, 60, 60, 0.1); border-color: #ff6b6b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="my-wrap">
+    <div class="my-title">🎮 내 작품</div>
+
+    {% for project in projects %}
+    <div class="project-row">
+        {% if project.thumbnail %}
+        <img src="{{ project.thumbnail.url }}" style="width:48px;height:48px;border-radius:12px;object-fit:cover;" alt="">
+        {% else %}
+        <span class="emoji">{{ project.thumbnail_emoji }}</span>
+        {% endif %}
+        <div class="info">
+            <h3>
+                {% if project.status == 'approved' %}
+                <a href="{% url 'play' project.slug %}" style="color:#fff;text-decoration:none;">{{ project.title }}</a>
+                {% else %}
+                {{ project.title }}
+                {% endif %}
+            </h3>
+            <p>
+                {% if is_teacher %}<strong style="color:var(--accent-blue);">{{ project.author_display_name }}</strong> · {% endif %}
+                {{ project.created_at|date:"Y.m.d" }} · {{ project.category.name|default:"기타" }}
+            </p>
+        </div>
+        <span class="play-count">▶ {{ project.play_count }}</span>
+        <span class="status-badge status-{{ project.status }}">
+            {{ project.get_status_display }}
+        </span>
+        
+        <div class="action-group">
+            {% if is_teacher and project.status == 'pending' %}
+            <form action="{% url 'approve_project' project.id %}" method="POST" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-sm approve-btn">✅ 승인</button>
+            </form>
+            {% endif %}
+            <a href="{% url 'edit_project' project.id %}" class="btn-sm edit-btn">수정</a>
+            <form action="{% url 'delete_project' project.id %}" method="POST" 
+                  onsubmit="return confirm('진짜로 이 작품을 삭제할까요? (복구할 수 없어요! 😱)');">
+                {% csrf_token %}
+                <button type="submit" class="btn-sm delete-btn">삭제</button>
+            </form>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty">아직 업로드한 작품이 없습니다.<br><a href="{% url 'upload' %}" style="color:var(--accent-green);">첫 작품 올리기 →</a></div>
+    {% endfor %}
+</div>
+{% endblock %}

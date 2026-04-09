@@ -194,15 +194,24 @@
             filter: drop-shadow(0 0 12px rgba(255,255,255,0.4));
         }
 
-        /* 썸네일 있는 카드: 전체 배경 채우기 */
+        /* 썸네일 있는 카드: 슬라이드 컨테이너 */
+        .card-thumbs {
+            position: absolute; inset: 0;
+        }
         .card-thumb {
             position: absolute; inset: 0;
             width: 100%; height: 100%;
             object-fit: cover;
-            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            opacity: 0;
+            transition: opacity 0.55s ease, transform 0.55s ease;
+            transform: scale(1.04);
         }
-        .card:hover .card-thumb {
-            transform: scale(1.07);
+        .card-thumb.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .card:hover .card-thumb.active {
+            transform: scale(1.06);
         }
         /* 썸네일 카드용 오버레이 (하단 그라디언트) */
         .card-thumb-overlay {
@@ -369,5 +378,40 @@
 </script>
 
 {% block extra_js %}{% endblock %}
+
+<script>
+/* ── 홈 카드 썸네일 hover 슬라이드 ── */
+(function () {
+    function initCardSlides() {
+        document.querySelectorAll('.card-thumbs').forEach(function (wrap) {
+            var thumbs = wrap.querySelectorAll('.card-thumb');
+            if (thumbs.length <= 1) return;          // 이미지 1개면 슬라이드 불필요
+            var card = wrap.closest('.card');
+            var idx = 0, timer = null;
+
+            card.addEventListener('mouseenter', function () {
+                timer = setInterval(function () {
+                    thumbs[idx].classList.remove('active');
+                    idx = (idx + 1) % thumbs.length;
+                    thumbs[idx].classList.add('active');
+                }, 850);
+            });
+
+            card.addEventListener('mouseleave', function () {
+                clearInterval(timer);
+                timer = null;
+                thumbs.forEach(function (t) { t.classList.remove('active'); });
+                idx = 0;
+                thumbs[0].classList.add('active');
+            });
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCardSlides);
+    } else {
+        initCardSlides();
+    }
+})();
+</script>
 </body>
 </html>

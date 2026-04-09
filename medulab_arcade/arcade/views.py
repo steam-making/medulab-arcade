@@ -3,6 +3,8 @@ import zipfile
 import io
 import re
 import os
+import uuid
+import base64
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -11,6 +13,7 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.db.models import Count, Q
 from django.contrib.auth import login
 from django.contrib import messages
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from .models import Project, Category, Like, Bookmark, Tag
 from .forms import ProjectUploadForm, SignUpForm
 
@@ -110,9 +113,18 @@ def edit_project(request, project_id):
     if request.method == 'POST':
         form = ProjectUploadForm(request.POST, request.FILES, instance=project)
         if form.is_valid():
-            form.save()
-            # ManyToMany 필드는 ModelForm.save()에서 기본적으로 처리되지만 
-            # 커스텀 save 로직이 있을 수 있으니 명시적으로 확인 (ProjectUploadForm.save는 save_m2m을 지원함)
+            updated = form.save(commit=False)
+            # 수동 썸네일이 없고 자동 썸네일이 전달된 경우 적용
+            if not request.FILES.get('thumbnail'):
+                import json as _json
+                raw = request.POST.get('auto_thumbnail_b64_list', '')
+                try:
+                    b64_list = _json.loads(raw) if raw else []
+                except Exception:
+                    b64_list = [request.POST.get('auto_thumbnail_b64', '')]
+                _apply_auto_thumbnails(updated, b64_list)
+            updated.save()
+            form.save_m2m()
             messages.success(request, '작품 정보가 수정되었습니다! ✨')
             return redirect('my_projects')
     else:
@@ -126,6 +138,23 @@ def edit_project(request, project_id):
     return render(request, 'arcade/upload.html', context)
 
 
+def _apply_auto_thumbnails(project, b64_list):
+    """base64 PNG 리스트를 Project thumbnail/thumbnail_2/thumbnail_3에 설정"""
+    fields = ['thumbnail', 'thumbnail_2', 'thumbnail_3']
+    for i, b64_data in enumerate(b64_list[:3]):
+        if not b64_data:
+            continue
+        try:
+            img_bytes = base64.b64decode(b64_data)
+            img_io = io.BytesIO(img_bytes)
+            filename = f'auto_{uuid.uuid4().hex[:8]}.png'
+            setattr(project, fields[i], InMemoryUploadedFile(
+                img_io, fields[i], filename, 'image/png', len(img_bytes), None
+            ))
+        except Exception:
+            continue
+
+
 @login_required
 def upload(request):
     """작품 업로드 페이지"""
@@ -134,6 +163,15 @@ def upload(request):
         if form.is_valid():
             project = form.save(commit=False)
             project.author = request.user
+            # 수동 썸네일이 없을 때 자동 생성 썸네일 적용 (최대 3개)
+            if not request.FILES.get('thumbnail'):
+                import json as _json
+                raw = request.POST.get('auto_thumbnail_b64_list', '')
+                try:
+                    b64_list = _json.loads(raw) if raw else []
+                except Exception:
+                    b64_list = [request.POST.get('auto_thumbnail_b64', '')]
+                _apply_auto_thumbnails(project, b64_list)
             # 관리자는 바로 승인, 학생은 심사 대기
             if request.user.is_staff:
                 project.status = 'approved'
@@ -155,56 +193,296 @@ def upload(request):
 @login_required
 @require_POST
 def analyze_zip(request):
-    """ZIP 파일을 분석하여 메타데이터(arcade.json) 추출"""
+    """ZIP 파일을 분석하여 메타데이터(arcade.json) 추출 + 썸네일 자동 생성"""
     zip_file = request.FILES.get('project_zip')
     if not zip_file:
         return JsonResponse({'error': '파일이 없습니다.'}, status=400)
 
     try:
-        with zipfile.ZipFile(io.BytesIO(zip_file.read())) as zf:
-            # arcade.json 또는 arcade_info.json 파일 찾기 (대소문자 구분 없음, 최상위 또는 폴더 안 포함)
+        zip_bytes = zip_file.read()
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            # arcade.json 또는 arcade_info.json 파일 찾기
             json_path = None
             for name in zf.namelist():
                 lower_name = name.lower()
                 if lower_name.endswith('arcade.json') or lower_name.endswith('arcade_info.json'):
-                    # 가장 얕은 경로의 파일을 선택
                     if json_path is None or name.count('/') < json_path.count('/'):
                         json_path = name
-            
+
+            guessed = False
             if not json_path:
-                # JSON이 없으면 스마트 추측 로직 실행
                 result = guess_project_metadata(zf, zip_file.name)
-                return JsonResponse({'success': True, 'data': result, 'guessed': True})
-            
-            with zf.open(json_path) as f:
-                data = json.loads(f.read().decode('utf-8'))
-                
-                # 카테고리 이름으로 ID 조회
+                guessed = True
+            else:
+                with zf.open(json_path) as f:
+                    data = json.loads(f.read().decode('utf-8'))
                 category_names = data.get('categories', [])
                 if isinstance(category_names, str):
                     category_names = [category_names]
-                
                 matched_category_ids = list(Category.objects.filter(
                     name__in=category_names
                 ).values_list('id', flat=True))
-                
-                # 태그 리스트를 쉼표 문자열로 변환
                 tags_list = data.get('tags', [])
-                if isinstance(tags_list, list):
-                    tags_str = ", ".join(tags_list)
-                else:
-                    tags_str = str(tags_list)
-                    
+                tags_str = ', '.join(tags_list) if isinstance(tags_list, list) else str(tags_list)
                 result = {
                     'title': data.get('title', ''),
                     'description': data.get('description', ''),
                     'tags_str': tags_str,
                     'category_ids': matched_category_ids,
                 }
-                return JsonResponse({'success': True, 'data': result})
-                
+
+            # 썸네일 자동 생성 (최대 3개)
+            tags_set = set(t.strip() for t in result.get('tags_str', '').split(',') if t.strip())
+            result['thumbnail_b64_list'] = generate_auto_thumbnails(zf, result.get('title', ''), tags_set)
+            # 하위 호환
+            result['thumbnail_b64'] = result['thumbnail_b64_list'][0] if result['thumbnail_b64_list'] else ''
+
+            return JsonResponse({'success': True, 'data': result, 'guessed': guessed})
+
     except Exception as e:
         return JsonResponse({'error': f'ZIP 분석 중 오류 발생: {str(e)}'}, status=500)
+
+
+def _get_pil_font(size):
+    """한글 지원 폰트 탐색 (없으면 기본 폰트)"""
+    from PIL import ImageFont
+    candidates = [
+        # Windows
+        'C:/Windows/Fonts/malgun.ttf',
+        'C:/Windows/Fonts/malgunbd.ttf',
+        'C:/Windows/Fonts/gulim.ttc',
+        'C:/Windows/Fonts/arial.ttf',
+        # Linux/Mac
+        '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/System/Library/Fonts/AppleSDGothicNeo.ttc',
+    ]
+    for path in candidates:
+        try:
+            return ImageFont.truetype(path, size)
+        except Exception:
+            continue
+    return ImageFont.load_default()
+
+
+def generate_auto_thumbnails(zf, title, tags):
+    """
+    ZIP 안에서 이미지를 최대 3장 추출하거나, 부족하면 Pillow로 3가지 스타일 썸네일을 생성.
+    반환값: base64 PNG 문자열 리스트 (최대 3개, 실패 항목은 제외)
+    """
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        return []
+
+    THUMB_W, THUMB_H = 480, 270
+
+    # ── 장르별 포인트 색상 ─────────────────────────────────────────────────
+    GENRE_COLORS = {
+        '슈팅게임': (233, 69, 96),   '플랫포머': (75, 160, 255),
+        '퍼즐게임': (160, 100, 255),  '러닝게임': (0, 220, 130),
+        '대전게임': (255, 140, 0),    'RPG': (200, 80, 255),
+        '아케이드': (0, 210, 200),    '겨울테마': (100, 200, 255),
+        'AI/ML': (0, 255, 160),       '퀴즈게임': (255, 200, 0),
+        '타워디펜스': (255, 100, 50), '리듬게임': (255, 80, 200),
+        'Pygame': (100, 180, 100),    'HTML5캔버스': (255, 165, 0),
+    }
+    accent = (233, 69, 96)
+    for genre, color in GENRE_COLORS.items():
+        if genre in tags:
+            accent = color
+            break
+    ar, ag, ab = accent
+
+    # ── 폰트 준비 ─────────────────────────────────────────────────────────
+    font_big   = _get_pil_font(40)
+    font_mid   = _get_pil_font(22)
+    font_tag   = _get_pil_font(13)
+    font_small = _get_pil_font(12)
+    font_wm    = _get_pil_font(11)
+
+    # ── 태그 우선순위 정렬 ────────────────────────────────────────────────
+    priority_order = [
+        '슈팅게임', '플랫포머', '퍼즐게임', '러닝게임', '대전게임', 'RPG',
+        '아케이드', '겨울테마', 'AI/ML', '퀴즈게임', '타워디펜스', '리듬게임',
+        'Pygame', 'HTML5캔버스', '2인용', '스코어경쟁', '키보드컨트롤',
+    ]
+    show_tags = [t for t in priority_order if t in tags][:4]
+    if not show_tags:
+        show_tags = sorted(tags)[:4]
+
+    display_title = title if len(title) <= 11 else title[:10] + '…'
+
+    results = []
+
+    # ── ZIP 안 실제 이미지 먼저 최대 3장 추출 ─────────────────────────────
+    image_exts = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')
+    priority_kw = ['screenshot', 'thumbnail', 'thumb', 'preview', 'cover', 'banner']
+    candidates = []
+    for name in zf.namelist():
+        lower = name.lower()
+        base_n = os.path.basename(lower)
+        if not lower.endswith(image_exts):
+            continue
+        score = sum(10 for kw in priority_kw if kw in base_n)
+        if lower.count('/') == 0:
+            score += 5
+        candidates.append((score, name))
+    candidates.sort(key=lambda x: -x[0])
+
+    for _, img_name in candidates[:3]:
+        try:
+            with zf.open(img_name) as f:
+                raw = f.read()
+            img = Image.open(io.BytesIO(raw)).convert('RGB')
+            img.thumbnail((THUMB_W, THUMB_H), Image.LANCZOS)
+            canvas = Image.new('RGB', (THUMB_W, THUMB_H), (18, 18, 35))
+            canvas.paste(img, ((THUMB_W - img.width) // 2, (THUMB_H - img.height) // 2))
+            buf = io.BytesIO()
+            canvas.save(buf, format='PNG', optimize=True)
+            results.append(base64.b64encode(buf.getvalue()).decode())
+        except Exception:
+            continue
+
+    # ── 부족한 슬롯은 Pillow 생성으로 채움 ───────────────────────────────
+    needed = 3 - len(results)
+    if needed <= 0:
+        return results[:3]
+
+    def _draw_tag_chips(draw, tags_list, cx_start, cy, font, accent_rgb):
+        """태그 칩 row 그리기 (중앙 정렬)"""
+        if not tags_list:
+            return
+        pad_x, chip_h, gap = 12, 22, 7
+        widths = []
+        for t in tags_list:
+            bb = draw.textbbox((0, 0), t, font=font)
+            widths.append(bb[2] - bb[0] + pad_x * 2)
+        total = sum(widths) + gap * (len(tags_list) - 1)
+        x = cx_start - total // 2
+        ar2, ag2, ab2 = accent_rgb
+        for i, t in enumerate(tags_list):
+            w = widths[i]
+            draw.rounded_rectangle(
+                [(x, cy), (x + w, cy + chip_h)], radius=11,
+                fill=(min(ar2 + 40, 255), min(ag2 + 30, 255), min(ab2 + 30, 255)),
+            )
+            bb = draw.textbbox((0, 0), t, font=font)
+            draw.text((x + (w - (bb[2] - bb[0])) // 2, cy + 4), t,
+                      font=font, fill=(255, 255, 255))
+            x += w + gap
+
+    def _img_to_b64(img):
+        buf = io.BytesIO()
+        img.save(buf, format='PNG', optimize=True)
+        return base64.b64encode(buf.getvalue()).decode()
+
+    def _watermark(draw, accent_rgb):
+        draw.text((10, THUMB_H - 20), 'MEDULAB ARCADE', font=font_wm, fill=accent_rgb)
+
+    # ── 스타일 1: 포스터 (어두운 그라디언트 + 중앙 제목 + 태그 칩) ───────
+    if needed > 0:
+        img = Image.new('RGB', (THUMB_W, THUMB_H))
+        draw = ImageDraw.Draw(img)
+        for y in range(THUMB_H):
+            t = y / THUMB_H
+            draw.line([(0, y), (THUMB_W, y)],
+                      fill=(int(12 + t * 8), int(12 + t * 6), int(28 + t * 20)))
+        # 후광 원
+        for cx, cy, rad, ratio in [(390, 55, 85, 0.07), (75, 225, 60, 0.05)]:
+            c = (int(ar * ratio + 12), int(ag * ratio + 12), int(ab * ratio + 28))
+            for dr in range(rad, 0, -5):
+                draw.ellipse([(cx - dr, cy - dr), (cx + dr, cy + dr)], outline=c)
+        draw.rectangle([(0, 0), (THUMB_W, 5)], fill=accent)
+        # 제목
+        bb = draw.textbbox((0, 0), display_title, font=font_big)
+        tx = (THUMB_W - (bb[2] - bb[0])) // 2
+        draw.text((tx + 2, 95), display_title, font=font_big, fill=(0, 0, 0))
+        draw.text((tx, 93), display_title, font=font_big, fill=(255, 255, 255))
+        # 태그 칩
+        _draw_tag_chips(draw, show_tags[:3], THUMB_W // 2, 152, font_tag, accent)
+        draw.rectangle([(0, THUMB_H - 4), (THUMB_W, THUMB_H)], fill=accent)
+        _watermark(draw, accent)
+        results.append(_img_to_b64(img))
+        needed -= 1
+
+    # ── 스타일 2: 스포트라이트 (액센트 방사형 + 큰 이모지/제목 하단) ──────
+    if needed > 0:
+        img = Image.new('RGB', (THUMB_W, THUMB_H), (10, 10, 22))
+        draw = ImageDraw.Draw(img)
+        # 중앙 방사형 그라디언트 (동심원으로 근사)
+        max_r = int((THUMB_W ** 2 + THUMB_H ** 2) ** 0.5 // 2) + 10
+        for r in range(max_r, 0, -4):
+            ratio = r / max_r
+            bg = (int(ar * (1 - ratio) * 0.45 + 10),
+                  int(ag * (1 - ratio) * 0.45 + 10),
+                  int(ab * (1 - ratio) * 0.45 + 22))
+            draw.ellipse(
+                [(THUMB_W // 2 - r, THUMB_H // 2 - r),
+                 (THUMB_W // 2 + r, THUMB_H // 2 + r)],
+                fill=bg,
+            )
+        # 제목 하단 좌측
+        draw.text((22, THUMB_H - 78), display_title, font=font_big, fill=(255, 255, 255))
+        # 장르 태그 한 줄
+        genre_tag = show_tags[0] if show_tags else ''
+        if genre_tag:
+            bb = draw.textbbox((0, 0), genre_tag, font=font_mid)
+            draw.rounded_rectangle(
+                [(20, THUMB_H - 44), (20 + bb[2] - bb[0] + 20, THUMB_H - 20)],
+                radius=10, fill=accent,
+            )
+            draw.text((30, THUMB_H - 42), genre_tag, font=font_mid, fill=(255, 255, 255))
+        # 우측 상단 PLAY 버튼 느낌
+        draw.rounded_rectangle([(THUMB_W - 80, 14), (THUMB_W - 14, 44)],
+                                radius=15, fill=accent)
+        bb = draw.textbbox((0, 0), 'PLAY', font=font_tag)
+        draw.text((THUMB_W - 80 + (66 - (bb[2] - bb[0])) // 2, 22),
+                  'PLAY', font=font_tag, fill=(255, 255, 255))
+        _watermark(draw, accent)
+        results.append(_img_to_b64(img))
+        needed -= 1
+
+    # ── 스타일 3: 피처 카드 (기능 목록 + 기술 스택) ──────────────────────
+    if needed > 0:
+        img = Image.new('RGB', (THUMB_W, THUMB_H), (14, 14, 26))
+        draw = ImageDraw.Draw(img)
+        # 좌측 액센트 세로 바
+        draw.rectangle([(0, 0), (5, THUMB_H)], fill=accent)
+        # 상단 제목
+        draw.text((20, 20), display_title, font=font_mid, fill=(255, 255, 255))
+        bb = draw.textbbox((0, 0), display_title, font=font_mid)
+        lx = 20 + bb[2] - bb[0] + 10
+        draw.line([(lx, 32), (THUMB_W - 20, 32)],
+                  fill=(ar // 3, ag // 3, ab // 3), width=1)
+        # 특징 목록 (태그 → bullet list)
+        bullets = show_tags[:4]
+        if not bullets:
+            bullets = ['직접 플레이해보세요!']
+        for i, b in enumerate(bullets):
+            y = 50 + i * 28
+            draw.rounded_rectangle([(18, y + 2), (26, y + 14)],
+                                    radius=4, fill=accent)
+            draw.text((34, y), b, font=font_small, fill=(220, 220, 220))
+        # 하단 기술 스택
+        tech_tags = [t for t in show_tags if t in ('Pygame', 'HTML5캔버스', 'JavaScript',
+                                                     'Python', 'AI/ML', 'CSS3')][:3]
+        if tech_tags:
+            draw.text((20, THUMB_H - 38), '🛠  ' + '  ·  '.join(tech_tags),
+                      font=font_small, fill=(ar, ag, ab))
+        draw.rectangle([(0, THUMB_H - 4), (THUMB_W, THUMB_H)], fill=accent)
+        _watermark(draw, accent)
+        results.append(_img_to_b64(img))
+
+    return results[:3]
+
+
+# 하위 호환용 단일 반환 래퍼
+def generate_auto_thumbnail(zf, title, tags):
+    results = generate_auto_thumbnails(zf, title, tags)
+    return results[0] if results else ''
 
 
 def guess_project_metadata(zf, zip_filename):

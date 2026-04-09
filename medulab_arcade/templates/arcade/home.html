@@ -32,8 +32,16 @@
            onmouseenter="this.style.boxShadow='0 20px 40px rgba(0,0,0,0.4), 0 0 20px {{ project.accent }}44'"
            onmouseleave="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.3)'">
             {% if project.thumbnail %}
-                {# ── 썸네일 있는 카드: 전체 배경 + 하단 오버레이 #}
-                <img src="{{ project.thumbnail.url }}" class="card-thumb" alt="{{ project.title }}">
+                {# ── 썸네일 있는 카드: 슬라이드 레이어 #}
+                <div class="card-thumbs">
+                    <img src="{{ project.thumbnail.url }}"   class="card-thumb active" alt="">
+                    {% if project.thumbnail_2 %}
+                    <img src="{{ project.thumbnail_2.url }}" class="card-thumb" alt="">
+                    {% endif %}
+                    {% if project.thumbnail_3 %}
+                    <img src="{{ project.thumbnail_3.url }}" class="card-thumb" alt="">
+                    {% endif %}
+                </div>
                 <div class="card-thumb-overlay"></div>
                 <div class="card-inner-thumb">
                     <div class="card-title">{{ project.title }}</div>

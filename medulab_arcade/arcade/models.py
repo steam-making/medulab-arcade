@@ -57,7 +57,9 @@ class Project(models.Model):
     categories = models.ManyToManyField(Category, blank=True, verbose_name='카테고리')
     tags = models.ManyToManyField(Tag, blank=True, verbose_name='태그')
 
-    thumbnail = models.ImageField('썸네일', upload_to=project_thumbnail_path, blank=True, null=True)
+    thumbnail   = models.ImageField('썸네일 1', upload_to=project_thumbnail_path, blank=True, null=True)
+    thumbnail_2 = models.ImageField('썸네일 2', upload_to=project_thumbnail_path, blank=True, null=True)
+    thumbnail_3 = models.ImageField('썸네일 3', upload_to=project_thumbnail_path, blank=True, null=True)
     thumbnail_emoji = models.CharField('썸네일 이모지 (이미지 없을 때)', max_length=10, default='🎮')
     color = models.CharField('카드 배경색', max_length=7, default='#1a1a2e')
     accent = models.CharField('포인트 색상', max_length=7, default='#e94560')
@@ -185,11 +187,12 @@ class Project(models.Model):
         except (ValueError, FileNotFoundError):
             pass
 
-        try:
-            if self.thumbnail and self.thumbnail.path and os.path.isfile(self.thumbnail.path):
-                os.remove(self.thumbnail.path)
-        except (ValueError, FileNotFoundError):
-            pass
+        for thumb_field in (self.thumbnail, self.thumbnail_2, self.thumbnail_3):
+            try:
+                if thumb_field and thumb_field.path and os.path.isfile(thumb_field.path):
+                    os.remove(thumb_field.path)
+            except (ValueError, FileNotFoundError):
+                pass
 
         # 3. DB 레코드 삭제
         super().delete(*args, **kwargs)

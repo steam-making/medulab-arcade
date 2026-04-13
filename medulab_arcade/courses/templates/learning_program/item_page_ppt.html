@@ -1,0 +1,60 @@
+{% extends "learning_program/item_page.html" %}
+{# 기본 학습 페이지를 상속받아 사용하며, 필요시 PPT 전용 기능을 이곳에 추가합니다 #}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .ppt-viewer-placeholder {
+        background: #1e1e1e;
+        border-radius: 12px;
+        aspect-ratio: 16 / 9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        margin: 40px 0;
+        border: 2px dashed var(--border);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="item-container">
+    <div class="item-card">
+        <div class="item-header">
+            <div class="item-nav-top">
+                <a href="{% url 'chapter_detail' item.chapter.id %}" style="color: var(--text-muted); text-decoration: none; font-size: 13px;">← 목록으로 돌아가기</a>
+                <span style="color: var(--text-muted); font-size: 13px;">ITQ 파워포인트 실무</span>
+            </div>
+            <div class="item-title-row">
+                <div class="item-badge">PPT</div>
+                <h1 style="color: #fff; font-size: 28px;">{{ item.title }}</h1>
+            </div>
+        </div>
+
+        <div class="item-content">
+            <div class="ppt-viewer-placeholder">
+                <div style="text-align: center;">
+                    <div style="font-size: 40px; margin-bottom: 12px;">📊</div>
+                    <div>프레젠테이션 학습 아이콘 (PPT 뷰어 준비 중)</div>
+                </div>
+            </div>
+            {{ item.explain_html|safe }}
+        </div>
+
+        <div class="item-footer">
+            {% if prev_item %}
+                <a href="{% url 'item_page' prev_item.id %}" class="btn-nav">← 이전</a>
+            {% else %}
+                <div></div>
+            {% endif %}
+
+            {% if next_item %}
+                <a href="{% url 'item_page' next_item.id %}" class="btn-nav primary">다음 →</a>
+            {% else %}
+                <a href="{% url 'chapter_detail' item.chapter.id %}" class="btn-nav primary">학습 완료</a>
+            {% endif %}
+        </div>
+    </div>
+</main>
+{% endblock %}

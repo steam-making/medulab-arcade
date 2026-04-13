@@ -1,0 +1,107 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}챕터 관리 - {{ program.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .manage-container { max-width: 1000px; margin: 40px auto; }
+    .card-dark {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px;
+        margin-bottom: 32px;
+    }
+    .upload-box {
+        border: 2px dashed var(--border);
+        padding: 40px;
+        text-align: center;
+        border-radius: 12px;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .upload-box:hover { border-color: var(--accent-blue); background: rgba(0, 180, 255, 0.05); }
+    
+    .chapter-summary {
+        list-style: none;
+        padding: 0;
+    }
+    .chapter-summary-item {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .btn-submit-form {
+        background: var(--accent-blue);
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main manage-container">
+    <div class="admin-header">
+        <h1>CHAPTER MANAGEMENT</h1>
+        <p style="color: var(--text-muted);">{{ program.name }} 과정의 학습 데이터를 구성합니다.</p>
+    </div>
+
+    <!-- 엑셀 업로드 -->
+    <div class="card-dark">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3 style="margin: 0;">엑셀 데이터 주입</h3>
+            <a href="{% url 'download_course_template' %}" class="nav-link" style="font-size: 12px; background: rgba(0, 255, 180, 0.1); color: var(--accent-green);">📥 양식 다운로드 (.xlsx)</a>
+        </div>
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;">
+            엑셀 파일을 통해 챕터와 아이템(문제, 설명 등)을 일괄 등록할 수 있습니다.<br>
+            <strong>주의:</strong> 업로드 시 기존의 모든 챕터와 아이템 데이터가 초기화됩니다.
+        </p>
+        
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="upload-box" onclick="document.getElementById('excel_file').click()">
+                <span style="font-size: 40px; display: block; margin-bottom: 12px;">📁</span>
+                <span id="file-name">엑셀 파일을 선택하거나 여기로 드래그하세요</span>
+                <input type="file" id="excel_file" name="excel_file" style="display: none;" onchange="updateFileName(this)">
+            </div>
+            <button type="submit" class="btn-submit-form" style="width: 100%;">업로드 시작</button>
+        </form>
+    </div>
+
+    <!-- 현재 구성 -->
+    <div class="card-dark">
+        <h3 style="margin-bottom: 24px;">현재 챕터 구 성 ({{ chapters.count }}개)</h3>
+        <ul class="chapter-summary">
+            {% for ch in chapters %}
+            <li class="chapter-summary-item">
+                <div>
+                    <strong>제 {{ ch.number }}장. {{ ch.title }}</strong>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                        아이템 수: {{ ch.items.count }}개
+                    </div>
+                </div>
+                <div style="font-size: 14px; color: var(--accent-green);">입력됨 ✓</div>
+            </li>
+            {% empty %}
+            <li class="empty" style="padding: 20px 0;">아직 데이터가 없습니다. 엑셀을 업로드해주세요.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateFileName(input) {
+        const name = input.files[0] ? input.files[0].name : "엑셀 파일을 선택하거나 여기로 드래그하세요";
+        document.getElementById('file-name').innerText = name;
+    }
+</script>
+{% endblock %}

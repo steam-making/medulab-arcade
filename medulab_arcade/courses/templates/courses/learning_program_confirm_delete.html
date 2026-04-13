@@ -1,0 +1,55 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}과정 삭제 확인 - 메듀랩 Arcade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-wrap {
+        max-width: 500px; margin: 80px auto; padding: 0 24px;
+        text-align: center;
+    }
+    .delete-card {
+        background: var(--bg-card); border-radius: 20px;
+        padding: 40px; border: 1px solid rgba(255, 107, 107, 0.2);
+        box-shadow: 0 8px 40px rgba(255, 60, 60, 0.1);
+    }
+    .delete-icon {
+        font-size: 48px; margin-bottom: 20px;
+    }
+    .delete-title {
+        font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 12px;
+    }
+    .delete-desc {
+        color: var(--text-secondary); font-size: 14px; margin-bottom: 32px;
+        line-height: 1.6;
+    }
+    .btn-delete-confirm {
+        width: 100%; padding: 14px;
+        background: #ff4b4b; border: none; border-radius: 12px;
+        color: #fff; font-weight: 700; cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-delete-confirm:hover {
+        background: #ff3333; box-shadow: 0 0 20px rgba(255, 75, 75, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="delete-wrap">
+    <div class="delete-card">
+        <div class="delete-icon">⚠️</div>
+        <h1 class="delete-title">정말 삭제하시겠습니까?</h1>
+        <p class="delete-desc">
+            <strong>'{{ program.name }}'</strong> 과정을 삭제하려고 합니다.<br>
+            삭제된 과정과 관련된 모든 챕터, 아이템 데이터는 복구할 수 없습니다.
+        </p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn-delete-confirm">네, 확실히 삭제합니다</button>
+            <a href="{% url 'learning_program_list' %}" class="cancel-link">아니요, 취소하겠습니다</a>
+        </form>
+    </div>
+</main>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}과정 관리 - MEDULAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 40px 0;
+        margin-bottom: 24px;
+    }
+    .admin-table-wrap {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    th {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 16px;
+        text-align: left;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+    td {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+    }
+    tr:last-child td { border-bottom: none; }
+    
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .status-badge.active { background: rgba(0, 255, 180, 0.1); color: var(--accent-green); }
+    .status-badge.inactive { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
+
+    .action-links a {
+        color: var(--accent-blue);
+        text-decoration: none;
+        margin-right: 12px;
+        font-weight: 600;
+    }
+    .action-links a:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+    <div class="admin-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <h1 style="margin: 0;">LEARNING MANAGEMENT</h1>
+            <a href="{% url 'learning_program_create' %}" class="nav-link accent" style="padding: 6px 16px; font-size: 13px;">+ 새 과정 추가</a>
+        </div>
+        <div>
+            <a href="{% url 'program_type_list' %}" class="nav-link" style="background: rgba(255,255,255,0.05);">📂 유형 관리</a>
+        </div>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>과정명</th>
+                    <th>유형</th>
+                    <th>상태</th>
+                    <th>생성일</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in programs %}
+                <tr>
+                    <td>{{ p.id }}</td>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td>{{ p.program_type.name|default:"-" }}</td>
+                    <td>
+                        <span class="status-badge {% if p.is_active %}active{% else %}inactive{% endif %}">
+                            {% if p.is_active %}사용중{% else %}미사용{% endif %}
+                        </span>
+                    </td>
+                    <td>{{ p.created_at|date:"Y-m-d" }}</td>
+                    <td class="action-links">
+                        <a href="{% url 'chapter_manage' p.id %}">⚙️ 데이터 주입</a>
+                        <a href="{% url 'learning_program_edit' p.id %}">수정</a>
+                        <a href="{% url 'learning_program_delete' p.id %}" style="color: #ff6b6b;">삭제</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="empty">등록된 과정이 없습니다.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</main>
+{% endblock %}

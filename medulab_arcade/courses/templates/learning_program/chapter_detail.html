@@ -1,0 +1,122 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}{{ chapter.title }} - MEDULAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chapter-header {
+        padding: 40px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+    .back-link {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.2s;
+    }
+    .back-link:hover { color: #fff; }
+
+    .item-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+    .item-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        text-decoration: none;
+        transition: all 0.2s;
+        position: relative;
+    }
+    .item-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateY(-4px);
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .item-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+        display: inline-block;
+    }
+    .item-badge.example { color: var(--accent-blue); background: rgba(0, 180, 255, 0.1); }
+    .item-badge.problem { color: var(--accent-green); background: rgba(0, 255, 180, 0.1); }
+    
+    .item-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 8px;
+    }
+    .item-key {
+        font: 700 12px 'JetBrains Mono', monospace;
+        color: var(--text-muted);
+    }
+    
+    .status-icon {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+    }
+    .status-icon.completed {
+        background: var(--accent-green);
+        color: var(--bg-primary);
+        box-shadow: 0 0 15px rgba(0, 255, 180, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+    <div class="chapter-header">
+        <div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <a href="{% url 'course_home' chapter.program.id %}" class="back-link">← 코스 홈으로 돌아가기</a>
+                {% if user.is_staff %}
+                    <span style="color: var(--border);">|</span>
+                    <a href="{% url 'item_create' chapter.id %}" class="back-link" style="color: var(--accent-blue); font-weight: 700;">+ 아이템 추가</a>
+                {% endif %}
+            </div>
+            <h1 style="font-size: 32px; margin-top: 12px;">{{ chapter.number }}. {{ chapter.title }}</h1>
+        </div>
+        <div class="stats">
+            <div>총 <span class="num">{{ items.count }}</span>개 항목</div>
+        </div>
+    </div>
+
+    <div class="item-grid">
+        {% for item in items %}
+        <a href="{% url 'item_page' item.id %}" class="item-card">
+            <div class="item-badge {{ item.item_type }}">
+                {{ item.get_item_type_display }}
+            </div>
+            <div class="item-title">{{ item.title }}</div>
+            <div class="item-key">{{ item.key }}</div>
+            
+            <div class="status-icon {% if item.is_completed %}completed{% endif %}">
+                {% if item.is_completed %}✓{% else %}?{% endif %}
+            </div>
+        </a>
+        {% empty %}
+        <div class="empty">섹션에 포함된 내용이 없습니다.</div>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}

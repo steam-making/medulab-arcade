@@ -1,0 +1,509 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}{{ item.title }} - 파이썬 실습{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 기존 네비게이션은 숨기고 푸터만 표시하거나, 상황에 맞게 조정 */
+    .nav { display: none !important; } /* 헤더는 공간 확보를 위해 숨김 유지 (원본 느낌) */
+    .footer { 
+        display: block !important; 
+        position: fixed; bottom: 0; left: 0; right: 0; 
+        height: 60px; background: #08080f; border-top: 1px solid var(--border);
+        display: flex !important; align-items: center; justify-content: center;
+        font-size: 13px; color: var(--text-muted); z-index: 1000;
+        margin: 0;
+    }
+    #particles { opacity: 0.1; }
+
+    /* 실습 환경 컨테이너 (푸터 공간 60px 제외) */
+    .editor-container {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 60px; /* 푸터 높이만큼 띄움 */
+        display: flex;
+        gap: 12px;
+        padding: 12px;
+        background: #0f1117;
+        box-sizing: border-box;
+    }
+
+    /* 패널 공통 */
+    .panel {
+        background: #1a1d26;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    .panel-header {
+        padding: 14px 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--text-muted);
+        letter-spacing: 0.5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* 왼쪽: 가이드 3부분 구성 */
+    .panel-left { width: 33%; }
+    .explain-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+    }
+    .section-part {
+        padding: 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .part-label {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--accent-blue);
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .part-content { color: #ccd6f6; line-height: 1.8; font-size: 15px; }
+    .part-content h2, .part-content h3 { color: #fff; margin: 0 0 12px; font-size: 18px; }
+    
+    .code-view, .output-view {
+        background: #000;
+        border-radius: 8px;
+        padding: 16px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        white-space: pre-wrap;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        color: #eee;
+        position: relative; /* 복사 버튼 포지셔닝용 */
+        {% if not user.is_staff %}
+        user-select: none; /* 관리자가 아니면 선택 불가 */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        {% endif %}
+    }
+    
+    .btn-copy {
+        position: absolute;
+        top: 8px; right: 8px;
+        padding: 4px 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        color: var(--text-muted);
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-copy:hover {
+        background: var(--accent-blue);
+        color: #fff;
+    }
+    .code-view { color: var(--accent-blue); }
+    .output-view { color: var(--accent-green); }
+
+    .bottom-nav {
+        padding: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex; flex-direction: column; gap: 8px;
+    }
+    .btn-group { display: flex; gap: 8px; }
+    .btn-mini {
+        flex: 1; padding: 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.03); color: var(--text-muted);
+        cursor: pointer; font-size: 12px; font-weight: 600; text-decoration: none; text-align: center;
+    }
+    .btn-mini:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+    /* 중앙: 에디터 */
+    .panel-center { width: 45%; }
+    .editor-wrapper {
+        flex: 1;
+        position: relative;
+        background: #1e1e1e; /* 에디터 배경색과 통일 */
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    #editor {
+        position: absolute;
+        top: 10px; /* 첫 줄이 잘리지 않도록 상단 여백 부여 */
+        left: 0; right: 0; bottom: 0;
+        font-size: 16px;
+    }
+    .editor-footer {
+        padding: 12px 20px;
+        background: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    /* 오른쪽: 결과 */
+    .panel-right { width: 25%; }
+    .console-section {
+        flex: 1; display: flex; flex-direction: column; padding: 0 16px 16px;
+    }
+    .console-title {
+        font-size: 11px; font-weight: 800; color: #64748b;
+        margin: 16px 0 8px; text-transform: uppercase;
+    }
+    .input-box {
+        width: 100%; height: 80px; background: #0a0a0f; border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px; padding: 12px; color: var(--accent-blue); font-family: 'JetBrains Mono', monospace;
+        resize: none; outline: none; font-size: 13px;
+    }
+
+    /* 동적 입력 필드 스타일 */
+    .dynamic-input-container {
+        display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px;
+    }
+    .input-row {
+        background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .input-label {
+        font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .dynamic-input {
+        background: transparent; border: none; border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+        color: var(--accent-blue); font-family: 'JetBrains Mono', monospace; font-size: 14px;
+        outline: none; padding: 4px 0;
+    }
+    .dynamic-input:focus { border-bottom-color: var(--accent-blue); }
+    .output-box {
+        flex: 1; background: #000; border-radius: 8px; padding: 16px;
+        color: #eee; font-family: 'JetBrains Mono', monospace; font-size: 13px;
+        overflow-y: auto; white-space: pre-wrap; border: 1px solid rgba(255,255,255,0.05);
+    }
+    .grade-display {
+        margin-top: 12px; padding: 12px; border-radius: 8px; display: none;
+        font-weight: 700; text-align: center;
+    }
+
+    /* 버튼 스타일 */
+    .btn-main {
+        padding: 10px 20px; border-radius: 8px; border: none; font-weight: 700;
+        cursor: pointer; transition: all 0.2s; font-size: 14px;
+    }
+    .btn-run { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .btn-run:hover { background: #3b82f6; color: #fff; }
+    .btn-grade { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .btn-grade:hover { background: #10b981; color: #000; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="editor-container">
+    <!-- 왼쪽: 지침 및 힌트 -->
+    <section class="panel panel-left">
+        <div class="panel-header">LEARNING GUIDE</div>
+        <div class="explain-scroll">
+            <!-- 1. 학습 내용 -->
+            <div class="section-part">
+                <div class="part-label">📖 학습 내용</div>
+                <div class="part-content">
+                    {{ item.explain_html|safe }}
+                </div>
+            </div>
+
+            <!-- 2. 예시 코드 (유형이 '예제'이고 데이터가 있을 때만 노출) -->
+            {% if item.item_type == 'example' and item.answer_code %}
+            <div class="section-part">
+                <div class="part-label">💻 예시 코드</div>
+                <pre class="code-view" id="example-code-pre">{{ item.answer_code }}{% if user.is_staff %}<button class="btn-copy" onclick="copyExampleCode()">복사</button>{% endif %}</pre>
+            </div>
+            {% endif %}
+
+            <!-- 3. 테스트용 입력값 (데이터가 있을 때만 노출) -->
+            {% if item.example_input %}
+            <div class="section-part">
+                <div class="part-label">📥 테스트 입력값</div>
+                <pre class="output-view" style="color: #fbbf24; border-color: rgba(251, 191, 36, 0.1);">{{ item.example_input }}</pre>
+            </div>
+            {% endif %}
+
+            <!-- 4. 예시 실행 결과 (데이터가 있을 때만) -->
+            {% if item.expected_output %}
+            <div class="section-part">
+                <div class="part-label">🔎 실행 결과</div>
+                <pre class="output-view">{{ item.expected_output }}</pre>
+            </div>
+            {% endif %}
+
+            <div id="hint-box" class="section-part" style="display:none; background: rgba(0, 180, 255, 0.05);">
+                <div class="part-label" style="color: var(--accent-blue);">💡 힌트 코치</div>
+                <div class="part-content" style="font-size: 14px;">{{ item.hint|default:"힌트가 없습니다." }}</div>
+            </div>
+            
+            <div id="answer-box" class="section-part" style="display:none; background: rgba(168, 85, 247, 0.05);">
+                <div class="part-label" style="color: var(--accent-purple);">✅ 정답 공개</div>
+                <pre class="code-view" id="answer-code-pre" style="color: var(--accent-purple); {% if not user.is_staff %}user-select: none; -webkit-user-select: none;{% endif %}">{{ item.answer_code }}{% if user.is_staff %}<button class="btn-copy" onclick="copyAnswerCode()">복사</button>{% endif %}</pre>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            {% if user.is_staff %}
+            <!-- 관리자 도구 -->
+            <div class="btn-group" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px;">
+                <a href="{% url 'item_edit' item.id %}" class="btn-mini" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; flex: 2;">✏️ 수정하기</a>
+                <a href="{% url 'item_delete' item.id %}" class="btn-mini" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">🗑️</a>
+            </div>
+            {% endif %}
+            
+            <div class="btn-group">
+                <button class="btn-mini" onclick="toggleAux('hint-box')">힌트 보기</button>
+                <button class="btn-mini" onclick="toggleAux('answer-box')">정답 보기</button>
+            </div>
+            <div class="btn-group">
+                {% if prev_item %}
+                    <a href="{% url 'item_page' prev_item.id %}" class="btn-mini">◀ 이전</a>
+                {% else %}
+                    <span class="btn-mini" style="opacity: 0.3;">◀ 이전</span>
+                {% endif %}
+                
+                <a href="{% url 'chapter_detail' item.chapter.id %}" class="btn-mini">목록</a>
+                
+                {% if next_item %}
+                    <a href="{% url 'item_page' next_item.id %}" class="btn-mini">다음 ▶</a>
+                {% else %}
+                    <a href="{% url 'chapter_detail' item.chapter.id %}" class="btn-mini" style="color: var(--accent-green);">완료 ▶</a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- 중앙: 코드 에디터 -->
+    <section class="panel panel-center">
+        <div class="panel-header">
+            <span>PYTHON 3 EDITOR</span>
+            {% if user_progress.completed %}
+                <span id="status-text" style="color: var(--accent-green); font-size: 10px;">● COMPLETED</span>
+            {% else %}
+                <span id="status-text" style="color: #64748b; font-size: 10px;">● READY</span>
+            {% endif %}
+        </div>
+        <div class="editor-wrapper">
+            <div id="editor">{{ user_progress.code|default:"" }}</div>
+        </div>
+        <div class="editor-footer">
+            <button class="btn-main btn-run" onclick="runCode()">실행 (Run)</button>
+            <button class="btn-main btn-grade" onclick="submitCode()">채점하기 (Grade)</button>
+        </div>
+    </section>
+
+    <!-- 오른쪽: 입출력 및 채점 -->
+    <section class="panel panel-right">
+        <div class="panel-header">실행 결과</div>
+        <div class="console-section">
+            <div class="console-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>INPUT (입력값)</span>
+                <span id="input-mode-badge" style="font-size: 9px; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: var(--accent-blue);">SMART MODE</span>
+            </div>
+            
+            <!-- 동적 입력 영역 -->
+            <div id="dynamic-inputs-area" class="dynamic-input-container">
+                <!-- JS에서 생성됨 -->
+            </div>
+            
+            <!-- 기본 입력 영역 (동적 입력이 없을 때 노출) -->
+            <textarea id="input-box" class="input-box" placeholder="input() 시 사용할 값을 입력..." style="display:none;"></textarea>
+            
+            <div class="console-title">OUTPUT (출력값)</div>
+            <div id="output-box" class="output-box">{{ user_progress.last_output|default:"코드를 실행하면 결과가 여기에 나타납니다." }}</div>
+            
+            <div id="grade-display" class="grade-display" {% if user_progress.completed %}style="display: block; background: rgba(16, 185, 129, 0.1); color: #10b981;"{% endif %}>
+                {% if user_progress.completed %}✨ 정답 기록이 있습니다!{% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+
+<div id="toast" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 30px; border-radius: 10px; z-index: 9999; display: none; font-weight: 800; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
+<script>
+    // Ace Editor 초기화
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/tomorrow_night_eighties");
+    editor.session.setMode("ace/mode/python");
+    editor.setOptions({
+        fontSize: "16px",
+        showPrintMargin: false,
+        enableBasicAutocompletion: true,
+        enableLiveAutocompletion: true,
+        fontFamily: 'JetBrains Mono',
+        tabSize: 4,
+        useSoftTabs: true
+    });
+
+    // 지능형 입력 가이드 감지 로직
+    const inputArea = document.getElementById('dynamic-inputs-area');
+    const fallbackInput = document.getElementById('input-box');
+    const modeBadge = document.getElementById('input-mode-badge');
+
+    function refreshInputGuide() {
+        const code = editor.getValue();
+        const inputRegex = /input\s*\(\s*(['"])(.*?)\1\s*\)/g;
+        let match;
+        const prompts = [];
+        
+        while ((match = inputRegex.exec(code)) !== null) {
+            prompts.push(match[2]);
+        }
+
+        if (prompts.length > 0) {
+            inputArea.style.display = 'flex';
+            fallbackInput.style.display = 'none';
+            modeBadge.innerText = 'SMART MODE';
+            modeBadge.style.background = 'rgba(59, 130, 246, 0.1)';
+            modeBadge.style.color = '#3b82f6';
+
+            // 입력 필드 재생성 (기존 값 유지 로직 미포함 - 필요시 개선 가능)
+            // 간단하게 유지하기 위해 개수가 다를 때만 갱신하거나 매번 갱신
+            // 여기서는 매번 갱신하되 기존 값 유지를 위해 간단한 맵핑 시도
+            const currentValues = Array.from(inputArea.querySelectorAll('.dynamic-input')).map(i => i.value);
+            
+            inputArea.innerHTML = '';
+            prompts.forEach((p, idx) => {
+                const row = document.createElement('div');
+                row.className = 'input-row';
+                row.innerHTML = `
+                    <label class="input-label">${p}</label>
+                    <input type="text" class="dynamic-input" value="${currentValues[idx] || ''}" placeholder="값을 입력하세요...">
+                `;
+                inputArea.appendChild(row);
+            });
+        } else {
+            inputArea.style.display = 'none';
+            fallbackInput.style.display = 'block';
+            modeBadge.innerText = 'FREE MODE';
+            modeBadge.style.background = 'rgba(100, 116, 139, 0.1)';
+            modeBadge.style.color = '#64748b';
+        }
+    }
+
+    editor.on('change', refreshInputGuide);
+    refreshInputGuide(); // 초기 실행
+
+    function toggleAux(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function showToast(msg, type) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.background = type === 'success' ? '#10b981' : '#ef4444';
+        t.style.color = type === 'success' ? '#000' : '#fff';
+        t.style.display = 'block';
+        setTimeout(() => { t.style.display = 'none'; }, 2000);
+    }
+
+    // 입력 데이터 수집 (동적 필드 또는 기본 텍스트 박스)
+    function getSerializedInput() {
+        if (inputArea.style.display !== 'none') {
+            const vals = Array.from(inputArea.querySelectorAll('.dynamic-input')).map(i => i.value);
+            return vals.join('\n');
+        }
+        return fallbackInput.value;
+    }
+
+    function runCode() {
+        const code = editor.getValue();
+        const inputData = getSerializedInput();
+        const out = document.getElementById('output-box');
+        const st = document.getElementById('status-text');
+        
+        st.innerText = "● RUNNING...";
+        st.style.color = "#fbbf24";
+        out.innerText = "동작 중...";
+        out.style.color = "#888";
+
+        const fd = new FormData();
+        fd.append('code', code);
+        fd.append('input', inputData);
+        fd.append('item_id', '{{ item.id }}');
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('{% url "grade_code" %}', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+            out.innerText = data.output || "출력 결과 없음";
+            out.style.color = "#fff";
+            st.innerText = "● DONE";
+            st.style.color = "#10b981";
+        })
+        .catch(e => {
+            out.innerText = "Error: " + e;
+            st.innerText = "● ERROR";
+            st.style.color = "#ef4444";
+        });
+    }
+
+    function submitCode() {
+        const code = editor.getValue();
+        const inputData = getSerializedInput();
+        const gd = document.getElementById('grade-display');
+        
+        const fd = new FormData();
+        fd.append('code', code);
+        fd.append('input', inputData);
+        fd.append('item_id', '{{ item.id }}');
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('{% url "grade_code" %}', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('output-box').innerText = data.output;
+            gd.style.display = 'block';
+            if (data.is_correct) {
+                gd.innerText = "✨ 정답입니다!";
+                gd.style.background = "rgba(16, 185, 129, 0.2)";
+                gd.style.color = "#10b981";
+                showToast("정답입니다!", 'success');
+            } else {
+                gd.innerText = "❌ 오답입니다.";
+                gd.style.background = "rgba(239, 68, 68, 0.2)";
+                gd.style.color = "#ef4444";
+                showToast("다시 시도해보세요.", 'error');
+            }
+        });
+    }
+
+    // 코드 복사 공통 함수
+    function copyText(text, btnElement) {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = btnElement.innerText;
+            btnElement.innerText = '완료!';
+            setTimeout(() => { btnElement.innerText = originalText; }, 1500);
+        });
+    }
+
+    // 예시 코드 복사
+    function copyExampleCode() {
+        const code = `{{ item.answer_code|escapejs }}`;
+        const btn = event.currentTarget;
+        copyText(code, btn);
+    }
+
+    // 정답 코드 복사
+    function copyAnswerCode() {
+        const code = `{{ item.answer_code|escapejs }}`;
+        const btn = event.currentTarget;
+        copyText(code, btn);
+    }
+</script>
+{% endblock %}

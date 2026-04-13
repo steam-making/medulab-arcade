@@ -1,0 +1,158 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}{{ program.name }} - MEDULAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .course-header {
+        padding: 60px 0 40px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 40px;
+        display: flex;
+        align-items: flex-end;
+        gap: 32px;
+    }
+    .header-img {
+        width: 120px;
+        height: 120px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 50px;
+        box-shadow: 0 10px 30px rgba(168, 85, 247, 0.2);
+    }
+    .header-info h1 {
+        font: 900 36px 'Orbitron', sans-serif;
+        color: #fff;
+        margin-bottom: 8px;
+    }
+    .header-info p {
+        color: var(--text-secondary);
+        font-size: 16px;
+    }
+
+    .chapter-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .chapter-item {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .chapter-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: var(--accent-green);
+        transform: scale(1.01);
+    }
+    .chapter-num {
+        font: 700 24px 'Orbitron', sans-serif;
+        color: var(--accent-green);
+        opacity: 0.5;
+        min-width: 40px;
+    }
+    .chapter-info {
+        flex: 1;
+    }
+    .chapter-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 4px;
+    }
+    .chapter-desc {
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+    
+    /* 진도율 바 */
+    .progress-wrap {
+        width: 120px;
+        text-align: right;
+    }
+    .progress-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+    .progress-bar-bg {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        background: var(--accent-green);
+        box-shadow: 0 0 10px rgba(0, 255, 180, 0.5);
+        transition: width 1s ease;
+    }
+    .icon-arrow {
+        color: var(--text-muted);
+        font-size: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+    <div class="course-header">
+        <div class="header-img">
+            {% if program.image %}
+                <img src="{{ program.image.url }}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" alt="">
+            {% else %}
+                🚀
+            {% endif %}
+        </div>
+        <div class="header-info">
+            <p>메듀랩 학습 코스</p>
+            <h1>{{ program.name }}</h1>
+            <p>{{ program.description }}</p>
+        </div>
+    </div>
+
+    <div class="chapter-list">
+        {% for ch in chapters %}
+        <a href="{% url 'chapter_detail' ch.id %}" class="chapter-item">
+            <div class="chapter-num">{{ ch.number|stringformat:"02d" }}</div>
+            <div class="chapter-info">
+                <div class="chapter-title">{{ ch.title }}</div>
+                <div class="chapter-desc">{{ ch.content|default:"이 섹션의 학습 내용을 확인하세요." }}</div>
+            </div>
+            
+            <div class="progress-wrap">
+                <div class="progress-label">{{ ch.progress|default:0 }}% 완료</div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width: {{ ch.progress|default:0 }}%;"></div>
+                </div>
+            </div>
+            
+            <div class="icon-arrow">→</div>
+        </a>
+        {% empty %}
+        <div class="empty">등록된 강의가 없습니다.</div>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 템플릿 필터 대용 (Django 기본 필터에 dict 조회가 없으므로 커스텀 필터가 필요하지만, 
+    // 여기서는 간단히 하기 위해 서버에서 progress_map을 넘기는 방식을 사용했습니다.
+    // 만약 에러가 난다면 view에서 데이터를 좀 더 가공해서 주거나 커스텀 태그를 만들어야 합니다.)
+</script>
+{% endblock %}

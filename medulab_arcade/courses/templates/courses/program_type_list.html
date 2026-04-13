@@ -1,0 +1,91 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}유형 관리 - MEDULAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 40px 0;
+        margin-bottom: 24px;
+    }
+    .admin-table-wrap {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    th {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 16px;
+        text-align: left;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+    td {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+    }
+    tr:last-child td { border-bottom: none; }
+    
+    .action-links a {
+        color: var(--accent-blue);
+        text-decoration: none;
+        margin-right: 12px;
+        font-weight: 600;
+    }
+    .action-links a:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+    <div class="admin-header">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="{% url 'learning_program_list' %}" class="back-link" style="color: var(--text-muted); text-decoration: none;">← 전체 관리</a>
+            <h1 style="margin: 0;">COURSE TYPES</h1>
+            <a href="{% url 'program_type_create' %}" class="nav-link accent" style="padding: 6px 16px; font-size: 13px;">+ 새 유형 추가</a>
+        </div>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>순서</th>
+                    <th>유형 명칭</th>
+                    <th>연결된 과정 수</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in types %}
+                <tr>
+                    <td>{{ t.order }}</td>
+                    <td><strong>{{ t.name }}</strong></td>
+                    <td>{{ t.learning_programs.count }}</td>
+                    <td class="action-links">
+                        <a href="{% url 'program_type_edit' t.id %}">수정</a>
+                        <a href="{% url 'program_type_delete' t.id %}" style="color: #ff6b6b;">삭제</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="empty">등록된 유형이 없습니다.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</main>
+{% endblock %}

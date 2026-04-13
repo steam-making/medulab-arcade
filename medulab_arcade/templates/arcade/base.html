@@ -316,8 +316,17 @@
             <input type="text" name="q" placeholder="작품 검색..." value="{{ search_query|default:'' }}" autocomplete="off">
         </form>
 
+        <div style="display: flex; gap: 8px;">
+            <a href="{% url 'student_course_list' %}" class="nav-link" style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3);">
+                🏫 교육프로그램
+            </a>
+        </div>
+
         <div class="nav-links">
             {% if user.is_authenticated %}
+                {% if user.is_staff %}
+                    <a href="{% url 'learning_program_list' %}" class="nav-link" style="color: var(--accent-green);">⚙️ 코스 관리</a>
+                {% endif %}
                 <a href="{% url 'my_projects' %}" class="nav-link">내 작품</a>
                 <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
                 <a href="{% url 'logout' %}" class="nav-link">로그아웃</a>

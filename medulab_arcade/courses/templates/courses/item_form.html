@@ -1,0 +1,150 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}{{ title }} - 메듀랩 Arcade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 1000px;
+        margin: 60px auto;
+        padding: 0 24px;
+    }
+    .form-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    .form-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 32px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    .form-group {
+        margin-bottom: 24px;
+    }
+    .full-width { grid-column: span 2; }
+    .label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: #fff;
+        font-size: 15px;
+        transition: all 0.2s;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .code-font {
+        font-family: 'JetBrains Mono', 'Consolas', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        background: #000 !important;
+    }
+    .btn-submit {
+        background: var(--accent-blue);
+        color: #fff;
+        padding: 14px 28px;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 20px;
+        transition: all 0.2s;
+    }
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(59, 130, 246, 0.4);
+    }
+    .help-text {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 6px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="form-container">
+    <div class="form-card">
+        <h1 class="form-title">
+            <span>📝</span> {{ title }}
+        </h1>
+
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="label">챕터 선택</label>
+                    {{ form.chapter }}
+                </div>
+                <div class="form-group">
+                    <label class="label">아이템 정렬 번호</label>
+                    {{ form.number }}
+                </div>
+                <div class="form-group">
+                    <label class="label">아이템 식별 키(CodeKey)</label>
+                    {{ form.key }}
+                    <p class="help-text">고유한 코드(예: ex01, prob02)를 입력하세요.</p>
+                </div>
+                <div class="form-group">
+                    <label class="label">제목</label>
+                    {{ form.title }}
+                </div>
+                <div class="form-group">
+                    <label class="label">아이템 유형</label>
+                    {{ form.item_type }}
+                </div>
+                <div class="form-group full-width">
+                    <label class="label">학습 설명 (HTML 가능)</label>
+                    {{ form.explain_html }}
+                </div>
+                <div class="form-group full-width">
+                    <label class="label">힌트 코치</label>
+                    {{ form.hint }}
+                </div>
+                <div class="form-group full-width">
+                    <label class="label">정답 코드 (파이썬 실습용)</label>
+                    {{ form.answer_code }}
+                </div>
+                <div class="form-group full-width">
+                    <label class="label">테스트용 입력값 (input 함수 시뮬레이션용)</label>
+                    {{ form.example_input }}
+                    <p class="help-text">여러 줄의 입력을 시뮬레이션하려면 줄바꿈으로 구분해 주세요.</p>
+                </div>
+                <div class="form-group full-width">
+                    <label class="label">예상 출력 결과 (채점 기준)</label>
+                    {{ form.expected_output }}
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">아이템 저장하기</button>
+            <a href="javascript:history.back()" style="display: block; text-align: center; margin-top: 20px; color: var(--text-muted); text-decoration: none; font-size: 14px;">취소하고 돌아가기</a>
+        </form>
+    </div>
+</main>
+{% endblock %}

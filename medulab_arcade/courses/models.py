@@ -1,0 +1,98 @@
+from django.db import models
+from django.contrib.auth.models import User
+from django.urls import reverse
+
+class ProgramType(models.Model):
+    name = models.CharField("프로그램 유형", max_length=50, unique=True)
+    order = models.PositiveIntegerField("정렬 순서", default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name = "프로그램 유형"
+        verbose_name_plural = "프로그램 유형 목록"
+
+    def __str__(self):
+        return self.name
+
+class LearningProgram(models.Model):
+    name = models.CharField("과정명", max_length=100)
+    description = models.TextField("과정 설명", blank=True)
+    image = models.ImageField("대표 이미지", upload_to="learning_programs/", blank=True, null=True)
+    program_type = models.ForeignKey(
+        ProgramType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="learning_programs",
+        verbose_name="유형"
+    )
+    is_active = models.BooleanField("활성화 여부", default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def get_url(self):
+        return reverse("course_home", args=[self.id])
+
+    def __str__(self):
+        return self.name
+
+class Chapter(models.Model):
+    program = models.ForeignKey(LearningProgram, on_delete=models.CASCADE, related_name="chapters")
+    number = models.PositiveIntegerField("장 번호")  # 1, 2, 3...
+    title = models.CharField("장 제목", max_length=200, blank=True)
+    content = models.TextField("장 설명", blank=True, null=True)
+
+    class Meta:
+        ordering = ["number"]
+
+    def __str__(self):
+        return f"{self.program.name} - {self.number}장: {self.title}"
+
+class Item(models.Model):
+    ITEM_TYPES = [
+        ('example', '예제'),
+        ('problem', '실습문제'),
+        ('project', '프로젝트'),
+        ('homework', '과제'),
+    ]
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name="items")
+    number = models.PositiveIntegerField("항목 순서", default=1)
+    key = models.CharField("키워드/ID", max_length=100, help_text="예: ex01, prob02")
+    title = models.CharField("제목", max_length=200)
+    item_type = models.CharField("유형", max_length=50, choices=ITEM_TYPES, default='example')
+    explain_html = models.TextField("설명 (HTML 가능)", blank=True, null=True)
+    hint = models.TextField("힌트", blank=True, null=True)
+    answer_code = models.TextField("정답 코드", blank=True, null=True)
+    example_input = models.TextField("테스트용 입력값", blank=True, null=True)
+    expected_output = models.TextField("예상 출력값", blank=True, null=True)
+
+    class Meta:
+        ordering = ["chapter", "number"]
+
+    def __str__(self):
+        return f"{self.chapter.number}장-{self.number}: {self.title}"
+
+class LearningEnrollment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="learning_enrollments")
+    program = models.ForeignKey(LearningProgram, on_delete=models.CASCADE, related_name="enrollments")
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'program')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.program.name}"
+
+class UserProgress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="learning_progress")
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="user_progress")
+    code = models.TextField("제출한 코드", blank=True)
+    last_output = models.TextField("마지막 출력", blank=True)
+    score = models.IntegerField("점수", default=0)
+    completed = models.BooleanField("완료 여부", default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'item')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.item.title} ({'O' if self.completed else 'X'})"

@@ -1,0 +1,24 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}아이템 삭제 확인 - 메듀랩 Arcade{% endblock %}
+
+{% block content %}
+<main style="max-width: 500px; margin: 100px auto; padding: 0 24px; text-align: center;">
+    <div style="background: var(--bg-card); border-radius: 20px; padding: 40px; border: 1px solid rgba(255, 107, 107, 0.2);">
+        <div style="font-size: 48px; margin-bottom: 20px;">🗑️</div>
+        <h1 style="font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 12px;">아이템을 삭제하시겠습니까?</h1>
+        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 32px; line-height: 1.6;">
+            <strong>'{{ item.title }}'</strong> 아이템을 삭제하려고 합니다.<br>
+            삭제 등 작업은 되돌릴 수 없으며, 학생들의 학습 진행 기록도 함께 삭제될 수 있습니다.
+        </p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" style="width: 100%; padding: 14px; background: #ff4b4b; border: none; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer;">
+                확인, 삭제하겠습니다
+            </button>
+            <a href="javascript:history.back()" style="display: block; text-align: center; margin-top: 20px; color: var(--text-muted); font-size: 13px; text-decoration: none;">취소</a>
+        </form>
+    </div>
+</main>
+{% endblock %}

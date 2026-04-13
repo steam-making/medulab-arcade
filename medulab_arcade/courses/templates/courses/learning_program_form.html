@@ -1,0 +1,122 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}{{ title }} - 메듀랩 Arcade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-wrap {
+        max-width: 680px; margin: 40px auto; padding: 0 24px;
+        animation: fadeSlideIn 0.4s ease;
+    }
+    .upload-card {
+        background: var(--bg-card); border-radius: 20px;
+        padding: 40px; box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+        border: 1px solid var(--border);
+    }
+    .upload-title {
+        font: 900 28px 'Orbitron', sans-serif;
+        margin-bottom: 8px;
+        background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+        -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .upload-sub {
+        color: var(--text-muted); font-size: 14px; margin-bottom: 32px;
+    }
+
+    .form-group { margin-bottom: 24px; }
+    .form-group label {
+        display: block; color: var(--text-secondary);
+        font-size: 13px; font-weight: 600; margin-bottom: 8px;
+    }
+    .form-input {
+        width: 100%; padding: 12px 16px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border); border-radius: 12px;
+        color: #fff; font-size: 14px; outline: none;
+        font-family: 'Noto Sans KR', sans-serif;
+        transition: all 0.2s;
+    }
+    .form-input:focus {
+        border-color: rgba(0,255,180,0.4);
+        box-shadow: 0 0 0 3px rgba(0,255,180,0.08);
+    }
+    textarea.form-input { resize: vertical; min-height: 120px; }
+
+    .checkbox-group {
+        display: flex; align-items: center; gap: 10px;
+        color: var(--text-secondary); font-size: 14px; cursor: pointer;
+    }
+    .checkbox-group input { width: 18px; height: 18px; cursor: pointer; }
+
+    .submit-btn {
+        width: 100%; padding: 14px;
+        background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+        border: none; border-radius: 14px; color: var(--bg-primary);
+        font: 700 16px 'Noto Sans KR', sans-serif;
+        cursor: pointer; transition: all 0.2s;
+        margin-top: 20px;
+    }
+    .submit-btn:hover {
+        box-shadow: 0 8px 30px rgba(0,255,180,0.3);
+        transform: translateY(-2px);
+    }
+    
+    .cancel-link {
+        display: block; text-align: center; margin-top: 20px;
+        color: var(--text-muted); font-size: 13px; text-decoration: none;
+    }
+    .cancel-link:hover { color: #fff; }
+
+    .current-img-preview {
+        margin-top: 10px; border-radius: 12px;
+        width: 100%; max-height: 150px; object-fit: cover;
+        border: 1px solid var(--border);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="upload-wrap">
+    <div class="upload-card">
+        <h1 class="upload-title">COURSE SETTING</h1>
+        <p class="upload-sub">{{ title }}</p>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>과정 명칭</label>
+                {{ form.name }}
+            </div>
+
+            <div class="form-group">
+                <label>과정 분류</label>
+                {{ form.program_type }}
+            </div>
+
+            <div class="form-group">
+                <label>과정 상세 설명</label>
+                {{ form.description }}
+            </div>
+
+            <div class="form-group">
+                <label>대표 이미지</label>
+                {% if program and program.image %}
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">현재 이미지:</div>
+                    <img src="{{ program.image.url }}" class="current-img-preview">
+                {% endif %}
+                <input type="file" name="image" class="form-input" style="margin-top: 10px;">
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-group">
+                    {{ form.is_active }} 과정 활성화 (학생들에게 노출됨)
+                </label>
+            </div>
+
+            <button type="submit" class="submit-btn">설정 저장하기</button>
+            <a href="{% url 'learning_program_list' %}" class="cancel-link">취소하고 돌아가기</a>
+        </form>
+    </div>
+</main>
+{% endblock %}

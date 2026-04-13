@@ -1,0 +1,74 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}{{ title }} - 메듀랩 Arcade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-wrap {
+        max-width: 500px; margin: 40px auto; padding: 0 24px;
+        animation: fadeSlideIn 0.4s ease;
+    }
+    .upload-card {
+        background: var(--bg-card); border-radius: 20px;
+        padding: 40px; box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+        border: 1px solid var(--border);
+    }
+    .upload-title {
+        font: 900 24px 'Orbitron', sans-serif;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+        -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .upload-sub {
+        color: var(--text-muted); font-size: 14px; margin-bottom: 32px;
+    }
+    .form-group { margin-bottom: 24px; }
+    .form-group label {
+        display: block; color: var(--text-secondary);
+        font-size: 13px; font-weight: 600; margin-bottom: 8px;
+    }
+    .form-input {
+        width: 100%; padding: 12px 16px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border); border-radius: 12px;
+        color: #fff; font-size: 14px; outline: none;
+        transition: all 0.2s;
+    }
+    .form-input:focus { border-color: var(--accent-blue); }
+    .submit-btn {
+        width: 100%; padding: 14px;
+        background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+        border: none; border-radius: 14px; color: var(--bg-primary);
+        font: 700 16px 'Noto Sans KR', sans-serif;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .cancel-link {
+        display: block; text-align: center; margin-top: 20px;
+        color: var(--text-muted); font-size: 13px; text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="upload-wrap">
+    <div class="upload-card">
+        <h1 class="upload-title">TYPE SETTING</h1>
+        <p class="upload-sub">{{ title }}</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>유형 명칭</label>
+                {{ form.name }}
+            </div>
+            <div class="form-group">
+                <label>정렬 순서 (숫자가 작을수록 먼저 나옴)</label>
+                {{ form.order }}
+            </div>
+
+            <button type="submit" class="submit-btn">저장하기</button>
+            <a href="{% url 'program_type_list' %}" class="cancel-link">취소</a>
+        </form>
+    </div>
+</main>
+{% endblock %}

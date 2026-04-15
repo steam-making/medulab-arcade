@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'courses',
     'typing_practice',
     'django.contrib.sitemaps',
+    'django.contrib.sites',
 ]
 
 MIDDLEWARE = [
@@ -111,3 +112,6 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+# Sites framework ID
+SITE_ID = 1

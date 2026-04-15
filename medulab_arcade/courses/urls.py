@@ -25,6 +25,7 @@ urlpatterns = [
     
     # 학생용
     path('student/courses/', views.student_course_list, name='student_course_list'),
+    path('student/homework/', views.student_homework_list, name='student_homework_list'),
     path('student/courses/apply/<int:program_id>/', views.student_course_apply, name='student_course_apply'),
     
     # 학습 흐름
@@ -32,6 +33,14 @@ urlpatterns = [
     path('chapter/<int:chapter_id>/', views.chapter_detail, name='chapter_detail'),
     path('item/<int:item_id>/', views.item_page, name='item_page'),
     
+    # 숙제 관리 (추가)
+    path('homework/manage/', views.homework_admin_list, name='homework_admin_list'),
+    path('homework/add/', views.homework_create, name='homework_create'),
+    path('homework/<int:homework_id>/edit/', views.homework_edit, name='homework_edit'),
+    path('homework/<int:homework_id>/delete/', views.homework_delete, name='homework_delete'),
+
     # API
     path('api/grade/', views.grade_code, name='grade_code'),
+    path('api/program/<int:program_id>/structure/', views.api_program_structure, name='api_program_structure'),
+    path('api/users/search/', views.api_search_users, name='api_search_users'),
 ]

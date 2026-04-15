@@ -5,8 +5,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse, Http404
-from .models import LearningProgram, Chapter, Item, LearningEnrollment, UserProgress, ProgramType
-from .forms import CourseForm, ProgramTypeForm, ItemForm
+from .models import LearningProgram, Chapter, Item, LearningEnrollment, UserProgress, ProgramType, HomeworkAssignment
+from .forms import CourseForm, ProgramTypeForm, ItemForm, HomeworkForm
 from django.db.models import Count, Q
 
 # --- 권한 체크 유틸리티 ---
@@ -447,3 +447,114 @@ def item_delete(request, item_id):
         messages.success(request, f"'{title}' 아이템이 삭제되었습니다.")
         return redirect("chapter_detail", chapter_id=chapter_id)
     return render(request, "courses/item_confirm_delete.html", {"item": item})
+# --- (8) 학생용 숙제 관리 (홈플레이) ---
+@login_required
+def student_homework_list(request):
+    # 내가 수강 신청한 프로그램 ID 목록
+    enrolled_ids = LearningEnrollment.objects.filter(user=request.user).values_list("program_id", flat=True)
+    
+    # 해당 프로그램들의 활성화된 과제 조회
+    all_assignments = HomeworkAssignment.objects.filter(
+        program_id__in=enrolled_ids,
+        is_active=True
+    ).select_related('program').prefetch_related('linked_items', 'assigned_users').order_by('due_date', '-created_at')
+    
+    # assigned_users가 비어있으면 전체 공개, 아니면 해당 유저에게만 노출
+    assignments = []
+    for assignment in all_assignments:
+        assigned = assignment.assigned_users.all()
+        if not assigned.exists() or request.user in assigned:
+            assignments.append(assignment)
+    
+    # 각 과제별 진행 상태 및 완료 여부 계산
+    for assignment in assignments:
+        items = assignment.linked_items.all()
+        if items.exists():
+            completed_count = UserProgress.objects.filter(
+                user=request.user, 
+                item__in=items, 
+                completed=True
+            ).count()
+            assignment.is_completed = (completed_count == items.count())
+            assignment.progress_text = f"{completed_count}/{items.count()}"
+        else:
+            assignment.is_completed = True
+            assignment.progress_text = "N/A"
+        
+    return render(request, "courses/student_homework_list.html", {
+        "assignments": assignments,
+    })
+
+# --- (9) 관리자용 숙제 관리 (CRUD) ---
+@login_required
+@user_passes_test(is_admin)
+def homework_admin_list(request):
+    assignments = HomeworkAssignment.objects.all().select_related('program').order_by('-created_at')
+    return render(request, "courses/homework_admin_list.html", {"assignments": assignments})
+
+@login_required
+@user_passes_test(is_admin)
+def homework_create(request):
+    if request.method == "POST":
+        form = HomeworkForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "새 과제가 등록되었습니다.")
+            return redirect("homework_admin_list")
+    else:
+        form = HomeworkForm()
+    return render(request, "courses/homework_form.html", {"form": form, "title": "새 과제 등록"})
+
+@login_required
+@user_passes_test(is_admin)
+def homework_edit(request, homework_id):
+    assignment = get_object_or_404(HomeworkAssignment, id=homework_id)
+    if request.method == "POST":
+        form = HomeworkForm(request.POST, instance=assignment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"'{assignment.title}' 과제가 수정되었습니다.")
+            return redirect("homework_admin_list")
+    else:
+        form = HomeworkForm(instance=assignment)
+    return render(request, "courses/homework_form.html", {"form": form, "title": "과제 수정"})
+
+@login_required
+@user_passes_test(is_admin)
+def homework_delete(request, homework_id):
+    assignment = get_object_or_404(HomeworkAssignment, id=homework_id)
+    if request.method == "POST":
+        assignment.delete()
+        messages.success(request, "과제가 삭제되었습니다.")
+        return redirect("homework_admin_list")
+    return render(request, "courses/homework_confirm_delete.html", {"assignment": assignment})
+
+# --- (10) API: 프로그램 구조 조회 (과정 → 단원 → 문제) ---
+@login_required
+@user_passes_test(is_admin)
+def api_program_structure(request, program_id):
+    """과정 ID를 받아 단원(Chapter)과 하위 문제(Item)들을 JSON으로 반환"""
+    chapters = Chapter.objects.filter(program_id=program_id).order_by('number')
+    data = []
+    for ch in chapters:
+        items = Item.objects.filter(chapter=ch).order_by('number')
+        data.append({
+            'chapter_id': ch.id,
+            'chapter_title': f"{ch.number}장: {ch.title}",
+            'items': [{'id': item.id, 'title': f"{item.number}. {item.title}", 'type': item.get_item_type_display()} for item in items]
+        })
+    return JsonResponse({'chapters': data})
+
+# --- (11) API: 학생 검색 ---
+@login_required
+@user_passes_test(is_admin)
+def api_search_users(request):
+    """학생 이름/아이디로 검색하여 JSON 반환"""
+    query = request.GET.get('q', '').strip()
+    from django.contrib.auth.models import User
+    users = User.objects.filter(is_staff=False, is_superuser=False)
+    if query:
+        users = users.filter(Q(username__icontains=query) | Q(first_name__icontains=query) | Q(last_name__icontains=query))
+    users = users[:50]
+    data = [{'id': u.id, 'username': u.username, 'name': u.get_full_name() or u.username} for u in users]
+    return JsonResponse({'users': data})

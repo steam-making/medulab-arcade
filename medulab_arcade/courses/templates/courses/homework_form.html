@@ -1,0 +1,318 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}{{ title }} | 메듀랩 아케이드{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 850px; margin: 0 auto; padding: 40px 20px;">
+    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 40px;">
+        <h1 style="color: #fff; font-size: 24px; font-weight: 800; margin-bottom: 30px;">{{ title }}</h1>
+
+        <form method="POST" id="homework-form">
+            {% csrf_token %}
+
+            <!-- 과정 선택 -->
+            <div class="form-group">
+                <label class="form-label">과정 선택</label>
+                {{ form.program }}
+            </div>
+
+            <!-- 숙제 제목 -->
+            <div class="form-group">
+                <label class="form-label">숙제 제목</label>
+                {{ form.title }}
+            </div>
+
+            <!-- 설명 -->
+            <div class="form-group">
+                <label class="form-label">설명</label>
+                {{ form.description }}
+            </div>
+
+            <!-- 학생 배정 (검색 UI) -->
+            <div class="form-group">
+                <label class="form-label">과제 받을 학생</label>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <input type="text" id="student-search" class="form-input" placeholder="학생 이름 또는 아이디를 입력하세요..." style="flex: 1;" autocomplete="off">
+                    <button type="button" id="btn-select-all" class="btn-sm" style="white-space: nowrap;">전체 선택</button>
+                    <button type="button" id="btn-deselect-all" class="btn-sm btn-muted" style="white-space: nowrap;">전체 해제</button>
+                </div>
+                <div id="student-list" style="max-height: 200px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; background: rgba(0,0,0,0.2);"></div>
+                {{ form.assigned_users }}
+            </div>
+
+            <!-- 연결된 문제 (단원별 트리 UI) -->
+            <div class="form-group">
+                <label class="form-label">과정 연결하기 (문제 선택)</label>
+                <div id="item-tree" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; background: rgba(0,0,0,0.2); min-height: 100px;">
+                    <p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 30px;">먼저 과정을 선택하세요.</p>
+                </div>
+                {{ form.linked_items }}
+            </div>
+
+            <!-- 외부 URL -->
+            <div class="form-group">
+                <label class="form-label">외부 URL (참고 링크)</label>
+                {{ form.external_url }}
+            </div>
+
+            <!-- 제출 기한 -->
+            <div class="form-group">
+                <label class="form-label">제출 기한</label>
+                {{ form.due_date }}
+            </div>
+
+            <!-- 활성화 -->
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                <label class="form-label" style="margin: 0;">활성화</label>
+                {{ form.is_active }}
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-top: 40px;">
+                <button type="submit" class="btn" style="flex: 1; height: 50px; background: #60a5fa; color: #fff; font-weight: 700;">저장하기</button>
+                <a href="{% url 'homework_admin_list' %}" class="btn" style="flex: 1; height: 50px; background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); text-align: center; line-height: 50px; text-decoration: none;">취소</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-group { margin-bottom: 24px; }
+    .form-label { display: block; color: var(--text-muted); font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .form-input {
+        width: 100%; padding: 12px 16px;
+        background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px; color: #fff; font-family: inherit; font-size: 15px;
+        transition: all 0.2s; box-sizing: border-box;
+    }
+    .form-input:focus { outline: none; border-color: #60a5fa; background: rgba(96,165,250,0.05); box-shadow: 0 0 15px rgba(96,165,250,0.1); }
+    select.form-input option { background: #1a1a1a; padding: 8px; }
+    .btn-sm { padding: 8px 16px; border-radius: 8px; background: #60a5fa; color: #fff; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+    .btn-sm:hover { background: #3b82f6; }
+    .btn-sm.btn-muted { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+    .btn-sm.btn-muted:hover { background: rgba(255,255,255,0.15); }
+
+    /* 학생 목록 */
+    .student-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; transition: background 0.15s; cursor: pointer; }
+    .student-item:hover { background: rgba(255,255,255,0.05); }
+    .student-item input[type="checkbox"] { accent-color: #60a5fa; width: 16px; height: 16px; cursor: pointer; }
+    .student-item label { color: #fff; font-size: 14px; cursor: pointer; flex: 1; }
+    .student-item .username { color: var(--text-muted); font-size: 12px; }
+
+    /* 단원 트리 */
+    .chapter-group { margin-bottom: 8px; }
+    .chapter-header {
+        display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+        background: rgba(255,255,255,0.04); border-radius: 10px; cursor: pointer;
+        transition: background 0.15s; user-select: none;
+    }
+    .chapter-header:hover { background: rgba(255,255,255,0.08); }
+    .chapter-header .arrow { transition: transform 0.2s; font-size: 12px; color: var(--text-muted); }
+    .chapter-header .arrow.open { transform: rotate(90deg); }
+    .chapter-header .ch-title { color: #fff; font-weight: 700; font-size: 15px; flex: 1; }
+    .chapter-header .ch-count { color: var(--text-muted); font-size: 12px; }
+    .chapter-items { display: none; padding: 6px 0 6px 32px; }
+    .chapter-items.open { display: block; }
+    .item-row { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 8px; transition: background 0.15s; cursor: pointer; }
+    .item-row:hover { background: rgba(96,165,250,0.08); }
+    .item-row input[type="checkbox"] { accent-color: #60a5fa; width: 16px; height: 16px; cursor: pointer; }
+    .item-row label { color: #ddd; font-size: 14px; cursor: pointer; flex: 1; }
+    .item-row .item-type { color: var(--text-muted); font-size: 11px; background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 6px; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const programSelect = document.getElementById('id_program');
+    const itemTree = document.getElementById('item-tree');
+    const linkedItemsSelect = document.getElementById('id_linked_items');
+    const assignedUsersSelect = document.getElementById('id_assigned_users');
+    const studentSearch = document.getElementById('student-search');
+    const studentList = document.getElementById('student-list');
+
+    // --- 기존 선택된 값들 추적 ---
+    let selectedItemIds = new Set();
+    let selectedUserIds = new Set();
+
+    // 기존 폼 데이터(수정 시)에서 선택된 값 불러오기
+    for (let opt of linkedItemsSelect.options) {
+        if (opt.selected) selectedItemIds.add(parseInt(opt.value));
+    }
+    for (let opt of assignedUsersSelect.options) {
+        if (opt.selected) selectedUserIds.add(parseInt(opt.value));
+    }
+
+    // ===================== 학생 선택 =====================
+    let allStudentData = [];
+
+    function renderStudents(students) {
+        studentList.innerHTML = '';
+        if (!students.length) {
+            studentList.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 15px; font-size: 13px;">검색 결과가 없습니다.</p>';
+            return;
+        }
+        students.forEach(u => {
+            const div = document.createElement('div');
+            div.className = 'student-item';
+            const checked = selectedUserIds.has(u.id) ? 'checked' : '';
+            div.innerHTML = `
+                <input type="checkbox" id="user_${u.id}" value="${u.id}" ${checked}>
+                <label for="user_${u.id}">${u.name}</label>
+                <span class="username">@${u.username}</span>
+            `;
+            div.querySelector('input').addEventListener('change', function() {
+                if (this.checked) selectedUserIds.add(u.id);
+                else selectedUserIds.delete(u.id);
+                syncAssignedUsers();
+            });
+            studentList.appendChild(div);
+        });
+    }
+
+    function syncAssignedUsers() {
+        // hidden select에 선택된 값 반영
+        for (let opt of assignedUsersSelect.options) {
+            opt.selected = selectedUserIds.has(parseInt(opt.value));
+        }
+    }
+
+    function loadStudents(query) {
+        fetch('/courses/api/users/search/?q=' + encodeURIComponent(query || ''))
+            .then(r => r.json())
+            .then(data => {
+                allStudentData = data.users;
+                // 새로 불러온 학생 목록의 option을 hidden select에도 동기화
+                data.users.forEach(u => {
+                    let exists = false;
+                    for (let opt of assignedUsersSelect.options) {
+                        if (parseInt(opt.value) === u.id) { exists = true; break; }
+                    }
+                    if (!exists) {
+                        const opt = document.createElement('option');
+                        opt.value = u.id;
+                        opt.text = u.name;
+                        assignedUsersSelect.appendChild(opt);
+                    }
+                });
+                renderStudents(data.users);
+            });
+    }
+
+    // 초기 로딩
+    loadStudents('');
+
+    let searchTimer;
+    studentSearch.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => loadStudents(this.value), 300);
+    });
+
+    document.getElementById('btn-select-all').addEventListener('click', function() {
+        allStudentData.forEach(u => selectedUserIds.add(u.id));
+        renderStudents(allStudentData);
+        syncAssignedUsers();
+    });
+
+    document.getElementById('btn-deselect-all').addEventListener('click', function() {
+        selectedUserIds.clear();
+        renderStudents(allStudentData);
+        syncAssignedUsers();
+    });
+
+    // ===================== 단원별 문제 선택 =====================
+    function loadProgramStructure(programId) {
+        if (!programId) {
+            itemTree.innerHTML = '<p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 30px;">먼저 과정을 선택하세요.</p>';
+            return;
+        }
+        itemTree.innerHTML = '<p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 30px;">로딩 중...</p>';
+
+        fetch('/courses/api/program/' + programId + '/structure/')
+            .then(r => r.json())
+            .then(data => {
+                itemTree.innerHTML = '';
+                if (!data.chapters.length) {
+                    itemTree.innerHTML = '<p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 30px;">이 과정에 등록된 단원이 없습니다.</p>';
+                    return;
+                }
+                data.chapters.forEach(ch => {
+                    const group = document.createElement('div');
+                    group.className = 'chapter-group';
+
+                    // 헤더
+                    const header = document.createElement('div');
+                    header.className = 'chapter-header';
+                    header.innerHTML = `
+                        <span class="arrow">▶</span>
+                        <span class="ch-title">${ch.chapter_title}</span>
+                        <span class="ch-count">${ch.items.length}개 문제</span>
+                    `;
+
+                    // 아이템 목록
+                    const itemsDiv = document.createElement('div');
+                    itemsDiv.className = 'chapter-items';
+
+                    ch.items.forEach(item => {
+                        const row = document.createElement('div');
+                        row.className = 'item-row';
+                        const checked = selectedItemIds.has(item.id) ? 'checked' : '';
+                        row.innerHTML = `
+                            <input type="checkbox" id="item_${item.id}" value="${item.id}" ${checked}>
+                            <label for="item_${item.id}">${item.title}</label>
+                            <span class="item-type">${item.type}</span>
+                        `;
+                        row.querySelector('input').addEventListener('change', function() {
+                            if (this.checked) selectedItemIds.add(item.id);
+                            else selectedItemIds.delete(item.id);
+                            syncLinkedItems();
+                        });
+
+                        // hidden select에 option 추가
+                        let exists = false;
+                        for (let opt of linkedItemsSelect.options) {
+                            if (parseInt(opt.value) === item.id) { exists = true; break; }
+                        }
+                        if (!exists) {
+                            const opt = document.createElement('option');
+                            opt.value = item.id;
+                            opt.text = item.title;
+                            linkedItemsSelect.appendChild(opt);
+                        }
+
+                        itemsDiv.appendChild(row);
+                    });
+
+                    header.addEventListener('click', function() {
+                        const arrow = this.querySelector('.arrow');
+                        arrow.classList.toggle('open');
+                        itemsDiv.classList.toggle('open');
+                    });
+
+                    group.appendChild(header);
+                    group.appendChild(itemsDiv);
+                    itemTree.appendChild(group);
+                });
+                syncLinkedItems();
+            });
+    }
+
+    function syncLinkedItems() {
+        for (let opt of linkedItemsSelect.options) {
+            opt.selected = selectedItemIds.has(parseInt(opt.value));
+        }
+    }
+
+    // 과정 변경 시 트리 갱신
+    programSelect.addEventListener('change', function() {
+        loadProgramStructure(this.value);
+    });
+
+    // 초기 로딩 (수정 시)
+    if (programSelect.value) {
+        loadProgramStructure(programSelect.value);
+    }
+})();
+</script>
+{% endblock %}

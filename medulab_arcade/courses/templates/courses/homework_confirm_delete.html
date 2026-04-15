@@ -1,0 +1,24 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}과제 삭제 확인 | 메듀랩 아케이드{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px; padding: 100px 20px; text-align: center;">
+    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 40px;">
+        <div style="font-size: 64px; margin-bottom: 24px;">⚠️</div>
+        <h1 style="color: #fff; font-size: 24px; font-weight: 800; margin-bottom: 16px;">과제를 삭제하시겠습니까?</h1>
+        <p style="color: var(--text-muted); margin-bottom: 32px; line-height: 1.6;">
+            <strong style="color: #f87171;">'{{ assignment.title }}'</strong> 과제를 삭제하려고 합니다.<br>
+            이 작업은 되돌릴 수 없습니다.
+        </p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div style="display: grid; gap: 12px;">
+                <button type="submit" class="btn" style="height: 50px; background: #f87171; color: #fff; font-weight: 700; width: 100%;">삭제 승인</button>
+                <a href="{% url 'homework_admin_list' %}" class="btn" style="height: 50px; background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); text-align: center; line-height: 50px; text-decoration: none; width: 100%;">취소</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

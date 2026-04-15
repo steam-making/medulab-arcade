@@ -64,6 +64,7 @@ class Item(models.Model):
     answer_code = models.TextField("정답 코드", blank=True, null=True)
     example_input = models.TextField("테스트용 입력값", blank=True, null=True)
     expected_output = models.TextField("예상 출력값", blank=True, null=True)
+    due_date = models.DateTimeField("제출 기한", blank=True, null=True)
 
     class Meta:
         ordering = ["chapter", "number"]
@@ -96,3 +97,22 @@ class UserProgress(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.item.title} ({'O' if self.completed else 'X'})"
+
+class HomeworkAssignment(models.Model):
+    program = models.ForeignKey(LearningProgram, on_delete=models.CASCADE, related_name="assignments", verbose_name="관련 과정")
+    title = models.CharField("숙제 제목", max_length=200)
+    description = models.TextField("설명", blank=True)
+    assigned_users = models.ManyToManyField(User, related_name="assigned_homeworks", verbose_name="배정된 학생들", blank=True)
+    linked_items = models.ManyToManyField(Item, related_name="assignments", verbose_name="연결된 문제들", blank=True)
+    external_url = models.URLField("외부 URL", blank=True, null=True)
+    due_date = models.DateTimeField("제출 기한", blank=True, null=True)
+    is_active = models.BooleanField("활성화 여부", default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['due_date', '-created_at']
+        verbose_name = "과제(홈플레이)"
+        verbose_name_plural = "과제 목록"
+
+    def __str__(self):
+        return f"[{self.program.name}] {self.title}"

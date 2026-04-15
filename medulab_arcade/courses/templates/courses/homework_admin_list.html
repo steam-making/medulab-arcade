@@ -1,0 +1,62 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}과제 관리 (홈플레이) | 관리자{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px; margin: 0 auto; padding: 40px 20px;">
+    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h1 style="color: #fff; font-size: 28px; font-weight: 800;">📝 과제 관리 <span style="font-size: 16px; color: var(--text-muted); font-weight: 400; margin-left: 10px;">홈플레이 과제 목록</span></h1>
+        <a href="{% url 'homework_create' %}" class="btn" style="background: #3b82f6;">+ 새 과제 등록</a>
+    </header>
+
+    <div style="background: rgba(255, 255, 255, 0.05); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; color: #fff; text-align: left;">
+            <thead>
+                <tr style="background: rgba(255, 255, 255, 0.05); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                    <th style="padding: 16px 20px;">과정</th>
+                    <th style="padding: 16px 20px;">제목</th>
+                    <th style="padding: 16px 20px;">학생</th>
+                    <th style="padding: 16px 20px;">문제</th>
+                    <th style="padding: 16px 20px;">기한</th>
+                    <th style="padding: 16px 20px;">상태</th>
+                    <th style="padding: 16px 20px;">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for assignment in assignments %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+                    <td style="padding: 16px 20px; color: #60a5fa; font-weight: 600;">{{ assignment.program.name }}</td>
+                    <td style="padding: 16px 20px;">{{ assignment.title }}</td>
+                    <td style="padding: 16px 20px; color: var(--text-muted);">
+                        {% if assignment.assigned_users.count > 0 %}
+                            {{ assignment.assigned_users.count }}명
+                        {% else %}
+                            <span style="font-size: 12px;">전체</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px 20px;">{{ assignment.linked_items.count }}개</td>
+                    <td style="padding: 16px 20px; color: var(--text-muted); font-size: 13px;">{{ assignment.due_date|date:"Y-m-d H:i"|default:"-" }}</td>
+                    <td style="padding: 16px 20px;">
+                        {% if assignment.is_active %}
+                        <span style="background: rgba(74, 222, 128, 0.1); color: #4ade80; padding: 4px 10px; border-radius: 20px; font-size: 12px;">활성</span>
+                        {% else %}
+                        <span style="background: rgba(255, 255, 255, 0.1); color: var(--text-muted); padding: 4px 10px; border-radius: 20px; font-size: 12px;">비활성</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px 20px;">
+                        <div style="display: flex; gap: 10px;">
+                            <a href="{% url 'homework_edit' assignment.id %}" style="color: #60a5fa; text-decoration: none; font-size: 14px;">수정</a>
+                            <a href="{% url 'homework_delete' assignment.id %}" style="color: #f87171; text-decoration: none; font-size: 14px;">삭제</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="padding: 100px 20px; text-align: center; color: var(--text-muted);">등록된 과제가 없습니다.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

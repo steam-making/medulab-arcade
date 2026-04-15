@@ -1,0 +1,324 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}{{ content_type|yesno:"단어,짧은글" }} 연습 - 타자연습{% endblock %}
+
+{% block extra_css %}
+<style>
+    .practice-container {
+        max-width: 900px;
+        margin: 40px auto;
+        text-align: center;
+    }
+    .status-panel {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        background: var(--bg-card);
+        padding: 20px;
+        border-radius: 20px;
+        margin-bottom: 32px;
+        border: 1px solid var(--border);
+    }
+    .stat-item { display: flex; flex-direction: column; gap: 4px; min-width: 100px; }
+    .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+    .stat-value { font-size: 22px; font-weight: 900; color: #60a5fa; font-family: 'Orbitron', sans-serif; }
+
+    .target-box {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 60px;
+        border-radius: 30px;
+        margin-bottom: 30px;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .target-text {
+        font-size: 48px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 30px;
+        letter-spacing: 2px;
+    }
+    .input-field {
+        width: 100%;
+        max-width: 500px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 2px solid var(--border);
+        border-radius: 16px;
+        padding: 16px 24px;
+        font-size: 24px;
+        color: #fff;
+        text-align: center;
+        outline: none;
+        transition: all 0.3s;
+    }
+    .input-field:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 20px rgba(96, 165, 250, 0.2);
+    }
+    .input-field.error {
+        border-color: #ef4444;
+        animation: shake 0.3s;
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+
+    .lang-hint {
+        margin-top: 10px;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+    .toggle-btn {
+        padding: 8px 20px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .toggle-btn.active {
+        background: #60a5fa;
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+    <div class="practice-container">
+        <header style="margin-bottom: 32px;">
+            <h2 style="font-size: 24px; font-weight: 900;">
+                {% if content_type == 'word' %}단어 연습{% else %}짧은글 연습{% endif %} 
+            </h2>
+        </header>
+
+        <div class="lang-toggle" style="display: flex; background: rgba(255, 255, 255, 0.05); padding: 4px; border-radius: 12px; margin-bottom: 24px; width: fit-content; margin-left: auto; margin-right: auto;">
+            <button class="toggle-btn {% if language == 'ko' %}active{% endif %}" onclick="location.href='?lang=ko'">한글</button>
+            <button class="toggle-btn {% if language == 'en' %}active{% endif %}" onclick="location.href='?lang=en'">영어</button>
+            <button class="toggle-btn" id="sound-btn" onclick="toggleSound()" style="margin-left: 10px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 15px;">
+                <span id="sound-icon">🔊</span>
+            </button>
+        </div>
+
+        <div class="status-panel">
+            <div class="stat-item">
+                <span class="stat-label">진행도</span>
+                <span class="stat-value" id="progress">0 / 0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">정확도</span>
+                <span class="stat-value" id="accuracy">100%</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">평균 타수</span>
+                <span class="stat-value" id="wpm">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">최고 타수</span>
+                <span class="stat-value" id="max-wpm">0</span>
+            </div>
+        </div>
+
+        <div class="target-box">
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; gap: 20px;">
+                <div id="prev-text" style="font-size: 20px; color: var(--text-muted); opacity: 0.4; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</div>
+                <div class="target-text" id="target-text" style="font-size: 48px; font-weight: 800; color: #fff; min-width: 250px; text-align: center; text-shadow: 0 0 20px rgba(96, 165, 250, 0.4); padding: 0 20px;">Loading...</div>
+                <div id="next-text" style="font-size: 20px; color: var(--text-muted); opacity: 0.4; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</div>
+            </div>
+            <input type="text" class="input-field" id="typing-input" placeholder="여기에 입력하세요" autocomplete="off" style="margin-top: 40px;">
+            <div class="lang-hint" id="lang-hint">
+                현재 입력 언어: {% if language == 'ko' %}한글{% else %}영어{% endif %}
+            </div>
+        </div>
+
+        <div style="text-align: left; color: var(--text-muted); font-size: 14px;">
+            <p>• 엔터(Enter) 키를 누르면 다음으로 넘어갑니다.</p>
+            <p>• 정확하게 입력해야 다음으로 넘어갈 수 있습니다.</p>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const contents = {{ contents_json|safe }};
+    const contentType = "{{ content_type }}";
+    const lang = "{{ language }}";
+    
+    let currentIndex = 0;
+    let completedCount = 0;
+    let totalErrors = 0;
+    let totalChars = 0;
+    let startTime = null;
+    let maxWpm = 0;
+    let soundEnabled = localStorage.getItem('typingSound') !== 'off';
+
+    const inputField = document.getElementById('typing-input');
+    const targetText = document.getElementById('target-text');
+
+    function init() {
+        updateSoundIcon();
+        // ... (이전 코드 동일)
+        if (contents.length === 0) {
+            targetText.innerText = "연습 데이터가 없습니다.";
+            inputField.disabled = true;
+            return;
+        }
+        // 무작위 섞기
+        contents.sort(() => Math.random() - 0.5);
+        
+        // 단어연습은 20개, 짧은글은 10개 정도로 제한 (있을 경우)
+        const limit = contentType === 'word' ? 20 : 10;
+        contents.splice(limit);
+        
+        updateTarget();
+        updateStatus();
+        inputField.focus();
+    }
+
+    function updateTarget() {
+        if (currentIndex < contents.length) {
+            targetText.innerText = contents[currentIndex].text;
+            
+            // 이전 단어 표시
+            const prevText = document.getElementById('prev-text');
+            prevText.innerText = currentIndex > 0 ? contents[currentIndex - 1].text : '-';
+            
+            // 다음 단어 표시
+            const nextText = document.getElementById('next-text');
+            nextText.innerText = currentIndex < contents.length - 1 ? contents[currentIndex + 1].text : '-';
+            
+            inputField.value = '';
+            inputField.classList.remove('error');
+
+            // 음성 출력
+            speakText(targetText.innerText);
+        } else {
+            finish();
+        }
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('typingSound', soundEnabled ? 'on' : 'off');
+        updateSoundIcon();
+        if (soundEnabled) speakText(targetText.innerText);
+    }
+
+    function updateSoundIcon() {
+        document.getElementById('sound-icon').innerText = soundEnabled ? '🔊' : '🔇';
+        document.getElementById('sound-btn').classList.toggle('active', soundEnabled);
+    }
+
+    function speakText(text) {
+        if (!soundEnabled || !text || text === 'Loading...' || text === '-') return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = lang === 'ko' ? 'ko-KR' : 'en-US';
+        msg.rate = 1.0;
+        window.speechSynthesis.speak(msg);
+    }
+
+    function updateStatus() {
+        document.getElementById('progress').innerText = `${currentIndex} / ${contents.length}`;
+        const acc = totalChars === 0 ? 100 : Math.round(((totalChars - totalErrors) / totalChars) * 100);
+        document.getElementById('accuracy').innerText = `${Math.max(0, acc)}%`;
+
+        if (startTime) {
+            const elapsed = (Date.now() - startTime) / 60000;
+            const wpm = Math.round(totalChars / (elapsed || 0.01));
+            document.getElementById('wpm').innerText = wpm;
+            
+            if (wpm > maxWpm) {
+                maxWpm = wpm;
+                document.getElementById('max-wpm').innerText = maxWpm;
+            }
+        }
+    }
+
+    inputField.addEventListener('input', (e) => {
+        if (!startTime) startTime = Date.now();
+        
+        const currentTarget = contents[currentIndex].text;
+        const currentInput = inputField.value;
+        
+        let html = '';
+        let isError = false;
+
+        for (let i = 0; i < currentTarget.length; i++) {
+            if (i < currentInput.length) {
+                if (currentTarget[i] === currentInput[i]) {
+                    html += `<span style="color: #4ade80;">${currentTarget[i]}</span>`;
+                } else {
+                    html += `<span style="color: #f87171; background: rgba(248, 113, 113, 0.2); border-radius: 4px;">${currentTarget[i]}</span>`;
+                    isError = true;
+                }
+            } else {
+                html += `<span>${currentTarget[i]}</span>`;
+            }
+        }
+        targetText.innerHTML = html;
+
+        if (isError) {
+            inputField.classList.add('error');
+        } else {
+            inputField.classList.remove('error');
+        }
+    });
+
+    inputField.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            const currentTarget = targetText.innerText;
+            const currentInput = inputField.value.trim();
+
+            if (currentInput === currentTarget) {
+                if (e.key === ' ') e.preventDefault(); // 스페이스 입력 시 기본 공백 삽입 방지
+                totalChars += currentTarget.length;
+                currentIndex++;
+                updateTarget();
+                updateStatus();
+            } else if (e.key === 'Enter') {
+                // 엔터일 때만 오타 시 시각적 표시강화 (스페이스는 자연스럽게 무시)
+                inputField.classList.add('error');
+                totalErrors++;
+                updateStatus();
+            }
+        }
+    });
+
+    function finish() {
+        const speed = parseInt(document.getElementById('wpm').innerText);
+        const accuracy = parseFloat(document.getElementById('accuracy').innerText);
+        const score = Math.round(speed * (accuracy / 100) * (contentType === 'word' ? 5 : 8));
+
+        alert(`연습 완료!\n점수: ${score}점\n평균 타수: ${speed} 타\n정확도: ${accuracy}%`);
+
+        fetch('{% url "save_score" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                type: contentType,
+                lang: lang,
+                score: score,
+                speed: speed,
+                accuracy: accuracy
+            })
+        }).then(() => {
+            location.href = '{% url "typing_home" %}';
+        });
+    }
+
+    init();
+</script>
+{% endblock %}

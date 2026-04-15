@@ -1,0 +1,90 @@
+{% extends "arcade/base.html" %}
+{% load static %}
+
+{% block title %}홈플레이 - 숙제 관리 | 메듀랩 아케이드{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; margin: 0 auto; padding: 60px 20px;">
+    <!-- 헤더 섹션 -->
+    <header style="margin-bottom: 50px; text-align: center;">
+        <h1 style="font-family: 'Orbitron', sans-serif; font-size: 36px; font-weight: 900; color: #fff; margin-bottom: 12px; letter-spacing: -1.5px;">
+            <span style="color: #60a5fa;">HOME</span> PLAY
+        </h1>
+        <div style="width: 60px; height: 4px; background: #60a5fa; margin: 0 auto 20px; border-radius: 2px;"></div>
+        <p style="color: var(--text-muted); font-size: 18px;">할당된 과제를 확인하고 차근차근 해결해 보세요.</p>
+    </header>
+
+    {% if not assignments %}
+    <div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 30px; padding: 120px 20px; text-align: center;">
+        <div style="font-size: 72px; margin-bottom: 30px; filter: grayscale(1);">📫</div>
+        <h3 style="color: #fff; font-size: 22px; font-weight: 700; margin-bottom: 15px;">진행 중인 과제가 없습니다</h3>
+        <p style="color: var(--text-muted); font-size: 16px;">새로운 교육프로그램을 통해 실력을 높여보세요!</p>
+        <a href="{% url 'student_course_list' %}" class="btn" style="margin-top: 35px; min-width: 200px;">교육프로그램 둘러보기</a>
+    </div>
+    {% else %}
+    <div style="display: grid; gap: 24px;">
+        {% for assignment in assignments %}
+        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 32px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);"
+             onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='rgba(96,165,250,0.4)'; this.style.transform='translateY(-5px)'"
+             onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)'">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                <div style="flex: 1;">
+                    <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: rgba(96, 165, 250, 0.1); color: #60a5fa; font-size: 12px; font-weight: 800; margin-bottom: 12px;">
+                        {{ assignment.program.name }}
+                    </span>
+                    <h2 style="color: #fff; font-size: 22px; font-weight: 800; margin-bottom: 10px;">{{ assignment.title }}</h2>
+                    {% if assignment.description %}
+                    <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 15px; line-height: 1.6;">{{ assignment.description }}</p>
+                    {% endif %}
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 14px; font-weight: 700; {% if assignment.is_completed %}color: #4ade80;{% else %}color: #fb923c;{% endif %}">
+                        {% if assignment.is_completed %}완료 (Success){% else %}진행 중 (In Progress){% endif %}
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">{{ assignment.progress_text }} 완료</div>
+                </div>
+            </div>
+
+            <!-- 하단 정보 패널 -->
+            <div style="background: rgba(0, 0, 0, 0.2); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 20px;">
+                
+                <!-- 문제 연결 영역 -->
+                {% if assignment.linked_items.exists %}
+                <div>
+                    <h4 style="color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 18px;">💡</span> 실습 과제 바로가기
+                    </h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        {% for item in assignment.linked_items.all %}
+                        <a href="{% url 'item_page' item.id %}" class="nav-link" 
+                           style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px 16px; border-radius: 10px; font-size: 14px; transition: all 0.2s;"
+                           onmouseover="this.style.background='rgba(96,165,250,0.1)'; this.style.borderColor='rgba(96,165,250,0.3)'"
+                           onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.borderColor='rgba(255, 255, 255, 0.1)'">
+                            {{ item.title }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 외부 URL 및 기한 -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; gap: 15px;">
+                        {% if assignment.external_url %}
+                        <a href="{{ assignment.external_url }}" target="_blank" class="btn" style="background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); padding: 8px 16px; font-size: 13px;">🔗 관련 자료 보기</a>
+                        {% endif %}
+                    </div>
+                    {% if assignment.due_date %}
+                    <div style="font-size: 13px; color: var(--text-muted);">
+                        📅 기한: <span style="{% if not assignment.is_completed %}color: #f87171; font-weight: 700;{% endif %}">{{ assignment.due_date|date:"Y-m-d H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

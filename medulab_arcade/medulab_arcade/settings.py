@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'arcade',
     'courses',
+    'typing_practice',
+    'django.contrib.sitemaps',
 ]
 
 MIDDLEWARE = [

@@ -4,7 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}메듀랩 Student Arcade{% endblock %}</title>
+    <title>{% block title %}메듀랩 아케이드 - 무료 코딩 교육 및 AI 게임{% endblock %}</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="메듀랩 아케이드: 무료 코딩 교육, AI 코딩, 파이썬 타자연습 및 나만의 게임 작품을 만들고 즐길 수 있는 온라인 교육 플랫폼입니다.">
+    <meta name="keywords" content="무료코딩교육, 메듀랩, AI코딩, 타자연습, 파이썬, 무료온라인게임, 나만의작품, 코딩교육, 메듀랩아케이드">
+    <meta name="author" content="Medulab">
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="메듀랩 아케이드 - 나만의 코딩 작품과 게임">
+    <meta property="og:description" content="무료 코딩 교육 및 AI 게임 제작 플랫폼 메듀랩 아케이드에서 나만의 작품을 만들고 공유해보세요!">
+    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'arcade/img/logo.png' %}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ request.build_absolute_uri }}">
+    <meta property="twitter:title" content="메듀랩 아케이드 - 나만의 코딩 작품과 게임">
+    <meta property="twitter:description" content="무료 코딩 교육 및 AI 게임 제작 플랫폼 메듀랩 아케이드에서 나만의 작품을 만들고 공유해보세요!">
+    <meta property="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'arcade/img/logo.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Orbitron:wght@700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
@@ -56,10 +76,12 @@
         }
         .logo-icon {
             width: 44px; height: 44px; border-radius: 12px;
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue), var(--accent-purple));
+            background-size: 200% 200%;
+            animation: gradientMove 4s ease infinite;
             display: flex; align-items: center; justify-content: center;
             font: 900 22px 'Orbitron', sans-serif; color: var(--bg-primary);
-            box-shadow: 0 0 24px rgba(0,255,180,0.3);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
         }
         .logo-text {
             font: 900 20px 'Orbitron', sans-serif;
@@ -293,6 +315,39 @@
             .main { padding: 0 16px; }
         }
 
+        /* 네비게이션 드롭다운 */
+        .nav-dropdown { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background: #1e293b;
+            min-width: 170px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            z-index: 1000;
+            padding: 10px 0;
+            margin-top: 8px;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .nav-dropdown:hover .dropdown-content { display: block; }
+        .dropdown-content a {
+            color: #fff;
+            padding: 12px 20px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+            transition: background 0.2s;
+            text-align: left;
+        }
+        .dropdown-content a:hover { background: rgba(255,255,255,0.06); }
+        .dropdown-content .accent-text { color: #facc15 !important; font-weight: 700; }
+
         {% block extra_css %}{% endblock %}
     </style>
 </head>
@@ -304,31 +359,50 @@
 <nav class="nav">
     <div class="nav-inner">
         <a href="{% url 'home' %}" class="logo-group">
-            <div class="logo-icon">M</div>
+            <div class="logo-icon" style="padding: 0; overflow: hidden;"><img src="{% static 'arcade/img/logo.png' %}" alt="메듀랩" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></div>
             <div>
                 <div class="logo-text">MEDULAB</div>
                 <div class="logo-sub">AI로봇코딩 융합학원</div>
             </div>
         </a>
 
-        <form class="search-box" method="GET" action="{% url 'home' %}">
-            <span class="icon">🔍</span>
-            <input type="text" name="q" placeholder="작품 검색..." value="{{ search_query|default:'' }}" autocomplete="off">
-        </form>
+        <!-- 검색 및 주요 링크 그룹 -->
+        <div style="display: flex; align-items: center; gap: 12px; flex: 0 1 auto;">
+            <form class="search-box" style="flex: 0 1 320px;" method="GET" action="{% url 'home' %}">
+                <span class="icon">🔍</span>
+                <input type="text" name="q" placeholder="작품 검색..." value="{{ search_query|default:'' }}" autocomplete="off">
+            </form>
 
-        <div style="display: flex; gap: 8px;">
-            <a href="{% url 'student_course_list' %}" class="nav-link" style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3);">
+            <a href="{% url 'typing_home' %}" class="nav-link" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); white-space: nowrap;">
+                ⌨️ 타자연습
+            </a>
+
+            <a href="{% url 'student_course_list' %}" class="nav-link" style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); white-space: nowrap;">
                 🏫 교육프로그램
+            </a>
+            <a href="{% url 'student_homework_list' %}" class="nav-link" style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); white-space: nowrap;">
+                🏠 홈플레이
             </a>
         </div>
 
         <div class="nav-links">
             {% if user.is_authenticated %}
                 {% if user.is_staff %}
-                    <a href="{% url 'learning_program_list' %}" class="nav-link" style="color: var(--accent-green);">⚙️ 코스 관리</a>
+                    <div class="nav-dropdown">
+                        <button class="nav-link dropdown-toggle" style="color: #60a5fa; border: none; background: none; cursor: pointer;">
+                            🛠️ 관리 서비스 <span style="font-size: 10px; margin-left: 4px;">▼</span>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="{% url 'learning_program_list' %}">⚙️ 코스 관리</a>
+                            <a href="{% url 'homework_admin_list' %}">📝 과제 관리</a>
+                            <a href="{% url 'my_projects' %}">🎨 작품 관리</a>
+                            <a href="{% url 'upload' %}" class="accent-text">📤 업로드</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="{% url 'my_projects' %}" class="nav-link">내 작품</a>
+                    <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
                 {% endif %}
-                <a href="{% url 'my_projects' %}" class="nav-link">내 작품</a>
-                <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
                 <a href="{% url 'logout' %}" class="nav-link">로그아웃</a>
             {% else %}
                 <a href="{% url 'login' %}" class="nav-link">로그인</a>
@@ -386,8 +460,6 @@
 })();
 </script>
 
-{% block extra_js %}{% endblock %}
-
 <script>
 /* ── 홈 카드 썸네일 hover 슬라이드 ── */
 (function () {
@@ -422,5 +494,6 @@
     }
 })();
 </script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

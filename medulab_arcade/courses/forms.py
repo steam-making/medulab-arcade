@@ -1,5 +1,6 @@
 from django import forms
-from .models import LearningProgram, ProgramType, Item, Chapter
+from django.contrib.auth.models import User
+from .models import LearningProgram, ProgramType, Item, Chapter, HomeworkAssignment
 
 class CourseForm(forms.ModelForm):
     class Meta:
@@ -23,7 +24,7 @@ class ProgramTypeForm(forms.ModelForm):
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['chapter', 'number', 'key', 'title', 'item_type', 'explain_html', 'hint', 'answer_code', 'example_input', 'expected_output']
+        fields = ['chapter', 'number', 'key', 'title', 'item_type', 'explain_html', 'hint', 'answer_code', 'example_input', 'expected_output', 'due_date']
         widgets = {
             'chapter': forms.Select(attrs={'class': 'form-input'}),
             'number': forms.NumberInput(attrs={'class': 'form-input', 'placeholder': '정렬 순서(번호)'}),
@@ -35,4 +36,19 @@ class ItemForm(forms.ModelForm):
             'answer_code': forms.Textarea(attrs={'class': 'form-input code-font', 'rows': 10, 'placeholder': '정답 코드(파이썬)'}),
             'example_input': forms.Textarea(attrs={'class': 'form-input code-font', 'rows': 3, 'placeholder': '테스트 시 사용할 입력값 (여러 줄일 경우 줄바꿈)'}),
             'expected_output': forms.Textarea(attrs={'class': 'form-input code-font', 'rows': 5, 'placeholder': '예상 출력 결과'}),
+            'due_date': forms.DateTimeInput(attrs={'class': 'form-input', 'type': 'datetime-local'}),
+        }
+
+class HomeworkForm(forms.ModelForm):
+    class Meta:
+        model = HomeworkAssignment
+        fields = ['program', 'title', 'description', 'assigned_users', 'linked_items', 'external_url', 'due_date', 'is_active']
+        widgets = {
+            'program': forms.Select(attrs={'class': 'form-input', 'id': 'id_program'}),
+            'title': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '숙제 제목 (예: 파이썬 문제 풀어오기)'}),
+            'description': forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': '숙제에 대한 추가 설명'}),
+            'assigned_users': forms.SelectMultiple(attrs={'class': 'form-input', 'style': 'display:none;', 'id': 'id_assigned_users'}),
+            'linked_items': forms.SelectMultiple(attrs={'class': 'form-input', 'style': 'display:none;', 'id': 'id_linked_items'}),
+            'external_url': forms.URLInput(attrs={'class': 'form-input', 'placeholder': 'https://...'}),
+            'due_date': forms.DateTimeInput(attrs={'class': 'form-input', 'type': 'datetime-local'}),
         }

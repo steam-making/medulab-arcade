@@ -1,0 +1,100 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}전체 랭킹 - 타자연습{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ranking-container {
+        max-width: 1000px;
+        margin: 60px auto;
+        padding: 0 24px;
+    }
+    .ranking-header {
+        text-align: center;
+        margin-bottom: 48px;
+    }
+    .ranking-header h1 {
+        font: 900 42px 'Orbitron', sans-serif;
+        color: #fff;
+        margin-bottom: 12px;
+    }
+    .ranking-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 40px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    .ranking-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .ranking-table th {
+        text-align: left;
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-muted);
+        font-size: 13px;
+        text-transform: uppercase;
+    }
+    .ranking-table td {
+        padding: 20px 16px;
+        border-bottom: 1px solid var(--border);
+        color: #fff;
+        font-size: 16px;
+    }
+    .top-rank {
+        font-weight: 900;
+        font-size: 18px;
+    }
+    .rank-1 { color: #fbbf24; }
+    .rank-2 { color: #cbd5e1; }
+    .rank-3 { color: #cd7f32; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="ranking-container">
+    <div class="ranking-header">
+        <h1>HALL OF FAME</h1>
+        <p>메듀랩 아케이드의 타자 고수들을 소개합니다.</p>
+    </div>
+
+    <div class="ranking-card">
+        <table class="ranking-table">
+            <thead>
+                <tr>
+                    <th>순위</th>
+                    <th>사용자</th>
+                    <th>유형</th>
+                    <th>점수</th>
+                    <th>속도(WPM)</th>
+                    <th>정확도</th>
+                    <th>날짜</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rankings %}
+                <tr class="{% if forloop.counter <= 3 %}top-rank rank-{{ forloop.counter }}{% endif %}">
+                    <td>#{{ forloop.counter }}</td>
+                    <td>{{ r.user.username }}</td>
+                    <td>{{ r.get_practice_type_display }} ({{ r.get_language_display }})</td>
+                    <td><strong>{{ r.score }}</strong></td>
+                    <td>{{ r.speed }} 타</td>
+                    <td>{{ r.accuracy }}%</td>
+                    <td style="color: var(--text-muted); font-size: 14px;">{{ r.created_at|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 60px; color: var(--text-muted);">아직 등록된 기록이 없습니다.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 40px; text-align: center;">
+        <a href="{% url 'typing_home' %}" class="nav-link" style="padding: 12px 32px; display: inline-block;">메인으로 돌아가기</a>
+    </div>
+</main>
+{% endblock %}

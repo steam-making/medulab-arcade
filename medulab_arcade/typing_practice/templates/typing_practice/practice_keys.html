@@ -1,0 +1,375 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}자리연습 - 타자연습{% endblock %}
+
+{% block extra_css %}
+<style>
+    .practice-container {
+        max-width: 1000px;
+        margin: 40px auto;
+        text-align: center;
+    }
+    .status-panel {
+        display: flex;
+        justify-content: center;
+        gap: 40px;
+        background: var(--bg-card);
+        padding: 24px;
+        border-radius: 20px;
+        margin-bottom: 32px;
+        border: 1px solid var(--border);
+    }
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 700; }
+    .stat-value { font-size: 24px; font-weight: 900; color: #60a5fa; font-family: 'Orbitron', sans-serif; }
+
+    .target-display {
+        font-size: 84px;
+        font-weight: 900;
+        margin: 60px 0;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 30px;
+        color: #fff;
+        text-shadow: 0 0 30px rgba(96, 165, 250, 0.4);
+    }
+
+    /* 가상 키보드 */
+    .keyboard {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 24px;
+        background: #111118;
+        border-radius: 24px;
+        border: 1px solid var(--border);
+        user-select: none;
+    }
+    .key-row {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+    }
+    .key {
+        width: 54px;
+        height: 54px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        transition: all 0.1s;
+    }
+    .key.active {
+        background: #60a5fa !important;
+        color: #fff !important;
+        transform: scale(0.95);
+        box-shadow: 0 0 20px rgba(96, 165, 250, 0.6);
+    }
+    .key.target {
+        background: rgba(251, 191, 36, 0.2);
+        border-color: #fbbf24;
+        color: #fbbf24;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .lang-toggle {
+        display: flex;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        width: fit-content;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .toggle-btn {
+        padding: 8px 20px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .toggle-btn.active {
+        background: #60a5fa;
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+    <div class="practice-container">
+        <header style="margin-bottom: 40px;">
+            <h2 style="font-size: 28px; font-weight: 900;">자리 연습</h2>
+            <p style="color: var(--text-muted);">정확한 손가락 위치를 익히는 단계입니다.</p>
+        </header>
+
+        <div class="lang-toggle">
+            <button class="toggle-btn active" onclick="setLang('ko')">한글</button>
+            <button class="toggle-btn" onclick="setLang('en')">영어</button>
+            <button class="toggle-btn" id="sound-btn" onclick="toggleSound()" style="margin-left: 10px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 15px;">
+                <span id="sound-icon">🔊</span>
+            </button>
+        </div>
+
+        <div class="status-panel">
+            <div class="stat-item">
+                <span class="stat-label">진행도</span>
+                <span class="stat-value" id="progress">0/50</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">정확도</span>
+                <span class="stat-value" id="accuracy">100%</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">평균 타수</span>
+                <span class="stat-value" id="wpm">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">최고 타수</span>
+                <span class="stat-value" id="max-wpm">0</span>
+            </div>
+        </div>
+
+        <div class="target-display">
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; max-width: 600px; margin: 0 auto;">
+                <div id="prev-char" style="font-size: 32px; color: var(--text-muted); opacity: 0.4; text-align: right; padding-right: 40px;">-</div>
+                <div id="target-char" style="font-size: 84px; font-weight: 900; color: #fff; min-width: 120px; text-align: center;">-</div>
+                <div id="next-char" style="font-size: 32px; color: var(--text-muted); opacity: 0.4; text-align: left; padding-left: 40px;">-</div>
+            </div>
+        </div>
+
+        <!-- 가상 키보드 영역 (JS에서 동적 생성) -->
+        <div class="keyboard" id="v-keyboard"></div>
+
+        <div style="margin-top: 40px; color: var(--text-muted); font-size: 14px;">
+            <p>※ 키보드에 직접 입력하여 연습을 진행하세요.</p>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const KOREAN_KEYS = [
+        ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'],
+        ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'],
+        ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ']
+    ];
+    const ENGLISH_KEYS = [
+        ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+        ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+        ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+    ];
+    // 매핑: 영문 키 입력을 한글로 변환하기 위한 맵 (자리 연습용)
+    const EN_TO_KO = {
+        'q':'ㅂ','w':'ㅈ','e':'ㄷ','r':'ㄱ','t':'ㅅ','y':'ㅛ','u':'ㅕ','i':'ㅑ','o':'ㅐ','p':'ㅔ',
+        'a':'ㅁ','s':'ㄴ','d':'ㅇ','f':'ㄹ','g':'ㅎ','h':'ㅗ','j':'ㅓ','k':'ㅏ','l':'ㅣ',
+        'z':'ㅋ','x':'ㅌ','c':'ㅊ','v':'ㅍ','b':'ㅠ','n':'ㅜ','m':'ㅡ'
+    };
+
+    let currentLang = 'ko';
+    let targetChar = '';
+    let prevChar = '-';
+    let nextCharBuffer = []; // 다음에 나올 글자들 미리 생성
+    let completedCount = 0;
+    let totalCount = 50;
+    let errors = 0;
+    let startTime = null;
+    let maxWpm = 0;
+    let soundEnabled = localStorage.getItem('typingSound') !== 'off';
+
+    function initKeyboard() {
+        updateSoundIcon();
+        // ... (이전 코드 동일)
+        // ... (이전 코드 동일)
+        const kb = document.getElementById('v-keyboard');
+        kb.innerHTML = '';
+        const layout = currentLang === 'ko' ? KOREAN_KEYS : ENGLISH_KEYS;
+        
+        layout.forEach((row, i) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'key-row';
+            row.forEach(key => {
+                const keyDiv = document.createElement('div');
+                keyDiv.className = 'key';
+                keyDiv.id = `key-${key}`;
+                keyDiv.innerText = key;
+                rowDiv.appendChild(keyDiv);
+            });
+            kb.appendChild(rowDiv);
+        });
+
+        // 초기 버퍼 생성
+        nextCharBuffer = [];
+        fillBuffer();
+        nextChar();
+    }
+
+    function fillBuffer() {
+        const layout = currentLang === 'ko' ? KOREAN_KEYS : ENGLISH_KEYS;
+        const allKeys = layout.flat();
+        while(nextCharBuffer.length < 5) {
+            nextCharBuffer.push(allKeys[Math.floor(Math.random() * allKeys.length)]);
+        }
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('typingSound', soundEnabled ? 'on' : 'off');
+        updateSoundIcon();
+        if (soundEnabled) speakText(targetChar);
+    }
+
+    function updateSoundIcon() {
+        document.getElementById('sound-icon').innerText = soundEnabled ? '🔊' : '🔇';
+        document.getElementById('sound-btn').classList.toggle('active', soundEnabled);
+    }
+
+    function speakText(text) {
+        if (!soundEnabled || !text || text === '-') return;
+        window.speechSynthesis.cancel(); // 이전 발화 취소
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = currentLang === 'ko' ? 'ko-KR' : 'en-US';
+        msg.rate = 1.2; // 약간 빠르게
+        window.speechSynthesis.speak(msg);
+    }
+
+    function nextChar() {
+        if (targetChar) prevChar = targetChar;
+        targetChar = nextCharBuffer.shift();
+        fillBuffer();
+
+        document.getElementById('prev-char').innerText = prevChar;
+        document.getElementById('target-char').innerText = targetChar;
+        document.getElementById('next-char').innerText = nextCharBuffer[0];
+        
+        // 키보드 가이드 표시
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('target'));
+        const targetDiv = document.getElementById(`key-${targetChar}`);
+        if(targetDiv) targetDiv.classList.add('target');
+
+        // 음성 출력
+        speakText(targetChar);
+    }
+
+    function setLang(lang) {
+        currentLang = lang;
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText === (lang === 'ko' ? '한글' : '영어'));
+        });
+        resetPractice();
+        initKeyboard();
+    }
+
+    function resetPractice() {
+        completedCount = 0;
+        errors = 0;
+        startTime = null;
+        document.getElementById('target-char').innerText = targetChar;
+        
+        // 키보드 가이드 표시
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('target'));
+        const targetDiv = document.getElementById(`key-${targetChar}`);
+        if(targetDiv) targetDiv.classList.add('target');
+    }
+
+    function updateStatus() {
+        document.getElementById('progress').innerText = `${completedCount}/${totalCount}`;
+        const acc = completedCount === 0 ? 100 : Math.round((completedCount / (completedCount + errors)) * 100);
+        document.getElementById('accuracy').innerText = `${acc}%`;
+        
+        if (startTime) {
+            const elapsed = (Date.now() - startTime) / 60000; // minutes
+            const wpm = Math.round(completedCount / elapsed);
+            document.getElementById('wpm').innerText = wpm;
+            
+            if (wpm > maxWpm) {
+                maxWpm = wpm;
+                document.getElementById('max-wpm').innerText = maxWpm;
+            }
+        }
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (!startTime) startTime = Date.now();
+        
+        const pressedKey = e.key.toLowerCase();
+        let inputChar = e.key.toUpperCase();
+        
+        if (currentLang === 'ko') {
+            inputChar = EN_TO_KO[pressedKey] || '';
+        }
+
+        // 시각적 피드백
+        const keyDiv = document.getElementById(`key-${inputChar}`);
+        if (keyDiv) {
+            keyDiv.classList.add('active');
+            setTimeout(() => keyDiv.classList.remove('active'), 100);
+        }
+
+        if (inputChar === targetChar) {
+            completedCount++;
+            if (completedCount >= totalCount) {
+                finishPractice();
+            } else {
+                nextChar();
+            }
+        } else {
+            // 특수키 제외하고 오류 처리
+            if (inputChar.length === 1 && /[A-Zㄱ-ㅎㅏ-ㅣ]/.test(inputChar)) {
+                errors++;
+            }
+        }
+        updateStatus();
+    });
+
+    function finishPractice() {
+        const speed = parseInt(document.getElementById('wpm').innerText);
+        const accuracy = parseFloat(document.getElementById('accuracy').innerText);
+        const score = Math.round(speed * (accuracy / 100) * 10);
+
+        alert(`연습 완료!\n점수: ${score}점\n속도: ${speed} 타\n정확도: ${accuracy}%`);
+
+        // 결과 저장 API 호출
+        fetch('{% url "save_score" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                type: 'key',
+                lang: currentLang,
+                score: score,
+                speed: speed,
+                accuracy: accuracy
+            })
+        }).then(() => {
+            location.href = '{% url "typing_home" %}';
+        });
+    }
+
+    // 초기화
+    initKeyboard();
+</script>
+{% endblock %}

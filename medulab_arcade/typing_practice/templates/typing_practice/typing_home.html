@@ -1,0 +1,173 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}타자연습 센터 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+    .typing-hero {
+        text-align: center;
+        padding: 60px 20px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(168, 85, 247, 0.1));
+        border-radius: 30px;
+        margin-bottom: 40px;
+    }
+    .typing-hero h1 {
+        font: 900 48px 'Orbitron', sans-serif;
+        margin-bottom: 16px;
+        background: linear-gradient(90deg, #60a5fa, #a855f7);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .typing-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 60px;
+    }
+    .practice-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 32px;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .practice-card:hover {
+        transform: translateY(-10px);
+        border-color: #60a5fa;
+        box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+    }
+    .card-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+    }
+    .card-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 12px;
+    }
+    .card-desc {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    .ranking-section {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 40px;
+    }
+    .section-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .rank-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .rank-table th {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-muted);
+        font-size: 13px;
+        text-transform: uppercase;
+    }
+    .rank-table td {
+        padding: 16px 12px;
+        border-bottom: 1px solid var(--border);
+        color: #fff;
+        font-size: 15px;
+    }
+    .rank-badge {
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+    <div class="typing-hero">
+        <h1>TYPING PRACTICE</h1>
+        <p>프로그래밍의 기초, 정확하고 빠른 타자 실력을 길러보세요.</p>
+    </div>
+
+    <div class="typing-grid">
+        <a href="{% url 'practice_keys' %}" class="practice-card">
+            <div class="card-icon">⌨️</div>
+            <div class="card-title">자리 연습</div>
+            <div class="card-desc">기본 자리부터 특수문자까지 하나씩 익혀보세요.</div>
+        </a>
+        <a href="{% url 'practice_words' %}?lang=ko" class="practice-card">
+            <div class="card-icon">🔤</div>
+            <div class="card-title">단어 연습</div>
+            <div class="card-desc">자주 쓰는 단어들을 빠르게 입력하는 연습을 합니다.</div>
+        </a>
+        <a href="{% url 'practice_short' %}?lang=ko" class="practice-card">
+            <div class="card-icon">📝</div>
+            <div class="card-title">짧은글 연습</div>
+            <div class="card-desc">명언이나 짧은 문장을 타이핑해 보세요.</div>
+        </a>
+        <div class="practice-card" style="cursor: default;">
+            <div class="card-icon">📖</div>
+            <div class="card-title">긴글 연습</div>
+            <div class="card-desc" style="margin-bottom: 12px;">긴 글을 통해 실제 타자 실력을 테스트합니다.</div>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                {% for t in long_texts %}
+                    <a href="{% url 'practice_long' t.pk %}" class="btn-learn" style="font-size: 12px; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border);">
+                        {{ t.title }} ({{ t.get_language_display }})
+                    </a>
+                {% empty %}
+                    <p style="font-size: 12px; color: var(--text-muted);">등록된 글이 없습니다.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="ranking-section">
+        <h2 class="section-title">🏆 실시간 명예의 전당</h2>
+        <table class="rank-table">
+            <thead>
+                <tr>
+                    <th>순위</th>
+                    <th>사용자</th>
+                    <th>유형</th>
+                    <th>속도(WPM)</th>
+                    <th>정확도</th>
+                    <th>날짜</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in top_scores %}
+                <tr>
+                    <td><span class="rank-badge" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa;">#{{ forloop.counter }}</span></td>
+                    <td>{{ r.user.username }}</td>
+                    <td>{{ r.get_practice_type_display }} ({{ r.get_language_display }})</td>
+                    <td><strong>{{ r.speed }}</strong> 타</td>
+                    <td>{{ r.accuracy }}%</td>
+                    <td style="color: var(--text-muted); font-size: 13px;">{{ r.created_at|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">아직 기록된 랭킹이 없습니다. 첫 번째 주인공이 되어보세요!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</main>
+{% endblock %}

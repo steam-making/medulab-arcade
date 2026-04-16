@@ -62,6 +62,11 @@ def save_score(request):
     """연습 결과 저장 API"""
     if request.method == 'POST':
         try:
+            # 정회원이 아닌 경우 기록 저장 불가 (연습은 가능하지만 기록만 저장 안 함)
+            profile = getattr(request.user, 'profile', None)
+            if not profile or not profile.is_full_member:
+                return JsonResponse({'status': 'not_saved', 'message': '메듀랩 정회원만 기록이 저장됩니다.'})
+
             data = json.loads(request.body)
             TypingScore.objects.create(
                 user=request.user,

@@ -1,0 +1,142 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}회원 관리 - 메듀랩 관리 서비스{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-wrap { max-width: 1200px; margin: 40px auto; padding: 0 24px; animation: fadeSlideIn 0.4s ease; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+    .page-title { font: 900 28px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    
+    /* 검색 및 필터 */
+    .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .search-input-group { position: relative; flex: 1; min-width: 280px; }
+    .search-input-group input { width: 100%; padding: 12px 16px 12px 42px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; color: #fff; outline: none; transition: all 0.2s; }
+    .search-input-group input:focus { border-color: var(--accent-green); box-shadow: 0 0 10px rgba(0,255,180,0.1); }
+    .search-input-group span { position: absolute; left: 16px; top: 14px; color: var(--text-muted); }
+    
+    .type-filter select { padding: 12px 16px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; color: #fff; outline: none; appearance: none; cursor: pointer; }
+
+    /* 테이블 스타일 */
+    .member-table-wrap { background: var(--bg-card); border-radius: 18px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 800px; }
+    th { padding: 18px 24px; background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    td { padding: 18px 24px; border-top: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .user-info { display: flex; align-items: center; gap: 12px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #1e293b, #0f172a); display: flex; align-items: center; justify-content: center; font: 900 16px 'Orbitron', sans-serif; color: var(--accent-green); border: 1px solid rgba(255,255,255,0.1); }
+    .username { font-weight: 700; color: #fff; display: block; }
+    .email { font-size: 12px; color: var(--text-muted); }
+
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .badge-student { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+    .badge-medulab_member { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); }
+    .badge-medulab_teacher { background: rgba(0, 255, 180, 0.15); color: var(--accent-green); }
+    .badge-medulab_staff { background: rgba(0, 255, 180, 0.15); color: var(--accent-green); }
+    .badge-general { background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); }
+
+    .action-btns { display: flex; gap: 8px; }
+    .btn-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.2s; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; padding: 0; }
+    .btn-icon:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+    .btn-edit:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
+    .btn-delete:hover { color: #ff6b6b; border-color: #ff6b6b; }
+
+    .add-btn { padding: 12px 24px; border-radius: 12px; background: var(--accent-green); color: var(--bg-primary); font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,255,180,0.2); font-size: 14px; }
+    .add-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,255,180,0.3); }
+
+    .approval-pending { color: #ffc107; font-weight: 700; font-size: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+    <div class="page-header">
+        <h1 class="page-title">⚙️ 회원 관리</h1>
+        <a href="{% url 'member_create' %}" class="add-btn">+ 신규 회원 등록</a>
+    </div>
+
+    <!-- 필터 및 검색 -->
+    <form class="filter-bar" method="GET">
+        <div class="search-input-group">
+            <span>🔍</span>
+            <input type="text" name="q" placeholder="아이디 또는 이메일로 검색..." value="{{ search_query }}">
+        </div>
+        <div class="type-filter">
+            <select name="type" onchange="this.form.submit()">
+                <option value="">모든 회원 유형</option>
+                {% for code, name in user_types %}
+                <option value="{{ code }}" {% if current_type == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
+    <div class="member-table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>사용자 정보</th>
+                    <th>유형</th>
+                    <th>권한 / 상태</th>
+                    <th>가입일</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar">{{ u.username|first|upper }}</div>
+                            <div>
+                                <span class="username">{{ u.username }}</span>
+                                <span class="email">{{ u.email }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ u.profile.user_type }}">
+                            {{ u.profile.get_user_type_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if u.is_staff %}
+                        <span class="badge badge-medulab_staff" style="margin-right: 8px;">관리자</span>
+                        {% endif %}
+                        
+                        {% if u.profile.is_approved %}
+                        <span style="font-size: 12px; color: var(--accent-green);">● 승인됨</span>
+                        {% elif u.profile.needs_approval %}
+                        <span class="approval-pending">⏳ 승인 대기</span>
+                        {% else %}
+                        <span style="font-size: 12px; color: var(--text-muted);">○ 미승인</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: var(--text-muted); font-size: 13px;">
+                        {{ u.date_joined|date:"Y.m.d" }}
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            <a href="{% url 'member_edit' u.id %}" class="btn-icon btn-edit" title="수정">✏️</a>
+                            {% if u != user %}
+                            <form action="{% url 'member_delete' u.id %}" method="POST" onsubmit="return confirm('정말로 이 회원을 삭제할까요? 모든 데이터가 삭제됩니다.');" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-icon btn-delete" title="삭제">🗑️</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align:center; padding: 60px; color: var(--text-muted);">
+                        조건에 맞는 회원이 없습니다.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

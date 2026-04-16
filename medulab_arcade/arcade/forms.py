@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Project, Tag
+from .models import Project, Tag, UserProfile
 
 
 class ProjectUploadForm(forms.ModelForm):
@@ -18,7 +18,7 @@ class ProjectUploadForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = [
-            'title', 'description', 'categories', 'author_display_name',
+            'author', 'title', 'description', 'categories', 'author_display_name',
             'thumbnail', 'thumbnail_emoji', 'color', 'accent',
             'project_zip', 'entry_file', 'external_url',
         ]
@@ -65,10 +65,17 @@ class ProjectUploadForm(forms.ModelForm):
                 'accept': 'image/*',
                 'class': 'form-file',
             }),
+            'author': forms.Select(attrs={
+                'class': 'form-input author-select',
+            }),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['author'].queryset = User.objects.all().order_by('-date_joined')
+        self.fields['author'].label = "실제 제작 회원 (내 작품 연동)"
+        self.fields['author'].required = False
+        
         if self.instance.pk:
             # 기존 태그들을 쉼표로 구분된 문자열로 변환
             self.fields['tags_str'].initial = ', '.join([t.name for t in self.instance.tags.all()])
@@ -143,10 +150,25 @@ class ProjectUploadForm(forms.ModelForm):
 
 
 class SignUpForm(UserCreationForm):
+    USER_TYPE_CHOICES = [
+        ('student', '🧑‍🎓 학생회원'),
+        ('general', '👤 일반회원'),
+        ('medulab_member', '🏠 메듀랩회원'),
+        ('medulab_teacher', '👩‍🏫 메듀랩강사'),
+        ('medulab_staff', '🛠️ 메듀랩스탭'),
+    ]
+
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={
         'placeholder': '이메일 주소',
         'class': 'form-input',
     }))
+
+    user_type = forms.ChoiceField(
+        label='회원 유형',
+        choices=USER_TYPE_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'user-type-radio'}),
+        initial='general',
+    )
 
     class Meta:
         model = User
@@ -166,3 +188,67 @@ class SignUpForm(UserCreationForm):
             'placeholder': '비밀번호 확인',
             'class': 'form-input',
         })
+
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        if commit:
+            from .models import UserProfile
+            user_type = self.cleaned_data.get('user_type', 'general')
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.user_type = user_type
+            # 학생/일반 회원은 자동 승인
+            if user_type in UserProfile.AUTO_APPROVE_TYPES:
+                profile.is_approved = True
+            else:
+                profile.is_approved = False
+            profile.save()
+        return user
+
+
+class AdminUserForm(forms.ModelForm):
+    password = forms.CharField(
+        label='비밀번호',
+        required=False,
+        widget=forms.PasswordInput(attrs={
+            'placeholder': '변경 시에만 입력하세요',
+            'class': 'form-input',
+        }),
+        help_text='비밀번호를 변경하려면 새 비밀번호를 입력하고, 유지하려면 비워두세요.'
+    )
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'is_staff', 'is_active')
+        labels = {
+            'username': '로그인 아이디',
+            'email': '이메일 주소',
+            'is_staff': '관리자 권한',
+            'is_active': '활성 상태',
+        }
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-input'}),
+            'email': forms.EmailInput(attrs={'class': 'form-input'}),
+        }
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password = self.cleaned_data.get('password')
+        if password:
+            user.set_password(password)
+        if commit:
+            user.save()
+        return user
+
+
+class AdminUserProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ('user_type', 'is_approved')
+        labels = {
+            'user_type': '회원 유형',
+            'is_approved': '승인 여부',
+        }
+        widgets = {
+            'user_type': forms.Select(attrs={'class': 'form-input'}),
+            'is_approved': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+        }

@@ -1,158 +1,258 @@
 {% extends "arcade/base.html" %}
 
-{% block title %}{{ program.name }} - MEDULAB{% endblock %}
+{% block title %}{{ program.name }} - 학습 센터{% endblock %}
 
 {% block extra_css %}
 <style>
-    .course-header {
-        padding: 60px 0 40px;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 40px;
-        display: flex;
-        align-items: flex-end;
-        gap: 32px;
+    :root {
+        --dash-glass: rgba(255, 255, 255, 0.03);
+        --dash-border: rgba(255, 255, 255, 0.08);
+        --neon-green: #00ffb4;
+        --neon-blue: #3b82f6;
+        --neon-purple: #a855f7;
     }
-    .header-img {
-        width: 120px;
-        height: 120px;
-        border-radius: 20px;
-        background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+
+    .main { padding-top: 40px; padding-bottom: 100px; }
+
+    /* 대시보드 헤더 */
+    .course-hero {
+        max-width: 1000px;
+        margin: 0 auto 60px;
+        padding: 60px;
+        background: radial-gradient(circle at top right, rgba(168, 85, 247, 0.1), transparent),
+                    var(--dash-glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--dash-border);
+        border-radius: 40px;
+        display: flex;
+        align-items: center;
+        gap: 48px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .course-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -50px;
+        right: -50px;
+        width: 200px;
+        height: 200px;
+        background: var(--neon-purple);
+        filter: blur(100px);
+        opacity: 0.1;
+    }
+
+    .hero-img-box {
+        width: 160px;
+        height: 160px;
+        border-radius: 32px;
+        background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 50px;
-        box-shadow: 0 10px 30px rgba(168, 85, 247, 0.2);
+        font-size: 64px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        flex-shrink: 0;
     }
-    .header-info h1 {
-        font: 900 36px 'Orbitron', sans-serif;
+
+    .hero-img-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: inherit;
+    }
+
+    .hero-body { flex: 1; }
+    .hero-label {
+        display: inline-block;
+        padding: 4px 12px;
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--neon-blue);
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+    }
+    .hero-title {
+        font: 900 38px 'Orbitron', sans-serif;
         color: #fff;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
+        letter-spacing: -1px;
     }
-    .header-info p {
+    .hero-desc {
         color: var(--text-secondary);
-        font-size: 16px;
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 500px;
+    }
+
+    /* 챕터 목록 */
+    .chapter-section {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        padding: 0 10px;
+    }
+    .section-head h2 {
+        font-size: 20px;
+        font-weight: 800;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
     .chapter-list {
         display: flex;
         flex-direction: column;
         gap: 16px;
-        max-width: 900px;
-        margin: 0 auto;
     }
-    .chapter-item {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 24px;
+
+    .chapter-card {
+        background: var(--dash-glass);
+        border: 1px solid var(--dash-border);
+        border-radius: 24px;
+        padding: 24px 32px;
         display: flex;
         align-items: center;
-        gap: 24px;
+        gap: 32px;
         text-decoration: none;
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        position: relative;
     }
-    .chapter-item:hover {
+
+    .chapter-card:hover {
         background: rgba(255, 255, 255, 0.06);
-        border-color: var(--accent-green);
-        transform: scale(1.01);
+        border-color: rgba(0, 255, 180, 0.3);
+        transform: translateX(8px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     }
-    .chapter-num {
-        font: 700 24px 'Orbitron', sans-serif;
-        color: var(--accent-green);
-        opacity: 0.5;
-        min-width: 40px;
+
+    .chapter-card:hover .card-arrow {
+        transform: translateX(4px);
+        color: var(--neon-green);
     }
-    .chapter-info {
-        flex: 1;
-    }
-    .chapter-title {
-        font-size: 18px;
-        font-weight: 700;
+
+    .chapter-idx {
+        font: 700 32px 'Orbitron', sans-serif;
         color: #fff;
-        margin-bottom: 4px;
+        opacity: 0.15;
+        min-width: 60px;
+        transition: opacity 0.3s;
     }
-    .chapter-desc {
-        font-size: 14px;
-        color: var(--text-muted);
-    }
-    
-    /* 진도율 바 */
-    .progress-wrap {
-        width: 120px;
-        text-align: right;
-    }
-    .progress-label {
-        font-size: 12px;
-        font-weight: 700;
-        color: var(--text-secondary);
+    .chapter-card:hover .chapter-idx { opacity: 0.4; color: var(--neon-green); }
+
+    .chapter-main { flex: 1; }
+    .chapter-name {
+        font-size: 19px;
+        font-weight: 800;
+        color: #fff;
         margin-bottom: 6px;
     }
-    .progress-bar-bg {
+    .chapter-summary {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    .progress-info {
+        text-align: right;
+        min-width: 140px;
+    }
+    .perc-text {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+    }
+    .bar-bg {
         width: 100%;
         height: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
         overflow: hidden;
     }
-    .progress-bar-fill {
+    .bar-fill {
         height: 100%;
-        background: var(--accent-green);
-        box-shadow: 0 0 10px rgba(0, 255, 180, 0.5);
-        transition: width 1s ease;
+        background: linear-gradient(90deg, var(--neon-blue), var(--neon-green));
+        border-radius: inherit;
+        transition: width 1s cubic-bezier(0.23, 1, 0.32, 1);
+        box-shadow: 0 0 12px rgba(0, 255, 180, 0.2);
     }
-    .icon-arrow {
+
+    .card-arrow {
+        font-size: 24px;
         color: var(--text-muted);
-        font-size: 20px;
+        transition: all 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+        .course-hero { flex-direction: column; text-align: center; padding: 40px 24px; }
+        .hero-desc { margin: 0 auto; }
+        .chapter-card { flex-direction: column; text-align: center; gap: 16px; padding: 32px; }
+        .progress-info { width: 100%; }
+        .card-arrow { display: none; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="main">
-    <div class="course-header">
-        <div class="header-img">
+    <div class="course-hero fade-in">
+        <div class="hero-img-box">
             {% if program.image %}
-                <img src="{{ program.image.url }}" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" alt="">
+                <img src="{{ program.image.url }}" alt="">
             {% else %}
                 🚀
             {% endif %}
         </div>
-        <div class="header-info">
-            <p>메듀랩 학습 코스</p>
-            <h1>{{ program.name }}</h1>
-            <p>{{ program.description }}</p>
+        <div class="hero-body">
+            <span class="hero-label">CURRICULUM DASHBOARD</span>
+            <h1 class="hero-title">{{ program.name }}</h1>
+            <p class="hero-desc">{{ program.description }}</p>
         </div>
     </div>
 
-    <div class="chapter-list">
-        {% for ch in chapters %}
-        <a href="{% url 'chapter_detail' ch.id %}" class="chapter-item">
-            <div class="chapter-num">{{ ch.number|stringformat:"02d" }}</div>
-            <div class="chapter-info">
-                <div class="chapter-title">{{ ch.title }}</div>
-                <div class="chapter-desc">{{ ch.content|default:"이 섹션의 학습 내용을 확인하세요." }}</div>
-            </div>
-            
-            <div class="progress-wrap">
-                <div class="progress-label">{{ ch.progress|default:0 }}% 완료</div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" style="width: {{ ch.progress|default:0 }}%;"></div>
+    <div class="chapter-section fade-in" style="animation-delay: 0.1s;">
+        <div class="section-head">
+            <h2><span>📚</span> Chapters</h2>
+            <div style="font-size: 13px; color: var(--text-muted);">총 {{ chapters|length }}개의 단원</div>
+        </div>
+
+        <div class="chapter-list">
+            {% for ch in chapters %}
+            <a href="{% url 'chapter_detail' ch.id %}" class="chapter-card">
+                <div class="chapter-idx">{{ ch.number|stringformat:"02d" }}</div>
+                
+                <div class="chapter-main">
+                    <div class="chapter-name">{{ ch.title }}</div>
+                    <div class="chapter-summary">{{ ch.content|truncatechars:80|default:"학습 목표와 주요 내용을 확인하세요." }}</div>
                 </div>
+                
+                <div class="progress-info">
+                    <div class="perc-text">{{ ch.progress|default:0 }}% COMPLETE</div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: {{ ch.progress|default:0 }}%;"></div>
+                    </div>
+                </div>
+                
+                <div class="card-arrow">→</div>
+            </a>
+            {% empty %}
+            <div class="empty-state">
+                <div style="font-size: 40px; margin-bottom: 16px;">⏳</div>
+                <p>아직 등록된 챕터가 없습니다.</p>
             </div>
-            
-            <div class="icon-arrow">→</div>
-        </a>
-        {% empty %}
-        <div class="empty">등록된 강의가 없습니다.</div>
-        {% endfor %}
+            {% endfor %}
+        </div>
     </div>
 </main>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // 템플릿 필터 대용 (Django 기본 필터에 dict 조회가 없으므로 커스텀 필터가 필요하지만, 
-    // 여기서는 간단히 하기 위해 서버에서 progress_map을 넘기는 방식을 사용했습니다.
-    // 만약 에러가 난다면 view에서 데이터를 좀 더 가공해서 주거나 커스텀 태그를 만들어야 합니다.)
-</script>
 {% endblock %}

@@ -14,8 +14,10 @@ from django.db.models import Count, Q
 from django.contrib.auth import login
 from django.contrib import messages
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from .models import Project, Category, Like, Bookmark, Tag
-from .forms import ProjectUploadForm, SignUpForm
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required, user_passes_test
+from .models import Project, Category, Like, Bookmark, Tag, UserProfile
+from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm
 
 
 def home(request):
@@ -114,6 +116,10 @@ def edit_project(request, project_id):
         form = ProjectUploadForm(request.POST, request.FILES, instance=project)
         if form.is_valid():
             updated = form.save(commit=False)
+            
+            # 일반 사용자는 본인이 제작자여야 하며 제작자를 바꿀 수 없음
+            if not request.user.is_staff:
+                updated.author = request.user
             # 수동 썸네일이 없고 자동 썸네일이 전달된 경우 적용
             if not request.FILES.get('thumbnail'):
                 import json as _json
@@ -162,7 +168,10 @@ def upload(request):
         form = ProjectUploadForm(request.POST, request.FILES)
         if form.is_valid():
             project = form.save(commit=False)
-            project.author = request.user
+            
+            # 제작자 결정: 관리자면 폼 선택값 우선, 아니면 현재 사용자
+            if not request.user.is_staff or not project.author:
+                project.author = request.user
             # 수동 썸네일이 없을 때 자동 생성 썸네일 적용 (최대 3개)
             if not request.FILES.get('thumbnail'):
                 import json as _json
@@ -1001,9 +1010,118 @@ def signup(request):
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
+            user_type = form.cleaned_data.get('user_type', 'general')
             login(request, user)
-            messages.success(request, '가입 완료! 환영합니다! 🎮')
+            # 메듀랩 계열(승인 필요)인 경우
+            if user_type in ('medulab_member', 'medulab_teacher', 'medulab_staff'):
+                messages.info(request, '🎉 가입이 완료되었습니다! 관리자 승인을 기다려주세요. 승인 후 교육 프로그램 및 홈플레이를 이용하실 수 있습니다.')
+            else:
+                messages.success(request, '가입 완료! 환영합니다! 🎮')
             return redirect('home')
     else:
         form = SignUpForm()
     return render(request, 'arcade/signup.html', {'form': form})
+
+
+# ────────────────────────────────────────────────
+# 회원 관리 (관리자 전용 CRUD)
+# ────────────────────────────────────────────────
+
+def staff_check(user):
+    return user.is_staff
+
+@login_required
+@user_passes_test(staff_check)
+def member_list(request):
+    """회원 목록 조회"""
+    search = request.GET.get('q', '')
+    user_type = request.GET.get('type', '')
+    
+    users = User.objects.all().select_related('profile').order_by('-date_joined')
+    
+    if search:
+        users = users.filter(
+            Q(username__icontains=search) |
+            Q(email__icontains=search)
+        )
+    if user_type:
+        users = users.filter(profile__user_type=user_type)
+        
+    context = {
+        'users': users,
+        'search_query': search,
+        'current_type': user_type,
+        'user_types': UserProfile.USER_TYPE_CHOICES,
+    }
+    return render(request, 'arcade/admin/member_list.html', context)
+
+@login_required
+@user_passes_test(staff_check)
+def member_create(request):
+    """신규 회원 등록"""
+    if request.method == 'POST':
+        user_form = AdminUserForm(request.POST)
+        profile_form = AdminUserProfileForm(request.POST)
+        
+        if user_form.is_valid() and profile_form.is_valid():
+            user = user_form.save()
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            # 프로필 정보 업데이트
+            profile.user_type = profile_form.cleaned_data['user_type']
+            profile.is_approved = profile_form.cleaned_data['is_approved']
+            profile.save()
+            
+            messages.success(request, f'회원 "{user.username}" 계정이 생성되었습니다.')
+            return redirect('member_list')
+    else:
+        user_form = AdminUserForm()
+        profile_form = AdminUserProfileForm()
+        
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'title': '신규 회원 등록',
+    }
+    return render(request, 'arcade/admin/member_form.html', context)
+
+@login_required
+@user_passes_test(staff_check)
+def member_edit(request, user_id):
+    """회원 정보 수정"""
+    target_user = get_object_or_404(User, pk=user_id)
+    profile, _ = UserProfile.objects.get_or_create(user=target_user)
+    
+    if request.method == 'POST':
+        user_form = AdminUserForm(request.POST, instance=target_user)
+        profile_form = AdminUserProfileForm(request.POST, instance=profile)
+        
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, f'회원 "{target_user.username}" 정보가 수정되었습니다.')
+            return redirect('member_list')
+    else:
+        user_form = AdminUserForm(instance=target_user)
+        profile_form = AdminUserProfileForm(instance=profile)
+        
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'target_user': target_user,
+        'title': '회원 정보 수정',
+    }
+    return render(request, 'arcade/admin/member_form.html', context)
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def member_delete(request, user_id):
+    """회원 삭제"""
+    target_user = get_object_or_404(User, pk=user_id)
+    if target_user == request.user:
+        messages.error(request, '본인 계정은 삭제할 수 없습니다.')
+    else:
+        username = target_user.username
+        target_user.delete()
+        messages.success(request, f'회원 "{username}" 계정이 삭제되었습니다.')
+    return redirect('member_list')

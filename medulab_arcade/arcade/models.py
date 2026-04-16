@@ -6,6 +6,56 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+
+# ────────────────────────────────────────────────
+# 사용자 프로필 (회원 유형 & 승인 관리)
+# ────────────────────────────────────────────────
+class UserProfile(models.Model):
+    USER_TYPE_CHOICES = [
+        ('student', '학생회원'),
+        ('general', '일반회원'),
+        ('medulab_member', '메듀랩회원'),
+        ('medulab_teacher', '메듀랩강사'),
+        ('medulab_staff', '메듀랩스탭'),
+    ]
+
+    # 자동 승인 대상 유형
+    AUTO_APPROVE_TYPES = ('student', 'general')
+    # 정회원(교육 프로그램 + 기록 저장 사용 가능) 유형
+    FULL_ACCESS_TYPES = ('medulab_member', 'medulab_teacher', 'medulab_staff')
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user_type = models.CharField('회원 유형', max_length=20, choices=USER_TYPE_CHOICES, default='general')
+    is_approved = models.BooleanField('승인 여부', default=False)
+    approved_at = models.DateTimeField('승인일시', null=True, blank=True)
+    created_at = models.DateTimeField('가입일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '사용자 프로필'
+        verbose_name_plural = '사용자 프로필'
+
+    def __str__(self):
+        return f'{self.user.username} ({self.get_user_type_display()})'
+
+    @property
+    def is_full_member(self):
+        """정회원 여부: 메듀랩 계열이면서 승인된 경우"""
+        return self.user_type in self.FULL_ACCESS_TYPES and self.is_approved
+
+    @property
+    def needs_approval(self):
+        """승인 대기 상태인지"""
+        return self.user_type in self.FULL_ACCESS_TYPES and not self.is_approved
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """User 생성 시 프로필 자동 생성"""
+    if created and not hasattr(instance, '_skip_profile'):
+        UserProfile.objects.get_or_create(user=instance)
 
 
 def project_thumbnail_path(instance, filename):

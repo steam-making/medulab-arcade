@@ -1,55 +1,169 @@
 {% extends "arcade/base.html" %}
 
-{% block title %}전체 랭킹 - 타자연습{% endblock %}
+{% block title %}명예의 전당 - 메듀랩{% endblock %}
 
 {% block extra_css %}
 <style>
-    .ranking-container {
-        max-width: 1000px;
-        margin: 60px auto;
-        padding: 0 24px;
+    :root {
+        --rank-glass: rgba(255, 255, 255, 0.03);
+        --rank-border: rgba(255, 255, 255, 0.08);
+        --neon-gold: #ffd700;
+        --neon-silver: #cbd5e1;
+        --neon-bronze: #cd7f32;
+        --neon-blue: #3b82f6;
     }
+
+    .ranking-container {
+        max-width: 1200px;
+        margin: 80px auto;
+        padding: 0 24px;
+        animation: fadeSlideUp 0.6s ease;
+    }
+
+    @keyframes fadeSlideUp {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     .ranking-header {
         text-align: center;
-        margin-bottom: 48px;
+        margin-bottom: 60px;
     }
+
     .ranking-header h1 {
-        font: 900 42px 'Orbitron', sans-serif;
-        color: #fff;
-        margin-bottom: 12px;
+        font: 900 64px 'Orbitron', sans-serif;
+        letter-spacing: -2px;
+        background: linear-gradient(135deg, #fff, var(--neon-blue));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 16px;
     }
+
+    .ranking-header p {
+        color: var(--text-muted);
+        font-size: 18px;
+        font-weight: 500;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
     .ranking-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 24px;
-        padding: 40px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        background: var(--rank-glass);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid var(--rank-border);
+        border-radius: 40px;
+        padding: 60px;
+        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+        position: relative;
+        overflow: hidden;
     }
+
+    .ranking-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+    }
+
     .ranking-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0 16px;
     }
+
     .ranking-table th {
         text-align: left;
-        padding: 16px;
-        border-bottom: 1px solid var(--border);
+        padding: 0 20px 10px;
         color: var(--text-muted);
-        font-size: 13px;
+        font-size: 12px;
         text-transform: uppercase;
+        letter-spacing: 2px;
+        font-weight: 800;
     }
-    .ranking-table td {
-        padding: 20px 16px;
-        border-bottom: 1px solid var(--border);
+
+    .rank-row {
+        background: rgba(255, 255, 255, 0.02);
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .rank-row:hover {
+        background: rgba(255, 255, 255, 0.06);
+        transform: scale(1.01) translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .rank-row td {
+        padding: 24px 20px;
         color: #fff;
-        font-size: 16px;
     }
-    .top-rank {
+
+    .rank-row td:first-child { border-radius: 16px 0 0 16px; }
+    .rank-row td:last-child { border-radius: 0 16px 16px 0; }
+
+    .rank-num {
+        width: 44px;
+        height: 44px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--rank-border);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font: 900 20px 'Orbitron', sans-serif;
+        color: var(--text-muted);
+    }
+
+    .top-1 .rank-num {
+        color: var(--neon-gold);
+        border-color: rgba(255, 215, 0, 0.3);
+        background: rgba(255, 215, 0, 0.05);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+    }
+    .top-2 .rank-num { color: var(--neon-silver); border-color: rgba(203, 213, 225, 0.3); }
+    .top-3 .rank-num { color: var(--neon-bronze); border-color: rgba(205, 127, 50, 0.3); }
+
+    .user-info { display: flex; align-items: center; gap: 12px; }
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        border: 1px solid var(--rank-border);
+    }
+
+    .stat-main { font-weight: 800; font-size: 20px; color: var(--neon-blue); }
+    .stat-sub { font-size: 12px; color: var(--text-muted); margin-left: 2px; }
+
+    .badge-type {
+        font-size: 10px;
         font-weight: 900;
-        font-size: 18px;
+        padding: 4px 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        letter-spacing: 0.5px;
     }
-    .rank-1 { color: #fbbf24; }
-    .rank-2 { color: #cbd5e1; }
-    .rank-3 { color: #cd7f32; }
+
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 60px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 15px;
+        transition: color 0.2s;
+    }
+    .back-btn:hover { color: var(--neon-blue); }
 </style>
 {% endblock %}
 
@@ -57,44 +171,64 @@
 <main class="ranking-container">
     <div class="ranking-header">
         <h1>HALL OF FAME</h1>
-        <p>메듀랩 아케이드의 타자 고수들을 소개합니다.</p>
+        <p>메듀랩 아케이드의 최강 타자 마스터들을 만나보세요.</p>
     </div>
 
     <div class="ranking-card">
         <table class="ranking-table">
             <thead>
                 <tr>
-                    <th>순위</th>
-                    <th>사용자</th>
-                    <th>유형</th>
-                    <th>점수</th>
-                    <th>속도(WPM)</th>
-                    <th>정확도</th>
-                    <th>날짜</th>
+                    <th>RANK</th>
+                    <th>PLAYER</th>
+                    <th>TYPE</th>
+                    <th>SPEED</th>
+                    <th>ACCURACY</th>
+                    <th style="text-align: right;">DATE</th>
                 </tr>
             </thead>
             <tbody>
                 {% for r in rankings %}
-                <tr class="{% if forloop.counter <= 3 %}top-rank rank-{{ forloop.counter }}{% endif %}">
-                    <td>#{{ forloop.counter }}</td>
-                    <td>{{ r.user.username }}</td>
-                    <td>{{ r.get_practice_type_display }} ({{ r.get_language_display }})</td>
-                    <td><strong>{{ r.score }}</strong></td>
-                    <td>{{ r.speed }} 타</td>
-                    <td>{{ r.accuracy }}%</td>
-                    <td style="color: var(--text-muted); font-size: 14px;">{{ r.created_at|date:"Y-m-d" }}</td>
+                <tr class="rank-row {% if forloop.counter == 1 %}top-1{% elif forloop.counter == 2 %}top-2{% elif forloop.counter == 3 %}top-3{% endif %}">
+                    <td>
+                        <div class="rank-num">{{ forloop.counter }}</div>
+                    </td>
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar">👤</div>
+                            <span style="font-weight: 800; font-size: 17px;">{{ r.user.username }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge-type">{{ r.get_practice_type_display }} ({{ r.get_language_display }})</span>
+                    </td>
+                    <td>
+                        <span class="stat-main">{{ r.speed }}</span>
+                        <span class="stat-sub">WPM</span>
+                    </td>
+                    <td>
+                        <span style="font-weight: 800; font-size: 17px;">{{ r.accuracy }}</span>
+                        <span class="stat-sub">%</span>
+                    </td>
+                    <td style="text-align: right; color: var(--text-muted); font-size: 14px;">
+                        {{ r.created_at|date:"Y.m.d" }}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 60px; color: var(--text-muted);">아직 등록된 기록이 없습니다.</td>
+                    <td colspan="6" style="text-align: center; padding: 100px; color: var(--text-muted);">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🏆</div>
+                        아직 기록된 랭킹 데이터가 없습니다.<br>첫 번째 랭커가 되어보세요!
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <div style="margin-top: 40px; text-align: center;">
-        <a href="{% url 'typing_home' %}" class="nav-link" style="padding: 12px 32px; display: inline-block;">메인으로 돌아가기</a>
+    <div style="text-align: center;">
+        <a href="{% url 'typing_home' %}" class="back-btn">
+            ← 타자연습 메인으로 돌아가기
+        </a>
     </div>
 </main>
 {% endblock %}

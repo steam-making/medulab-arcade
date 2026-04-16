@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Project, Category, Like, Bookmark
+from django.utils import timezone
+from .models import Project, Category, Like, Bookmark, UserProfile
 
 
 @admin.register(Category)
@@ -41,3 +42,22 @@ class LikeAdmin(admin.ModelAdmin):
 @admin.register(Bookmark)
 class BookmarkAdmin(admin.ModelAdmin):
     list_display = ('user', 'project', 'created_at')
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'user_type', 'is_approved', 'approved_at', 'created_at')
+    list_filter = ('user_type', 'is_approved')
+    list_editable = ('is_approved',)
+    search_fields = ('user__username', 'user__email')
+    actions = ['approve_members', 'reject_members']
+
+    def approve_members(self, request, queryset):
+        queryset.update(is_approved=True, approved_at=timezone.now())
+        self.message_user(request, f'{queryset.count()}명의 회원이 승인되었습니다.')
+    approve_members.short_description = '✅ 선택한 회원 승인'
+
+    def reject_members(self, request, queryset):
+        queryset.update(is_approved=False, approved_at=None)
+        self.message_user(request, f'{queryset.count()}명의 회원이 승인 취소되었습니다.')
+    reject_members.short_description = '❌ 선택한 회원 승인 취소'

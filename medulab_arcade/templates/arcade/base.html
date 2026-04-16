@@ -1,48 +1,60 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="Yx1QTDoeNGksJMHAjBUe-w2u_NMHwBAHSwouBQkFr0k" />
     <meta name="naver-site-verification" content="dbed7336ce7eb3eeaa3db10d155fbc21a5aae66d" />
-    <title>{% block title %}메듀랩 아케이드 - 무료 코딩 교육 및 AI 게임{% endblock %}</title>
+
+    <title>{% block title %}메듀랩 - 무료 코딩 교육 및 AI 게임{% endblock %}</title>
 
     <!-- SEO Meta Tags -->
-    <meta name="description" content="메듀랩 아케이드: 무료 코딩 교육, AI 코딩, 파이썬 타자연습 및 나만의 게임 작품을 만들고 즐길 수 있는 온라인 교육 플랫폼입니다.">
-    <meta name="keywords" content="무료코딩교육, 메듀랩, AI코딩, 타자연습, 파이썬, 무료온라인게임, 나만의작품, 코딩교육, 메듀랩아케이드">
+    <meta name="description" content="메듀랩: 무료 코딩 교육, AI 코딩, 파이썬 타자연습 및 나만의 게임 작품을 만들고 즐길 수 있는 온라인 교육 플랫폼입니다.">
+    <meta name="keywords" content="무료코딩교육, 메듀랩, AI코딩, 타자연습, 파이썬, 무료온라인게임, 나만의작품, 코딩교육">
     <meta name="author" content="Medulab">
     <link rel="canonical" href="{{ request.build_absolute_uri }}">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
-    <meta property="og:title" content="메듀랩 아케이드 - 나만의 코딩 작품과 게임">
-    <meta property="og:description" content="무료 코딩 교육 및 AI 게임 제작 플랫폼 메듀랩 아케이드에서 나만의 작품을 만들고 공유해보세요!">
+    <meta property="og:title" content="메듀랩 - 나만의 코딩 작품과 게임">
+    <meta property="og:description" content="무료 코딩 교육 및 AI 게임 제작 플랫폼 메듀랩에서 나만의 작품을 만들고 공유해보세요!">
     <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'arcade/img/logo.png' %}">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{ request.build_absolute_uri }}">
-    <meta property="twitter:title" content="메듀랩 아케이드 - 나만의 코딩 작품과 게임">
-    <meta property="twitter:description" content="무료 코딩 교육 및 AI 게임 제작 플랫폼 메듀랩 아케이드에서 나만의 작품을 만들고 공유해보세요!">
-    <meta property="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'arcade/img/logo.png' %}">
+    <meta property="twitter:title" content="메듀랩 - 나만의 코딩 작품과 게임">
+    <meta property="twitter:description" content="무료 코딩 교육 및 AI 게임 제작 플랫폼 메듀랩에서 나만의 작품을 만들고 공유해보세요!">
+    <meta property="twitter:image"
+        content="{{ request.scheme }}://{{ request.get_host }}{% static 'arcade/img/logo.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Orbitron:wght@700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Orbitron:wght@700;900&family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap"
+        rel="stylesheet">
+    {% block extra_css %}{% endblock %}
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         :root {
             --bg-primary: #08080f;
             --bg-card: #111118;
             --bg-surface: #0a0a12;
             --text-primary: #ffffff;
-            --text-secondary: rgba(255,255,255,0.6);
-            --text-muted: rgba(255,255,255,0.35);
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-muted: rgba(255, 255, 255, 0.35);
             --accent-green: #00ffb4;
             --accent-blue: #00b4ff;
             --accent-purple: #a855f7;
-            --border: rgba(255,255,255,0.08);
+            --border: rgba(255, 255, 255, 0.08);
         }
 
         body {
@@ -55,133 +67,226 @@
 
         /* ---- 파티클 배경 ---- */
         #particles {
-            position: fixed; inset: 0;
-            pointer-events: none; z-index: 0;
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
         }
 
         /* ---- 네비게이션 ---- */
         .nav {
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(8,8,15,0.88);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(8, 8, 15, 0.88);
             backdrop-filter: blur(24px);
             border-bottom: 1px solid var(--border);
         }
+
         .nav-inner {
-            max-width: 1400px; margin: 0 auto;
+            max-width: 1400px;
+            margin: 0 auto;
             padding: 12px 24px;
-            display: flex; align-items: center; justify-content: space-between;
-            gap: 16px; flex-wrap: wrap;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
         }
+
         .logo-group {
-            display: flex; align-items: center; gap: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
             text-decoration: none;
         }
+
         .logo-icon {
-            width: 44px; height: 44px; border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
             background: linear-gradient(135deg, var(--accent-green), var(--accent-blue), var(--accent-purple));
             background-size: 200% 200%;
             animation: gradientMove 4s ease infinite;
-            display: flex; align-items: center; justify-content: center;
-            font: 900 22px 'Orbitron', sans-serif; color: var(--bg-primary);
-            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font: 900 22px 'Orbitron', sans-serif;
+            color: var(--bg-primary);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
         }
+
         .logo-text {
             font: 900 20px 'Orbitron', sans-serif;
             background: linear-gradient(90deg, var(--accent-green), var(--accent-blue), var(--accent-purple));
             background-size: 200% 100%;
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             animation: gradientMove 4s ease infinite;
         }
+
         .logo-sub {
-            color: var(--text-muted); font-size: 10px;
-            font-weight: 600; letter-spacing: 2px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 2px;
         }
+
         @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         /* 검색 */
         .search-box {
-            position: relative; flex: 0 1 380px; min-width: 200px;
+            position: relative;
+            flex: 0 1 380px;
+            min-width: 200px;
         }
+
         .search-box input {
-            width: 100%; padding: 10px 16px 10px 42px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid var(--border); border-radius: 12px;
-            color: #fff; font-size: 14px; outline: none;
+            width: 100%;
+            padding: 10px 16px 10px 42px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
             font-family: 'Noto Sans KR', sans-serif;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
+
         .search-box input:focus {
-            border-color: rgba(0,255,180,0.4);
-            box-shadow: 0 0 0 3px rgba(0,255,180,0.08);
+            border-color: rgba(0, 255, 180, 0.4);
+            box-shadow: 0 0 0 3px rgba(0, 255, 180, 0.08);
         }
+
         .search-box .icon {
-            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-            color: var(--text-muted); font-size: 16px;
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
         }
 
         /* 네비 링크 */
         .nav-links {
-            display: flex; gap: 8px; align-items: center;
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
+
         .nav-link {
-            padding: 8px 16px; border-radius: 10px;
-            background: rgba(255,255,255,0.06);
+            padding: 8px 16px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
             color: var(--text-secondary);
-            text-decoration: none; font-size: 13px; font-weight: 600;
-            transition: all 0.2s; border: none; cursor: pointer;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
         }
-        .nav-link:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
         .nav-link.accent {
             background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
             color: var(--bg-primary);
         }
-        .nav-link.accent:hover { box-shadow: 0 4px 20px rgba(0,255,180,0.3); }
+
+        .nav-link.accent:hover {
+            box-shadow: 0 4px 20px rgba(0, 255, 180, 0.3);
+        }
 
         /* ---- 메인 ---- */
-        .main { max-width: 1400px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+        .main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
 
         /* 히어로 */
         .hero {
-            text-align: center; padding: 52px 20px 32px;
+            text-align: center;
+            padding: 52px 20px 32px;
             animation: fadeSlideIn 0.6s ease;
         }
+
         .hero h1 {
             font: 900 clamp(28px, 5vw, 54px) 'Orbitron', sans-serif;
             color: #fff;
             animation: glow 3s ease-in-out infinite;
             margin-bottom: 12px;
         }
+
         .hero p {
-            color: var(--text-muted); font-size: 15px;
-            max-width: 500px; margin: 0 auto; line-height: 1.7;
+            color: var(--text-muted);
+            font-size: 15px;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.7;
         }
+
         @keyframes glow {
-            0%, 100% { text-shadow: 0 0 20px rgba(0,255,180,0.3); }
-            50% { text-shadow: 0 0 40px rgba(0,255,180,0.6), 0 0 60px rgba(0,255,180,0.2); }
+
+            0%,
+            100% {
+                text-shadow: 0 0 20px rgba(0, 255, 180, 0.3);
+            }
+
+            50% {
+                text-shadow: 0 0 40px rgba(0, 255, 180, 0.6), 0 0 60px rgba(0, 255, 180, 0.2);
+            }
         }
 
         /* 카테고리 필터 */
         .filters {
-            display: flex; gap: 8px; justify-content: center;
-            margin-bottom: 36px; flex-wrap: wrap;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 36px;
+            flex-wrap: wrap;
         }
+
         .filter-btn {
-            padding: 8px 22px; border-radius: 24px; border: none;
-            background: rgba(255,255,255,0.06);
-            color: var(--text-secondary); font-size: 13px;
-            font-weight: 700; cursor: pointer;
+            padding: 8px 22px;
+            border-radius: 24px;
+            border: none;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
             font-family: 'Noto Sans KR', sans-serif;
             transition: all 0.25s;
         }
-        .filter-btn:hover { background: rgba(255,255,255,0.12); }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
         .filter-btn.active {
             background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
             color: var(--bg-primary);
-            box-shadow: 0 4px 20px rgba(0,255,180,0.3);
+            box-shadow: 0 4px 20px rgba(0, 255, 180, 0.3);
         }
 
         /* ---- 카드 그리드 ---- */
@@ -192,152 +297,277 @@
         }
 
         .card {
-            position: relative; border-radius: 16px; overflow: hidden;
-            cursor: pointer; aspect-ratio: 1 / 1;
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            aspect-ratio: 1 / 1;
             transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
             animation: fadeSlideIn 0.5s ease both;
             text-decoration: none;
         }
+
         .card:hover {
             transform: translateY(-8px) scale(1.03);
         }
+
         /* 썸네일 없는 카드: 중앙 정렬 */
         .card-inner {
-            position: absolute; inset: 0;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 18px; text-align: center;
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            text-align: center;
         }
+
         .card-emoji {
-            font-size: 54px; margin-bottom: 10px;
+            font-size: 54px;
+            margin-bottom: 10px;
             transition: all 0.3s ease;
         }
+
         .card:hover .card-emoji {
             transform: scale(1.15) rotate(-5deg);
-            filter: drop-shadow(0 0 12px rgba(255,255,255,0.4));
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.4));
         }
 
         /* 썸네일 있는 카드: 슬라이드 컨테이너 */
         .card-thumbs {
-            position: absolute; inset: 0;
+            position: absolute;
+            inset: 0;
         }
+
         .card-thumb {
-            position: absolute; inset: 0;
-            width: 100%; height: 100%;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
             opacity: 0;
             transition: opacity 0.55s ease, transform 0.55s ease;
             transform: scale(1.04);
         }
+
         .card-thumb.active {
             opacity: 1;
             transform: scale(1);
         }
+
         .card:hover .card-thumb.active {
             transform: scale(1.06);
         }
+
         /* 썸네일 카드용 오버레이 (하단 그라디언트) */
         .card-thumb-overlay {
-            position: absolute; inset: 0;
-            background: linear-gradient(
-                to bottom,
-                transparent 35%,
-                rgba(0,0,0,0.55) 65%,
-                rgba(0,0,0,0.82) 100%
-            );
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom,
+                    transparent 35%,
+                    rgba(0, 0, 0, 0.55) 65%,
+                    rgba(0, 0, 0, 0.82) 100%);
             z-index: 1;
         }
+
         /* 썸네일 카드용 하단 텍스트 영역 */
         .card-inner-thumb {
-            position: absolute; bottom: 0; left: 0; right: 0;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
             padding: 12px 14px 16px;
-            z-index: 2; text-align: left;
+            z-index: 2;
+            text-align: left;
         }
+
         .card-title {
-            color: #fff; font-weight: 700; font-size: 14px;
-            line-height: 1.35; margin-bottom: 4px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            line-height: 1.35;
+            margin-bottom: 4px;
         }
+
         .card-author {
-            color: rgba(255,255,255,0.55); font-size: 11px;
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 11px;
         }
+
         .card-badge {
-            position: absolute; top: 8px; right: 8px;
+            position: absolute;
+            top: 8px;
+            right: 8px;
             font: 700 10px 'JetBrains Mono', monospace;
-            padding: 3px 9px; border-radius: 20px; color: #fff;
+            padding: 3px 9px;
+            border-radius: 20px;
+            color: #fff;
         }
+
         .card-bar {
-            position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
-            transform: scaleX(0); transform-origin: left;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            transform: scaleX(0);
+            transform-origin: left;
             transition: transform 0.3s ease;
         }
-        .card:hover .card-bar { transform: scaleX(1); }
+
+        .card:hover .card-bar {
+            transform: scaleX(1);
+        }
 
         /* 통계 */
-        .stats { display: flex; gap: 24px; color: var(--text-muted); font-size: 12px; }
-        .stats .num { font-weight: 700; font-size: 16px; }
+        .stats {
+            display: flex;
+            gap: 24px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .stats .num {
+            font-weight: 700;
+            font-size: 16px;
+        }
 
         /* 메시지 */
-        .messages-list { list-style: none; padding: 0; }
+        .messages-list {
+            list-style: none;
+            padding: 0;
+        }
+
         .msg {
-            max-width: 1400px; margin: 12px auto; padding: 12px 24px;
-            border-radius: 12px; font-size: 14px;
+            max-width: 1400px;
+            margin: 12px auto;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
             animation: fadeSlideIn 0.3s ease;
         }
-        .msg.success { background: rgba(0,255,180,0.1); color: var(--accent-green); border: 1px solid rgba(0,255,180,0.2); }
-        .msg.error { background: rgba(255,60,60,0.1); color: #ff6b6b; border: 1px solid rgba(255,60,60,0.2); }
+
+        .msg.success {
+            background: rgba(0, 255, 180, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(0, 255, 180, 0.2);
+        }
+
+        .msg.error {
+            background: rgba(255, 60, 60, 0.1);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 60, 60, 0.2);
+        }
 
         /* 빈 결과 */
-        .empty { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 15px; }
+        .empty {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+            font-size: 15px;
+        }
 
         /* 푸터 */
         .footer {
-            text-align: center; padding: 28px;
+            text-align: center;
+            padding: 28px;
             border-top: 1px solid var(--border);
-            position: relative; z-index: 1;
+            position: relative;
+            z-index: 1;
         }
-        .footer p { color: rgba(255,255,255,0.18); font-size: 12px; }
+
+        .footer p {
+            color: rgba(255, 255, 255, 0.18);
+            font-size: 12px;
+        }
 
         /* 애니메이션 */
         @keyframes fadeSlideIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* 스크롤바 */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
 
         /* 반응형 */
         @media (max-width: 768px) {
-            .nav-inner { padding: 10px 16px; }
-            .search-box { flex: 1 1 100%; order: 10; }
-            .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-            .main { padding: 0 16px; }
+            .nav-inner {
+                padding: 10px 16px;
+            }
+
+            .search-box {
+                flex: 1 1 100%;
+                order: 10;
+            }
+
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 12px;
+            }
+
+            .main {
+                padding: 0 16px;
+            }
         }
 
         /* 네비게이션 드롭다운 */
-        .nav-dropdown { position: relative; display: inline-block; }
+        .nav-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
         .dropdown-content {
             display: none;
             position: absolute;
             right: 0;
             background: #1e293b;
             min-width: 170px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             z-index: 1000;
             padding: 10px 0;
             margin-top: 8px;
             animation: fadeIn 0.2s ease;
         }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .nav-dropdown:hover .dropdown-content { display: block; }
+
+        .nav-dropdown:hover .dropdown-content {
+            display: block;
+        }
+
         .dropdown-content a {
             color: #fff;
             padding: 12px 20px;
@@ -347,155 +577,202 @@
             transition: background 0.2s;
             text-align: left;
         }
-        .dropdown-content a:hover { background: rgba(255,255,255,0.06); }
-        .dropdown-content .accent-text { color: #facc15 !important; font-weight: 700; }
 
-        {% block extra_css %}{% endblock %}
+        .dropdown-content a:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .dropdown-content .accent-text {
+            color: #facc15 !important;
+            font-weight: 700;
+        }
+
+            {
+            % block extra_css %
+        }
+
+            {
+            % endblock %
+        }
     </style>
 </head>
+
 <body>
 
-<canvas id="particles"></canvas>
+    <canvas id="particles"></canvas>
 
-<!-- 네비게이션 -->
-<nav class="nav">
-    <div class="nav-inner">
-        <a href="{% url 'home' %}" class="logo-group">
-            <div class="logo-icon" style="padding: 0; overflow: hidden;"><img src="{% static 'arcade/img/logo.png' %}" alt="메듀랩" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></div>
-            <div>
-                <div class="logo-text">MEDULAB</div>
-                <div class="logo-sub">AI로봇코딩 융합학원</div>
+    <!-- 네비게이션 -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="{% url 'home' %}" class="logo-group">
+                <div class="logo-icon" style="padding: 0; overflow: hidden;"><img
+                        src="{% static 'arcade/img/logo.png' %}" alt="메듀랩"
+                        style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></div>
+                <div>
+                    <div class="logo-text">MEDULAB</div>
+                    <div class="logo-sub">AI로봇코딩 융합학원</div>
+                </div>
+            </a>
+
+            <!-- 검색 및 주요 링크 그룹 -->
+            <div style="display: flex; align-items: center; gap: 12px; flex: 0 1 auto;">
+                <form class="search-box" style="flex: 0 1 320px;" method="GET" action="{% url 'home' %}">
+                    <span class="icon">🔍</span>
+                    <input type="text" name="q" placeholder="작품 검색..." value="{{ search_query|default:'' }}"
+                        autocomplete="off">
+                </form>
+
+                <a href="{% url 'typing_home' %}" class="nav-link"
+                    style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); white-space: nowrap;">
+                    ⌨️ 타자연습
+                </a>
+
+                <a href="{% url 'student_course_list' %}" class="nav-link restriction-check"
+                    style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); white-space: nowrap;">
+                    🏫 교육프로그램
+                </a>
+                <a href="{% url 'student_homework_list' %}" class="nav-link restriction-check"
+                    style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); white-space: nowrap;">
+                    🏠 홈플레이
+                </a>
             </div>
-        </a>
 
-        <!-- 검색 및 주요 링크 그룹 -->
-        <div style="display: flex; align-items: center; gap: 12px; flex: 0 1 auto;">
-            <form class="search-box" style="flex: 0 1 320px;" method="GET" action="{% url 'home' %}">
-                <span class="icon">🔍</span>
-                <input type="text" name="q" placeholder="작품 검색..." value="{{ search_query|default:'' }}" autocomplete="off">
-            </form>
-
-            <a href="{% url 'typing_home' %}" class="nav-link" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); white-space: nowrap;">
-                ⌨️ 타자연습
-            </a>
-
-            <a href="{% url 'student_course_list' %}" class="nav-link" style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); white-space: nowrap;">
-                🏫 교육프로그램
-            </a>
-            <a href="{% url 'student_homework_list' %}" class="nav-link" style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); white-space: nowrap;">
-                🏠 홈플레이
-            </a>
-        </div>
-
-        <div class="nav-links">
-            {% if user.is_authenticated %}
+            <div class="nav-links">
+                {% if user.is_authenticated %}
                 {% if user.is_staff %}
-                    <div class="nav-dropdown">
-                        <button class="nav-link dropdown-toggle" style="color: #60a5fa; border: none; background: none; cursor: pointer;">
-                            🛠️ 관리 서비스 <span style="font-size: 10px; margin-left: 4px;">▼</span>
-                        </button>
-                        <div class="dropdown-content">
-                            <a href="{% url 'learning_program_list' %}">⚙️ 코스 관리</a>
-                            <a href="{% url 'homework_admin_list' %}">📝 과제 관리</a>
-                            <a href="{% url 'my_projects' %}">🎨 작품 관리</a>
-                            <a href="{% url 'upload' %}" class="accent-text">📤 업로드</a>
-                        </div>
+                <div class="nav-dropdown">
+                    <button class="nav-link dropdown-toggle"
+                        style="color: #60a5fa; border: none; background: none; cursor: pointer;">
+                        🛠️ 관리 서비스 <span style="font-size: 10px; margin-left: 4px;">▼</span>
+                    </button>
+                    <div class="dropdown-content">
+                        <a href="{% url 'upload' %}" class="accent-text">📤 업로드</a>
+                        <a href="{% url 'my_projects' %}">🎨 작품 관리</a>
+                        <a href="{% url 'learning_program_list' %}">⚙️ 코스 관리</a>
+                        <a href="{% url 'homework_admin_list' %}">📝 과제 관리</a>
+                        <a href="{% url 'member_list' %}">⚙️ 회원 관리</a>
                     </div>
+                </div>
                 {% else %}
-                    <a href="{% url 'my_projects' %}" class="nav-link">내 작품</a>
-                    <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
+                <a href="{% url 'my_projects' %}" class="nav-link">내 작품</a>
+                <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
                 {% endif %}
                 <a href="{% url 'logout' %}" class="nav-link">로그아웃</a>
-            {% else %}
+                {% else %}
                 <a href="{% url 'login' %}" class="nav-link">로그인</a>
                 <a href="{% url 'signup' %}" class="nav-link accent">회원가입</a>
-            {% endif %}
+                {% endif %}
+            </div>
         </div>
+    </nav>
+
+    <!-- 메시지 -->
+    {% if messages %}
+    <ul class="messages-list">
+        {% for message in messages %}
+        <li class="msg {{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <!-- 승인 대기 안내 배너 -->
+    {% if user.is_authenticated and user.profile.needs_approval %}
+    <div style="background: rgba(255, 193, 7, 0.15); border: 1px solid rgba(255, 193, 7, 0.3); color: #ffc107; padding: 12px; text-align: center; font-size: 14px; margin-bottom: 20px;">
+        ⚠️ 회원 가입 심사 중입니다. 관리자 승인이 완료될 때까지 기다려 주세요. (승인 후 교육 프로그램 이용 가능)
     </div>
-</nav>
+    {% endif %}
 
-<!-- 메시지 -->
-{% if messages %}
-<ul class="messages-list">
-    {% for message in messages %}
-    <li class="msg {{ message.tags }}">{{ message }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
+    <!-- 메인 컨텐츠 -->
+    {% block content %}{% endblock %}
 
-<!-- 메인 컨텐츠 -->
-{% block content %}{% endblock %}
+    <!-- 푸터 -->
+    <footer class="footer">
+        <p>© 2026 메듀랩 AI로봇코딩 융합학원 — Medulab</p>
+    </footer>
 
-<!-- 푸터 -->
-<footer class="footer">
-    <p>© 2026 메듀랩 AI로봇코딩 융합학원 — Student Arcade</p>
-</footer>
+    <!-- 파티클 스크립트 -->
+    <script>
+        (function () {
+            const canvas = document.getElementById('particles');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const particles = [];
+            function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            resize(); window.addEventListener('resize', resize);
+            for (let i = 0; i < 35; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+                    r: Math.random() * 2.5 + 0.8, dx: (Math.random() - 0.5) * 0.4, dy: (Math.random() - 0.5) * 0.4,
+                    a: Math.random() * 0.35 + 0.08
+                });
+            }
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.dx; p.y += p.dy;
+                    if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0,255,200,${p.a})`; ctx.fill();
+                });
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+    </script>
 
-<!-- 파티클 스크립트 -->
-<script>
-(function() {
-    const canvas = document.getElementById('particles');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const particles = [];
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    resize(); window.addEventListener('resize', resize);
-    for (let i = 0; i < 35; i++) {
-        particles.push({
-            x: Math.random()*canvas.width, y: Math.random()*canvas.height,
-            r: Math.random()*2.5+0.8, dx: (Math.random()-0.5)*0.4, dy: (Math.random()-0.5)*0.4,
-            a: Math.random()*0.35+0.08
-        });
-    }
-    function draw() {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        particles.forEach(p => {
-            p.x += p.dx; p.y += p.dy;
-            if (p.x<0) p.x=canvas.width; if (p.x>canvas.width) p.x=0;
-            if (p.y<0) p.y=canvas.height; if (p.y>canvas.height) p.y=0;
-            ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-            ctx.fillStyle = `rgba(0,255,200,${p.a})`; ctx.fill();
-        });
-        requestAnimationFrame(draw);
-    }
-    draw();
-})();
-</script>
+    <script>
+        /* ── 홈 카드 썸네일 hover 슬라이드 ── */
+        (function () {
+            function initCardSlides() {
+                document.querySelectorAll('.card-thumbs').forEach(function (wrap) {
+                    var thumbs = wrap.querySelectorAll('.card-thumb');
+                    if (thumbs.length <= 1) return;          // 이미지 1개면 슬라이드 불필요
+                    var card = wrap.closest('.card');
+                    var idx = 0, timer = null;
 
-<script>
-/* ── 홈 카드 썸네일 hover 슬라이드 ── */
-(function () {
-    function initCardSlides() {
-        document.querySelectorAll('.card-thumbs').forEach(function (wrap) {
-            var thumbs = wrap.querySelectorAll('.card-thumb');
-            if (thumbs.length <= 1) return;          // 이미지 1개면 슬라이드 불필요
-            var card = wrap.closest('.card');
-            var idx = 0, timer = null;
+                    card.addEventListener('mouseenter', function () {
+                        timer = setInterval(function () {
+                            thumbs[idx].classList.remove('active');
+                            idx = (idx + 1) % thumbs.length;
+                            thumbs[idx].classList.add('active');
+                        }, 850);
+                    });
 
-            card.addEventListener('mouseenter', function () {
-                timer = setInterval(function () {
-                    thumbs[idx].classList.remove('active');
-                    idx = (idx + 1) % thumbs.length;
-                    thumbs[idx].classList.add('active');
-                }, 850);
+                    card.addEventListener('mouseleave', function () {
+                        clearInterval(timer);
+                        timer = null;
+                        thumbs.forEach(function (t) { t.classList.remove('active'); });
+                        idx = 0;
+                        thumbs[0].classList.add('active');
+                    });
+                });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initCardSlides);
+            } else {
+                initCardSlides();
+            }
+        })();
+    </script>
+    <script>
+        /* ── 정회원 전용 기능 클릭 제한 ── */
+        document.querySelectorAll('.restriction-check').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                // 관리자는 통과
+                {% if user.is_staff or user.is_superuser %}
+                return;
+                {% endif %}
+
+                const isFullMember = {% if user.is_authenticated and user.profile.is_full_member %}true{% else %}false{% endif %};
+                if (!isFullMember) {
+                    e.preventDefault();
+                    alert('메듀랩 정회원만 이용 가능합니다.');
+                }
             });
-
-            card.addEventListener('mouseleave', function () {
-                clearInterval(timer);
-                timer = null;
-                thumbs.forEach(function (t) { t.classList.remove('active'); });
-                idx = 0;
-                thumbs[0].classList.add('active');
-            });
         });
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initCardSlides);
-    } else {
-        initCardSlides();
-    }
-})();
-</script>
-{% block extra_js %}{% endblock %}
+    </script>
+    {% block extra_js %}{% endblock %}
 </body>
+
 </html>

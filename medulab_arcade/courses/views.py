@@ -1,6 +1,7 @@
 import io
 import sys
 import openpyxl
+from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -12,6 +13,21 @@ from django.db.models import Count, Q
 # --- 권한 체크 유틸리티 ---
 def is_admin(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
+
+
+def require_full_member(view_func):
+    """메듀랩 정회원만 접근 가능하도록 하는 데코레이터"""
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        profile = getattr(request.user, 'profile', None)
+        # 관리자는 항상 통과
+        if request.user.is_staff or request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+        if not profile or not profile.is_full_member:
+            messages.warning(request, '메듀랩 정회원만 이용 가능합니다.')
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 
 # --- Python 오류 한글 가이드 매핑 ---
 PYTHON_ERROR_GUIDE = {
@@ -203,6 +219,7 @@ def download_course_template(request):
 
 # --- (2) 학생용 나의 코스 목록 ---
 @login_required
+@require_full_member
 def student_course_list(request):
     # 모든 활성 프로그램
     all_programs = LearningProgram.objects.filter(is_active=True).order_by("id")
@@ -218,6 +235,7 @@ def student_course_list(request):
 
 # --- (3) 수강 신청 ---
 @login_required
+@require_full_member
 def student_course_apply(request, program_id):
     program = get_object_or_404(LearningProgram, id=program_id)
     
@@ -232,6 +250,7 @@ def student_course_apply(request, program_id):
 
 # --- (4) 코스 홈 (챕터 구성) ---
 @login_required
+@require_full_member
 def course_home(request, program_id):
     program = get_object_or_404(LearningProgram, id=program_id)
     chapters = Chapter.objects.filter(program=program).order_by("number")
@@ -449,6 +468,7 @@ def item_delete(request, item_id):
     return render(request, "courses/item_confirm_delete.html", {"item": item})
 # --- (8) 학생용 숙제 관리 (홈플레이) ---
 @login_required
+@require_full_member
 def student_homework_list(request):
     # 내가 수강 신청한 프로그램 ID 목록
     enrolled_ids = LearningEnrollment.objects.filter(user=request.user).values_list("program_id", flat=True)

@@ -1,143 +1,256 @@
 {% extends "arcade/base.html" %}
+{% load static %}
 
 {% block title %}교육 프로그램 - MEDULAB{% endblock %}
 
 {% block extra_css %}
-    .course-grid {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 24px;
-        margin-top: 40px;
-        width: 100%;
+<style>
+    :root {
+        --course-glass: rgba(255, 255, 255, 0.03);
+        --course-border: rgba(255, 255, 255, 0.08);
+        --neon-green: #00ffb4;
+        --neon-blue: #3b82f6;
     }
-    @media (max-width: 1100px) {
-        .course-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    }
-    @media (max-width: 600px) {
-        .course-grid { grid-template-columns: 1fr !important; }
-    }
-    .course-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 20px;
+
+    .main { padding-bottom: 80px; }
+
+    .hero-section {
+        text-align: center;
+        padding: 80px 20px;
+        margin-bottom: 40px;
+        position: relative;
         overflow: hidden;
-        transition: all 0.3s ease;
+    }
+
+    .hero-section h1 {
+        font: 900 48px 'Orbitron', sans-serif;
+        margin-bottom: 16px;
+        background: linear-gradient(90deg, #fff, #60a5fa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -1px;
+    }
+
+    .hero-section p {
+        color: var(--text-muted);
+        font-size: 16px;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .course-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 32px;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .course-card {
+        background: var(--course-glass);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--course-border);
+        border-radius: 28px;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
         display: flex;
         flex-direction: column;
+        position: relative;
     }
+
+    .course-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.05), transparent);
+        pointer-events: none;
+    }
+
     .course-card:hover {
-        transform: translateY(-8px);
-        border-color: var(--accent-blue);
-        box-shadow: 0 12px 30px rgba(0, 180, 255, 0.15);
+        transform: translateY(-12px) scale(1.02);
+        border-color: rgba(59, 130, 246, 0.3);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 20px rgba(59, 130, 246, 0.1);
     }
+
+    .course-img-wrap {
+        width: 100%;
+        height: 200px;
+        overflow: hidden;
+        position: relative;
+    }
+
     .course-img {
         width: 100%;
-        height: 180px;
+        height: 100%;
         object-fit: cover;
-        background: #1a1a2e;
+        transition: transform 0.6s ease;
     }
-    .course-content {
-        padding: 24px;
+
+    .course-card:hover .course-img { transform: scale(1.1); }
+
+    .status-badge {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        padding: 6px 14px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--neon-green);
+        border: 1px solid rgba(0, 255, 180, 0.2);
+        z-index: 2;
+    }
+
+    .course-body {
+        padding: 28px;
         flex: 1;
         display: flex;
         flex-direction: column;
     }
+
     .course-type {
         font-size: 11px;
-        font-weight: 700;
+        font-weight: 800;
+        color: var(--neon-blue);
         text-transform: uppercase;
-        color: var(--accent-green);
-        margin-bottom: 8px;
-        letter-spacing: 1px;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
     }
+
     .course-title {
-        font-size: 20px;
-        font-weight: 700;
-        margin-bottom: 12px;
+        font-size: 22px;
+        font-weight: 800;
         color: #fff;
+        margin-bottom: 12px;
+        line-height: 1.3;
     }
+
     .course-desc {
         font-size: 14px;
         color: var(--text-secondary);
         line-height: 1.6;
-        margin-bottom: 24px;
+        margin-bottom: 30px;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
-    .course-footer {
-        margin-top: auto;
-    }
-    .btn-learn {
-        display: block;
+
+    .course-actions { margin-top: auto; }
+
+    .btn-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 100%;
-        padding: 14px;
-        border-radius: 12px;
-        text-align: center;
-        text-decoration: none;
-        font-weight: 700;
+        padding: 16px;
+        border-radius: 16px;
+        font-weight: 800;
         font-size: 14px;
-        transition: all 0.2s;
+        text-decoration: none;
+        transition: all 0.3s ease;
     }
+
     .btn-apply {
-        background: rgba(0, 255, 180, 0.1);
-        color: var(--accent-green);
-        border: 1px solid rgba(0, 255, 180, 0.3);
-    }
-    .btn-apply:hover {
-        background: var(--accent-green);
-        color: var(--bg-primary);
-    }
-    .btn-continue {
-        background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--course-border);
         color: #fff;
-        box-shadow: 0 4px 15px rgba(0, 180, 255, 0.3);
     }
-    .btn-continue:hover {
+
+    .btn-apply:hover {
+        background: #fff;
+        color: #000;
         transform: scale(1.02);
-        box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
     }
+
+    .btn-continue {
+        background: linear-gradient(135deg, var(--neon-blue), #8b5cf6);
+        color: #fff;
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-continue:hover {
+        filter: brightness(1.2);
+        box-shadow: 0 8px 30px rgba(59, 130, 246, 0.5);
+        transform: scale(1.02);
+    }
+
+    .admin-link {
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+        text-align: center;
+        display: block;
+        opacity: 0.6;
+    }
+    .admin-link:hover { opacity: 1; color: var(--neon-blue); }
+
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 100px 20px;
+        background: var(--course-glass);
+        border-radius: 32px;
+        border: 1px dashed var(--course-border);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <main class="main">
-    <section class="hero">
-        <h1>LEARNING CENTER</h1>
-        <p>나의 코딩 실력을 레벨업할 수 있는 맞춤형 학습 과정을 시작해보세요.</p>
-    </section>
+    <div class="hero-section">
+        <h1 class="fade-in">LEARNING CENTER</h1>
+        <p class="fade-in">나의 잠재력을 깨우는 최고의 코딩 교육 커리큘럼을 경험해보세요.</p>
+    </div>
 
     <div class="course-grid">
         {% for p in programs %}
         <div class="course-card">
-            {% if p.image %}
-                <img src="{{ p.image.url }}" class="course-img" alt="{{ p.name }}">
-            {% else %}
-                <div class="course-img" style="display: flex; align-items: center; justify-content: center; font-size: 40px;">📚</div>
+            {% if p.id in enrolled_ids %}
+                <span class="status-badge">LEARNING</span>
             {% endif %}
+
+            <div class="course-img-wrap">
+                {% if p.image %}
+                    <img src="{{ p.image.url }}" class="course-img" alt="{{ p.name }}">
+                {% else %}
+                    <div class="course-img" style="display: flex; align-items: center; justify-content: center; font-size: 50px; background: #1a1a2e;">📚</div>
+                {% endif %}
+            </div>
             
-            <div class="course-content">
-                <div class="course-type">{{ p.program_type.name|default:"일반 과정" }}</div>
+            <div class="course-body">
+                <div class="course-type">{{ p.program_type.name|default:"CORE CURRICULUM" }}</div>
                 <h3 class="course-title">{{ p.name }}</h3>
                 <p class="course-desc">{{ p.description }}</p>
                 
-                <div class="course-footer">
+                <div class="course-actions">
                     {% if p.id in enrolled_ids %}
-                        <a href="{% url 'course_home' p.id %}" class="btn-learn btn-continue">계속 학습하기 →</a>
+                        <a href="{% url 'course_home' p.id %}" class="btn-action btn-continue">
+                            계속 학습하기 
+                            <span style="font-size: 18px; margin-left:8px;">→</span>
+                        </a>
                     {% else %}
-                        <a href="{% url 'student_course_apply' p.id %}" class="btn-learn btn-apply" onclick="return confirm('해당 과정을 수강신청 하시겠습니까?');">수강 신청하기</a>
+                        <a href="{% url 'student_course_apply' p.id %}" class="btn-action btn-apply" onclick="return confirm('해당 과정을 수강신청 하시겠습니까?');">
+                            수강 신청하기
+                        </a>
                     {% endif %}
                     
                     {% if user.is_staff %}
-                        <a href="{% url 'chapter_manage' p.id %}" class="btn-learn" style="margin-top: 10px; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px dashed var(--border);">
-                            ⚙️ 관리자: 챕터 및 데이터 설정
+                        <a href="{% url 'chapter_manage' p.id %}" class="admin-link">
+                            ⚙️ Manage Structure
                         </a>
                     {% endif %}
                 </div>
             </div>
         </div>
         {% empty %}
-        <div class="empty">
+        <div class="empty-state">
+            <div style="font-size: 48px; margin-bottom: 20px;">📂</div>
             <p>아직 등록된 학습 과정이 없습니다.</p>
         </div>
         {% endfor %}

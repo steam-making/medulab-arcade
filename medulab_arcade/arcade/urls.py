@@ -15,4 +15,10 @@ urlpatterns = [
     path('api/like/<int:project_id>/', views.toggle_like, name='toggle_like'),
     path('api/bookmark/<int:project_id>/', views.toggle_bookmark, name='toggle_bookmark'),
     path('api/analyze-zip/', views.analyze_zip, name='analyze_zip'),
+
+    # 회원 관리 (관리자 전용)
+    path('admin-services/members/', views.member_list, name='member_list'),
+    path('admin-services/members/add/', views.member_create, name='member_create'),
+    path('admin-services/members/<int:user_id>/edit/', views.member_edit, name='member_edit'),
+    path('admin-services/members/<int:user_id>/delete/', views.member_delete, name='member_delete'),
 ]

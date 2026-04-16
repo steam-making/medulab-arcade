@@ -169,6 +169,18 @@
         animation: spin 0.7s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    /* 제작자 검색 선택기 스타일 */
+    .author-search-wrap { position: relative; margin-bottom: 8px; }
+    .author-search-input {
+        width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.08);
+        border: 1px solid var(--border); border-radius: 10px;
+        color: var(--accent-green); font-size: 13px; outline: none;
+    }
+    .author-select {
+        height: 120px !important; margin-top: 4px;
+    }
+    .author-select option { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .author-select option:checked { background: var(--accent-green) !important; color: #000; }
 </style>
 {% endblock %}
 
@@ -295,6 +307,21 @@
                 {{ form.description }}
                 {% if form.description.errors %}<div class="errors">{{ form.description.errors.0 }}</div>{% endif %}
             </div>
+
+            {% if user.is_staff %}
+            <div class="form-group" style="padding: 16px; background: rgba(0,255,180,0.03); border: 1px dashed rgba(0,255,180,0.2); border-radius: 16px;">
+                <label style="color: var(--accent-green); display: flex; align-items: center; gap: 6px;">
+                    👤 제작 회원 검색/선택 (관리자 전용)
+                </label>
+                <div class="author-search-wrap">
+                    <input type="text" id="authorSearch" class="author-search-input" placeholder="아이디 또는 이름으로 검색...">
+                </div>
+                {{ form.author }}
+                <div class="help" style="color: var(--accent-green); opacity: 0.8;">
+                    회원을 선택하면 해당 회원의 '내 작품' 목록에 나타납니다. (선택 안 하면 본인으로 설정)
+                </div>
+            </div>
+            {% endif %}
 
             <div class="form-group">
                 <label>표시 이름 *</label>
@@ -469,6 +496,23 @@ function showZipError(msg) {
     panel.innerHTML = `<div class="analyze-panel-title" style="color:#ff6b6b;">⚠️ 분석 실패</div>
         <div class="analyze-row">${msg}</div>`;
     panel.classList.add('show');
+}
+
+// 제작자 검색 필터링 로직
+const authorSearch = document.getElementById('authorSearch');
+const authorSelect = document.querySelector('.author-select');
+
+if (authorSearch && authorSelect) {
+    authorSearch.addEventListener('input', function(e) {
+        const term = e.target.value.toLowerCase();
+        const options = authorSelect.options;
+        
+        for (let i = 0; i < options.length; i++) {
+            const text = options[i].text.toLowerCase();
+            const show = text.includes(term);
+            options[i].style.display = show ? 'block' : 'none';
+        }
+    });
 }
 </script>
 {% endblock %}

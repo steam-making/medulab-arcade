@@ -1,38 +1,282 @@
 {% extends 'arcade/base.html' %}
 
+{% block title %}메듀랩 - 나만의 코딩 작품과 게임{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --home-glass: rgba(255, 255, 255, 0.03);
+        --home-border: rgba(255, 255, 255, 0.08);
+        --accent-green: #00ffb4;
+        --accent-blue: #3b82f6;
+    }
+
+    .main { padding-bottom: 100px; }
+
+    /* 히어로 섹션 개편 */
+    .hero {
+        text-align: center;
+        padding: 100px 20px 80px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero h1 {
+        font: 900 64px 'Orbitron', sans-serif;
+        margin-bottom: 20px;
+        background: linear-gradient(90deg, #fff, var(--accent-blue), var(--accent-green));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -2px;
+        filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.2));
+    }
+
+    .hero p {
+        color: var(--text-muted);
+        font-size: 18px;
+        max-width: 600px;
+        margin: 0 auto 32px;
+        font-weight: 500;
+    }
+
+    .hero .stats {
+        display: flex;
+        justify-content: center;
+        gap: 32px;
+        margin-top: 20px;
+    }
+
+    .stats .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .stats .num {
+        font: 900 28px 'Orbitron', sans-serif;
+    }
+
+    .stats .label {
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 1px;
+    }
+
+    /* 필터 버튼 */
+    .filters {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 60px;
+        flex-wrap: wrap;
+        padding: 0 20px;
+    }
+
+    .filter-btn {
+        padding: 10px 24px;
+        background: var(--home-glass);
+        border: 1px solid var(--home-border);
+        border-radius: 12px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+    }
+
+    .filter-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--accent-blue);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
+    .filter-btn.active {
+        background: var(--accent-blue);
+        color: #fff;
+        border-color: var(--accent-blue);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    /* 작품 그리드 및 카드 개편 */
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 40px;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+
+    .card {
+        background: var(--home-glass);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--home-border);
+        border-radius: 28px;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .card:hover {
+        transform: translateY(-12px);
+        border-color: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-thumbs {
+        position: relative;
+        height: 200px;
+        background: rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+    }
+
+    .card-thumb {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 0.8s ease, transform 1s ease;
+    }
+
+    .card-thumb.active { opacity: 1; }
+    .card:hover .card-thumb.active { transform: scale(1.08); }
+
+    .card-thumb-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.4));
+        z-index: 1;
+    }
+
+    .card-inner-thumb {
+        padding: 24px;
+        z-index: 2;
+        background: linear-gradient(to bottom, transparent, rgba(8, 8, 15, 0.95));
+        margin-top: -60px;
+        position: relative;
+    }
+
+    .card-inner {
+        padding: 50px 30px;
+        text-align: center;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .card-emoji {
+        font-size: 56px;
+        margin-bottom: 20px;
+        transition: transform 0.4s ease;
+    }
+    .card:hover .card-emoji { transform: scale(1.2) rotate(10deg); }
+
+    .card-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 6px;
+    }
+
+    .card-author {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .card-tag {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 2px 8px;
+        border-radius: 6px;
+        margin-right: 4px;
+    }
+
+    .card-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.5s ease;
+    }
+    .card:hover .card-bar { transform: scaleX(1); }
+
+    .card-badges {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        gap: 6px;
+        z-index: 10;
+    }
+    .card-badge {
+        width: 36px;
+        height: 36px;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="main">
     <!-- 히어로 -->
-    <div class="hero">
-        <h1>STUDENT ARCADE</h1>
-        <p>메듀랩 학생들이 직접 만든 작품을 플레이해보세요!</p>
-        <div class="stats" style="justify-content:center; margin-top:16px;">
-            <span><span class="num" style="color:var(--accent-green);">{{ total_projects }}</span> 작품</span>
-            <span><span class="num" style="color:var(--accent-blue);">{{ total_plays|default:0 }}</span> 플레이</span>
+    <div class="hero fade-in">
+        <h1>MEDULAB WORKS</h1>
+        <p>메듀랩 학생들이 창의력으로 빚어낸 놀라운 코딩 작품들을 만나보세요.</p>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <span class="num" style="color:var(--accent-green);">{{ total_projects }}</span>
+                <span class="label">PROJECTS</span>
+            </div>
+            <div class="stat-item">
+                <span class="num" style="color:var(--accent-blue);">{{ total_plays|default:0 }}</span>
+                <span class="label">PLAYS</span>
+            </div>
         </div>
     </div>
 
     <!-- 카테고리 필터 -->
-    <div class="filters">
-        <a href="{% url 'home' %}" class="filter-btn {% if not current_category %}active{% endif %}">전체</a>
+    <div class="filters fade-in" style="animation-delay: 0.1s;">
+        <a href="{% url 'home' %}" class="filter-btn {% if not current_category %}active{% endif %}">전체 작품</a>
         {% for cat in categories %}
         <a href="?category={{ cat.name }}" class="filter-btn {% if current_category == cat.name %}active{% endif %}">
-            {{ cat.icon }} {{ cat.name }}
+            <span style="margin-right:8px;">{{ cat.icon }}</span>{{ cat.name }}
         </a>
         {% endfor %}
     </div>
 
     <!-- 작품 그리드 -->
-    <div class="grid">
+    <div class="grid fade-in" style="animation-delay: 0.2s;">
         {% for project in projects %}
-        <a href="{% url 'play' project.slug %}" class="card"
-           style="background:{{ project.color }};
-                  animation-delay: {{ forloop.counter0|divisibleby:1 }}ms;
-                  --accent: {{ project.accent }};"
-           onmouseenter="this.style.boxShadow='0 20px 40px rgba(0,0,0,0.4), 0 0 20px {{ project.accent }}44'"
-           onmouseleave="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.3)'">
+        <a href="{% url 'play' project.slug %}" class="card" 
+           style="--accent: {{ project.accent }};">
+            
             {% if project.thumbnail %}
-                {# ── 썸네일 있는 카드: 슬라이드 레이어 #}
                 <div class="card-thumbs">
                     <img src="{{ project.thumbnail.url }}"   class="card-thumb active" alt="">
                     {% if project.thumbnail_2 %}
@@ -41,53 +285,49 @@
                     {% if project.thumbnail_3 %}
                     <img src="{{ project.thumbnail_3.url }}" class="card-thumb" alt="">
                     {% endif %}
+                    <div class="card-thumb-overlay"></div>
                 </div>
-                <div class="card-thumb-overlay"></div>
                 <div class="card-inner-thumb">
                     <div class="card-title">{{ project.title }}</div>
-                    <div class="card-author">{{ project.author_display_name }}</div>
-                    {% if project.tags.all %}
-                    <div style="margin-top:5px; display:flex; gap:4px; flex-wrap:wrap;">
+                    <div class="card-author">BY {{ project.author_display_name }}</div>
+                    <div style="margin-top:10px; display:flex; gap:4px; flex-wrap:wrap;">
                         {% for tag in project.tags.all|slice:":3" %}
-                        <span style="font-size:10px; color:rgba(255,255,255,0.55);">#{{ tag.name }}</span>
+                        <span class="card-tag">#{{ tag.name }}</span>
                         {% endfor %}
                     </div>
-                    {% endif %}
                 </div>
             {% else %}
-                {# ── 썸네일 없는 카드: 중앙 이모지 레이아웃 #}
                 <div class="card-inner">
                     <div class="card-emoji">{{ project.thumbnail_emoji }}</div>
                     <div class="card-title">{{ project.title }}</div>
-                    <div class="card-author">{{ project.author_display_name }}</div>
-                    {% if project.tags.all %}
-                    <div style="margin-top:8px; display:flex; gap:4px; flex-wrap:wrap; justify-content:center;">
+                    <div class="card-author">BY {{ project.author_display_name }}</div>
+                    <div style="margin-top:16px; display:flex; gap:6px; flex-wrap:wrap; justify-content:center;">
                         {% for tag in project.tags.all|slice:":3" %}
-                        <span style="font-size:10px; color:var(--text-muted); opacity:0.8;">#{{ tag.name }}</span>
+                        <span class="card-tag">#{{ tag.name }}</span>
                         {% endfor %}
-                        {% if project.tags.count > 3 %}
-                        <span style="font-size:10px; color:var(--text-muted); opacity:0.6;">...</span>
-                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
             {% endif %}
-            <div class="card-badges" style="position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; z-index: 5;">
+
+            <div class="card-badges">
                 {% for cat in project.categories.all %}
-                <div class="card-badge" style="background:{{ project.accent }}; border-radius: 8px; padding: 4px 8px; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);" title="{{ cat.name }}">
+                <div class="card-badge" title="{{ cat.name }}">
                     {{ cat.icon }}
                 </div>
                 {% endfor %}
             </div>
-            <div class="card-bar" style="background:{{ project.accent }};"></div>
+            <div class="card-bar" style="background:linear-gradient(90deg, transparent, {{ project.accent }});"></div>
         </a>
         {% empty %}
-        <div class="empty" style="grid-column: 1/-1;">
-            {% if search_query %}
-                "{{ search_query }}"에 대한 검색 결과가 없습니다 😢
-            {% else %}
-                아직 등록된 작품이 없습니다. 첫 번째 작품을 업로드해보세요! 🚀
-            {% endif %}
+        <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 100px; background: var(--home-glass); border-radius: 32px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">🏜️</div>
+            <p style="color:var(--text-muted); font-size: 18px;">
+                {% if search_query %}
+                    "{{ search_query }}"에 대한 검색 결과가 없습니다.
+                {% else %}
+                    아직 등록된 작품이 없습니다.
+                {% endif %}
+            </p>
         </div>
         {% endfor %}
     </div>

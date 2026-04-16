@@ -67,6 +67,7 @@ class ProjectUploadForm(forms.ModelForm):
             }),
             'author': forms.Select(attrs={
                 'class': 'form-input author-select',
+                'size': '7',
             }),
         }
 

@@ -177,10 +177,22 @@
         color: var(--accent-green); font-size: 13px; outline: none;
     }
     .author-select {
-        height: 120px !important; margin-top: 4px;
+        margin-top: 4px;
+        background: #1a1a1a !important; color: #ffffff !important;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 4px;
     }
-    .author-select option { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-    .author-select option:checked { background: var(--accent-green) !important; color: #000; }
+    .author-select option {
+        padding: 8px;
+        background: #1a1a1a !important;
+        color: #ffffff !important;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .author-select option:checked {
+        background: var(--accent-green) !important;
+        color: #000 !important;
+    }
 </style>
 {% endblock %}
 
@@ -498,19 +510,36 @@ function showZipError(msg) {
     panel.classList.add('show');
 }
 
-// 제작자 검색 필터링 로직
+// 제작자 검색 필터링 및 자동 입력 로직
 const authorSearch = document.getElementById('authorSearch');
 const authorSelect = document.querySelector('.author-select');
+const authorDisplayName = document.querySelector('input[name="author_display_name"]');
 
 if (authorSearch && authorSelect) {
+    // 모든 옵션을 초기 상태에서 저장해둡니다.
+    const allOptions = Array.from(authorSelect.options);
+
     authorSearch.addEventListener('input', function(e) {
         const term = e.target.value.toLowerCase();
-        const options = authorSelect.options;
         
-        for (let i = 0; i < options.length; i++) {
-            const text = options[i].text.toLowerCase();
-            const show = text.includes(term);
-            options[i].style.display = show ? 'block' : 'none';
+        // 목록을 비우고 검색어에 맞는 것만 다시 추가합니다.
+        authorSelect.innerHTML = '';
+        allOptions.forEach(opt => {
+            if (opt.text.toLowerCase().includes(term)) {
+                authorSelect.appendChild(opt);
+            }
+        });
+    });
+
+    authorSelect.addEventListener('change', function() {
+        const selectedOption = authorSelect.options[authorSelect.selectedIndex];
+        if (selectedOption && selectedOption.value && authorDisplayName) {
+            let name = selectedOption.text;
+            const match = name.match(/\(([^)]+)\)/);
+            if (match) {
+                name = match[1];
+            }
+            authorDisplayName.value = name;
         }
     });
 }

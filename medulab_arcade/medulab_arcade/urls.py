@@ -11,8 +11,13 @@ sitemaps = {
     'programs': LearningProgramSitemap,
 }
 
+from django.contrib.auth import views as auth_views
+from arcade.forms import EmailOrUsernameAuthenticationForm
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # 로그인 폼 커스터마이징을 위해 개별 선언 (ID/이메일 지원)
+    path('accounts/login/', auth_views.LoginView.as_view(authentication_form=EmailOrUsernameAuthenticationForm), name='login'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('courses/', include('courses.urls')),
     path('typing/', include('typing_practice.urls')),

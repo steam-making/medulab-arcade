@@ -115,3 +115,9 @@ X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # Sites framework ID
 SITE_ID = 1
+
+# 인증 백엔드 설정 (이메일 및 아이디 로그인 지원)
+AUTHENTICATION_BACKENDS = [
+    'arcade.backends.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]

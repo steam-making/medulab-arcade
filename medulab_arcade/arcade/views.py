@@ -1011,6 +1011,8 @@ def signup(request):
         if form.is_valid():
             user = form.save()
             user_type = form.cleaned_data.get('user_type', 'general')
+            # 다중 백엔드 사용 시 로그인할 백엔드를 명시해야 함
+            user.backend = 'arcade.backends.EmailOrUsernameModelBackend'
             login(request, user)
             # 메듀랩 계열(승인 필요)인 경우
             if user_type in ('medulab_member', 'medulab_teacher', 'medulab_staff'):

@@ -308,6 +308,11 @@
                 <div class="form-group">
                     <label>{{ field.label }}</label>
                     {{ field }}
+                    {% if field.help_text %}
+                        <div class="help" style="color: var(--text-muted); font-size: 11px; margin-top: 4px; margin-left: 4px;">
+                            {{ field.help_text }}
+                        </div>
+                    {% endif %}
                     {% if field.errors %}
                         <span class="error-msg">{{ field.errors.0 }}</span>
                     {% endif %}

@@ -8,10 +8,16 @@
     <meta name="google-site-verification" content="Yx1QTDoeNGksJMHAjBUe-w2u_NMHwBAHSwouBQkFr0k" />
     <meta name="naver-site-verification" content="dbed7336ce7eb3eeaa3db10d155fbc21a5aae66d" />
 
-    <title>{% block title %}메듀랩 - 무료 코딩 교육 및 AI 게임{% endblock %}</title>
+    <title>{% block title %}메듀랩 - 무료 온라인 게임 및 AI, 코딩교육{% endblock %}</title>
+
+    <!-- Branding & Icons -->
+    <link rel="icon" type="image/png" href="{% static 'arcade/img/favicon.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'arcade/img/favicon.png' %}">
+    <meta name="application-name" content="메듀랩 아케이드">
+    <meta name="apple-mobile-web-app-title" content="메듀랩 아케이드">
 
     <!-- SEO Meta Tags -->
-    <meta name="description" content="메듀랩: 무료 코딩 교육, AI 코딩, 파이썬 타자연습 및 나만의 게임 작품을 만들고 즐길 수 있는 온라인 교육 플랫폼입니다.">
+    <meta name="description" content="메듀랩: 무료 온라인 게임, 코딩교육, AI코딩, 파이썬, 타자연습 등 나만의 게임 작품을 만들고 즐길 수 있는 온라인 교육 플랫폼입니다.">
     <meta name="keywords" content="무료코딩교육, 메듀랩, AI코딩, 타자연습, 파이썬, 무료온라인게임, 나만의작품, 코딩교육">
     <meta name="author" content="Medulab">
     <link rel="canonical" href="{{ request.build_absolute_uri }}">
@@ -19,17 +25,28 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
-    <meta property="og:title" content="메듀랩 - 나만의 코딩 작품과 게임">
-    <meta property="og:description" content="무료 코딩 교육 및 AI 게임 제작 플랫폼 메듀랩에서 나만의 작품을 만들고 공유해보세요!">
+    <meta property="og:title" content="메듀랩 - 무료 온라인 게임 및 AI, 코딩교육">
+    <meta property="og:description" content="코딩 교육 및 AI 게임 제작 플랫폼 메듀랩에서 나만의 작품을 만들고 공유해보세요!">
     <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'arcade/img/logo.png' %}">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{ request.build_absolute_uri }}">
-    <meta property="twitter:title" content="메듀랩 - 나만의 코딩 작품과 게임">
+    <meta property="twitter:title" content="메듀랩 - 무료 온라인 게임 및 AI, 코딩교육">
     <meta property="twitter:description" content="무료 코딩 교육 및 AI 게임 제작 플랫폼 메듀랩에서 나만의 작품을 만들고 공유해보세요!">
     <meta property="twitter:image"
         content="{{ request.scheme }}://{{ request.get_host }}{% static 'arcade/img/logo.png' %}">
+
+    <!-- Structured Data for Google Search -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "메듀랩 아케이드",
+      "alternateName": ["Medulab Arcade", "메듀랩"],
+      "url": "{{ request.scheme }}://{{ request.get_host }}/"
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
         href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Orbitron:wght@700;900&family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap"
@@ -669,7 +686,8 @@
 
     <!-- 승인 대기 안내 배너 -->
     {% if user.is_authenticated and user.profile.needs_approval %}
-    <div style="background: rgba(255, 193, 7, 0.15); border: 1px solid rgba(255, 193, 7, 0.3); color: #ffc107; padding: 12px; text-align: center; font-size: 14px; margin-bottom: 20px;">
+    <div
+        style="background: rgba(255, 193, 7, 0.15); border: 1px solid rgba(255, 193, 7, 0.3); color: #ffc107; padding: 12px; text-align: center; font-size: 14px; margin-bottom: 20px;">
         ⚠️ 회원 가입 심사 중입니다. 관리자 승인이 완료될 때까지 기다려 주세요. (승인 후 교육 프로그램 이용 가능)
     </div>
     {% endif %}
@@ -749,18 +767,18 @@
     </script>
     <script>
         /* ── 정회원 전용 기능 클릭 제한 ── */
-        document.querySelectorAll('.restriction-check').forEach(function(link) {
-            link.addEventListener('click', function(e) {
+        document.querySelectorAll('.restriction-check').forEach(function (link) {
+            link.addEventListener('click', function (e) {
                 // 관리자는 통과
                 {% if user.is_staff or user.is_superuser %}
                 return;
                 {% endif %}
 
                 const isFullMember = {% if user.is_authenticated and user.profile.is_full_member %}true{% else %}false{% endif %};
-                if (!isFullMember) {
-                    e.preventDefault();
-                    alert('메듀랩 정회원만 이용 가능합니다.');
-                }
+        if (!isFullMember) {
+            e.preventDefault();
+            alert('메듀랩 정회원만 이용 가능합니다.');
+        }
             });
         });
     </script>

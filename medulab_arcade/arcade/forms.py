@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from .models import Project, Tag, UserProfile
 
 
@@ -173,22 +174,32 @@ class SignUpForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password1', 'password2')
+        fields = ('username', 'email')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # 한글 ID 지원을 위해 UnicodeUsernameValidator 적용
+        self.fields['username'].validators = [UnicodeUsernameValidator()]
+        self.fields['username'].help_text = '한글, 영문, 숫자, @/./+/-/_ 만 사용 가능합니다.'
         self.fields['username'].widget.attrs.update({
-            'placeholder': '사용자 이름',
+            'placeholder': '아이디 (한글 가능 예: 박종석890111)',
             'class': 'form-input',
         })
-        self.fields['password1'].widget.attrs.update({
-            'placeholder': '비밀번호',
+        self.fields['email'].widget.attrs.update({
+            'placeholder': '이메일 주소 (로그인에 사용 가능)',
             'class': 'form-input',
         })
-        self.fields['password2'].widget.attrs.update({
-            'placeholder': '비밀번호 확인',
-            'class': 'form-input',
-        })
+        # 비밀번호 필드 스타일 (UserCreationForm 내부 필드)
+        if 'password1' in self.fields:
+            self.fields['password1'].widget.attrs.update({'class': 'form-input', 'placeholder': '비밀번호'})
+        if 'password2' in self.fields:
+            self.fields['password2'].widget.attrs.update({'class': 'form-input', 'placeholder': '비밀번호 확인'})
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('이미 가입된 이메일 주소입니다.')
+        return email
 
     def save(self, commit=True):
         user = super().save(commit=commit)
@@ -253,3 +264,24 @@ class AdminUserProfileForm(forms.ModelForm):
             'user_type': forms.Select(attrs={'class': 'form-input'}),
             'is_approved': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
         }
+
+
+class EmailOrUsernameAuthenticationForm(AuthenticationForm):
+    """
+    아이디(Username) 필드 라벨을 '아이디 또는 이메일'로 변경한 인증 폼
+    """
+    username = forms.CharField(
+        label='아이디 또는 이메일',
+        widget=forms.TextInput(attrs={
+            'placeholder': '아이디 또는 이메일 주소',
+            'class': 'form-input',
+            'autofocus': True
+        })
+    )
+    password = forms.CharField(
+        label='비밀번호',
+        widget=forms.PasswordInput(attrs={
+            'placeholder': '비밀번호',
+            'class': 'form-input',
+        })
+    )

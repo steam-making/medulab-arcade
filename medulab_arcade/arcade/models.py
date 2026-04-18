@@ -28,6 +28,7 @@ class UserProfile(models.Model):
     FULL_ACCESS_TYPES = ('medulab_member', 'medulab_teacher', 'medulab_staff')
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    nickname = models.CharField('닉네임', max_length=30, blank=True, help_text='표시용 이름입니다. 미설정 시 아이디가 사용됩니다.')
     user_type = models.CharField('회원 유형', max_length=20, choices=USER_TYPE_CHOICES, default='general')
     is_approved = models.BooleanField('승인 여부', default=False)
     approved_at = models.DateTimeField('승인일시', null=True, blank=True)

@@ -17,7 +17,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import Project, Category, Like, Bookmark, Tag, UserProfile
-from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm
+from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, UserProfileUpdateForm
 
 
 def home(request):
@@ -113,7 +113,7 @@ def edit_project(request, project_id):
         return redirect('my_projects')
     
     if request.method == 'POST':
-        form = ProjectUploadForm(request.POST, request.FILES, instance=project)
+        form = ProjectUploadForm(request.POST, request.FILES, instance=project, user=request.user)
         if form.is_valid():
             updated = form.save(commit=False)
             
@@ -134,7 +134,7 @@ def edit_project(request, project_id):
             messages.success(request, '작품 정보가 수정되었습니다! ✨')
             return redirect('my_projects')
     else:
-        form = ProjectUploadForm(instance=project)
+        form = ProjectUploadForm(instance=project, user=request.user)
     
     context = {
         'form': form,
@@ -165,7 +165,7 @@ def _apply_auto_thumbnails(project, b64_list):
 def upload(request):
     """작품 업로드 페이지"""
     if request.method == 'POST':
-        form = ProjectUploadForm(request.POST, request.FILES)
+        form = ProjectUploadForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             project = form.save(commit=False)
             
@@ -194,7 +194,7 @@ def upload(request):
                 messages.success(request, '작품이 제출되었습니다! 선생님 승인 후 공개됩니다. ⏳')
             return redirect('home')
     else:
-        form = ProjectUploadForm()
+        form = ProjectUploadForm(user=request.user)
 
     return render(request, 'arcade/upload.html', {'form': form})
 
@@ -1023,6 +1023,42 @@ def signup(request):
     else:
         form = SignUpForm()
     return render(request, 'arcade/signup.html', {'form': form})
+
+
+@login_required
+def profile_view(request):
+    """마이페이지 - 대시보드 및 정보 수정"""
+    user = request.user
+    profile = user.profile
+    
+    if request.method == 'POST':
+        form = UserProfileUpdateForm(request.POST, instance=profile, user=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '회원 정보가 성공적으로 수정되었습니다.')
+            return redirect('profile')
+    else:
+        form = UserProfileUpdateForm(instance=profile, user=user)
+    
+    # 활동 통계 및 내역 조회
+    my_projects = Project.objects.filter(author=user).prefetch_related('categories')
+    liked_projects = Project.objects.filter(likes__user=user).prefetch_related('author', 'categories')
+    bookmarked_projects = Project.objects.filter(bookmarks__user=user).prefetch_related('author', 'categories')
+    
+    # 받은 총 좋아요/즐겨찾기 수 계산
+    total_likes_received = Like.objects.filter(project__author=user).count()
+    total_bookmarks_received = Bookmark.objects.filter(project__author=user).count()
+    
+    context = {
+        'profile': profile,
+        'form': form,
+        'my_projects': my_projects,
+        'liked_projects': liked_projects,
+        'bookmarked_projects': bookmarked_projects,
+        'total_likes': total_likes_received,
+        'total_bookmarks': total_bookmarks_received,
+    }
+    return render(request, 'arcade/profile.html', context)
 
 
 # ────────────────────────────────────────────────

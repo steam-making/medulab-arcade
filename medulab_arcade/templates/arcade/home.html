@@ -102,62 +102,7 @@
         box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
     }
 
-    /* 작품 그리드 및 카드 개편 */
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 40px;
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 24px;
-    }
-
-    .card {
-        background: var(--home-glass);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid var(--home-border);
-        border-radius: 28px;
-        overflow: hidden;
-        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-        text-decoration: none;
-        display: flex;
-        flex-direction: column;
-        position: relative;
-    }
-
-    .card:hover {
-        transform: translateY(-12px);
-        border-color: rgba(255, 255, 255, 0.2);
-        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
-    }
-
-    .card-thumbs {
-        position: relative;
-        height: 200px;
-        background: rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-    }
-
-    .card-thumb {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        opacity: 0;
-        transition: opacity 0.8s ease, transform 1s ease;
-    }
-
-    .card-thumb.active { opacity: 1; }
-    .card:hover .card-thumb.active { transform: scale(1.08); }
-
-    .card-thumb-overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.4));
-        z-index: 1;
-    }
+    /* 히어로 섹션 개편 */
 
     .card-inner-thumb {
         padding: 24px;
@@ -273,51 +218,7 @@
     <!-- 작품 그리드 -->
     <div class="grid fade-in" style="animation-delay: 0.2s;">
         {% for project in projects %}
-        <a href="{% url 'play' project.slug %}" class="card" 
-           style="--accent: {{ project.accent }};">
-            
-            {% if project.thumbnail %}
-                <div class="card-thumbs">
-                    <img src="{{ project.thumbnail.url }}"   class="card-thumb active" alt="">
-                    {% if project.thumbnail_2 %}
-                    <img src="{{ project.thumbnail_2.url }}" class="card-thumb" alt="">
-                    {% endif %}
-                    {% if project.thumbnail_3 %}
-                    <img src="{{ project.thumbnail_3.url }}" class="card-thumb" alt="">
-                    {% endif %}
-                    <div class="card-thumb-overlay"></div>
-                </div>
-                <div class="card-inner-thumb">
-                    <div class="card-title">{{ project.title }}</div>
-                    <div class="card-author">BY {{ project.author_display_name }}</div>
-                    <div style="margin-top:10px; display:flex; gap:4px; flex-wrap:wrap;">
-                        {% for tag in project.tags.all|slice:":3" %}
-                        <span class="card-tag">#{{ tag.name }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% else %}
-                <div class="card-inner">
-                    <div class="card-emoji">{{ project.thumbnail_emoji }}</div>
-                    <div class="card-title">{{ project.title }}</div>
-                    <div class="card-author">BY {{ project.author_display_name }}</div>
-                    <div style="margin-top:16px; display:flex; gap:6px; flex-wrap:wrap; justify-content:center;">
-                        {% for tag in project.tags.all|slice:":3" %}
-                        <span class="card-tag">#{{ tag.name }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-
-            <div class="card-badges">
-                {% for cat in project.categories.all %}
-                <div class="card-badge" title="{{ cat.name }}">
-                    {{ cat.icon }}
-                </div>
-                {% endfor %}
-            </div>
-            <div class="card-bar" style="background:linear-gradient(90deg, transparent, {{ project.accent }});"></div>
-        </a>
+            {% include 'arcade/components/project_card.html' with project=project %}
         {% empty %}
         <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 100px; background: var(--home-glass); border-radius: 32px;">
             <div style="font-size: 48px; margin-bottom: 20px;">🏜️</div>

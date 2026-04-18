@@ -73,11 +73,16 @@ class ProjectUploadForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         self.fields['author'].queryset = User.objects.all().order_by('-date_joined')
         self.fields['author'].label = "실제 제작 회원 (내 작품 연동)"
         self.fields['author'].required = False
         
+        # 닉네임이 있는 경우 표시 이름 기본값으로 설정
+        if user and not self.instance.pk and hasattr(user, 'profile') and user.profile.nickname:
+            self.fields['author_display_name'].initial = user.profile.nickname
+
         if self.instance.pk:
             # 기존 태그들을 쉼표로 구분된 문자열로 변환
             self.fields['tags_str'].initial = ', '.join([t.name for t in self.instance.tags.all()])
@@ -285,3 +290,48 @@ class EmailOrUsernameAuthenticationForm(AuthenticationForm):
             'class': 'form-input',
         })
     )
+
+
+class UserProfileUpdateForm(forms.ModelForm):
+    """
+    회원 정보(이메일, 닉네임) 수정을 위한 폼
+    """
+    email = forms.EmailField(
+        label='이메일 주소',
+        widget=forms.EmailInput(attrs={'class': 'form-input'})
+    )
+    nickname = forms.CharField(
+        label='닉네임 (표시 이름)',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': '작품 등록 시 사용할 기본 이름',
+            'class': 'form-input'
+        }),
+        help_text='미설정 시 아이디가 사용됩니다.'
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ('nickname',)
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields['email'].initial = user.email
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        user = self.instance.user
+        if User.objects.filter(email__iexact=email).exclude(pk=user.pk).exists():
+            raise forms.ValidationError('이미 다른 회원이 사용 중인 이메일 주소입니다.')
+        return email
+
+    def save(self, commit=True):
+        profile = super().save(commit=False)
+        user = profile.user
+        user.email = self.cleaned_data['email']
+        if commit:
+            user.save()
+            profile.save()
+        return profile

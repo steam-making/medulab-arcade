@@ -1,0 +1,50 @@
+<a href="{% url 'play' project.slug %}" class="card" style="--accent: {{ project.accent }};">
+    {% if project.thumbnail %}
+        <div class="card-thumbs">
+            <img src="{{ project.thumbnail.url }}" class="card-thumb active" alt="">
+            {% if project.thumbnail_2 %}
+            <img src="{{ project.thumbnail_2.url }}" class="card-thumb" alt="">
+            {% endif %}
+            {% if project.thumbnail_3 %}
+            <img src="{{ project.thumbnail_3.url }}" class="card-thumb" alt="">
+            {% endif %}
+            <div class="card-thumb-overlay"></div>
+        </div>
+        <div class="card-inner-thumb">
+            <div class="card-title">{{ project.title }}</div>
+            <div class="card-author">BY {{ project.author_display_name }}</div>
+            <div style="margin-top:10px; display:flex; gap:4px; flex-wrap:wrap;">
+                {% for tag in project.tags.all|slice:":3" %}
+                <span class="card-tag">#{{ tag.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="card-inner">
+            <div class="card-emoji">{{ project.thumbnail_emoji }}</div>
+            <div class="card-title">{{ project.title }}</div>
+            <div class="card-author">BY {{ project.author_display_name }}</div>
+            <div style="margin-top:16px; display:flex; gap:6px; flex-wrap:wrap; justify-content:center;">
+                {% for tag in project.tags.all|slice:":3" %}
+                <span class="card-tag">#{{ tag.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card-badges">
+        {% for cat in project.categories.all %}
+        <div class="card-badge" title="{{ cat.name }}">
+            {{ cat.icon }}
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if project.status == 'pending' %}
+    <div style="position: absolute; top: 16px; left: 16px; background: rgba(255, 193, 7, 0.9); color: #000; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; z-index: 10;">
+        ⏳ 승인 대기중
+    </div>
+    {% endif %}
+
+    <div class="card-bar" style="background:linear-gradient(90deg, transparent, {{ project.accent }});"></div>
+</a>

@@ -306,56 +306,39 @@
             box-shadow: 0 4px 20px rgba(0, 255, 180, 0.3);
         }
 
-        /* ---- 카드 그리드 ---- */
+        /* ---- 프리미엄 카드 그리드 ---- */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-            gap: 18px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            width: 100%;
         }
 
         .card {
-            position: relative;
-            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
             overflow: hidden;
-            cursor: pointer;
-            aspect-ratio: 1 / 1;
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-            animation: fadeSlideIn 0.5s ease both;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
             text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            aspect-ratio: 16 / 10;
         }
 
         .card:hover {
-            transform: translateY(-8px) scale(1.03);
+            transform: translateY(-10px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
 
-        /* 썸네일 없는 카드: 중앙 정렬 */
-        .card-inner {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 18px;
-            text-align: center;
-        }
-
-        .card-emoji {
-            font-size: 54px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .card:hover .card-emoji {
-            transform: scale(1.15) rotate(-5deg);
-            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.4));
-        }
-
-        /* 썸네일 있는 카드: 슬라이드 컨테이너 */
         .card-thumbs {
-            position: absolute;
-            inset: 0;
+            position: relative;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            overflow: hidden;
         }
 
         .card-thumb {
@@ -365,62 +348,62 @@
             height: 100%;
             object-fit: cover;
             opacity: 0;
-            transition: opacity 0.55s ease, transform 0.55s ease;
-            transform: scale(1.04);
+            transition: opacity 0.6s ease, transform 0.8s ease;
         }
 
-        .card-thumb.active {
-            opacity: 1;
-            transform: scale(1);
-        }
+        .card-thumb.active { opacity: 1; }
+        .card:hover .card-thumb.active { transform: scale(1.08); }
 
-        .card:hover .card-thumb.active {
-            transform: scale(1.06);
-        }
-
-        /* 썸네일 카드용 오버레이 (하단 그라디언트) */
         .card-thumb-overlay {
             position: absolute;
             inset: 0;
-            background: linear-gradient(to bottom,
-                    transparent 35%,
-                    rgba(0, 0, 0, 0.55) 65%,
-                    rgba(0, 0, 0, 0.82) 100%);
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.6));
             z-index: 1;
         }
 
-        /* 썸네일 카드용 하단 텍스트 영역 */
         .card-inner-thumb {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 12px 14px 16px;
+            padding: 20px;
             z-index: 2;
-            text-align: left;
         }
 
-        .card-title {
-            color: #fff;
-            font-weight: 700;
-            font-size: 14px;
-            line-height: 1.35;
-            margin-bottom: 4px;
+        .card-inner {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            text-align: center;
         }
 
-        .card-author {
-            color: rgba(255, 255, 255, 0.55);
-            font-size: 11px;
-        }
+        .card-emoji { font-size: 50px; margin-bottom: 15px; }
+        .card-title { color: #fff; font-weight: 800; font-size: 18px; margin-bottom: 6px; }
+        .card-author { color: var(--text-muted); font-size: 13px; font-weight: 600; }
+        .card-tag { font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 3px 10px; border-radius: 6px; }
 
-        .card-badge {
+        .card-badges {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            font: 700 10px 'JetBrains Mono', monospace;
-            padding: 3px 9px;
-            border-radius: 20px;
-            color: #fff;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 6px;
+            z-index: 10;
+        }
+        .card-badge {
+            width: 34px;
+            height: 34px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
         }
 
         .card-bar {
@@ -431,12 +414,14 @@
             height: 4px;
             transform: scaleX(0);
             transform-origin: left;
-            transition: transform 0.3s ease;
+            transition: transform 0.4s ease;
         }
+        .card:hover .card-bar { transform: scaleX(1); }
 
-        .card:hover .card-bar {
-            transform: scaleX(1);
-        }
+        /* 공통 탭 스타일 */
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* 통계 */
         .stats {
@@ -655,7 +640,8 @@
                         🛠️ 관리 서비스 <span style="font-size: 10px; margin-left: 4px;">▼</span>
                     </button>
                     <div class="dropdown-content">
-                        <a href="{% url 'upload' %}" class="accent-text">📤 업로드</a>
+                        <a href="{% url 'profile' %}" class="accent-text">👤 마이페이지</a>
+                        <a href="{% url 'upload' %}">📤 업로드</a>
                         <a href="{% url 'my_projects' %}">🎨 작품 관리</a>
                         <a href="{% url 'learning_program_list' %}">⚙️ 코스 관리</a>
                         <a href="{% url 'homework_admin_list' %}">📝 과제 관리</a>
@@ -663,7 +649,7 @@
                     </div>
                 </div>
                 {% else %}
-                <a href="{% url 'my_projects' %}" class="nav-link">내 작품</a>
+                <a href="{% url 'profile' %}" class="nav-link">👤 마이페이지</a>
                 <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
                 {% endif %}
                 <a href="{% url 'logout' %}" class="nav-link">로그아웃</a>

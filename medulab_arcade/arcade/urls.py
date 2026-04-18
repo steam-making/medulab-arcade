@@ -10,6 +10,7 @@ urlpatterns = [
     path('project/<int:project_id>/edit/', views.edit_project, name='edit_project'),
     path('project/<int:project_id>/approve/', views.approve_project, name='approve_project'),
     path('signup/', views.signup, name='signup'),
+    path('profile/', views.profile_view, name='profile'),
 
     # AJAX endpoints
     path('api/like/<int:project_id>/', views.toggle_like, name='toggle_like'),

@@ -473,18 +473,14 @@ def student_homework_list(request):
     # 내가 수강 신청한 프로그램 ID 목록
     enrolled_ids = LearningEnrollment.objects.filter(user=request.user).values_list("program_id", flat=True)
     
-    # 해당 프로그램들의 활성화된 과제 조회
-    all_assignments = HomeworkAssignment.objects.filter(
-        program_id__in=enrolled_ids,
+    # 노출 조건:
+    # 1. (내가 수강 중인 과정의 과제) AND (특정 배정이 없는 전체 공개 과제)
+    # 2. OR (내가 직접 배정인원으로 등록된 모든 과제)
+    assignments = HomeworkAssignment.objects.filter(
+        Q(program_id__in=enrolled_ids, assigned_users__isnull=True) |
+        Q(assigned_users=request.user),
         is_active=True
-    ).select_related('program').prefetch_related('linked_items', 'assigned_users').order_by('due_date', '-created_at')
-    
-    # assigned_users가 비어있으면 전체 공개, 아니면 해당 유저에게만 노출
-    assignments = []
-    for assignment in all_assignments:
-        assigned = assignment.assigned_users.all()
-        if not assigned.exists() or request.user in assigned:
-            assignments.append(assignment)
+    ).select_related('program').prefetch_related('linked_items', 'assigned_users').distinct().order_by('due_date', '-created_at')
     
     # 각 과제별 진행 상태 및 완료 여부 계산
     for assignment in assignments:

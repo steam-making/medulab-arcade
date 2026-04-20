@@ -1,0 +1,111 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}긴글 연습 목록 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+    .select-container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    .header-box {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .long-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 20px;
+    }
+    .long-card {
+        background: var(--tp-glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--tp-border);
+        border-radius: 20px;
+        padding: 24px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .long-card:hover {
+        transform: scale(1.02);
+        border-color: var(--neon-purple);
+        background: rgba(168, 85, 247, 0.05);
+    }
+    .long-meta {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .long-emoji {
+        font-size: 28px;
+    }
+    .long-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+    }
+    .long-lang {
+        font-size: 11px;
+        padding: 2px 8px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 4px;
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="select-container">
+    <div class="header-box fade-in">
+        <h1 style="font-size: 42px; font-weight: 900; margin-bottom: 16px;">긴글 연습 선택</h1>
+        <p style="color: var(--text-muted); font-size: 18px;">실전 타자 테스트에 도전하세요.</p>
+    </div>
+
+    <div class="long-grid fade-in" style="animation-delay: 0.1s;">
+        {% for t in long_texts %}
+            <a href="{% url 'practice_long' t.pk %}" class="long-card">
+                <div class="long-meta">
+                    <div class="long-emoji">{{ t.emoji }}</div>
+                    <div>
+                        <div class="long-title">{{ t.title }}</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">{{ t.text|truncatechars:30 }}</div>
+                    </div>
+                </div>
+                <div class="long-lang">{{ t.get_language_display }}</div>
+            </a>
+        {% empty %}
+            <div style="grid-column: 1/-1; text-align: center; padding: 100px; color: var(--text-muted);">
+                등록된 연습 본문이 없습니다.
+            </div>
+        {% endfor %}
+    </div>
+
+    <div style="text-align: center; margin-top: 40px;">
+        <a href="{% url 'typing_home' %}" style="color: var(--text-muted); text-decoration: none; font-weight: 700;">← 돌아가기</a>
+    </div>
+</div>
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get('lang') || 'ko';
+        const isUnlocked = localStorage.getItem(`typing_long_unlocked_${lang}`) === 'true';
+
+        if (!isUnlocked) {
+            alert(`🔒 [${getLangName(lang)}] 짧은글 연습에서 평균 400타 이상을 기록해야 긴글 연습이 열립니다!`);
+            location.href = `{% url "typing_home" %}?lang=${lang}`;
+        }
+
+        function getLangName(code) {
+            const names = {'ko': '한국어', 'en': '영어', 'ja': '일본어', 'zh': '중국어'};
+            return names[code] || '알 수 없음';
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

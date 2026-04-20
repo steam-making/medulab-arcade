@@ -1,0 +1,202 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}자리연습 단계 선택 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+    .select-container {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 0 20px;
+        text-align: center;
+    }
+    .header-box {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    /* 언어 탭 (select_theme 스타일 재사용) */
+    .lang-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 30px;
+    }
+    .lang-tab {
+        padding: 12px 32px;
+        background: var(--tp-glass);
+        border: 1px solid var(--tp-border);
+        border-radius: 100px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 700;
+        transition: all 0.3s;
+    }
+    .lang-tab.active {
+        background: var(--neon-blue);
+        border-color: var(--neon-blue);
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .select-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 300px);
+        gap: 10px;
+        margin: 25px auto 0;
+        justify-content: center; /* 그리드 전체를 중앙으로 */
+    }
+    @media (max-width: 800px) {
+        .select-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 500px) {
+        .select-grid { grid-template-columns: 1fr; }
+    }
+    .select-card {
+        background: var(--tp-glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--tp-border);
+        border-radius: 24px;
+        padding: 32px 20px;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        width: 300px;
+        max-width: 300px;
+        min-height: 220px;
+    }
+    .select-card:hover {
+        transform: translateY(-8px);
+        border-color: var(--neon-blue);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .level-icon {
+        font-size: 48px;
+        margin-bottom: 8px;
+    }
+    .level-name {
+        font-size: 22px;
+        font-weight: 800;
+        color: #fff;
+    }
+    .level-desc {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    /* 잠금 상태 스타일 */
+    .select-card.locked {
+        opacity: 0.7;
+        cursor: not-allowed;
+        position: relative;
+        filter: grayscale(1);
+        pointer-events: auto;
+    }
+    .select-card.locked .level-icon {
+        visibility: hidden; /* 기존 아이콘 숨기기 */
+    }
+    .select-card.locked::after {
+        content: '🔒';
+        position: absolute;
+        top: 40px; /* 기존 아이콘 위치 (padding 시작점 부근) */
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 48px;
+        z-index: 10;
+        filter: none;
+    }
+    .select-card.locked:hover {
+        transform: none;
+        box-shadow: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="header-box fade-in">
+        <h1 style="font-size: 42px; font-weight: 900; margin-bottom: 16px;">자리연습 단계 선택</h1>
+        <p style="color: var(--text-muted); font-size: 18px;">익히고 싶은 키보드 위치와 언어를 선택하세요.</p>
+    </div>
+
+    <!-- 언어 선택 탭 -->
+    <div class="lang-tabs fade-in" style="animation-delay: 0.1s;">
+        <a href="?lang=ko" class="lang-tab {% if language == 'ko' %}active{% endif %}">🇰🇷 한국어</a>
+        <a href="?lang=en" class="lang-tab {% if language == 'en' %}active{% endif %}">🇺🇸 English</a>
+        <a href="?lang=ja" class="lang-tab {% if language == 'ja' %}active{% endif %}">🇯🇵 日本語(かたかな)</a>
+        <a href="?lang=zh" class="lang-tab {% if language == 'zh' %}active{% endif %}">🇨🇳 中文(pinyin)</a>
+    </div>
+
+    <div class="select-grid fade-in" style="animation-delay: 0.2s;">
+        <a href="{% url 'practice_keys' %}?level=home&lang={{ language|default:'ko' }}" class="select-card" data-level="home">
+            <div class="level-icon">🏠</div>
+            <div class="level-name">기본 자리</div>
+            <div class="level-desc">ㅁㄴㅇㄹ / ㅗㅓㅏㅣ 등<br>가장 기초가 되는 자리입니다.</div>
+        </a>
+        <a href="{% url 'practice_keys' %}?level=top&lang={{ language|default:'ko' }}" class="select-card" data-level="top">
+            <div class="level-icon">⬆️</div>
+            <div class="level-name">윗자리</div>
+            <div class="level-desc">ㅂㅈㄷㄱ / QWERTY 등<br>상단 숫자키 아래 자리를 익힙니다.</div>
+        </a>
+        <a href="{% url 'practice_keys' %}?level=bottom&lang={{ language|default:'ko' }}" class="select-card" data-level="bottom">
+            <div class="level-icon">⬇️</div>
+            <div class="level-name">아랫자리</div>
+            <div class="level-desc">ㅋㅌㅊㅍ / ZXCV 등<br>하단 자릿수를 연습합니다.</div>
+        </a>
+        <a href="{% url 'practice_keys' %}?level=number&lang={{ language|default:'ko' }}" class="select-card" data-level="number">
+            <div class="level-icon">🔢</div>
+            <div class="level-name">숫자키</div>
+            <div class="level-desc">1~0 및 -, = 기호<br>상단 숫자 배열을 정확히 익힙니다.</div>
+        </a>
+        <a href="{% url 'practice_keys' %}?level=shift&lang={{ language|default:'ko' }}" class="select-card" data-level="shift">
+            <div class="level-icon">⬆️</div>
+            <div class="level-name">쉬프트키</div>
+            <div class="level-desc">쌍자음 및 특수기호<br>Shift를 활용한 입력을 연습합니다.</div>
+        </a>
+        <a href="{% url 'practice_keys' %}?level=all&lang={{ language|default:'ko' }}" class="select-card" data-level="all" style="border-color: var(--neon-purple);">
+            <div class="level-icon">🌐</div>
+            <div class="level-name" style="color: var(--neon-purple);">전체 자리</div>
+            <div class="level-desc">모든 글쇠를 무작위로<br>실력을 종합적으로 점검합니다.</div>
+        </a>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px;">
+        <a href="{% url 'typing_home' %}?lang={{ language|default:'ko' }}" style="color: var(--text-muted); text-decoration: none; font-weight: 700;">← 돌아가기</a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const lang = "{{ language|default:'ko' }}";
+        const storageKey = `typing_unlocked_levels_${lang}`;
+        
+        // 데이터 이관: 기존 범용 데이터가 있고, 한국어 탭이며, 아직 한국어 전용 데이터가 없을 때 이관
+        const oldData = localStorage.getItem('typing_unlocked_levels');
+        const currentData = localStorage.getItem(storageKey);
+        if (oldData && lang === 'ko' && !currentData) {
+            localStorage.setItem(storageKey, oldData);
+            // localStorage.removeItem('typing_unlocked_levels'); // 이관 후 삭제는 신중히, 일단 유지
+        }
+
+        const unlockedLevels = JSON.parse(localStorage.getItem(storageKey) || '["home"]');
+        document.querySelectorAll('.select-card').forEach(card => {
+            const level = card.getAttribute('data-level');
+            if (!unlockedLevels.includes(level)) {
+                card.classList.add('locked');
+                card.onclick = (e) => {
+                    e.preventDefault();
+                    alert(`🔒 [${getLangName(lang)}] 이전 단계를 정확도 80% 이상으로 통과해야 열립니다!`);
+                };
+            }
+        });
+
+        function getLangName(code) {
+            const names = {'ko': '한국어', 'en': '영어', 'ja': '일본어', 'zh': '중국어'};
+            return names[code] || '알 수 없음';
+        }
+    });
+</script>
+{% endblock %}

@@ -5,52 +5,77 @@
 {% block extra_css %}
 <style>
     .practice-container {
-        max-width: 1000px;
-        margin: 40px auto;
+        max-width: 1200px;
+        margin: 10px auto;
         text-align: center;
     }
     .status-panel {
-        display: flex;
-        justify-content: center;
-        gap: 40px;
-        background: var(--bg-card);
-        padding: 24px;
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr;
+        align-items: center;
+        background: rgba(0,0,0,0.3);
+        padding: 15px 30px;
         border-radius: 20px;
-        margin-bottom: 32px;
-        border: 1px solid var(--border);
+        border: 1px solid rgba(255,255,255,0.05);
+        margin-bottom: 20px;
     }
-    .stat-item {
+    .mission-status {
+        text-align: left;
+    }
+    .time-gauge-wrapper {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 8px;
     }
-    .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 700; }
-    .stat-value { font-size: 24px; font-weight: 900; color: #60a5fa; font-family: 'Orbitron', sans-serif; }
+    .time-gauge-container {
+        height: 14px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 7px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    #time-bar {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #4ade80, #22c55e);
+        box-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
+        transition: width 1s linear;
+    }
+    #time-bar.danger {
+        background: linear-gradient(90deg, #f87171, #ef4444);
+        box-shadow: 0 0 15px rgba(248, 113, 113, 0.5);
+        animation: tp-blink 1s infinite;
+    }
+    @keyframes tp-blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
 
     .target-display {
-        font-size: 84px;
+        font-size: 64px;
         font-weight: 900;
-        margin: 60px 0;
-        height: 120px;
+        margin: 15px 0;
+        height: 80px;
         display: flex;
         align-items: center;
         justify-content: center;
         background: rgba(255, 255, 255, 0.03);
-        border-radius: 30px;
+        border-radius: 24px;
         color: #fff;
-        text-shadow: 0 0 30px rgba(96, 165, 250, 0.4);
+        text-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
     }
 
     /* 가상 키보드 */
     .keyboard {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        padding: 24px;
+        gap: 6px;
+        padding: 16px;
         background: #111118;
         border-radius: 24px;
         border: 1px solid var(--border);
         user-select: none;
+        margin-top: 20px;
     }
     .key-row {
         display: flex;
@@ -88,15 +113,13 @@
         50% { transform: scale(1.05); }
     }
 
-    .lang-toggle {
+    .level-toggle, .lang-toggle {
         display: flex;
         background: rgba(255, 255, 255, 0.05);
         padding: 4px;
         border-radius: 12px;
-        margin-bottom: 24px;
         width: fit-content;
-        margin-left: auto;
-        margin-right: auto;
+        gap: 4px;
     }
     .toggle-btn {
         padding: 8px 20px;
@@ -107,46 +130,163 @@
         font-weight: 700;
         cursor: pointer;
         transition: all 0.2s;
+        font-size: 14px;
     }
     .toggle-btn.active {
         background: #60a5fa;
         color: #fff;
     }
+    .level-btn.active {
+        background: #a855f7;
+        color: #fff;
+    }
+    .level-btn.locked {
+        opacity: 0.6;
+        cursor: not-allowed;
+        position: relative;
+        filter: grayscale(1); /* 블러 제거 */
+        background: rgba(0,0,0,0.4) !important;
+        color: transparent !important;
+    }
+    .level-btn.locked::after {
+        content: '🔒';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 16px;
+        color: #fff;
+        filter: none;
+        text-shadow: 0 0 10px rgba(255,255,255,0.8);
+    }
+    .level-btn.locked:hover {
+        background: rgba(248, 113, 113, 0.1) !important;
+        border-color: #ef4444;
+    }
+    .tp-header-small {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        padding: 0 10px;
+    }
+    .tp-title-area {
+        text-align: left;
+    }
+    .tp-title-area h2 {
+        font-size: 20px;
+        font-weight: 900;
+        margin: 0;
+    }
+    .tp-title-area p {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 2px 0 0 0;
+    }
+
+    /* Result Modal */
+    .result-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(15px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: tp-fadeIn 0.4s ease;
+    }
+    @keyframes tp-fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    .result-card {
+        background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03));
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 40px;
+        padding: 50px;
+        width: 100%;
+        max-width: 500px;
+        text-align: center;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+    }
+    .result-title { font: 900 32px 'Orbitron', sans-serif; margin-bottom: 30px; color: #fff; }
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+    .result-item { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+    .res-label { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 8px; display: block; }
+    .res-value { font-size: 28px; font-weight: 900; color: #60a5fa; font-family: 'Orbitron', sans-serif; }
+    .res-unit { font-size: 14px; color: var(--text-muted); margin-left: 4px; }
+    .res-btn { 
+        width: 100%; padding: 16px; border-radius: 16px; border: none; 
+        background: #fff; color: #000; font-weight: 800; cursor: pointer; transition: 0.3s;
+    }
+    .res-btn:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(255,255,255,0.1); }
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="main">
-    <div class="practice-container">
-        <header style="margin-bottom: 40px;">
-            <h2 style="font-size: 28px; font-weight: 900;">자리 연습</h2>
-            <p style="color: var(--text-muted);">정확한 손가락 위치를 익히는 단계입니다.</p>
-        </header>
+    <!-- 결과 모달 -->
+    <div id="result-modal" class="result-overlay">
+        <div class="result-card">
+            <div class="result-title" id="final-status">PRACTICE COMPLETE</div>
+            <div class="result-grid">
+                <div class="result-item" style="border-left: 4px solid #4ade80;">
+                    <span class="res-label" style="color: #4ade80;">정확도 ACCURACY</span>
+                    <span class="res-value" id="final-accuracy">0</span><span class="res-unit">%</span>
+                </div>
+                <div class="result-item" style="border-left: 4px solid #60a5fa;">
+                    <span class="res-label" style="color: #60a5fa;">남은 시간 TIME</span>
+                    <span class="res-value" id="final-time">0</span><span class="res-unit">초</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 25px; width: 100%;">
+                <button class="res-btn" onclick="retryPractice()" style="flex: 1; background: linear-gradient(135deg, #6366f1, #4f46e5); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); border: none;">다시하기</button>
+                <button class="res-btn" onclick="saveAndExit()" style="flex: 1; background: linear-gradient(135deg, #a855f7, #9333ea); box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4); border: none;">확인 및 종료</button>
+            </div>
+        </div>
+    </div>
 
-        <div class="lang-toggle">
-            <button class="toggle-btn active" onclick="setLang('ko')">한글</button>
-            <button class="toggle-btn" onclick="setLang('en')">영어</button>
-            <button class="toggle-btn" id="sound-btn" onclick="toggleSound()" style="margin-left: 10px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 15px;">
-                <span id="sound-icon">🔊</span>
-            </button>
+    <div class="practice-container">
+        <div class="tp-header-small">
+            <div class="tp-title-area">
+                <h2>자리 연습</h2>
+                <p>정확한 손가락 위치를 익히세요.</p>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="lang-toggle">
+                    <button class="toggle-btn active" onclick="setLang('ko')">한글</button>
+                    <button class="toggle-btn" onclick="setLang('en')">영어</button>
+                    <button class="toggle-btn" onclick="setLang('ja')">日本語(か타카나)</button>
+                    <button class="toggle-btn" onclick="setLang('zh')">中文(pinyin)</button>
+                    <button class="toggle-btn" id="sound-btn" onclick="toggleSound()" style="margin-left: 2px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 8px;">
+                        <span id="sound-icon">🔊</span>
+                    </button>
+                </div>
+
+                <div class="level-toggle" id="level-selector">
+                    <button class="toggle-btn level-btn active" data-level="home" onclick="setLevel('home')">기본</button>
+                    <button class="toggle-btn level-btn" data-level="top" onclick="setLevel('top')">윗</button>
+                    <button class="toggle-btn level-btn" data-level="bottom" onclick="setLevel('bottom')">아랫</button>
+                    <button class="toggle-btn level-btn" data-level="number" onclick="setLevel('number')">숫자</button>
+                    <button class="toggle-btn level-btn" data-level="shift" onclick="setLevel('shift')">쉬프트</button>
+                    <button class="toggle-btn level-btn" data-level="all" onclick="setLevel('all')">전체</button>
+                </div>
+            </div>
         </div>
 
         <div class="status-panel">
-            <div class="stat-item">
-                <span class="stat-label">진행도</span>
+            <div class="mission-status">
+                <span class="stat-label">Mission</span>
                 <span class="stat-value" id="progress">0/50</span>
             </div>
-            <div class="stat-item">
-                <span class="stat-label">정확도</span>
-                <span class="stat-value" id="accuracy">100%</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">평균 타수</span>
-                <span class="stat-value" id="wpm">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">최고 타수</span>
-                <span class="stat-value" id="max-wpm">0</span>
+            <div class="time-gauge-wrapper">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <span class="stat-label">TIME ATTACK</span>
+                    <span id="time-text" style="font-family: 'Orbitron', sans-serif; font-size: 14px; color: #4ade80; font-weight: 800;">60s</span>
+                </div>
+                <div class="time-gauge-container">
+                    <div id="time-bar"></div>
+                </div>
             </div>
         </div>
 
@@ -161,8 +301,8 @@
         <!-- 가상 키보드 영역 (JS에서 동적 생성) -->
         <div class="keyboard" id="v-keyboard"></div>
 
-        <div style="margin-top: 40px; color: var(--text-muted); font-size: 14px;">
-            <p>※ 키보드에 직접 입력하여 연습을 진행하세요.</p>
+        <div style="margin-top: 15px; color: var(--text-muted); font-size: 13px;">
+            <p style="margin: 0;">※ 키보드에 직접 입력하여 연습을 진행하세요.</p>
         </div>
     </div>
 </main>
@@ -170,43 +310,94 @@
 
 {% block extra_js %}
 <script>
-    const KOREAN_KEYS = [
-        ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'],
-        ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'],
-        ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ']
-    ];
-    const ENGLISH_KEYS = [
-        ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-        ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-        ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
-    ];
-    // 매핑: 영문 키 입력을 한글로 변환하기 위한 맵 (자리 연습용)
-    const EN_TO_KO = {
-        'q':'ㅂ','w':'ㅈ','e':'ㄷ','r':'ㄱ','t':'ㅅ','y':'ㅛ','u':'ㅕ','i':'ㅑ','o':'ㅐ','p':'ㅔ',
-        'a':'ㅁ','s':'ㄴ','d':'ㅇ','f':'ㄹ','g':'ㅎ','h':'ㅗ','j':'ㅓ','k':'ㅏ','l':'ㅣ',
-        'z':'ㅋ','x':'ㅌ','c':'ㅊ','v':'ㅍ','b':'ㅠ','n':'ㅜ','m':'ㅡ'
+    const LAYOUT_KO = [['1','2','3','4','5','6','7','8','9','0','-','='],['ㅂ','ㅈ','ㄷ','ㄱ','ㅅ','ㅛ','ㅕ','ㅑ','ㅐ','ㅔ'],['ㅁ','ㄴ','ㅇ','ㄹ','ㅎ','ㅗ','ㅓ','ㅏ','ㅣ'],['ㅋ','ㅌ','ㅊ','ㅍ','ㅠ','ㅜ','ㅡ']];
+    const LAYOUT_EN = [['1','2','3','4','5','6','7','8','9','0','-','='],['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['Z','X','C','V','B','N','M']];
+    
+    const LEVELS = {
+        'ko': {
+            'home': ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'],
+            'top': ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'],
+            'bottom': ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ'],
+            'number': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='],
+            'shift': ['ㅃ', 'ㅉ', 'ㄸ', 'ㄲ', 'ㅆ', 'ㅒ', 'ㅖ']
+        },
+        'en': {
+            'home': ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+            'top': ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+            'bottom': ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+            'number': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='],
+            'shift': ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+']
+        },
+        'ja': {
+            'home': ['ア', 'イ', 'ウ', 'エ', 'オ', 'カ', 'キ', 'ク', 'ケ', 'コ'],
+            'top': ['サ', 'シ', 'ス', 'セ', 'ソ', 'タ', 'チ', 'ツ', 'テ', 'ト'],
+            'bottom': ['ナ', 'ニ', 'ヌ', 'ネ', 'ノ', 'ハ', 'ヒ', 'フ', 'ヘ', 'ホ'],
+            'number': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='],
+            'shift': ['ァ', 'ィ', 'ゥ', 'ェ', 'ォ', 'ッ', 'ャ', 'ュ', 'ョ']
+        },
+        'zh': {
+            'home': ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+            'top': ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+            'bottom': ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+            'number': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='],
+            'shift': ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+']
+        }
     };
+    Object.keys(LEVELS).forEach(l => {
+        LEVELS[l].all = [].concat(...Object.values(LEVELS[l]));
+    });
 
-    let currentLang = 'ko';
-    let targetChar = '';
-    let prevChar = '-';
-    let nextCharBuffer = []; // 다음에 나올 글자들 미리 생성
-    let completedCount = 0;
-    let totalCount = 50;
-    let errors = 0;
-    let startTime = null;
-    let maxWpm = 0;
+    const EN_TO_KO = {'q':'ㅂ','w':'ㅈ','e':'ㄷ','r':'ㄱ','t':'ㅅ','y':'ㅛ','u':'ㅕ','i':'ㅑ','o':'ㅐ','p':'ㅔ','a':'ㅁ','s':'ㄴ','d':'ㅇ','f':'ㄹ','g':'ㅎ','h':'ㅗ','j':'ㅓ','k':'ㅏ','l':'ㅣ','z':'ㅋ','x':'ㅌ','c':'ㅊ','v':'ㅍ','b':'ㅠ','n':'ㅜ','m':'ㅡ','Q':'ㅃ','W':'ㅉ','E':'ㄸ','R':'ㄲ','T':'ㅆ','O':'ㅒ','P':'ㅖ'};
+    const EN_TO_JA = {'a':'ア','i':'イ','u':'ウ','e':'エ','o':'オ','k':'カ','s':'サ','t':'タ','n':'ナ','h':'ハ','m':'マ','y':'ヤ','r':'ラ','w':'ワ'};
+
+    // --- 언어별 독립 잠금 시스템 (v14) ---
+    const currentLang = "{{ language|default:'ko' }}";
+    let currentLevel = "{{ level|default:'home' }}";
+    const storageKey = `typing_unlocked_levels_${currentLang}`;
+    const wordUnlockKey = `typing_word_unlocked_${currentLang}`;
+
+    const PROGRESSION = ['home', 'top', 'bottom', 'number', 'shift', 'all'];
+    let unlockedLevels = JSON.parse(localStorage.getItem(storageKey) || '["home"]');
+
+    function updateLockStates() {
+        document.querySelectorAll('.level-btn').forEach(btn => {
+            const level = btn.getAttribute('data-level');
+            if (unlockedLevels.includes(level)) {
+                btn.classList.remove('locked');
+            } else {
+                btn.classList.add('locked');
+            }
+        });
+    }
+
+    function unlockNextLevel(current) {
+        const idx = PROGRESSION.indexOf(current);
+        if (idx !== -1 && idx < PROGRESSION.length - 1) {
+            const next = PROGRESSION[idx + 1];
+            if (!unlockedLevels.includes(next)) {
+                unlockedLevels.push(next);
+                localStorage.setItem(storageKey, JSON.stringify(unlockedLevels));
+                updateLockStates();
+                return next;
+            }
+            return 'already_unlocked';
+        } else if (current === 'all') {
+            localStorage.setItem(wordUnlockKey, 'true');
+            return 'word_practice_ready';
+        }
+        return null;
+    }
+
+    let targetChar = '', prevChar = '-', nextCharBuffer = [];
+    let completedCount = 0, completedStrokes = 0, errors = 0, totalCount = 50;
+    let timeLeft = 60, startTime = null, timerInterval = null, itemStartTime = null, cumulativeTime = 0, maxWpm = 0;
     let soundEnabled = localStorage.getItem('typingSound') !== 'off';
 
     function initKeyboard() {
-        updateSoundIcon();
-        // ... (이전 코드 동일)
-        // ... (이전 코드 동일)
         const kb = document.getElementById('v-keyboard');
         kb.innerHTML = '';
-        const layout = currentLang === 'ko' ? KOREAN_KEYS : ENGLISH_KEYS;
-        
-        layout.forEach((row, i) => {
+        const layout = (currentLang === 'ko') ? LAYOUT_KO : LAYOUT_EN;
+        layout.forEach(row => {
             const rowDiv = document.createElement('div');
             rowDiv.className = 'key-row';
             row.forEach(key => {
@@ -218,158 +409,199 @@
             });
             kb.appendChild(rowDiv);
         });
-
-        // 초기 버퍼 생성
-        nextCharBuffer = [];
-        fillBuffer();
+        resetPractice();
         nextChar();
-    }
-
-    function fillBuffer() {
-        const layout = currentLang === 'ko' ? KOREAN_KEYS : ENGLISH_KEYS;
-        const allKeys = layout.flat();
-        while(nextCharBuffer.length < 5) {
-            nextCharBuffer.push(allKeys[Math.floor(Math.random() * allKeys.length)]);
-        }
-    }
-
-    function toggleSound() {
-        soundEnabled = !soundEnabled;
-        localStorage.setItem('typingSound', soundEnabled ? 'on' : 'off');
         updateSoundIcon();
-        if (soundEnabled) speakText(targetChar);
-    }
-
-    function updateSoundIcon() {
-        document.getElementById('sound-icon').innerText = soundEnabled ? '🔊' : '🔇';
-        document.getElementById('sound-btn').classList.toggle('active', soundEnabled);
-    }
-
-    function speakText(text) {
-        if (!soundEnabled || !text || text === '-') return;
-        window.speechSynthesis.cancel(); // 이전 발화 취소
-        const msg = new SpeechSynthesisUtterance(text);
-        msg.lang = currentLang === 'ko' ? 'ko-KR' : 'en-US';
-        msg.rate = 1.2; // 약간 빠르게
-        window.speechSynthesis.speak(msg);
-    }
-
-    function nextChar() {
-        if (targetChar) prevChar = targetChar;
-        targetChar = nextCharBuffer.shift();
-        fillBuffer();
-
-        document.getElementById('prev-char').innerText = prevChar;
-        document.getElementById('target-char').innerText = targetChar;
-        document.getElementById('next-char').innerText = nextCharBuffer[0];
-        
-        // 키보드 가이드 표시
-        document.querySelectorAll('.key').forEach(k => k.classList.remove('target'));
-        const targetDiv = document.getElementById(`key-${targetChar}`);
-        if(targetDiv) targetDiv.classList.add('target');
-
-        // 음성 출력
-        speakText(targetChar);
     }
 
     function setLang(lang) {
         currentLang = lang;
-        document.querySelectorAll('.toggle-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.innerText === (lang === 'ko' ? '한글' : '영어'));
+        document.querySelectorAll('.lang-toggle .toggle-btn').forEach(btn => {
+            if (btn.id === 'sound-btn') return;
+            const onclick = btn.getAttribute('onclick') || '';
+            btn.classList.toggle('active', onclick.includes(`'${lang}'`));
         });
-        resetPractice();
         initKeyboard();
     }
 
+    function setLevel(level) {
+        if (!unlockedLevels.includes(level)) {
+            alert("🔒 이전 단계를 정확도 80% 이상으로 통과해야 열립니다!");
+            return;
+        }
+        currentLevel = level;
+        document.querySelectorAll('.level-btn').forEach(btn => {
+            const levelAttr = btn.getAttribute('data-level');
+            btn.classList.toggle('active', levelAttr === level);
+        });
+        resetPractice();
+        nextChar();
+    }
+
     function resetPractice() {
-        completedCount = 0;
-        errors = 0;
-        startTime = null;
-        document.getElementById('target-char').innerText = targetChar;
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
         
-        // 키보드 가이드 표시
-        document.querySelectorAll('.key').forEach(k => k.classList.remove('target'));
-        const targetDiv = document.getElementById(`key-${targetChar}`);
-        if(targetDiv) targetDiv.classList.add('target');
+        // 현재 레벨이 잠겨있는지 다시 한 번 체크 (URL 직접 접근 등 대비)
+        if (!unlockedLevels.includes(currentLevel)) {
+            currentLevel = 'home';
+            localStorage.setItem(storageKey, JSON.stringify(unlockedLevels));
+            alert("🔒 아직 열리지 않은 단계입니다! 기본자리부터 시작하세요.");
+            updateLockStates();
+        }
+
+        completedCount = 0; completedStrokes = 0; errors = 0; startTime = null; itemStartTime = null; cumulativeTime = 0; maxWpm = 0; timeLeft = 60;
+        targetChar = ''; prevChar = '-'; nextCharBuffer = [];
+        
+        const timeBar = document.getElementById('time-bar');
+        if (timeBar) {
+            timeBar.style.width = '100%';
+            timeBar.classList.remove('danger');
+        }
+        const timeText = document.getElementById('time-text');
+        if (timeText) {
+            timeText.innerText = '60s';
+            timeText.style.color = '#4ade80';
+        }
+        updateStatus();
     }
 
     function updateStatus() {
-        document.getElementById('progress').innerText = `${completedCount}/${totalCount}`;
-        const acc = completedCount === 0 ? 100 : Math.round((completedCount / (completedCount + errors)) * 100);
-        document.getElementById('accuracy').innerText = `${acc}%`;
+        const progressEl = document.getElementById('progress');
+        if (progressEl) progressEl.innerText = `${completedCount}/${totalCount}`;
+    }
+
+    function nextChar() {
+        const possibleChars = LEVELS[currentLang][currentLevel];
         
-        if (startTime) {
-            const elapsed = (Date.now() - startTime) / 60000; // minutes
-            const wpm = Math.round(completedCount / elapsed);
-            document.getElementById('wpm').innerText = wpm;
-            
-            if (wpm > maxWpm) {
-                maxWpm = wpm;
-                document.getElementById('max-wpm').innerText = maxWpm;
-            }
+        if (!targetChar) {
+            // 첫 시작 시 초기화
+            targetChar = possibleChars[Math.floor(Math.random() * possibleChars.length)];
+            nextCharBuffer = [possibleChars[Math.floor(Math.random() * possibleChars.length)]];
+        } else {
+            // 기존 타겟을 이전 문자로, 예보 문자를 새 타겟으로 이동
+            prevChar = targetChar;
+            targetChar = nextCharBuffer[0];
+            nextCharBuffer = [possibleChars[Math.floor(Math.random() * possibleChars.length)]];
         }
+        
+        document.getElementById('prev-char').innerText = prevChar;
+        document.getElementById('target-char').innerText = targetChar;
+        document.getElementById('next-char').innerText = nextCharBuffer[0];
+        
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('target'));
+        const targetDiv = document.getElementById(`key-${targetChar}`);
+        if (targetDiv) targetDiv.classList.add('target');
+        speakText(targetChar);
+    }
+
+    function startTimer() {
+        if (timerInterval) return;
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            const timeBar = document.getElementById('time-bar');
+            const timeText = document.getElementById('time-text');
+            
+            if (timeBar) {
+                const percent = (timeLeft / 60) * 100;
+                timeBar.style.width = `${percent}%`;
+                if (timeLeft <= 10) timeBar.classList.add('danger');
+            }
+            if (timeText) {
+                timeText.innerText = `${timeLeft}s`;
+                if (timeLeft <= 10) timeText.style.color = '#f87171';
+            }
+            
+            if (timeLeft <= 0) { clearInterval(timerInterval); finishPractice(false); }
+        }, 1000);
     }
 
     window.addEventListener('keydown', (e) => {
-        if (!startTime) startTime = Date.now();
-        
-        const pressedKey = e.key.toLowerCase();
-        let inputChar = e.key.toUpperCase();
-        
-        if (currentLang === 'ko') {
-            inputChar = EN_TO_KO[pressedKey] || '';
+        if (e.ctrlKey || e.altKey || e.metaKey || e.key === 'Shift') return;
+        if (timeLeft <= 0 || completedCount >= totalCount) return;
+
+        if (!startTime) { startTime = Date.now(); startTimer(); }
+        if (!itemStartTime) itemStartTime = Date.now();
+
+        let inputChar = e.key;
+        if (currentLang === 'ko') inputChar = EN_TO_KO[e.key] || e.key;
+        else if (currentLang === 'ja') inputChar = EN_TO_JA[e.key] || e.key;
+        else if (currentLang === 'zh' || currentLang === 'en') {
+            if (inputChar.length === 1 && targetChar === targetChar.toUpperCase()) inputChar = inputChar.toUpperCase();
         }
 
-        // 시각적 피드백
-        const keyDiv = document.getElementById(`key-${inputChar}`);
+        const keyDiv = document.getElementById(`key-${inputChar.toUpperCase()}`) || document.getElementById(`key-${inputChar}`);
         if (keyDiv) {
             keyDiv.classList.add('active');
             setTimeout(() => keyDiv.classList.remove('active'), 100);
         }
 
-        if (inputChar === targetChar) {
+        if (inputChar === targetChar || (currentLang === 'ja' && EN_TO_JA[e.key] === targetChar)) {
+            completedStrokes += 1;
             completedCount++;
-            if (completedCount >= totalCount) {
-                finishPractice();
-            } else {
-                nextChar();
-            }
+            cumulativeTime += (Date.now() - itemStartTime);
+            itemStartTime = null;
+            if (completedCount >= totalCount) { if (timerInterval) clearInterval(timerInterval); finishPractice(true); }
+            else nextChar();
         } else {
-            // 특수키 제외하고 오류 처리
-            if (inputChar.length === 1 && /[A-Zㄱ-ㅎㅏ-ㅣ]/.test(inputChar)) {
-                errors++;
-            }
+            if (inputChar.length === 1) errors++;
         }
         updateStatus();
     });
 
-    function finishPractice() {
-        const speed = parseInt(document.getElementById('wpm').innerText);
-        const accuracy = parseFloat(document.getElementById('accuracy').innerText);
-        const score = Math.round(speed * (accuracy / 100) * 10);
+    function finishPractice(isSuccess) {
+        document.getElementById('final-status').innerText = isSuccess ? "MISSION COMPLETE!" : "TIME OUT!";
+        document.getElementById('final-status').style.color = isSuccess ? "#4ade80" : "#f87171";
+        
+        // 내부 변수 기반 데이터 산출
+        const accuracy = (completedCount + errors === 0) ? 100 : Math.round((completedCount / (completedCount + errors)) * 100);
+        const totalElapsedMin = cumulativeTime / 60000;
+        const wpm = Math.round(completedStrokes / (totalElapsedMin || 0.001));
 
-        alert(`연습 완료!\n점수: ${score}점\n속도: ${speed} 타\n정확도: ${accuracy}%`);
+        let unlockMsg = '';
+        if (isSuccess && accuracy >= 80) {
+            const unlocked = unlockNextLevel(currentLevel);
+            if (unlocked) {
+                if (unlocked === 'word_practice') unlockMsg = "<br><span style='color:#fbbf24; font-size:16px;'>🔓 단어 연습 모드가 해제되었습니다!</span>";
+                else unlockMsg = "<br><span style='color:#fbbf24; font-size:16px;'>🔓 새로운 단계가 열렸습니다!</span>";
+            }
+        } else if (isSuccess && accuracy < 80) {
+            unlockMsg = "<br><span style='color:#f87171; font-size:14px;'>정확도 80% 이상이어야 다음 단계가 열립니다.</span>";
+        }
 
-        // 결과 저장 API 호출
-        fetch('{% url "save_score" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({
-                type: 'key',
-                lang: currentLang,
-                score: score,
-                speed: speed,
-                accuracy: accuracy
-            })
-        }).then(() => {
-            location.href = '{% url "typing_home" %}';
-        });
+        document.getElementById('final-accuracy').innerHTML = accuracy + (unlockMsg);
+        document.getElementById('final-time').innerText = timeLeft;
+        document.getElementById('result-modal').style.display = 'flex';
     }
 
-    // 초기화
+    function retryPractice() { document.getElementById('result-modal').style.display = 'none'; resetPractice(); nextChar(); }
+    function saveAndExit() {
+        // 내부 변수 기반 최종 데이터 산출
+        const accuracy = (completedCount + errors === 0) ? 100 : Math.round((completedCount / (completedCount + errors)) * 100);
+        const totalElapsedMin = cumulativeTime / 60000;
+        const wpm = Math.round(completedStrokes / (totalElapsedMin || 0.001));
+
+        fetch('{% url "save_score" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: JSON.stringify({type: 'key', lang: currentLang, score: wpm * 10, speed: wpm, accuracy: accuracy})
+        }).then(() => { location.href = `{% url "practice_keys" %}?lang=${currentLang}`; });
+    }
+
+    function toggleSound() { soundEnabled = !soundEnabled; localStorage.setItem('typingSound', soundEnabled ? 'on' : 'off'); updateSoundIcon(); }
+    function updateSoundIcon() { document.getElementById('sound-icon').innerText = soundEnabled ? '🔊' : '🔇'; }
+    function speakText(text) {
+        if (!soundEnabled || !text || text === '-') return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = (currentLang === 'ko') ? 'ko-KR' : (currentLang === 'ja' ? 'ja-JP' : 'en-US');
+        msg.rate = 1.3;
+        window.speechSynthesis.speak(msg);
+    }
+
     initKeyboard();
+    updateLockStates();
 </script>
 {% endblock %}

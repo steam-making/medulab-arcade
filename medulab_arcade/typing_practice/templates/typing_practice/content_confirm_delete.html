@@ -1,0 +1,19 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}콘텐츠 삭제 확인 - 메듀랩{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 100px auto; padding: 40px; background: var(--tp-glass); border: 1px solid var(--tp-border); border-radius: 24px; text-align: center;">
+    <h2 style="color: #ef4444; margin-bottom: 20px;">콘텐츠 삭제</h2>
+    <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 30px;">
+        정말로 <strong>[{{ content.title }}]</strong> 콘텐츠를 삭제하시겠습니까?<br>
+        삭제된 데이터는 복구할 수 없습니다.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" style="padding: 12px 30px; background: #ef4444; color: #fff; border:none; border-radius: 10px; font-weight: 800; cursor: pointer; margin-right: 10px;">삭제 확정</button>
+        <a href="{% url 'typing_content_manage' %}" style="padding: 12px 30px; background: rgba(255,255,255,0.1); color: #fff; border-radius: 10px; text-decoration: none; font-size: 14px;">취소</a>
+    </form>
+</div>
+{% endblock %}

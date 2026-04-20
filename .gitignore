@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Database
+db.sqlite3
+
+# Keys & Secrets
+*.pem
+*.key
+*.json
+!manifest.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project-specific
+medulab_arcade.zip
+making_site.zip
+lotto_recent60.xlsx

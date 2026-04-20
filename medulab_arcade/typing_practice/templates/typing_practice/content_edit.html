@@ -1,0 +1,178 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}{% if content %}콘텐츠 수정{% else %}콘텐츠 추가{% endif %} - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 40px;
+        background: var(--tp-glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--tp-border);
+        border-radius: 32px;
+    }
+    .form-group {
+        margin-bottom: 24px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    .form-control {
+        width: 100%;
+        padding: 14px;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--tp-border);
+        border-radius: 12px;
+        color: #fff;
+        font-size: 15px;
+        transition: all 0.3s;
+    }
+    .form-control:focus {
+        border-color: var(--neon-blue);
+        outline: none;
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 16px;
+        background: var(--neon-blue);
+        border: none;
+        border-radius: 12px;
+        color: #fff;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 20px;
+    }
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2 style="margin-bottom: 30px; font-weight: 900;">
+        {% if content %}⚙️ 콘텐츠 수정{% else %}✨ 새 콘텐츠 추가{% endif %}
+    </h2>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>콘텐츠 유형</label>
+            <select name="content_type" class="form-control">
+                <option value="word" {% if content.content_type == 'word' %}selected{% endif %}>단어 연습</option>
+                <option value="short" {% if content.content_type == 'short' %}selected{% endif %}>짧은글 연습</option>
+                <option value="long" {% if content.content_type == 'long' %}selected{% endif %}>긴글 연습</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>기본 언어 (표시 우선순위)</label>
+            <select name="language" class="form-control">
+                <option value="ko" {% if content.language == 'ko' %}selected{% endif %}>한국어</option>
+                <option value="en" {% if content.language == 'en' %}selected{% endif %}>영어</option>
+                <option value="ja" {% if content.language == 'ja' %}selected{% endif %}>일본어</option>
+                <option value="zh" {% if content.language == 'zh' %}selected{% endif %}>중국어</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>이모지 (예: 💻, 🔬)</label>
+            <input type="text" name="emoji" class="form-control" placeholder="⌨️" value="{{ content.emoji|default:'⌨️' }}">
+        </div>
+
+        <div class="form-group">
+            <label>주제 (테마명)</label>
+            <input type="text" name="title" class="form-control" placeholder="예: IT 용어, 기초 회화 등" value="{{ content.title|default:'' }}">
+        </div>
+
+        <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 20px; border: 1px solid var(--tp-border); margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <p style="font-size: 14px; font-weight: 800; color: var(--neon-blue); margin: 0;">🌐 다국어 데이터 입력 (상호 학습용)</p>
+                <button type="button" onclick="autoTranslateAll()" class="btn-translate" style="padding: 6px 12px; background: var(--neon-blue); border: none; border-radius: 8px; color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.3s;" id="translate-btn">🪄 전체 자동 번역하기</button>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">
+                ※ 각 언어별로 **항목의 개수와 순서**를 동일하게 입력해야 연습 화면에서 정확한 번역 가이드가 노출됩니다.<br>
+                ※ 단어 연습은 쉼표(,) 혹은 줄바꿈으로 구분하세요.
+            </p>
+            
+            <div class="form-group">
+                <label>🇰🇷 한국어</label>
+                <textarea name="text_ko" id="text_ko" class="form-control" rows="5" placeholder="사과, 바나나, 포도">{{ content.text_ko|default:'' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label>🇺🇸 영어</label>
+                <textarea name="text_en" id="text_en" class="form-control" rows="5" placeholder="Apple, Banana, Grape">{{ content.text_en|default:'' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label>🇯🇵 일본어</label>
+                <textarea name="text_ja" id="text_ja" class="form-control" rows="5" placeholder="りんご, バナナ, ぶどう">{{ content.text_ja|default:'' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label>🇨🇳 중국어</label>
+                <textarea name="text_zh" id="text_zh" class="form-control" rows="5" placeholder="苹果, 香蕉, 葡萄">{{ content.text_zh|default:'' }}</textarea>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-submit">저장하기</button>
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="{% url 'typing_content_manage' %}" style="color: var(--text-muted); text-decoration: none; font-size: 14px;">취소하고 돌아가기</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    async function autoTranslateAll() {
+        const textKo = document.getElementById('text_ko').value;
+        if (!textKo) {
+            alert('한국어 내용을 먼저 입력하세요.');
+            return;
+        }
+
+        const btn = document.getElementById('translate-btn');
+        const originalText = btn.innerText;
+        btn.innerText = '⌛ 번역 중...';
+        btn.disabled = true;
+
+        const targets = [
+            { id: 'text_en', lang: 'en' },
+            { id: 'text_ja', lang: 'ja' },
+            { id: 'text_zh', lang: 'zh-CN' }
+        ];
+
+        try {
+            for (const item of targets) {
+                const response = await fetch('{% url "translate_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        text: textKo,
+                        target: item.lang
+                    })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    document.getElementById(item.id).value = data.translated;
+                }
+            }
+        } catch (error) {
+            console.error('Translation failed:', error);
+            alert('번역 중 오류가 발생했습니다.');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+</script>
+{% endblock %}

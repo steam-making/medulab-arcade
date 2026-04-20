@@ -1,0 +1,169 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}타자 콘텐츠 관리 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+    .manage-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+    }
+    .add-btn {
+        padding: 12px 24px;
+        background: var(--neon-blue);
+        color: #fff;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 700;
+        transition: all 0.3s;
+    }
+    .add-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+    }
+
+    .content-table {
+        width: 100%;
+        background: var(--tp-glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--tp-border);
+        border-radius: 20px;
+        border-collapse: separate;
+        border-spacing: 0;
+        overflow: hidden;
+    }
+    .content-table th {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 20px;
+        text-align: left;
+        font-size: 13px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+    .content-table td {
+        padding: 20px;
+        border-top: 1px solid var(--tp-border);
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    .badge {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(255,255,255,0.1);
+    }
+    .badge-word { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+    .badge-short { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+    .badge-long { color: #a855f7; background: rgba(168, 85, 247, 0.1); }
+
+    .action-links {
+        display: flex;
+        gap: 12px;
+    }
+    .action-links a {
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .action-links a:hover { color: #fff; }
+    .delete-link:hover { color: #ef4444 !important; }
+
+    /* 필터 버튼 스타일 */
+    .filter-group {
+        display: flex;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px;
+        border-radius: 12px;
+        margin-right: 15px;
+    }
+    .filter-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 700;
+        transition: all 0.2s;
+    }
+    .filter-btn:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .filter-btn.active {
+        color: #fff;
+        background: var(--neon-blue);
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="manage-container">
+    <div class="page-header">
+        <div>
+            <h1 style="font-size: 32px; font-weight: 900; margin-bottom: 8px;">⌨️ 타자 콘텐츠 관리</h1>
+            <p style="color: var(--text-muted);">연습에 사용될 단어, 짧은글, 긴글 데이터를 관리합니다.</p>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <div class="filter-group">
+                <a href="?type=all" class="filter-btn {% if active_type == 'all' %}active{% endif %}">전체</a>
+                <a href="?type=word" class="filter-btn {% if active_type == 'word' %}active{% endif %}">단어</a>
+                <a href="?type=short" class="filter-btn {% if active_type == 'short' %}active{% endif %}">짧은글</a>
+                <a href="?type=long" class="filter-btn {% if active_type == 'long' %}active{% endif %}">긴글</a>
+            </div>
+            <a href="{% url 'typing_content_create' %}" class="add-btn">+ 콘텐츠 추가</a>
+        </div>
+    </div>
+
+    <table class="content-table">
+        <thead>
+            <tr>
+                <th>유형</th>
+                <th>언어</th>
+                <th>이모지</th>
+                <th>제목(테마)</th>
+                <th>내용 요약</th>
+                <th>작업</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in contents %}
+            <tr>
+                <td>
+                    <span class="badge badge-{{ c.content_type }}">
+                        {{ c.get_content_type_display }}
+                    </span>
+                </td>
+                <td>{{ c.get_language_display }}</td>
+                <td style="font-size: 20px;">{{ c.emoji }}</td>
+                <td style="font-weight: 700; color: #fff;">{{ c.title }}</td>
+                <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.7;">
+                    {% if c.text_ko %}{{ c.text_ko }}{% else %}{{ c.text }}{% endif %}
+                </td>
+                <td>
+                    <div class="action-links">
+                        <a href="{% url 'typing_content_edit' c.pk %}">수정</a>
+                        <a href="{% url 'typing_content_delete' c.pk %}" class="delete-link">삭제</a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 60px; color: var(--text-muted);">
+                    등록된 콘텐츠가 없습니다. 새로운 콘텐츠를 추가해보세요.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

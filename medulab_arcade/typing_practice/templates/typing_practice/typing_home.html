@@ -17,8 +17,8 @@
     /* 히어로 섹션 */
     .tp-hero {
         text-align: center;
-        padding: 100px 20px 60px;
-        margin-bottom: 40px;
+        padding: 60px 20px 40px;
+        margin-bottom: 20px;
         position: relative;
     }
 
@@ -43,7 +43,7 @@
     /* 연습 카드 그리드 */
     .tp-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-template-columns: repeat(4, 1fr);
         gap: 32px;
         max-width: 1200px;
         margin: 0 auto 80px;
@@ -134,6 +134,37 @@
         background: #fff;
         color: #000;
         transform: scale(1.05);
+    }
+
+    /* 잠금 상태 스타일 */
+    .tp-card.locked {
+        opacity: 0.6;
+        cursor: not-allowed;
+        position: relative;
+        overflow: hidden;
+        filter: grayscale(0.8); /* 블러 제거 */
+    }
+    .tp-card.locked::before {
+        content: '🔒 LOCKED';
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(248, 113, 113, 0.9);
+        color: #fff;
+        padding: 5px 12px;
+        border-radius: 10px;
+        font: 900 12px 'Orbitron', sans-serif;
+        z-index: 10;
+        box-shadow: 0 0 15px rgba(248, 113, 113, 0.4);
+    }
+    .tp-card.locked:hover {
+        transform: none;
+        border-color: var(--tp-border);
+        box-shadow: none;
+    }
+    .tp-card.locked .tp-btn {
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: var(--text-muted) !important;
     }
 
     /* 랭킹 섹션 */
@@ -241,54 +272,80 @@
         border-color: var(--neon-purple);
         color: #fff;
     }
+    /* 언어 탭 (select_theme 스타일 재사용) */
+    .lang-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 40px;
+    }
+    .lang-tab {
+        padding: 12px 32px;
+        background: var(--tp-glass);
+        border: 1px solid var(--tp-border);
+        border-radius: 100px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .lang-tab.active {
+        background: var(--neon-blue);
+        border-color: var(--neon-blue);
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="main">
     <div class="tp-hero fade-in">
-        <h1>TYPING MASTER</h1>
-        <p>프로그래밍의 기초, 정확하고 빠른 타자 실력을 길러보세요.</p>
+        <h1 style="font-size: clamp(32px, 5vw, 56px); margin-bottom: 12px;">TYPING MASTERY</h1>
+        <p style="font-size: clamp(14px, 2vw, 18px); color: var(--text-muted); max-width: 600px; margin: 0 auto 30px;">당신의 한계에 도전하고 다국어 타자의 정점에 올라서세요.</p>
+        
+        <!-- 언어 선택 탭 추가 (v14) -->
+        <div class="lang-tabs">
+            <div class="lang-tab active" data-lang="ko">🇰🇷 한국어</div>
+            <div class="lang-tab" data-lang="en">🇺🇸 English</div>
+            <div class="lang-tab" data-lang="ja">🇯🇵 日本語</div>
+            <div class="lang-tab" data-lang="zh">🇨🇳 中文</div>
+        </div>
     </div>
 
     <div class="tp-grid fade-in" style="animation-delay: 0.1s;">
-        <a href="{% url 'practice_keys' %}" class="tp-card">
+        <!-- 자리 연습 카드 -->
+        <a href="{% url 'practice_keys' %}" class="tp-card" id="card-keys">
             <div class="tp-icon-box">⌨️</div>
             <h3>자리 연습</h3>
-            <p>기본 자리부터 특수문자까지 하나씩 단계별로 익혀보세요.</p>
+            <p>기본 자리부터 숫자, 기호까지 단계별로 익혀보세요.</p>
             <div class="tp-btn">START PRACTICE</div>
         </a>
 
-        <a href="{% url 'practice_words' %}?lang=ko" class="tp-card">
-            <div class="tp-icon-box">🔤</div>
-            <h3>단어 연습</h3>
-            <p>자주 쓰이는 단어들을 신속하게 입력하는 기초 체력을 기릅니다.</p>
-            <div class="tp-btn">GO TRAINING</div>
+        <!-- 단어 연습 카드 -->
+        <a href="{% url 'practice_words' %}" class="tp-card" id="card-words">
+            <div class="tp-icon-box" style="background: rgba(59, 130, 246, 0.1); border-color: var(--neon-blue);">🔤</div>
+            <h3 style="color: var(--neon-blue);">단어 연습</h3>
+            <p>IT 용어, 과학, 생활 등 다양한 테마별 단어를 연습합니다.</p>
+            <div class="tp-btn">START WORDS</div>
         </a>
 
-        <a href="{% url 'practice_short' %}?lang=ko" class="tp-card">
-            <div class="tp-icon-box">📝</div>
-            <h3>짧은글 연습</h3>
-            <p>명언이나 문학 구절을 타이핑하며 장문의 기초를 다집니다.</p>
-            <div class="tp-btn">CHALLENGE</div>
+        <!-- 짧은글 연습 카드 -->
+        <a href="{% url 'practice_short' %}" class="tp-card" id="card-short">
+            <div class="tp-icon-box" style="background: rgba(16, 185, 129, 0.1); border-color: #10b981;">📝</div>
+            <h3 style="color: #10b981);">짧은글 연습</h3>
+            <p>명언이나 문학 구절을 통해 문장 입력 기초를 다집니다.</p>
+            <div class="tp-btn">START SENTENCES</div>
         </a>
 
-        <div class="tp-card" style="cursor: default;">
+        <!-- 긴글 연습 카드 -->
+        <a href="{% url 'practice_long_select' %}" class="tp-card" id="card-long">
             <div class="tp-icon-box" style="background: rgba(168, 85, 247, 0.1); border-color: var(--neon-purple);">📖</div>
             <h3 style="color: var(--neon-purple);">긴글 연습</h3>
-            <p>실제 타자 속도와 정확도를 측정할 수 있는 최종 테스트입니다.</p>
-            
-            <div class="long-text-list">
-                {% for t in long_texts %}
-                    <a href="{% url 'practice_long' t.pk %}" class="long-text-item">
-                        <span>{{ t.title }}</span>
-                        <span style="font-size: 10px; opacity:0.6;">{{ t.get_language_display }}</span>
-                    </a>
-                {% empty %}
-                    <p style="font-size: 13px; color: var(--text-muted);">등록된 콘텐츠가 없습니다.</p>
-                {% endfor %}
-            </div>
-        </div>
+            <p>노래 가사나 산문 등 긴 글을 입력하며 실력을 측정하세요.</p>
+            <div class="tp-btn">START LONG TEXT</div>
+        </a>
     </div>
 
     <div class="ranking-box fade-in" style="animation-delay: 0.2s;">
@@ -331,4 +388,100 @@
         </div>
     </div>
 </main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let currentLang = localStorage.getItem('typing_home_lang') || 'ko';
+
+        const updateLocks = () => {
+            const wordUnlocked = localStorage.getItem(`typing_word_unlocked_${currentLang}`) === 'true';
+            const shortUnlocked = localStorage.getItem(`typing_short_unlocked_${currentLang}`) === 'true';
+            const longUnlocked = localStorage.getItem(`typing_long_unlocked_${currentLang}`) === 'true';
+            
+            const cardKeys = document.getElementById('card-keys');
+            const cardWords = document.getElementById('card-words');
+            const cardShort = document.getElementById('card-short');
+            const cardLong = document.getElementById('card-long');
+
+            // 카드 URL 언어 파라미터 업데이트
+            if(cardKeys) cardKeys.href = `{% url "practice_keys" %}?lang=${currentLang}`;
+            if(cardWords) cardWords.href = `{% url "practice_words" %}?lang=${currentLang}`;
+            if(cardShort) cardShort.href = `{% url "practice_short" %}?lang=${currentLang}`; 
+            if(cardLong) cardLong.href = `{% url "practice_long_select" %}?lang=${currentLang}`; 
+
+            // 단어 연습 잠금 처리
+            if (cardWords) {
+                cardWords.classList.toggle('locked', !wordUnlocked);
+                // 기존 리스너 제거 위해 클론 (교체 방식)
+                const newCardWords = cardWords.cloneNode(true);
+                cardWords.parentNode.replaceChild(newCardWords, cardWords);
+                if (!wordUnlocked) {
+                    newCardWords.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        alert(`🔒 [${getLangName(currentLang)}] 자리 연습 '전체' 단계를 통과해야 열립니다!`);
+                    });
+                }
+            }
+
+            // 짧은글 연습 잠금 처리
+            if (cardShort) {
+                cardShort.classList.toggle('locked', !shortUnlocked);
+                const newCardShort = cardShort.cloneNode(true);
+                cardShort.parentNode.replaceChild(newCardShort, cardShort);
+                if (!shortUnlocked) {
+                    newCardShort.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        alert(`🔒 [${getLangName(currentLang)}] 단어 연습에서 200타 이상을 기록해야 열립니다!`);
+                    });
+                }
+            }
+
+            // 긴글 연습 잠금 처리 (v15)
+            if (cardLong) {
+                cardLong.classList.toggle('locked', !longUnlocked);
+                const newCardLong = cardLong.cloneNode(true);
+                cardLong.parentNode.replaceChild(newCardLong, cardLong);
+                if (!longUnlocked) {
+                    newCardLong.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        alert(`🔒 [${getLangName(currentLang)}] 짧은글 연습에서 400타 이상을 기록해야 열립니다!`);
+                    });
+                }
+            }
+        };
+
+        // 데이터 이관 헬퍼 (보완)
+        const migrate = () => {
+            const oldWord = localStorage.getItem('typing_word_unlocked');
+            const oldShort = localStorage.getItem('typing_short_unlocked');
+            const oldLong = localStorage.getItem('typing_long_unlocked');
+            if (oldWord && !localStorage.getItem('typing_word_unlocked_ko')) localStorage.setItem('typing_word_unlocked_ko', oldWord);
+            if (oldShort && !localStorage.getItem('typing_short_unlocked_ko')) localStorage.setItem('typing_short_unlocked_ko', oldShort);
+            if (oldLong && !localStorage.getItem('typing_long_unlocked_ko')) localStorage.setItem('typing_long_unlocked_ko', oldLong);
+        };
+        migrate();
+
+        // 탭 이벤트 설정
+        const tabs = document.querySelectorAll('.lang-tab');
+        tabs.forEach(tab => {
+            if (tab.getAttribute('data-lang') === currentLang) tab.classList.add('active');
+            else tab.classList.remove('active');
+
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentLang = tab.getAttribute('data-lang');
+                localStorage.setItem('typing_home_lang', currentLang);
+                updateLocks();
+            });
+        });
+
+        function getLangName(code) {
+            const names = {'ko': '한국어', 'en': '영어', 'ja': '일본어', 'zh': '중국어'};
+            return names[code] || '알 수 없음';
+        }
+
+        updateLocks();
+    });
+</script>
 {% endblock %}

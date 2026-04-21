@@ -254,10 +254,10 @@
 
             <div style="display: flex; align-items: center; gap: 15px;">
                 <div class="lang-toggle">
-                    <button class="toggle-btn active" onclick="setLang('ko')">한글</button>
+                    <button class="toggle-btn active" onclick="setLang('ko')">한국어</button>
                     <button class="toggle-btn" onclick="setLang('en')">영어</button>
-                    <button class="toggle-btn" onclick="setLang('ja')">日本語(か타카나)</button>
-                    <button class="toggle-btn" onclick="setLang('zh')">中文(pinyin)</button>
+                    <button class="toggle-btn" onclick="setLang('ja')">일본어</button>
+                    <button class="toggle-btn" onclick="setLang('zh')">중국어</button>
                     <button class="toggle-btn" id="sound-btn" onclick="toggleSound()" style="margin-left: 2px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 8px;">
                         <span id="sound-icon">🔊</span>
                     </button>
@@ -351,10 +351,10 @@
     const EN_TO_JA = {'a':'ア','i':'イ','u':'ウ','e':'エ','o':'オ','k':'カ','s':'サ','t':'タ','n':'ナ','h':'ハ','m':'マ','y':'ヤ','r':'ラ','w':'ワ'};
 
     // --- 언어별 독립 잠금 시스템 (v14) ---
-    const currentLang = "{{ language|default:'ko' }}";
+    let currentLang = "{{ language|default:'ko' }}";
     let currentLevel = "{{ level|default:'home' }}";
-    const storageKey = `typing_unlocked_levels_${currentLang}`;
-    const wordUnlockKey = `typing_word_unlocked_${currentLang}`;
+    let storageKey = `typing_unlocked_levels_${currentLang}`;
+    let wordUnlockKey = `typing_word_unlocked_${currentLang}`;
 
     const PROGRESSION = ['home', 'top', 'bottom', 'number', 'shift', 'all'];
     let unlockedLevels = JSON.parse(localStorage.getItem(storageKey) || '["home"]');
@@ -416,17 +416,24 @@
 
     function setLang(lang) {
         currentLang = lang;
+        // 언어 변경 시 스토리지 키 및 상태 재동기화 (v15 개선)
+        storageKey = `typing_unlocked_levels_${currentLang}`;
+        wordUnlockKey = `typing_word_unlocked_${currentLang}`;
+        unlockedLevels = JSON.parse(localStorage.getItem(storageKey) || '["home"]');
+
         document.querySelectorAll('.lang-toggle .toggle-btn').forEach(btn => {
             if (btn.id === 'sound-btn') return;
             const onclick = btn.getAttribute('onclick') || '';
             btn.classList.toggle('active', onclick.includes(`'${lang}'`));
         });
+        
+        updateLockStates();
         initKeyboard();
     }
 
     function setLevel(level) {
         if (!unlockedLevels.includes(level)) {
-            alert("🔒 이전 단계를 정확도 80% 이상으로 통과해야 열립니다!");
+            alert(`🔒 [${getLangName(currentLang)}] 이전 단계를 정확도 80% 이상으로 통과해야 열립니다!`);
             return;
         }
         currentLevel = level;

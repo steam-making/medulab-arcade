@@ -66,32 +66,45 @@
     <form method="post">
         {% csrf_token %}
         <div class="form-group">
-            <label>콘텐츠 유형</label>
-            <select name="content_type" class="form-control">
-                <option value="word" {% if content.content_type == 'word' %}selected{% endif %}>단어 연습</option>
-                <option value="short" {% if content.content_type == 'short' %}selected{% endif %}>짧은글 연습</option>
-                <option value="long" {% if content.content_type == 'long' %}selected{% endif %}>긴글 연습</option>
-            </select>
+            <label>주제 (테마명)</label>
+            <input type="text" name="title" id="id_title" class="form-control" placeholder="예: IT 용어, 기초 회화 등" value="{{ content.title|default:'' }}">
         </div>
 
-        <div class="form-group">
-            <label>기본 언어 (표시 우선순위)</label>
-            <select name="language" class="form-control">
-                <option value="ko" {% if content.language == 'ko' %}selected{% endif %}>한국어</option>
-                <option value="en" {% if content.language == 'en' %}selected{% endif %}>영어</option>
-                <option value="ja" {% if content.language == 'ja' %}selected{% endif %}>일본어</option>
-                <option value="zh" {% if content.language == 'zh' %}selected{% endif %}>중국어</option>
-            </select>
+        <div style="background: rgba(59, 130, 246, 0.1); padding: 20px; border-radius: 20px; border: 1px solid var(--neon-blue); margin-bottom: 24px;">
+            <p style="font-size: 14px; font-weight: 800; color: var(--neon-blue); margin-bottom: 12px;">✨ 스마트 콘텐츠 자동 생성 마법사</p>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="flex: 1;">
+                    <input type="number" id="gen_count" class="form-control" value="10" min="1" max="30" placeholder="생성 갯수">
+                </div>
+                <button type="button" onclick="autoGenerateContent()" class="btn-submit" style="flex: 2; margin-top: 0; padding: 12px; background: linear-gradient(135deg, #6366f1, #3b82f6);" id="gen-btn">🪄 주제에 맞게 자동 생성하기</button>
+            </div>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 10px;">※ 상단의 주제를 입력한 후 버튼을 누르면 이모지, 내용, 다국어 번역이 자동 완성됩니다.</p>
+        </div>
+
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+                <label>콘텐츠 유형</label>
+                <select name="content_type" id="id_content_type" class="form-control">
+                    <option value="word" {% if content.content_type == 'word' %}selected{% endif %}>단어 연습</option>
+                    <option value="short" {% if content.content_type == 'short' %}selected{% endif %}>짧은글 연습</option>
+                    <option value="long" {% if content.content_type == 'long' %}selected{% endif %}>긴글 연습</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>기본 언어</label>
+                <select name="language" class="form-control">
+                    <option value="ko" {% if content.language == 'ko' %}selected{% endif %}>한국어</option>
+                    <option value="en" {% if content.language == 'en' %}selected{% endif %}>영어</option>
+                    <option value="ja" {% if content.language == 'ja' %}selected{% endif %}>일본어</option>
+                    <option value="zh" {% if content.language == 'zh' %}selected{% endif %}>중국어</option>
+                </select>
+            </div>
         </div>
 
         <div class="form-group">
             <label>이모지 (예: 💻, 🔬)</label>
-            <input type="text" name="emoji" class="form-control" placeholder="⌨️" value="{{ content.emoji|default:'⌨️' }}">
-        </div>
-
-        <div class="form-group">
-            <label>주제 (테마명)</label>
-            <input type="text" name="title" class="form-control" placeholder="예: IT 용어, 기초 회화 등" value="{{ content.title|default:'' }}">
+            <input type="text" name="emoji" id="id_emoji" class="form-control" placeholder="⌨️" value="{{ content.emoji|default:'⌨️' }}">
         </div>
 
         <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 20px; border: 1px solid var(--tp-border); margin-bottom: 24px;">
@@ -130,6 +143,58 @@
 </div>
 
 <script>
+    async function autoGenerateContent() {
+        const title = document.getElementById('id_title').value;
+        const c_type = document.getElementById('id_content_type').value;
+        const count = document.getElementById('gen_count').value;
+
+        if (!title) {
+            alert('먼저 주제(테마명)를 입력하세요.');
+            document.getElementById('id_title').focus();
+            return;
+        }
+
+        const btn = document.getElementById('gen-btn');
+        const originalText = btn.innerText;
+        btn.innerText = '⌛ AI 콘텐츠 생성 중...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('{% url "generate_content_api" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ title, content_type: c_type, count })
+            });
+
+            const result = await response.json();
+            if (result.status === 'success') {
+                const data = result.data;
+                document.getElementById('id_emoji').value = data.emoji;
+                document.getElementById('text_ko').value = data.ko;
+                document.getElementById('text_en').value = data.en;
+                document.getElementById('text_ja').value = data.ja;
+                document.getElementById('text_zh').value = data.zh;
+                
+                // 시각 효과
+                document.querySelectorAll('.form-control').forEach(el => {
+                    el.style.borderColor = 'var(--neon-blue)';
+                    setTimeout(() => el.style.borderColor = '', 1000);
+                });
+            } else {
+                alert(result.message || '콘텐츠 생성에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('Generation failed:', error);
+            alert('오류가 발생했습니다.');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
     async function autoTranslateAll() {
         const textKo = document.getElementById('text_ko').value;
         if (!textKo) {

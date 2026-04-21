@@ -48,6 +48,125 @@ def translate_api(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'invalid method'}, status=405)
 
+@login_required
+def generate_content_api(request):
+    """주제를 기반으로 연습 콘텐츠를 자동 생성하는 AI 마법사 API"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'invalid method'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        title = data.get('title', '').strip()
+        c_type = data.get('content_type', 'word')
+        count = int(data.get('count', 10))
+
+        if not title:
+            return JsonResponse({'status': 'error', 'message': '주제를 입력해 주세요.'})
+
+        # --- 카테고리 지능형 매칭 데이터베이스 (대폭 확장) ---
+        KNOWLEDGE_BASE = {
+            'it': {
+                'emoji': '💻',
+                'keywords': ['컴퓨터', '인터넷', '소프트웨어', 'it', '기술', '코딩'],
+                'word': ['컴퓨터', '인터넷', '소프트웨어', '알고리즘', '데이터베이스', '프로그래밍', '서버', '네트워크', '코딩', '인공지능', '클라우드', '보안', '애플리케이션', '하드웨어', '모바일', '브라우저', '운영체제', '프로세서', '메모리', '스토리지', '인터페이스', '백엔드', '프론트엔드', '풀스택', '디버깅', '컴파일러', '프레임워크', '라이브러리', '가상화', '컨테이너', '마이크로서비스', '블록체인', '암호화', '방화벽', '해킹', '빅데이터', '머신러닝', '딥러닝', '로봇공학', '사물인터넷', '상호작용', '사용자 경험', '객체지향', '함수형 프로그래밍', '멀티태스킹', '병렬처리', '디지털', '시스템', '플랫폼', '가젯'],
+                'short': ['코딩은 논리적인 사고를 키워줍니다.', '인공지능 기술이 세상을 바꾸고 있습니다.', '데이터는 현대의 새로운 석유입니다.', '보안은 모든 IT 시스템의 핵심입니다.', '클라우드 환경에서는 언제 어디서나 작업이 가능합니다.', '인터넷은 전 세계를 하나로 연결합니다.', '소프트웨어 업데이트는 보안의 시작입니다.', '강력한 암호는 개인정보를 보호합니다.', '스마트폰은 우리 삶의 필수품이 되었습니다.', '미래의 기술은 더욱 놀랍게 발전할 것입니다.']
+            },
+            'fruit': {
+                'emoji': '🍎',
+                'keywords': ['과일', '음식', '채소', '요리', '식품'],
+                'word': ['사과', '바나나', '포도', '수박', '딸기', '오렌지', '파인애플', '메론', '키위', '망고', '복숭아', '체리', '배', '자두', '감', '귤', '레몬', '라임', '자몽', '블루베리', '라즈베리', '크랜베리', '석류', '무화과', '대추', '밤', '호두', '땅콩', '아몬드', '코코넛', '아보카도', '파파야', '구아바', '리치', '망고스틴', '두리안', '용과', '살구', '유자', '모과', '앵두', '보리수', '오디', '산딸기', '참외', '토마토', '방울토마토', '한라봉', '천혜향', '샤인머스캣'],
+                'short': ['과일을 많이 먹으면 건강에 좋습니다.', '신선한 사과가 맛있습니다.', '여름에는 수박이 최고입니다.', '비타민 씨가 풍부한 과일을 추천합니다.', '계절마다 제철 과일이 바뀝니다.', '달콤한 포도가 송이송이 열렸습니다.', '상큼한 오렌지 주스 한 잔 어떠세요?', '딸기는 아이들이 가장 좋아하는 과일입니다.', '과일 바구니에는 정성이 가득 담겨 있습니다.', '아침에 먹는 사과는 보약과 같습니다.']
+            },
+            'animal': {
+                'emoji': '🦁',
+                'keywords': ['동물', '생물', '자연', '곤충', '새'],
+                'word': ['사자', '호랑이', '코끼리', '기린', '팬더', '토끼', '강아지', '고양이', '원숭이', '여우', '늑대', '곰', '얼룩말', '하마', '사슴', '독수리', '참새', '까치', '비둘기', '타조', '펭귄', '악어', '거북이', '뱀', '개구리', '도마뱀', '고래', '상어', '돌고래', '문어', '오징어', '꽃게', '새우', '조개', '불가사리', '해파리', '나비', '꿀벌', '무당벌레', '잠자리', '메뚜기', '지렁이', '달팽이', '캥거루', '코알라', '낙타', '다람쥐', '햄스터', '앵무새', '공룡'],
+                'short': ['강아지는 사람을 잘 따릅니다.', '고양이는 귀여운 동물입니다.', '사자는 밀림의 왕이라고 불립니다.', '지구에는 다양한 동물이 살고 있습니다.', '자연을 보호해야 동물이 안전합니다.', '코끼리는 코가 아주 깁니다.', '새들은 아침마다 노래를 부릅니다.', '바닷속에는 신비로운 생물들이 많습니다.', '동물원은 아이들에게 인기 만점입니다.', '멸종 위기 동물을 함께 지켜주세요.']
+            },
+            'space': {
+                'emoji': '🚀',
+                'keywords': ['우주', '과학', '미래', '별', '천문'],
+                'word': ['우주선', '지구', '태양', '달', '화성', '은하계', '블랙홀', '위성', '별', '수성', '금성', '목성', '토성', '천왕성', '해왕성', '명왕성', '안드로메다', '성운', '혜성', '유성', '소행성', '우주복', '우주정거장', '로켓', '천문대', '망원경', '우주비행사', '무중력', '광년', '우주먼지', '빅뱅', '평행우주', '외계인', '우주의 신비', '행성', '항성', '궤도', '대기권', '우주탐사', '아폴로', '나사', '일식', '월식', '별자리', '북극성', '은하수', '코스모스', '양자역학', '상대성 이론', '우주선장'],
+                'short': ['우주는 끝이 없이 넓습니다.', '인류는 화성 탐사를 준비하고 있습니다.', '지구는 푸른 행성입니다.', '밤하늘에는 수많은 별이 빛납니다.', '우주 비행사는 특별한 훈련을 받습니다.', '태양계에는 여덟 개의 행성이 있습니다.', '블랙홀은 빛조차 빠져나가지 못합니다.', '달 뒤편에는 무엇이 있을까요?', '우주 정거장에서 지구를 바라봅니다.', '우주 탐험은 인간의 끊임없는 꿈입니다.']
+            },
+            'travel': {
+                'emoji': '✈️',
+                'keywords': ['여행', '관광', '바다', '해외', '휴가'],
+                'word': ['여권', '비행기', '호텔', '배낭', '지도', '카메라', '공항', '여행사', '휴게소', '바닷가', '산책', '구경', '기차', '축제', '휴가', '캐리어', '선글라스', '돗자리', '텐트', '캠핑', '숙소', '게스트하우스', '유적지', '박물관', '기념품', '면세점', '현지식', '풍경', '가이드', '여행지', '산행', '해변', '리조트', '기내식', '환전', '비자', '여행보험', '자유여행', '패키지여행', '크루즈', '기차여행', '도착', '출발', '인삿말', '지도앱', '보조배터리', '포켓와이파이', '관광지', '추억', '사진첩'],
+                'short': ['새로운 나라로 여행을 떠납니다.', '여행은 새로운 에너지를 줍니다.', '가족과 함께 즐거운 휴가를 보냅니다.', '멋진 풍경을 카메라에 담습니다.', '여행지에서 맛있는 음식을 먹습니다.', '비행기를 타고 구름 위를 날아갑니다.', '낯선 곳에서의 만남은 늘 설렙니다.', '배낭 하나 메고 세상을 걷습니다.', '여행의 목적지는 마음속에 있습니다.', '다시 가고 싶은 여행지를 추억합니다.']
+            }
+        }
+
+        # 1-1. 주제에서 키워드 추출 및 매칭 (더 정교한 매칭)
+        selected_category = 'it' # 기본값
+        title_lower = title.lower()
+        for cat_key, info in KNOWLEDGE_BASE.items():
+            if cat_key in title_lower or any(k in title_lower for k in info.get('keywords', [])):
+                selected_category = cat_key
+                break
+        
+        info = KNOWLEDGE_BASE[selected_category]
+        emoji = info['emoji']
+        
+        # 1-2. 개수만큼 데이터 추출 (랜덤성 및 조합 기능 강화)
+        raw_pool = info.get(c_type, ["안녕", "반가워"])
+        generated_ko_list = []
+        
+        # 기본 풀을 섞어서 추가
+        pool_copy = list(raw_pool)
+        random.shuffle(pool_copy)
+        
+        # 중복 없이 최대한 채우기
+        generated_ko_list.extend(pool_copy)
+        
+        # 부족할 경우 중복을 허용하되 수식어를 붙여 변형 시도 (단어일 때)
+        if len(generated_ko_list) < count and c_type == 'word':
+            adjectives = ['빨간', '파란', '예쁜', '귀여운', '빠른', '멋진', '신비한', '달콤한', '신선한', '작은', '거대한']
+            while len(generated_ko_list) < count:
+                new_item = f"{random.choice(adjectives)} {random.choice(raw_pool)}"
+                generated_ko_list.append(new_item)
+                if len(generated_ko_list) >= count * 2: break # 안전장치
+        
+        # 그래도 부족하면 단순 반복 (섞어서)
+        while len(generated_ko_list) < count:
+            generated_ko_list.append(random.choice(raw_pool))
+            if len(generated_ko_list) >= count * 2: break
+        
+        # 최종 갯수 맞춤 (중복 제거보다는 순서 섞기로 대응)
+        random.shuffle(generated_ko_list)
+        generated_ko_list = generated_ko_list[:count]
+        
+        # 문자열 결합 (단어는 쉼표, 문장은 줄바꿈)
+        ko_text = ", ".join(generated_ko_list) if c_type == 'word' else "\n".join(generated_ko_list)
+
+        # 2. 다국어 자동 번역 수행
+        results = {'ko': ko_text, 'emoji': emoji}
+        targets = [('en', 'en'), ('ja', 'ja'), ('zh', 'zh-CN')]
+
+        for lang_code, target_key in targets:
+            translated = GoogleTranslator(source='auto', target=target_key).translate(ko_text)
+            
+            # 가나/병음 후처리 로직 재사용
+            final_val = translated
+            if lang_code == 'ja':
+                kks = pykakasi.kakasi()
+                converted = kks.convert(translated)
+                final_val = "".join([item['kana'] for item in converted])
+            elif lang_code == 'zh':
+                pinyin_list = pinyin(translated, style=Style.NORMAL)
+                final_val = " ".join([item[0] for item in pinyin_list])
+            
+            final_val = final_val.replace(' ,', ',').replace(' .', '.').strip('.')
+            results[lang_code] = final_val
+
+        return JsonResponse({
+            'status': 'success',
+            'data': results
+        })
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
 def is_staff_check(user):
     return user.is_staff
 

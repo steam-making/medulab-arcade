@@ -10,6 +10,7 @@ urlpatterns = [
     path('practice/long/<int:pk>/', views.practice_long, name='practice_long'),
     path('api/save-score/', views.save_score, name='save_score'),
     path('api/translate/', views.translate_api, name='translate_api'),
+    path('api/generate/', views.generate_content_api, name='generate_content_api'),
     path('ranking/', views.typing_ranking, name='typing_ranking'),
     
     # 관리자 전용

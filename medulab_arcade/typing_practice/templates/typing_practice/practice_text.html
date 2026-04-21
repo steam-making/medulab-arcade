@@ -160,6 +160,112 @@
         background: #fff; color: #000; font-weight: 800; cursor: pointer; transition: 0.3s;
     }
     .res-btn:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(255,255,255,0.1); }
+
+/* ══════════════════════════════════════════
+   KEYBOARD  — 밝은 기계식 스타일
+══════════════════════════════════════════ */
+.keyboard-wrapper {
+    position: relative; width: 1040px; margin: 30px auto;
+    padding: 20px 20px 26px;
+    background: linear-gradient(165deg, #d6dde8 0%, #c4ceda 100%);
+    border-radius: 18px;
+    border: 1px solid #b4c2d0;
+    box-shadow:
+        0 7px 0 #8a9bae,
+        0 14px 50px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.keyboard {
+    display: flex; flex-direction: column; gap: 6px;
+    user-select: none; position: relative; z-index: 20;
+}
+.key-row { display: flex; gap: 6px; justify-content: center; }
+
+/* ── 기본 키 ── */
+.key {
+    height: 52px; width: 52px; min-width: 52px;
+    background: linear-gradient(180deg, #ffffff 0%, #edf1f6 100%);
+    border: 1px solid #aebfce;
+    border-bottom: 4px solid #7890a6;
+    border-radius: 7px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800; color: #1a2535;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.95);
+    transition: all 0.07s; cursor: default; position: relative;
+}
+/* 특수 키 너비 */
+.key.w-back    { width: 104px; }
+.key.w-tab     { width: 78px;  align-items: flex-start; padding-left: 10px; }
+.key.w-caps    { width: 92px;  align-items: flex-start; padding-left: 10px; }
+.key.w-enter   { width: 110px; align-items: flex-end;   padding-right: 10px; }
+.key.w-shift-l { width: 120px; align-items: flex-start; padding-left: 10px; }
+.key.w-shift-r { width: 140px; align-items: flex-end;   padding-right: 10px; }
+.key.w-space   { width: 350px; }
+.key.w-ctrl    { width: 70px; }
+
+/* 키 누름 */
+.key.active {
+    background: #2563eb !important; color: #fff !important;
+    border-color: #1d4ed8 !important; border-bottom-width: 1px !important;
+    transform: translateY(3px);
+    box-shadow: 0 0 16px rgba(37,99,235,0.4) !important;
+}
+
+/* 연습 구역 강조 (단어/짧은글에서는 영역표시 안하므로 비워둠) */
+.key.zone-active { }
+.key.zone-inactive { }
+
+/* 타겟 키 (우선순위를 위해 아래 배치) */
+.key.target {
+    background: #c0364a !important; color: #fff !important;
+    border-color: #9e2236 !important; border-bottom-color: #7c1828 !important;
+    animation: key-pop 1.1s ease-in-out infinite; z-index: 21;
+}
+@keyframes key-pop {
+    0%,100% { transform: scale(1);    box-shadow: 0 0 0   0 rgba(192,54,74,0.0); }
+    50%      { transform: scale(1.07); box-shadow: 0 0 14px 4px rgba(192,54,74,0.4); }
+}
+
+/* ══════════════════════════════════════════
+   HAND OVERLAY  — 반투명 실루엣 (키 라벨 동시 표시)
+══════════════════════════════════════════ */
+.hand-overlay-container {
+    position: absolute; inset: 0; pointer-events: none; z-index: 30; overflow: visible; display: none;
+}
+.hand-svg-group {
+    position: absolute; width: 460px; height: 460px;
+    opacity: 0;
+    transition: opacity 0.25s ease, top 0.22s ease, left 0.22s ease;
+}
+/* 홈 포지션: 반투명 대기 */
+.hand-svg-group.home   { opacity: 0.5; z-index: 30; }
+/* 활성 손: 뚜렷한 실루엣, 키 위에 오버레이 됨 */
+.hand-svg-group.active { opacity: 0.9; z-index: 31; }
+
+/* 손 실루엣 */
+.finger-segment, .palm-segment {
+    fill: rgba(50, 80, 160, 0.55);
+    stroke: rgba(20, 50, 130, 0.8);
+    stroke-width: 1.4;
+    transition: fill 0.1s;
+}
+.finger-knuckle { display: none; }
+.fingernail     { display: none !important; }
+
+/* 눌리는 손가락: 빨간 강조색 */
+.finger-group.striking .finger-segment {
+    fill: rgba(192, 54, 74, 0.80) !important;
+    stroke: rgba(140, 20, 40, 0.95) !important;
+    stroke-width: 1.8 !important;
+    filter: drop-shadow(0 3px 8px rgba(192,54,74,0.6));
+}
+
+    .tp-control-btn {
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px; padding: 8px 12px; color: #fff; cursor: pointer;
+        display: flex; align-items: center; gap: 6px; font-size: 13px;
+    }
+    .tp-control-btn.off { opacity: 0.5; }
     /* 다국어 학습 옵션 패널 */
     .study-options {
         display: flex;
@@ -288,9 +394,27 @@
 
                 <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 5px;"></div>
 
-                <button class="toggle-btn" id="sound-btn" onclick="toggleSound()" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 8px 12px;">
-                    <span id="sound-icon">🔊</span>
-                </button>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div id="tts-speed-control" style="display: none; align-items: center; gap: 5px; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px;">
+                        <span style="font-size: 11px; opacity: 0.7; color: white;">속도</span>
+                        <select id="tts-rate-select" onchange="updateTTSRate(this.value)" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 2px 4px; border-radius: 4px; font-size: 11px; cursor: pointer; outline: none;">
+                            <option value="0.1">0.1배속 (아주느림)</option>
+                            <option value="0.3">0.3배속</option>
+                            <option value="0.5">0.5배속</option>
+                            <option value="0.8">0.8배속</option>
+                            <option value="1.0">1.0배속 (보통)</option>
+                            <option value="1.2">1.2배속</option>
+                            <option value="1.5">1.5배속</option>
+                        </select>
+                    </div>
+                    <button id="hand-toggle-btn" class="tp-control-btn" onclick="toggleHands()" title="손가락 표시 끄기/켜기">
+                        <span id="hand-toggle-icon">🖐️</span>
+                        <span id="hand-toggle-status">ON</span>
+                    </button>
+                    <button id="sound-btn" class="tp-control-btn" onclick="toggleSound()">
+                        <span id="sound-icon">🔊</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -330,6 +454,70 @@
             <input type="text" class="input-field" id="typing-input" placeholder="준비되면 입력을 시작하세요" autocomplete="off" style="margin-top: 25px; max-width: 1100px;">
         </div>
 
+        <!-- [v15] 전문가급 리얼 핸드 시스템 이식 -->
+        <div class="keyboard-wrapper">
+            <div class="keyboard" id="v-keyboard" style="padding-top: 10px;"></div>
+            <div class="hand-overlay-container">
+                <!-- 왼손 -->
+                <svg id="hand-left" class="hand-svg-group left" viewBox="0 0 200 200">
+                    <path class="palm-segment" d="M49,143 Q46,180 100,184 Q154,180 151,143 Z"/>
+                    <g id="finger-L5" class="finger-group">
+                        <path class="finger-segment" d="M49,144 L49,112 Q49,101 60,101 Q71,101 71,112 L71,144 Z"/>
+                        <ellipse class="fingernail" cx="60" cy="106" rx="5" ry="5.5"/>
+                    </g>
+                    <g id="finger-L4" class="finger-group">
+                        <path class="finger-segment" d="M72,144 L72,96 Q72,85 83,85 Q94,85 94,96 L94,144 Z"/>
+                        <ellipse class="fingernail" cx="83" cy="90" rx="5.5" ry="6"/>
+                    </g>
+                    <g id="finger-L3" class="finger-group">
+                        <path class="finger-segment" d="M96,144 L96,80 Q96,69 107,69 Q118,69 118,80 L118,144 Z"/>
+                        <ellipse class="fingernail" cx="107" cy="74" rx="5.5" ry="6"/>
+                    </g>
+                    <g id="finger-L2" class="finger-group">
+                        <path class="finger-segment" d="M120,144 L120,90 Q120,79 131,79 Q142,79 142,90 L142,144 Z"/>
+                        <ellipse class="fingernail" cx="131" cy="84" rx="5.5" ry="6"/>
+                    </g>
+                    <g id="finger-L1" class="finger-group">
+                        <path class="finger-segment" d="M145,150 Q162,148 167,136 Q171,124 163,118 Q154,113 147,127 Q141,140 145,150 Z"/>
+                    </g>
+                    <circle id="tip-L5" cx="60" cy="101" r="1" fill="none"/>
+                    <circle id="tip-L4" cx="83" cy="85" r="1" fill="none"/>
+                    <circle id="tip-L3" cx="107" cy="69" r="1" fill="none"/>
+                    <circle id="tip-L2" cx="131" cy="79" r="1" fill="none"/>
+                    <circle id="tip-L1" cx="166" cy="125" r="1" fill="none"/>
+                </svg>
+
+                <!-- 오른손 -->
+                <svg id="hand-right" class="hand-svg-group right" viewBox="0 0 200 200">
+                    <path class="palm-segment" d="M49,143 Q46,180 100,184 Q154,180 151,143 Z"/>
+                    <g id="finger-R1" class="finger-group">
+                        <path class="finger-segment" d="M55,150 Q38,148 33,136 Q29,124 37,118 Q46,113 53,127 Q59,140 55,150 Z"/>
+                    </g>
+                    <g id="finger-R2" class="finger-group">
+                        <path class="finger-segment" d="M58,144 L58,90 Q58,79 69,79 Q80,79 80,90 L80,144 Z"/>
+                        <ellipse class="fingernail" cx="69" cy="84" rx="5.5" ry="6"/>
+                    </g>
+                    <g id="finger-R3" class="finger-group">
+                        <path class="finger-segment" d="M82,144 L82,80 Q82,69 93,69 Q104,69 104,80 L104,144 Z"/>
+                        <ellipse class="fingernail" cx="93" cy="74" rx="5.5" ry="6"/>
+                    </g>
+                    <g id="finger-R4" class="finger-group">
+                        <path class="finger-segment" d="M106,144 L106,96 Q106,85 117,85 Q128,85 128,96 L128,144 Z"/>
+                        <ellipse class="fingernail" cx="117" cy="90" rx="5.5" ry="6"/>
+                    </g>
+                    <g id="finger-R5" class="finger-group">
+                        <path class="finger-segment" d="M129,144 L129,112 Q129,101 140,101 Q151,101 151,112 L151,144 Z"/>
+                        <ellipse class="fingernail" cx="140" cy="106" rx="5" ry="5.5"/>
+                    </g>
+                    <circle id="tip-R1" cx="34" cy="125" r="1" fill="none"/>
+                    <circle id="tip-R2" cx="69" cy="79" r="1" fill="none"/>
+                    <circle id="tip-R3" cx="93" cy="69" r="1" fill="none"/>
+                    <circle id="tip-R4" cx="117" cy="85" r="1" fill="none"/>
+                    <circle id="tip-R5" cx="140" cy="101" r="1" fill="none"/>
+                </svg>
+            </div>
+        </div>
+
         <div style="margin-top: 15px; text-align: left; color: var(--text-muted); font-size: 13px;">
             <p style="margin: 0;">• 엔터(Enter) 키나 스페이스를 누르면 다음으로 넘어갑니다. 정확하게 입력해야 합니다.</p>
         </div>
@@ -342,6 +530,8 @@
     const contents = {{ contents_json|safe }};
     const contentType = "{{ content_type }}";
     const lang = "{{ language }}";
+    let inputLang = '{{ language }}';
+    let hintLang = inputLang === 'ko' ? 'en' : 'ko';
     
     let currentIndex = 0;
     let completedCount = 0;
@@ -352,10 +542,234 @@
     let itemStartTime = null; // 현재 단어/문장 입력 시작
     let cumulativeTime = 0; // 실제 입력에 소요된 누적 시간 (ms)
     let maxWpm = 0;
-    let soundEnabled = localStorage.getItem('typingSound') !== 'off';
-
+    let soundEnabled = localStorage.getItem('typingSound') === 'on';
+    let showHands = localStorage.getItem('showHands') !== 'off';
+    let ttsRates = JSON.parse(localStorage.getItem('ttsRates') || '{"ko":"1.0", "en":"0.3", "ja":"1.0", "zh":"1.0"}');
     const inputField = document.getElementById('typing-input');
-    const targetText = document.getElementById('target-text');
+    const targetTextContainer = document.getElementById('target-text'); // 이름 중복 방지
+
+    function updateTTSRate(rate) {
+        ttsRates[inputLang] = rate;
+        localStorage.setItem('ttsRates', JSON.stringify(ttsRates));
+    }
+
+    function initTTSRateSelect() {
+        const select = document.getElementById('tts-rate-select');
+        select.value = ttsRates[inputLang] || '1.0';
+    }
+
+    // [v15] 키보드 데이터 및 핸드 가이드 로직 이식
+    const KEYBOARD_LAYOUT_DATA = [
+        [
+            {k:'`', c:'Backquote', s:'~'}, {k:'1', c:'Digit1', s:'!'}, {k:'2', c:'Digit2', s:'@'}, {k:'3', c:'Digit3', s:'#'}, {k:'4', c:'Digit4', s:'$'}, {k:'5', c:'Digit5', s:'%'}, {k:'6', c:'Digit6', s:'^'}, {k:'7', c:'Digit7', s:'&'}, {k:'8', c:'Digit8', s:'*'}, {k:'9', c:'Digit9', s:'('}, {k:'0', c:'Digit0', s:')'}, {k:'-', c:'Minus', s:'_'}, {k:'=', c:'Equal', s:'+'}, {k:'Backspace', c:'Backspace', w:'w-back'}
+        ],
+        [
+            {k:'Tab', c:'Tab', w:'w-tab'}, {k:'Q', c:'KeyQ', ko:'ㅂ', koS:'ㅃ'}, {k:'W', c:'KeyW', ko:'ㅈ', koS:'ㅉ'}, {k:'E', c:'KeyE', ko:'ㄷ', koS:'ㄸ'}, {k:'R', c:'KeyR', ko:'ㄱ', koS:'ㄲ'}, {k:'T', c:'KeyT', ko:'ㅅ', koS:'ㅆ'}, {k:'Y', c:'KeyY', ko:'ㅛ'}, {k:'U', c:'KeyU', ko:'ㅕ'}, {k:'I', c:'KeyI', ko:'ㅑ'}, {k:'O', c:'KeyO', ko:'ㅐ', koS:'ㅒ'}, {k:'P', c:'KeyP', ko:'ㅔ', koS:'ㅖ'}, {k:'[', c:'BracketLeft', s:'{'}, {k:']', c:'BracketRight', s:'}'}, {k:'\\', c:'Backslash'}
+        ],
+        [
+            {k:'Caps', c:'CapsLock', w:'w-caps'}, {k:'A', c:'KeyA', ko:'ㅁ'}, {k:'S', c:'KeyS', ko:'ㄴ'}, {k:'D', c:'KeyD', ko:'ㅇ'}, {k:'F', c:'KeyF', ko:'ㄹ'}, {k:'G', c:'KeyG', ko:'ㅎ'}, {k:'H', c:'KeyH', ko:'ㅗ'}, {k:'J', c:'KeyJ', ko:'ㅓ'}, {k:'K', c:'KeyK', ko:'ㅏ'}, {k:'L', c:'KeyL', ko:'ㅣ'}, {k:';', c:'Semicolon', s:':'}, {k:"'", c:'Quote', s:'"'}, {k:'Enter', c:'Enter', w:'w-enter'}
+        ],
+        [
+            {k:'Shift', c:'ShiftLeft', w:'w-shift-l'}, {k:'Z', c:'KeyZ', ko:'ㅋ'}, {k:'X', c:'KeyX', ko:'ㅌ'}, {k:'C', c:'KeyC', ko:'ㅊ'}, {k:'V', c:'KeyV', ko:'ㅍ'}, {k:'B', c:'KeyB', ko:'ㅠ'}, {k:'N', c:'KeyN', ko:'ㅜ'}, {k:'M', c:'KeyM', ko:'ㅡ'}, {k:',', c:'Comma', s:'<'}, {k:'.', c:'Period', s:'>'}, {k:'/', c:'Slash', s:'?'}, {k:'Shift', c:'ShiftRight', w:'w-shift-r'}
+        ],
+        [{k:'Ctrl', c:'ControlLeft', w:'w-ctrl'}, {k:'Alt', c:'AltLeft'}, {k:'Space', c:'Space', w:'w-space'}, {k:'Alt', c:'AltRight'}, {k:'Ctrl', c:'ControlRight', w:'w-ctrl'}]
+    ];
+
+    const FINGER_MAP = {
+        'L5': ['`','1','Q','A','Z','Tab','CapsLock','ShiftLeft','ㅂ','ㅁ','ㅋ','ControlLeft'],
+        'L4': ['2','W','S','X','ㅈ','ㄴ','ㅌ'],
+        'L3': ['3','E','D','C','ㄷ','ㅇ','ㅊ'],
+        'L2': ['4','5','R','T','F','G','V','B','ㄱ','ㅅ','ㄹ','ㅎ','ㅍ','ㅠ'],
+        'L1': ['Space'], 'R1': ['Space'],
+        'R2': ['6','7','Y','U','H','J','N','M','ㅛ','ㅕ','ㅗ','ㅓ','ㅜ','ㅡ'],
+        'R3': ['8','I','K',',','ㅑ','ㅏ'],
+        'R4': ['9','O','L','.','ㅐ','ㅣ'],
+        'R5': ['0','-','=','P','[',']','\\',';','\'','/','Enter','ShiftRight','ㅔ', 'Backspace']
+    };
+
+    function decomposeKo(text) {
+        if (!text) return [];
+        const CHO_MAP = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+        const JUNG_MAP = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
+        const JONG_MAP = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+        const JUNG_DECOMP = {'ㅘ':['ㅗ','ㅏ'], 'ㅙ':['ㅗ','ㅐ'], 'ㅚ':['ㅗ','ㅣ'], 'ㅝ':['ㅜ','ㅓ'], 'ㅞ':['ㅜ','ㅔ'], 'ㅟ':['ㅜ','ㅣ'], 'ㅢ':['ㅡ','ㅣ']};
+        const JONG_DECOMP = {'ㄳ':['ㄱ','ㅅ'], 'ㄵ':['ㄴ','ㅈ'], 'ㄶ':['ㄴ','ㅎ'], 'ㄺ':['ㄹ','ㄱ'], 'ㄻ':['ㄹ','ㅁ'], 'ㄼ':['ㄹ','ㅂ'], 'ㄽ':['ㄹ','ㅅ'], 'ㄾ':['ㄹ','ㅌ'], 'ㄿ':['ㄹ','ㅍ'], 'ㅀ':['ㄹ','ㅎ'], 'ㅄ':['ㅂ','ㅅ']};
+        
+        let strokes = [];
+        for (let i=0; i<text.length; i++) {
+            const char = text[i];
+            const code = char.charCodeAt(0);
+            if (code >= 0xAC00 && code <= 0xD7A3) { // 한글 음절
+                const index = code - 0xAC00;
+                const cho = CHO_MAP[Math.floor(index / 588)];
+                const jung = JUNG_MAP[Math.floor((index % 588) / 28)];
+                const jong = JONG_MAP[index % 28];
+                strokes.push(cho);
+                if (JUNG_DECOMP[jung]) strokes.push(...JUNG_DECOMP[jung]);
+                else strokes.push(jung);
+                if (jong) {
+                    if (JONG_DECOMP[jong]) strokes.push(...JONG_DECOMP[jong]);
+                    else strokes.push(jong);
+                }
+            } else if (code >= 0x3131 && code <= 0x3163) { // 한글 자모
+                if (JONG_DECOMP[char]) strokes.push(...JONG_DECOMP[char]);
+                else if (JUNG_DECOMP[char]) strokes.push(...JUNG_DECOMP[char]);
+                else strokes.push(char);
+            } else {
+                strokes.push(char); // 알파벳, 숫자, 특수기호
+            }
+        }
+        return strokes;
+    }
+
+    const SHIFT_MAP = {
+        'ㅃ':'ㅂ','ㅉ':'ㅈ','ㄸ':'ㄷ','ㄲ':'ㄱ','ㅆ':'ㅅ','ㅒ':'ㅐ','ㅖ':'ㅔ','Q':'ㅂ','W':'ㅈ','E':'ㄷ','R':'ㄱ','T':'ㅅ','O':'ㅐ','P':'ㅔ','!':'1','@':'2','#':'3','$':'4','%':'5','^':'6','&':'7','*':'8','(':'9',')':'0','_':'-','+':'=','~':'`','{':'[','}':']','|':'\\',':':';','"':'\'','<':',','>':'.','?':'/',' ':'Space'
+    };
+
+    const CHAR_TO_CODE = {
+        '`':'Backquote','1':'Digit1','2':'Digit2','3':'Digit3','4':'Digit4','5':'Digit5','6':'Digit6','7':'Digit7','8':'Digit8','9':'Digit9','0':'Digit0','-':'Minus','=':'Equal','[':'BracketLeft',']':'BracketRight','\\':'Backslash',';':'Semicolon',"'":'Quote',',':'Comma','.':'Period','/':'Slash','Space':'Space','Enter':'Enter','Tab':'Tab'
+    };
+
+
+    function getKeyEl(char) {
+        if (!char) return null;
+        if (CHAR_TO_CODE[char]) return document.getElementById(`key-${CHAR_TO_CODE[char]}`);
+        const el = document.getElementById(`key-${char}`) || document.getElementById(`key-${char.toUpperCase()}`);
+        if (el) return el;
+        if (char.length === 1 && /[a-zA-Z]/.test(char)) return document.getElementById(`key-Key${char.toUpperCase()}`);
+        return null;
+    }
+
+    function initKeyboard() {
+        const kb = document.getElementById('v-keyboard');
+        if (!kb) return;
+        kb.innerHTML = '';
+        KEYBOARD_LAYOUT_DATA.forEach((row, idx) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'key-row';
+            if (idx === 1) rowDiv.style.marginLeft = '15px';
+            if (idx === 2) rowDiv.style.marginLeft = '35px';
+            if (idx === 3) rowDiv.style.marginLeft = '60px';
+            row.forEach(item => {
+                const keyDiv = document.createElement('div');
+                keyDiv.className = `key ${item.w || ''}`;
+                let keyId = item.c || item.k;
+                if (inputLang === 'ko' && item.ko) keyId = item.ko;
+                keyDiv.id = `key-${keyId}`;
+                let shiftCharHTML = '';
+                let shiftChar = item.s || '';
+                if (inputLang === 'ko' && item.koS) shiftChar = item.koS;
+                
+                if (shiftChar) {
+                    shiftCharHTML = `<span style="font-size:10.5px; color:#94a3b8; position:absolute; top:4px; right:6px; font-weight:800;">${shiftChar}</span>`;
+                }
+
+                if (inputLang === 'ko' && item.ko) {
+                    keyDiv.innerHTML = `<span style="font-size:10.5px; color:#64748b; position:absolute; top:4px; left:6px; font-weight:800;">${item.k}</span>${shiftCharHTML}<span style="font-weight:900; margin-top:8px;">${item.ko}</span>`;
+                } else if (item.k.length === 1) { // Numbers and letters
+                    keyDiv.innerHTML = `${shiftCharHTML}<span style="font-weight:900; margin-top:${shiftChar ? '8px' : '0'};">${item.k}</span>`;
+                } else {
+                    keyDiv.innerText = item.k;
+                }
+                rowDiv.appendChild(keyDiv);
+            });
+            kb.appendChild(rowDiv);
+        });
+        applyHandToggle();
+        setTimeout(setDefaultHandPositions, 100);
+    }
+
+    function positionHand(handEl, fingerId, keyEl, wrapRect, stateClass) {
+        const tipEl = document.getElementById(`tip-${fingerId}`);
+        if (!tipEl || !keyEl || !wrapRect) return;
+        const keyRect = keyEl.getBoundingClientRect();
+        const keyTop = keyRect.top - wrapRect.top + keyRect.height / 2;
+        const keyLeft = keyRect.left - wrapRect.left + keyRect.width / 2;
+        const tipX = tipEl.cx.baseVal.value;
+        const tipY = tipEl.cy.baseVal.value;
+        const scale = 460 / 200;
+        handEl.style.top = `${keyTop - tipY * scale - 15}px`;
+        handEl.style.left = `${keyLeft - tipX * scale}px`;
+        handEl.style.transform = 'none';
+        handEl.classList.remove('active', 'rest', 'home');
+        if (stateClass) handEl.classList.add(stateClass);
+    }
+
+    function setDefaultHandPositions() {
+        const wrap = document.querySelector('.keyboard-wrapper');
+        if (!wrap) return;
+        const wrapRect = wrap.getBoundingClientRect();
+        const leftHomeEl = inputLang === 'ko' ? document.getElementById('key-ㄹ') : document.getElementById('key-KeyF');
+        const rightHomeEl = inputLang === 'ko' ? document.getElementById('key-ㅓ') : document.getElementById('key-KeyJ');
+        if (leftHomeEl) positionHand(document.getElementById('hand-left'), 'L2', leftHomeEl, wrapRect, 'home');
+        if (rightHomeEl) positionHand(document.getElementById('hand-right'), 'R2', rightHomeEl, wrapRect, 'home');
+    }
+
+    function updateHandToChar(chars) {
+        if (!showHands || !chars) return;
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('target'));
+        document.querySelectorAll('.finger-group').forEach(f => f.classList.remove('striking'));
+        
+        const handLeft = document.getElementById('hand-left');
+        const handRight = document.getElementById('hand-right');
+        let charArray = Array.isArray(chars) ? chars : [chars];
+        
+        charArray.forEach(char => {
+            let lookupChar = char;
+            let isShiftRequired = false;
+            
+            if (SHIFT_MAP[char]) {
+                lookupChar = SHIFT_MAP[char];
+                isShiftRequired = (char !== ' ' && char !== lookupChar);
+            }
+            
+            const targetDiv = getKeyEl(lookupChar);
+            if (targetDiv) {
+                targetDiv.classList.add('target');
+                let targetFinger = '';
+                for (const [fId, keys] of Object.entries(FINGER_MAP)) {
+                    if (keys.includes(lookupChar) || (lookupChar.length === 1 && keys.includes(lookupChar.toUpperCase()))) {
+                        targetFinger = fId; break;
+                    }
+                }
+                
+                if (targetFinger) {
+                    const isLeftMain = targetFinger.startsWith('L');
+                    const wrap = document.querySelector('.keyboard-wrapper');
+                    const wrapRect = wrap.getBoundingClientRect();
+                    document.getElementById(`finger-${targetFinger}`)?.classList.add('striking');
+                    positionHand(isLeftMain ? handLeft : handRight, targetFinger, targetDiv, wrapRect, 'active');
+                    
+                    if (isShiftRequired) {
+                        const shiftHand = isLeftMain ? handRight : handLeft;
+                        const shiftFinger = isLeftMain ? 'R5' : 'L5';
+                        const shiftKeyId = isLeftMain ? 'key-ShiftRight' : 'key-ShiftLeft';
+                        const shiftKeyEl = document.getElementById(shiftKeyId);
+                        if (shiftKeyEl) {
+                            document.getElementById(`finger-${shiftFinger}`)?.classList.add('striking');
+                            positionHand(shiftHand, shiftFinger, shiftKeyEl, wrapRect, 'active');
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function toggleHands() {
+        showHands = !showHands;
+        localStorage.setItem('showHands', showHands ? 'on' : 'off');
+        applyHandToggle();
+    }
+
+    function applyHandToggle() {
+        const wrap = document.querySelector('.hand-overlay-container');
+        const btn = document.getElementById('hand-toggle-btn');
+        const status = document.getElementById('hand-toggle-status');
+        if (wrap) wrap.style.display = showHands ? 'block' : 'none';
+        if (btn) btn.classList.toggle('off', !showHands);
+        if (status) status.innerText = showHands ? 'ON' : 'OFF';
+        if (showHands) setTimeout(setDefaultHandPositions, 150);
+    }
 
     function getStrokeCount(text) {
         if (!text) return 0;
@@ -384,8 +798,10 @@
 
     function init() {
         updateSoundIcon();
+        initKeyboard(); 
+        
         if (contents.length === 0) {
-            targetText.innerText = "연습 데이터가 없습니다.";
+            if (targetTextContainer) targetTextContainer.innerText = "연습 데이터가 없습니다.";
             inputField.disabled = true;
             return;
         }
@@ -404,8 +820,8 @@
         inputField.focus();
     }
 
-    let inputLang = '{{ language }}';
-    let hintLang = inputLang === 'ko' ? 'en' : 'ko';
+    // 초기 설정
+
 
     // 초기 드롭다운 설정
     document.getElementById('input-lang').value = inputLang;
@@ -421,6 +837,8 @@
             hintLang = 'ko';
         }
         hintSelect.value = hintLang;
+        
+        document.getElementById('tts-rate-select').value = ttsRates[inputLang] || '1.0';
         
         updateTarget();
         updateStatus();
@@ -438,7 +856,7 @@
             const currentData = contents[currentIndex];
             const targetTextStr = currentData[inputLang] || currentData['ko'] || '데이터 없음';
             
-            targetText.innerText = targetTextStr;
+            targetTextContainer.innerText = targetTextStr;
             
             // 이전/다음 텍스트 표시
             document.getElementById('prev-text').innerText = currentIndex > 0 ? (contents[currentIndex-1][inputLang] || contents[currentIndex-1]['ko']) : '-';
@@ -457,7 +875,17 @@
 
             inputField.value = '';
             inputField.classList.remove('error');
-            speakText(targetText.innerText);
+            speakText(targetTextContainer.innerText);
+            
+            // [v15] 첫 글자로 핸드 가이드 이동
+            setTimeout(() => {
+                let firstChar = targetTextStr[0];
+                if (firstChar) {
+                    const dec = decomposeKo(firstChar);
+                    if (dec.length > 0) firstChar = dec[0];
+                }
+                updateHandToChar(firstChar || 'Enter');
+            }, 200);
         } else {
             finish();
         }
@@ -472,12 +900,19 @@
         soundEnabled = !soundEnabled;
         localStorage.setItem('typingSound', soundEnabled ? 'on' : 'off');
         updateSoundIcon();
-        if (soundEnabled) speakText(targetText.innerText);
+        if (soundEnabled) speakText(targetTextContainer.innerText);
     }
 
     function updateSoundIcon() {
         document.getElementById('sound-icon').innerText = soundEnabled ? '🔊' : '🔇';
         document.getElementById('sound-btn').classList.toggle('active', soundEnabled);
+        document.getElementById('tts-speed-control').style.display = soundEnabled ? 'flex' : 'none';
+    }
+
+    function updateTTSRate(val) {
+        ttsRates[inputLang] = val;
+        localStorage.setItem('ttsRates', JSON.stringify(ttsRates));
+        if (soundEnabled) speakText(targetTextContainer.innerText);
     }
 
     function speakText(text) {
@@ -486,9 +921,16 @@
         const msg = new SpeechSynthesisUtterance(text);
         
         const langMap = { 'ko': 'ko-KR', 'en': 'en-US', 'ja': 'ja-JP', 'zh': 'zh-CN' };
-        msg.lang = langMap[inputLang] || 'ko-KR';
+        const targetLang = langMap[inputLang] || 'ko-KR';
+        msg.lang = targetLang;
         
-        msg.rate = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const voice = voices.find(v => v.lang === targetLang) || voices.find(v => v.lang.startsWith(targetLang.split('-')[0]));
+        if (voice) {
+            msg.voice = voice;
+        }
+        
+        msg.rate = parseFloat(ttsRates[inputLang] || '1.0');
         window.speechSynthesis.speak(msg);
     }
 
@@ -503,7 +945,6 @@
             const wpm = Math.max(0, Math.round(completedStrokes / (totalElapsedMin || 0.001)));
             document.getElementById('wpm').innerText = wpm;
 
-            // 현재 타수 계산 (실시간 업데이트는 입력 중일 때만)
             if (itemStartTime) {
                 const activeItemElapsed = Math.max(currentItemElapsed, 150);
                 const curWpm = Math.round(getStrokeCount(inputField.value) / (activeItemElapsed / 60000));
@@ -531,20 +972,77 @@
         
         let html = '';
         let isError = false;
+        let nextCharToPress = ['Enter', 'Space'];
 
         for (let i = 0; i < currentTarget.length; i++) {
             if (i < currentInput.length) {
                 if (currentTarget[i] === currentInput[i]) {
-                    html += `<span style="color: #4ade80;">${currentTarget[i]}</span>`;
-                } else {
+                    html += `<span style="color: #4ade80;">${currentTarget[i]}</span>`; // 일치
+                } else if (i === currentInput.length - 1) { // 현재 조합 중인 글자
+                    const targetDec = decomposeKo(currentTarget[i]);
+                    const inputDec = decomposeKo(currentInput[i]);
+                    let isPrefix = true;
+                    let isSpillover = false;
+
+                    for (let d = 0; d < Math.min(inputDec.length, targetDec.length); d++) {
+                        if (inputDec[d] !== targetDec[d]) { isPrefix = false; break; }
+                    }
+
+                    if (isPrefix) {
+                        if (inputDec.length <= targetDec.length) {
+                            html += `<span style="color: #fbbf24;">${currentTarget[i]}</span>`; // 조합 진행중 (노란색 힌트)
+                            if (inputDec.length < targetDec.length) {
+                                nextCharToPress = targetDec[inputDec.length];
+                            } else {
+                                nextCharToPress = ['Enter', 'Space'];
+                            }
+                        } else if (inputDec.length === targetDec.length + 1) {
+                            if (i + 1 < currentTarget.length) {
+                                const nextTargetDec = decomposeKo(currentTarget[i+1]);
+                                if (nextTargetDec[0] === inputDec[inputDec.length - 1]) {
+                                    isSpillover = true;
+                                    html += `<span style="color: #fbbf24;">${currentTarget[i]}</span>`; 
+                                    nextCharToPress = nextTargetDec[1] || ['Enter', 'Space']; 
+                                } else {
+                                    isPrefix = false; 
+                                }
+                            } else {
+                                isPrefix = false; 
+                            }
+                        } else {
+                            isPrefix = false;
+                        }
+                    }
+
+                    if (!isPrefix && !isSpillover) {
+                        html += `<span style="color: #f87171; background: rgba(248, 113, 113, 0.2); border-radius: 4px;">${currentTarget[i]}</span>`; // 오타
+                        isError = true;
+                        nextCharToPress = 'Backspace';
+                    }
+                } else { // 과거에 잘못 친 글자
                     html += `<span style="color: #f87171; background: rgba(248, 113, 113, 0.2); border-radius: 4px;">${currentTarget[i]}</span>`;
                     isError = true;
+                    nextCharToPress = 'Backspace';
                 }
             } else {
-                html += `<span>${currentTarget[i]}</span>`;
+                html += `<span>${currentTarget[i]}</span>`; // 아직 안 친 글자
             }
         }
-        targetText.innerHTML = html;
+
+        if (!isError && (nextCharToPress === 'Enter' || (Array.isArray(nextCharToPress) && nextCharToPress.includes('Enter')))) {
+            if (currentInput.length < currentTarget.length) {
+                const targetDec = decomposeKo(currentTarget[currentInput.length]);
+                nextCharToPress = targetDec[0];
+            } else if (currentInput.length > currentTarget.length) {
+                isError = true;
+                nextCharToPress = 'Backspace';
+            }
+        } else if (isError) {
+            nextCharToPress = 'Backspace';
+        }
+
+        if (targetTextContainer) targetTextContainer.innerHTML = html;
+        updateHandToChar(nextCharToPress);
 
         if (isError) {
             inputField.classList.add('error');
@@ -666,6 +1164,12 @@
         });
     }
 
+
+
     init();
+
+    window.addEventListener('resize', () => {
+        if (showHands) setDefaultHandPositions();
+    });
 </script>
 {% endblock %}

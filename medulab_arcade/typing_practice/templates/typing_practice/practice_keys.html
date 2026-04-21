@@ -4,221 +4,222 @@
 
 {% block extra_css %}
 <style>
-    .practice-container {
-        max-width: 1200px;
-        margin: 10px auto;
-        text-align: center;
-    }
-    .status-panel {
-        display: grid;
-        grid-template-columns: 1fr 2fr 1fr;
-        align-items: center;
-        background: rgba(0,0,0,0.3);
-        padding: 15px 30px;
-        border-radius: 20px;
-        border: 1px solid rgba(255,255,255,0.05);
-        margin-bottom: 20px;
-    }
-    .mission-status {
-        text-align: left;
-    }
-    .time-gauge-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-    .time-gauge-container {
-        height: 14px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 7px;
-        overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.1);
-    }
-    #time-bar {
-        height: 100%;
-        width: 100%;
-        background: linear-gradient(90deg, #4ade80, #22c55e);
-        box-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
-        transition: width 1s linear;
-    }
-    #time-bar.danger {
-        background: linear-gradient(90deg, #f87171, #ef4444);
-        box-shadow: 0 0 15px rgba(248, 113, 113, 0.5);
-        animation: tp-blink 1s infinite;
-    }
-    @keyframes tp-blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
-    }
+/* ══════════════════════════════════════════
+   자리연습 — UI v31 (Light Keyboard)
+══════════════════════════════════════════ */
 
-    .target-display {
-        font-size: 64px;
-        font-weight: 900;
-        margin: 15px 0;
-        height: 80px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 24px;
-        color: #fff;
-        text-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
-    }
+/* ── Layout ── */
+.practice-container { max-width: 1100px; margin: 0 auto; text-align: center; padding-bottom: 24px; }
 
-    /* 가상 키보드 */
-    .keyboard {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        padding: 16px;
-        background: #111118;
-        border-radius: 24px;
-        border: 1px solid var(--border);
-        user-select: none;
-        margin-top: 20px;
-    }
-    .key-row {
-        display: flex;
-        justify-content: center;
-        gap: 6px;
-    }
-    .key {
-        width: 54px;
-        height: 54px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--text-secondary);
-        transition: all 0.1s;
-    }
-    .key.active {
-        background: #60a5fa !important;
-        color: #fff !important;
-        transform: scale(0.95);
-        box-shadow: 0 0 20px rgba(96, 165, 250, 0.6);
-    }
-    .key.target {
-        background: rgba(251, 191, 36, 0.2);
-        border-color: #fbbf24;
-        color: #fbbf24;
-        animation: pulse 1s infinite;
-    }
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-    }
+/* ── Header ── */
+.tp-header-small {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; padding: 0 4px;
+}
+.tp-title-area h2 { font-size: 18px; font-weight: 900; margin: 0; }
+.tp-title-area p  { font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
 
-    .level-toggle, .lang-toggle {
-        display: flex;
-        background: rgba(255, 255, 255, 0.05);
-        padding: 4px;
-        border-radius: 12px;
-        width: fit-content;
-        gap: 4px;
-    }
-    .toggle-btn {
-        padding: 8px 20px;
-        border-radius: 8px;
-        border: none;
-        background: transparent;
-        color: var(--text-muted);
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 14px;
-    }
-    .toggle-btn.active {
-        background: #60a5fa;
-        color: #fff;
-    }
-    .level-btn.active {
-        background: #a855f7;
-        color: #fff;
-    }
-    .level-btn.locked {
-        opacity: 0.6;
-        cursor: not-allowed;
-        position: relative;
-        filter: grayscale(1); /* 블러 제거 */
-        background: rgba(0,0,0,0.4) !important;
-        color: transparent !important;
-    }
-    .level-btn.locked::after {
-        content: '🔒';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 16px;
-        color: #fff;
-        filter: none;
-        text-shadow: 0 0 10px rgba(255,255,255,0.8);
-    }
-    .level-btn.locked:hover {
-        background: rgba(248, 113, 113, 0.1) !important;
-        border-color: #ef4444;
-    }
-    .tp-header-small {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 15px;
-        padding: 0 10px;
-    }
-    .tp-title-area {
-        text-align: left;
-    }
-    .tp-title-area h2 {
-        font-size: 20px;
-        font-weight: 900;
-        margin: 0;
-    }
-    .tp-title-area p {
-        font-size: 13px;
-        color: var(--text-muted);
-        margin: 2px 0 0 0;
-    }
+/* ── Toggle Buttons ── */
+.lang-toggle, .level-toggle {
+    display: flex; gap: 3px; padding: 3px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+}
+.toggle-btn {
+    padding: 7px 15px; border-radius: 7px; border: none;
+    background: transparent; color: var(--text-muted);
+    font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.15s;
+}
+.toggle-btn.active { background: #38bdf8; color: #fff; }
+.level-btn.active  { background: #a78bfa; color: #fff; }
+.level-btn.locked  {
+    opacity: 0.45; cursor: not-allowed; position: relative;
+    background: rgba(0,0,0,0.3) !important; color: transparent !important;
+}
+.level-btn.locked::after {
+    content: '🔒'; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+}
 
-    /* Result Modal */
-    .result-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.85);
-        backdrop-filter: blur(15px);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        animation: tp-fadeIn 0.4s ease;
-    }
-    @keyframes tp-fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    
-    .result-card {
-        background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03));
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 40px;
-        padding: 50px;
-        width: 100%;
-        max-width: 500px;
-        text-align: center;
-        box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-    }
-    .result-title { font: 900 32px 'Orbitron', sans-serif; margin-bottom: 30px; color: #fff; }
-    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
-    .result-item { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
-    .res-label { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 8px; display: block; }
-    .res-value { font-size: 28px; font-weight: 900; color: #60a5fa; font-family: 'Orbitron', sans-serif; }
-    .res-unit { font-size: 14px; color: var(--text-muted); margin-left: 4px; }
-    .res-btn { 
-        width: 100%; padding: 16px; border-radius: 16px; border: none; 
-        background: #fff; color: #000; font-weight: 800; cursor: pointer; transition: 0.3s;
-    }
-    .res-btn:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(255,255,255,0.1); }
+/* ── Control Buttons ── */
+.tp-control-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 7px 12px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.8); font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+}
+.tp-control-btn:hover { background: rgba(255,255,255,0.12); }
+
+/* ── Status Panel ── */
+.status-panel {
+    display: grid; grid-template-columns: 130px 1fr 130px;
+    align-items: center; gap: 20px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 13px 22px; margin-bottom: 14px;
+}
+.mission-status { text-align: left; }
+.time-gauge-wrapper { display: flex; flex-direction: column; gap: 7px; }
+.time-gauge-container {
+    height: 10px; border-radius: 5px; overflow: hidden;
+    background: rgba(255,255,255,0.08);
+}
+#time-bar {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, #34d399, #10b981);
+    transition: width 1s linear;
+}
+#time-bar.danger {
+    background: linear-gradient(90deg, #f87171, #ef4444);
+    animation: tp-blink 0.8s infinite;
+}
+@keyframes tp-blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* ── Target Display ── */
+.target-display {
+    margin: 10px 0 18px;
+    height: 108px; display: flex; align-items: center; justify-content: center;
+}
+#prev-char  { font-size: 28px; font-weight: 900; color: rgba(255,255,255,0.7); width:100px; text-align:right; }
+#target-char{ font-size: 86px; font-weight: 900; color: #fff; min-width:120px; text-align:center;
+              filter: drop-shadow(0 0 22px rgba(56,189,248,0.5)); }
+#next-char  { font-size: 28px; font-weight: 900; color: rgba(255,255,255,0.7); width:100px; text-align:left; }
+
+/* ══════════════════════════════════════════
+   KEYBOARD  — 밝은 기계식 스타일
+══════════════════════════════════════════ */
+.keyboard-wrapper {
+    position: relative; width: 1040px; margin: 0 auto;
+    padding: 20px 20px 26px;
+    background: linear-gradient(165deg, #d6dde8 0%, #c4ceda 100%);
+    border-radius: 18px;
+    border: 1px solid #b4c2d0;
+    box-shadow:
+        0 7px 0 #8a9bae,
+        0 14px 50px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.keyboard {
+    display: flex; flex-direction: column; gap: 6px;
+    user-select: none; position: relative; z-index: 20;
+}
+.key-row { display: flex; gap: 6px; justify-content: center; }
+
+/* ── 기본 키 ── */
+.key {
+    height: 52px; width: 52px; min-width: 52px;
+    background: linear-gradient(180deg, #ffffff 0%, #edf1f6 100%);
+    border: 1px solid #aebfce;
+    border-bottom: 4px solid #7890a6;
+    border-radius: 7px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800; color: #1a2535;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.95);
+    transition: all 0.07s; cursor: default; position: relative;
+}
+/* 특수 키 너비 */
+.key.w-back    { width: 104px; }
+.key.w-tab     { width: 78px;  align-items: flex-start; padding-left: 10px; }
+.key.w-caps    { width: 92px;  align-items: flex-start; padding-left: 10px; }
+.key.w-enter   { width: 110px; align-items: flex-end;   padding-right: 10px; }
+.key.w-shift-l { width: 120px; align-items: flex-start; padding-left: 10px; }
+.key.w-shift-r { width: 140px; align-items: flex-end;   padding-right: 10px; }
+.key.w-space   { width: 350px; }
+.key.w-ctrl    { width: 70px; }
+
+/* 키 누름 */
+.key.active {
+    background: #2563eb !important; color: #fff !important;
+    border-color: #1d4ed8 !important; border-bottom-width: 1px !important;
+    transform: translateY(3px);
+    box-shadow: 0 0 16px rgba(37,99,235,0.4) !important;
+}
+
+/* 연습 구역 강조 */
+.key.zone-active {
+    background: linear-gradient(180deg, #f0f6ff 0%, #ddeeff 100%) !important;
+    border-color: #88aadd !important;
+    border-bottom-color: #5577bb !important;
+}
+.key.zone-inactive {
+    background: linear-gradient(180deg, #f4f5f7 0%, #e8eaed 100%) !important;
+    border-color: #cdd4dc !important;
+    border-bottom-color: #aab4be !important;
+    color: #9aabb8 !important;
+    opacity: 0.7;
+}
+
+/* 타겟 키 (우선순위를 위해 가장 아래에 배치) */
+.key.target {
+    background: #c0364a !important; color: #fff !important;
+    border-color: #9e2236 !important; border-bottom-color: #7c1828 !important;
+    animation: key-pop 1.1s ease-in-out infinite; z-index: 21;
+}
+@keyframes key-pop {
+    0%,100% { transform: scale(1);    box-shadow: 0 0 0   0 rgba(192,54,74,0.0); }
+    50%      { transform: scale(1.07); box-shadow: 0 0 14px 4px rgba(192,54,74,0.4); }
+}
+
+/* ══════════════════════════════════════════
+   HAND OVERLAY  — 반투명 실루엣 (키 라벨 동시 표시)
+══════════════════════════════════════════ */
+.hand-overlay-container {
+    position: absolute; inset: 0; pointer-events: none; z-index: 30; overflow: visible;
+}
+.hand-svg-group {
+    position: absolute; width: 460px; height: 460px;
+    opacity: 0;
+    transition: opacity 0.25s ease, top 0.22s ease, left 0.22s ease;
+}
+/* 홈 포지션: 반투명 대기 */
+.hand-svg-group.home   { opacity: 0.5; z-index: 30; }
+/* 활성 손: 뚜렷한 실루엣, 키 위에 오버레이 됨 */
+.hand-svg-group.active { opacity: 0.9; z-index: 31; }
+
+/* 손 실루엣 */
+.finger-segment, .palm-segment {
+    fill: rgba(50, 80, 160, 0.55);
+    stroke: rgba(20, 50, 130, 0.8);
+    stroke-width: 1.4;
+    transition: fill 0.1s;
+}
+.finger-knuckle { display: none; }
+.fingernail     { display: none !important; }
+
+/* 눌리는 손가락: 빨간 강조색 */
+.finger-group.striking .finger-segment {
+    fill: rgba(192, 54, 74, 0.80) !important;
+    stroke: rgba(140, 20, 40, 0.95) !important;
+    stroke-width: 1.8 !important;
+    filter: drop-shadow(0 3px 8px rgba(192,54,74,0.6));
+}
+
+/* ══════════════════════════════════════════
+   RESULT MODAL
+══════════════════════════════════════════ */
+.result-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.82); backdrop-filter: blur(14px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 10000; animation: tp-fadeIn 0.35s ease;
+}
+@keyframes tp-fadeIn { from{opacity:0} to{opacity:1} }
+.result-card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 28px;
+    padding: 44px; width: 100%; max-width: 460px; text-align: center;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+.result-title { font: 900 26px 'Orbitron',sans-serif; margin-bottom: 24px; color: #fff; }
+.result-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+.result-item  { background: rgba(0,0,0,0.28); padding: 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); }
+.res-label    { font-size: 10px; color: rgba(255,255,255,0.45); font-weight: 700; margin-bottom: 6px; display: block; letter-spacing: 0.04em; }
+.res-value    { font-size: 26px; font-weight: 900; color: #60a5fa; font-family: 'Orbitron',sans-serif; }
+.res-unit     { font-size: 12px; color: rgba(255,255,255,0.4); margin-left: 3px; }
+.res-btn      { width: 100%; padding: 14px; border-radius: 12px; border: none; color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; transition: 0.22s; }
+.res-btn:hover{ filter: brightness(1.12); transform: translateY(-1px); }
 </style>
 {% endblock %}
 
@@ -258,9 +259,15 @@
                     <button class="toggle-btn" onclick="setLang('en')">영어</button>
                     <button class="toggle-btn" onclick="setLang('ja')">일본어</button>
                     <button class="toggle-btn" onclick="setLang('zh')">중국어</button>
-                    <button class="toggle-btn" id="sound-btn" onclick="toggleSound()" style="margin-left: 2px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 8px;">
-                        <span id="sound-icon">🔊</span>
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button id="hand-toggle-btn" class="tp-control-btn" onclick="toggleHands()" title="손가락 표시 끄기/켜기">
+                            <span id="hand-toggle-icon">🖐️</span>
+                            <span id="hand-toggle-status">ON</span>
+                        </button>
+                        <button class="tp-control-btn" onclick="toggleSound()">
+                            <span id="sound-icon">🔊</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="level-toggle" id="level-selector">
@@ -291,15 +298,96 @@
         </div>
 
         <div class="target-display">
-            <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; max-width: 600px; margin: 0 auto;">
-                <div id="prev-char" style="font-size: 32px; color: var(--text-muted); opacity: 0.4; text-align: right; padding-right: 40px;">-</div>
-                <div id="target-char" style="font-size: 84px; font-weight: 900; color: #fff; min-width: 120px; text-align: center;">-</div>
-                <div id="next-char" style="font-size: 32px; color: var(--text-muted); opacity: 0.4; text-align: left; padding-left: 40px;">-</div>
+            <div style="display: flex; gap: 80px; align-items: center; justify-content: center; width: 100%;">
+                <div id="prev-char">-</div>
+                <div id="target-char">-</div>
+                <div id="next-char">-</div>
             </div>
         </div>
 
-        <!-- 가상 키보드 영역 (JS에서 동적 생성) -->
-        <div class="keyboard" id="v-keyboard"></div>
+        <div class="keyboard-wrapper">
+            <div class="keyboard" id="v-keyboard" style="padding-top: 10px;"></div>
+            
+            <div class="hand-overlay-container">
+                <!-- 왼손 (v30 - Clean Anatomical) -->
+                <svg id="hand-left" class="hand-svg-group left" viewBox="0 0 200 200">
+
+                    <!-- 손등 (먼저 그려서 손가락 아래 배경) -->
+                    <path class="palm-segment" d="M49,143 Q46,180 100,184 Q154,180 151,143 Z"/>
+
+                    <!-- 새끼손가락 (L5) -->
+                    <g id="finger-L5" class="finger-group">
+                        <path class="finger-segment" d="M49,144 L49,112 Q49,101 60,101 Q71,101 71,112 L71,144 Z"/>
+                        <ellipse class="fingernail" cx="60" cy="106" rx="5" ry="5.5"/>
+                    </g>
+                    <!-- 약지 (L4) -->
+                    <g id="finger-L4" class="finger-group">
+                        <path class="finger-segment" d="M72,144 L72,96 Q72,85 83,85 Q94,85 94,96 L94,144 Z"/>
+                        <ellipse class="fingernail" cx="83" cy="90" rx="5.5" ry="6"/>
+                    </g>
+                    <!-- 중지 (L3) -->
+                    <g id="finger-L3" class="finger-group">
+                        <path class="finger-segment" d="M96,144 L96,80 Q96,69 107,69 Q118,69 118,80 L118,144 Z"/>
+                        <ellipse class="fingernail" cx="107" cy="74" rx="5.5" ry="6"/>
+                    </g>
+                    <!-- 검지 (L2) -->
+                    <g id="finger-L2" class="finger-group">
+                        <path class="finger-segment" d="M120,144 L120,90 Q120,79 131,79 Q142,79 142,90 L142,144 Z"/>
+                        <ellipse class="fingernail" cx="131" cy="84" rx="5.5" ry="6"/>
+                    </g>
+                    <!-- 엄지 (L1) -->
+                    <g id="finger-L1" class="finger-group">
+                        <path class="finger-segment" d="M145,150 Q162,148 167,136 Q171,124 163,118 Q154,113 147,127 Q141,140 145,150 Z"/>
+                    </g>
+
+                    <circle id="tip-L5" cx="60" cy="101" r="1" fill="none"/>
+                    <circle id="tip-L4" cx="83" cy="85" r="1" fill="none"/>
+                    <circle id="tip-L3" cx="107" cy="69" r="1" fill="none"/>
+                    <circle id="tip-L2" cx="131" cy="79" r="1" fill="none"/>
+                    <circle id="tip-L1" cx="166" cy="125" r="1" fill="none"/>
+                </svg>
+
+                <!-- 오른손 (v30 - Clean Anatomical) -->
+                <svg id="hand-right" class="hand-svg-group right" viewBox="0 0 200 200">
+                    <!-- 손등 -->
+                    <path class="palm-segment" d="M49,143 Q46,180 100,184 Q154,180 151,143 Z"/>
+
+                    <!-- 엄지 (R1) -->
+                    <g id="finger-R1" class="finger-group">
+                        <path class="finger-segment" d="M55,150 Q38,148 33,136 Q29,124 37,118 Q46,113 53,127 Q59,140 55,150 Z"/>
+                    </g>
+                    <!-- 검지 (R2) -->
+                    <g id="finger-R2" class="finger-group">
+                        <path class="finger-segment" d="M58,144 L58,90 Q58,79 69,79 Q80,79 80,90 L80,144 Z"/>
+                        <ellipse class="fingernail" cx="69" cy="84" rx="5.5" ry="6"/>
+                    </g>
+                    <!-- 중지 (R3) -->
+                    <g id="finger-R3" class="finger-group">
+                        <path class="finger-segment" d="M82,144 L82,80 Q82,69 93,69 Q104,69 104,80 L104,144 Z"/>
+                        <ellipse class="fingernail" cx="93" cy="74" rx="5.5" ry="6"/>
+                    </g>
+                    <!-- 약지 (R4) -->
+                    <g id="finger-R4" class="finger-group">
+                        <path class="finger-segment" d="M106,144 L106,96 Q106,85 117,85 Q128,85 128,96 L128,144 Z"/>
+                        <ellipse class="fingernail" cx="117" cy="90" rx="5.5" ry="6"/>
+                    </g>
+                    <!-- 새끼손가락 (R5) -->
+                    <g id="finger-R5" class="finger-group">
+                        <path class="finger-segment" d="M129,144 L129,112 Q129,101 140,101 Q151,101 151,112 L151,144 Z"/>
+                        <ellipse class="fingernail" cx="140" cy="106" rx="5" ry="5.5"/>
+                    </g>
+
+                    <circle id="tip-R1" cx="34" cy="125" r="1" fill="none"/>
+                    <circle id="tip-R2" cx="69" cy="79" r="1" fill="none"/>
+                    <circle id="tip-R3" cx="93" cy="69" r="1" fill="none"/>
+                    <circle id="tip-R4" cx="117" cy="85" r="1" fill="none"/>
+                    <circle id="tip-R5" cx="140" cy="101" r="1" fill="none"/>
+                </svg>
+                
+                <div id="fingertip-marker-main" class="fingertip-marker"></div>
+                <div id="fingertip-marker-shift" class="fingertip-marker" style="background: #fbbf24; border-color: #fff;"></div>
+            </div>
+        </div>
 
         <div style="margin-top: 15px; color: var(--text-muted); font-size: 13px;">
             <p style="margin: 0;">※ 키보드에 직접 입력하여 연습을 진행하세요.</p>
@@ -310,23 +398,51 @@
 
 {% block extra_js %}
 <script>
-    const LAYOUT_KO = [['1','2','3','4','5','6','7','8','9','0','-','='],['ㅂ','ㅈ','ㄷ','ㄱ','ㅅ','ㅛ','ㅕ','ㅑ','ㅐ','ㅔ'],['ㅁ','ㄴ','ㅇ','ㄹ','ㅎ','ㅗ','ㅓ','ㅏ','ㅣ'],['ㅋ','ㅌ','ㅊ','ㅍ','ㅠ','ㅜ','ㅡ']];
-    const LAYOUT_EN = [['1','2','3','4','5','6','7','8','9','0','-','='],['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['Z','X','C','V','B','N','M']];
-    
+    const KEYBOARD_LAYOUT_DATA = [
+        [
+            {k:'`', c:'Backquote', s:'~'}, {k:'1', c:'Digit1', s:'!'}, {k:'2', c:'Digit2', s:'@'}, {k:'3', c:'Digit3', s:'#'}, {k:'4', c:'Digit4', s:'$'}, {k:'5', c:'Digit5', s:'%'}, {k:'6', c:'Digit6', s:'^'}, {k:'7', c:'Digit7', s:'&'}, {k:'8', c:'Digit8', s:'*'}, {k:'9', c:'Digit9', s:'('}, {k:'0', c:'Digit0', s:')'}, {k:'-', c:'Minus', s:'_'}, {k:'=', c:'Equal', s:'+'}, {k:'Backspace', c:'Backspace', w:'w-back'}
+        ],
+        [
+            {k:'Tab', c:'Tab', w:'w-tab'}, {k:'Q', c:'KeyQ', ko:'ㅂ', koS:'ㅃ'}, {k:'W', c:'KeyW', ko:'ㅈ', koS:'ㅉ'}, {k:'E', c:'KeyE', ko:'ㄷ', koS:'ㄸ'}, {k:'R', c:'KeyR', ko:'ㄱ', koS:'ㄲ'}, {k:'T', c:'KeyT', ko:'ㅅ', koS:'ㅆ'}, {k:'Y', c:'KeyY', ko:'ㅛ'}, {k:'U', c:'KeyU', ko:'ㅕ'}, {k:'I', c:'KeyI', ko:'ㅑ'}, {k:'O', c:'KeyO', ko:'ㅐ', koS:'ㅒ'}, {k:'P', c:'KeyP', ko:'ㅔ', koS:'ㅖ'}, {k:'[', c:'BracketLeft', s:'{'}, {k:']', c:'BracketRight', s:'}'}, {k:'\\', c:'Backslash'}
+        ],
+        [
+            {k:'Caps', c:'CapsLock', w:'w-caps'}, {k:'A', c:'KeyA', ko:'ㅁ'}, {k:'S', c:'KeyS', ko:'ㄴ'}, {k:'D', c:'KeyD', ko:'ㅇ'}, {k:'F', c:'KeyF', ko:'ㄹ'}, {k:'G', c:'KeyG', ko:'ㅎ'}, {k:'H', c:'KeyH', ko:'ㅗ'}, {k:'J', c:'KeyJ', ko:'ㅓ'}, {k:'K', c:'KeyK', ko:'ㅏ'}, {k:'L', c:'KeyL', ko:'ㅣ'}, {k:';', c:'Semicolon', s:':'}, {k:"'", c:'Quote', s:'"'}, {k:'Enter', c:'Enter', w:'w-enter'}
+        ],
+        [
+            {k:'Shift', c:'ShiftLeft', w:'w-shift-l'}, {k:'Z', c:'KeyZ', ko:'ㅋ'}, {k:'X', c:'KeyX', ko:'ㅌ'}, {k:'C', c:'KeyC', ko:'ㅊ'}, {k:'V', c:'KeyV', ko:'ㅍ'}, {k:'B', c:'KeyB', ko:'ㅠ'}, {k:'N', c:'KeyN', ko:'ㅜ'}, {k:'M', c:'KeyM', ko:'ㅡ'}, {k:',', c:'Comma', s:'<'}, {k:'.', c:'Period', s:'>'}, {k:'/', c:'Slash', s:'?'}, {k:'Shift', c:'ShiftRight', w:'w-shift-r'}
+        ],
+        [
+            {k:'Ctrl', c:'ControlLeft', w:'w-ctrl'}, {k:'Alt', c:'AltLeft'}, {k:'Space', c:'Space', w:'w-space'}, {k:'Alt', c:'AltRight'}, {k:'Ctrl', c:'ControlRight', w:'w-ctrl'}
+        ]
+    ];
+
+    const FINGER_MAP = {
+        'L5': ['`', '1', 'Q', 'A', 'Z', 'Tab', 'CapsLock', 'ShiftLeft', 'ControlLeft', 'ㅂ', 'ㅁ', 'ㅋ'],
+        'L4': ['2', 'W', 'S', 'X', 'ㅈ', 'ㄴ', 'ㅌ'],
+        'L3': ['3', 'E', 'D', 'C', 'ㄷ', 'ㅇ', 'ㅊ'],
+        'L2': ['4', '5', 'R', 'T', 'F', 'G', 'V', 'B', 'ㄱ', 'ㅅ', 'ㄹ', 'ㅎ', 'ㅍ', 'ㅠ'],
+        'L1': ['Space'],
+        'R1': ['Space'],
+        'R2': ['6', '7', 'Y', 'U', 'H', 'J', 'N', 'M', 'ㅛ', 'ㅕ', 'ㅗ', 'ㅓ', 'ㅜ', 'ㅡ'],
+        'R3': ['8', 'I', 'K', ',', 'ㅑ', 'ㅏ'],
+        'R4': ['9', 'O', 'L', '.', 'ㅐ', 'ㅣ'],
+        'R5': ['0', '-', '=', 'P', '[', ']', '\\', ';', '\'', '/', 'Enter', 'ShiftRight', 'ㅔ']
+    };
+
     const LEVELS = {
         'ko': {
-            'home': ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'],
-            'top': ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'],
-            'bottom': ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ'],
+            'home': ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ', ';', "'"],
+            'top': ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ', '[', ']'],
+            'bottom': ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ', ',', '.', '/'],
             'number': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='],
-            'shift': ['ㅃ', 'ㅉ', 'ㄸ', 'ㄲ', 'ㅆ', 'ㅒ', 'ㅖ']
+            'shift': ['ㅃ', 'ㅉ', 'ㄸ', 'ㄲ', 'ㅆ', 'ㅒ', 'ㅖ', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '~', '{', '}', ':', '"', '<', '>', '?']
         },
         'en': {
-            'home': ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-            'top': ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-            'bottom': ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+            'home': ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'"],
+            'top': ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']'],
+            'bottom': ['Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/'],
             'number': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='],
-            'shift': ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+']
+            'shift': ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '~', '{', '}', ':', '"', '<', '>', '?']
         },
         'ja': {
             'home': ['ア', 'イ', 'ウ', 'エ', 'オ', 'カ', 'キ', 'ク', 'ケ', 'コ'],
@@ -391,20 +507,65 @@
     let targetChar = '', prevChar = '-', nextCharBuffer = [];
     let completedCount = 0, completedStrokes = 0, errors = 0, totalCount = 50;
     let timeLeft = 60, startTime = null, timerInterval = null, itemStartTime = null, cumulativeTime = 0, maxWpm = 0;
-    let soundEnabled = localStorage.getItem('typingSound') !== 'off';
+    let soundEnabled = localStorage.getItem('typingSound') === 'on';
+    let showHands = localStorage.getItem('showHands') !== 'off';
 
     function initKeyboard() {
         const kb = document.getElementById('v-keyboard');
         kb.innerHTML = '';
-        const layout = (currentLang === 'ko') ? LAYOUT_KO : LAYOUT_EN;
-        layout.forEach(row => {
+        
+        const activeLevelChars = LEVELS[currentLang] ? LEVELS[currentLang][currentLevel] : [];
+        const isAllMode = currentLevel === 'all';
+
+        KEYBOARD_LAYOUT_DATA.forEach((row, idx) => {
             const rowDiv = document.createElement('div');
             rowDiv.className = 'key-row';
-            row.forEach(key => {
+            
+            if (idx === 1) rowDiv.style.marginLeft = '15px'; // 현실적인 자판 배열을 위한 미세 조정
+            if (idx === 2) rowDiv.style.marginLeft = '35px';
+            if (idx === 3) rowDiv.style.marginLeft = '60px';
+            
+            row.forEach(item => {
                 const keyDiv = document.createElement('div');
-                keyDiv.className = 'key';
-                keyDiv.id = `key-${key}`;
-                keyDiv.innerText = key;
+                keyDiv.className = `key ${item.w || ''}`;
+                
+                let keyId = item.c || item.k;
+                if (currentLang === 'ko' && item.ko) keyId = item.ko;
+                keyDiv.id = `key-${keyId}`;
+                
+                let charInLevel = false;
+                if (!isAllMode) {
+                    charInLevel = (item.ko && activeLevelChars.includes(item.ko)) || 
+                                  activeLevelChars.includes(item.k) ||
+                                  (currentLang === 'ko' && item.koS && activeLevelChars.includes(item.koS)) ||
+                                  (item.s && activeLevelChars.includes(item.s));
+                                  
+                    const isFunctionalKey = item.w || ['Shift', 'Backspace', 'Enter', 'Alt', 'Ctrl', 'Tab', 'Caps'].includes(item.k);
+                    
+                    if (charInLevel) {
+                        keyDiv.classList.add('zone-active');
+                    } else if (!isFunctionalKey) {
+                        keyDiv.classList.add('zone-inactive');
+                    }
+                }
+                
+                let shiftCharHTML = '';
+                let shiftChar = item.s || '';
+                if (currentLang === 'ko' && item.koS) shiftChar = item.koS;
+                
+                if (shiftChar) {
+                    const shiftLabelColor = (charInLevel && activeLevelChars.includes(shiftChar)) ? '#f43f5e' : '#94a3b8';
+                    shiftCharHTML = `<span style="font-size:10.5px; color:${shiftLabelColor}; position:absolute; top:4px; right:6px; font-weight:800;">${shiftChar}</span>`;
+                }
+
+                if (currentLang === 'ko' && item.ko) {
+                    const subLabelColor = (charInLevel && activeLevelChars.includes(item.ko)) ? '#8b5cf6' : '#64748b';
+                    keyDiv.innerHTML = `<span style="font-size:10.5px; color:${subLabelColor}; position:absolute; top:4px; left:6px; font-weight:800;">${item.k}</span>${shiftCharHTML}<span style="font-weight:900; margin-top:8px;">${item.ko}</span>`;
+                } else if (item.k.length === 1) { // Numbers and letters
+                    keyDiv.innerHTML = `${shiftCharHTML}<span style="font-weight:900; margin-top:${shiftChar ? '8px' : '0'};">${item.k}</span>`;
+                } else {
+                    keyDiv.innerText = item.k;
+                }
                 rowDiv.appendChild(keyDiv);
             });
             kb.appendChild(rowDiv);
@@ -412,6 +573,7 @@
         resetPractice();
         nextChar();
         updateSoundIcon();
+        requestAnimationFrame(setDefaultHandPositions);
     }
 
     function setLang(lang) {
@@ -442,6 +604,7 @@
             btn.classList.toggle('active', levelAttr === level);
         });
         resetPractice();
+        initKeyboard(); // [v16] 단계 전환 시 키보드 구역 재생성 연동
         nextChar();
     }
 
@@ -480,27 +643,163 @@
         if (progressEl) progressEl.innerText = `${completedCount}/${totalCount}`;
     }
 
+    const SHIFT_MAP = {
+        'ㅃ':'ㅂ','ㅉ':'ㅈ','ㄸ':'ㄷ','ㄲ':'ㄱ','ㅆ':'ㅅ','ㅒ':'ㅐ','ㅖ':'ㅔ',
+        'Q':'ㅂ','W':'ㅈ','E':'ㄷ','R':'ㄱ','T':'ㅅ','O':'ㅐ','P':'ㅔ',
+        '!':'1','@':'2','#':'3','$':'4','%':'5','^':'6','&':'7','*':'8','(':'9',')':'0','_':'-','+':'=',
+        '~':'`','{':'[','}':']','|':'\\',':':';','"':'\'','<':',','>':'.','?':'/',
+        ' ': 'Space'
+    };
+
+    // 문자 → 키보드 DOM ID 코드 매핑 (숫자/특수키 처리)
+    const CHAR_TO_CODE = {
+        '`':'Backquote','1':'Digit1','2':'Digit2','3':'Digit3','4':'Digit4',
+        '5':'Digit5','6':'Digit6','7':'Digit7','8':'Digit8','9':'Digit9','0':'Digit0',
+        '-':'Minus','=':'Equal','[':'BracketLeft',']':'BracketRight','\\':'Backslash',
+        ';':'Semicolon',"'":'Quote',',':'Comma','.':'Period','/':'Slash',
+        'Space':'Space','Enter':'Enter','Tab':'Tab'
+    };
+
+    function getKeyEl(char) {
+        if (CHAR_TO_CODE[char]) return document.getElementById(`key-${CHAR_TO_CODE[char]}`);
+        let el = document.getElementById(`key-${char}`);
+        if (el) return el;
+        if (char.length === 1 && /[a-zA-Z]/.test(char))
+            return document.getElementById(`key-Key${char.toUpperCase()}`);
+        return document.getElementById(`key-${char.toUpperCase()}`);
+    }
+
+    function positionHand(handEl, fingerId, keyEl, wrapRect, stateClass) {
+        const tipEl = document.getElementById(`tip-${fingerId}`);
+        if (!tipEl || !keyEl || !wrapRect) return;
+        const keyRect = keyEl.getBoundingClientRect();
+        const keyTop  = keyRect.top  - wrapRect.top  + keyRect.height / 2;
+        const keyLeft = keyRect.left - wrapRect.left + keyRect.width  / 2;
+        const tipX = tipEl.cx.baseVal.value;
+        const tipY = tipEl.cy.baseVal.value;
+        const scale = 460 / 200;   // CSS width와 반드시 일치
+        handEl.style.top  = `${keyTop  - tipY * scale - 15}px`;
+        handEl.style.left = `${keyLeft - tipX * scale}px`;
+        handEl.style.transform = 'none';
+        handEl.classList.remove('active', 'rest', 'home');
+        if (stateClass) handEl.classList.add(stateClass);
+    }
+
+    // 양손을 홈 포지션에 고정 (왼손: ㄹ/F, 오른손: ㅓ/J)
+    function setDefaultHandPositions() {
+        const wrap = document.querySelector('.keyboard-wrapper');
+        if (!wrap) return;
+        const wrapRect = wrap.getBoundingClientRect();
+        const leftHomeEl  = currentLang === 'ko' ? document.getElementById('key-ㄹ') : document.getElementById('key-KeyF');
+        const rightHomeEl = currentLang === 'ko' ? document.getElementById('key-ㅓ') : document.getElementById('key-KeyJ');
+        positionHand(document.getElementById('hand-left'),  'L2', leftHomeEl,  wrapRect, 'home');
+        positionHand(document.getElementById('hand-right'), 'R2', rightHomeEl, wrapRect, 'home');
+    }
+
+    function getRandomChar(excludeChar, possibleChars) {
+        if (possibleChars.length <= 1) return possibleChars[0];
+        let rand;
+        do {
+            rand = possibleChars[Math.floor(Math.random() * possibleChars.length)];
+        } while (rand === excludeChar);
+        return rand;
+    }
+
     function nextChar() {
-        const possibleChars = LEVELS[currentLang][currentLevel];
+        let possibleChars = [];
+        if (currentLevel === 'all') { // 전체자리 모드일 때
+            Object.values(LEVELS[currentLang]).forEach(arr => possibleChars = possibleChars.concat(arr));
+        } else {
+            possibleChars = LEVELS[currentLang][currentLevel];
+        }
         
         if (!targetChar) {
-            // 첫 시작 시 초기화
             targetChar = possibleChars[Math.floor(Math.random() * possibleChars.length)];
-            nextCharBuffer = [possibleChars[Math.floor(Math.random() * possibleChars.length)]];
+            nextCharBuffer = [getRandomChar(targetChar, possibleChars)];
         } else {
-            // 기존 타겟을 이전 문자로, 예보 문자를 새 타겟으로 이동
             prevChar = targetChar;
             targetChar = nextCharBuffer[0];
-            nextCharBuffer = [possibleChars[Math.floor(Math.random() * possibleChars.length)]];
+            nextCharBuffer = [getRandomChar(targetChar, possibleChars)];
         }
         
         document.getElementById('prev-char').innerText = prevChar;
         document.getElementById('target-char').innerText = targetChar;
         document.getElementById('next-char').innerText = nextCharBuffer[0];
         
-        document.querySelectorAll('.key').forEach(k => k.classList.remove('target'));
-        const targetDiv = document.getElementById(`key-${targetChar}`);
-        if (targetDiv) targetDiv.classList.add('target');
+        // 손/키 초기화
+        document.querySelectorAll('.key').forEach(k => {
+            k.classList.remove('target');
+            if (k.dataset.origText) {
+                const innerSpan = k.querySelector('span:nth-child(2)') || k;
+                if(innerSpan.tagName === 'SPAN') {
+                    innerSpan.innerText = k.dataset.origText;
+                } else {
+                    k.innerText = k.dataset.origText;
+                }
+                delete k.dataset.origText;
+            }
+        });
+        document.querySelectorAll('.finger-group').forEach(f => f.classList.remove('striking'));
+        const handLeft  = document.getElementById('hand-left');
+        const handRight = document.getElementById('hand-right');
+
+        let lookupChar = targetChar;
+        let isShiftRequired = false;
+        if (SHIFT_MAP[targetChar]) {
+            lookupChar = SHIFT_MAP[targetChar];
+            isShiftRequired = (targetChar !== ' ' && targetChar !== lookupChar);
+        }
+
+        const targetDiv = getKeyEl(lookupChar);
+        if (targetDiv) {
+            targetDiv.classList.add('target');
+            
+            if (isShiftRequired) {
+                // 키 위의 글자를 임시로 대상 문자로 변경
+                const innerSpan = targetDiv.querySelector('span:nth-child(2)') || targetDiv;
+                if (!targetDiv.dataset.origText) {
+                    targetDiv.dataset.origText = innerSpan.innerText;
+                }
+                innerSpan.innerText = targetChar;
+            }
+            let targetFinger = '';
+            for (const [fingerId, keys] of Object.entries(FINGER_MAP)) {
+                if (keys.includes(lookupChar) || keys.includes(lookupChar.toUpperCase())) {
+                    targetFinger = fingerId; break;
+                }
+            }
+
+            if (targetFinger) {
+                const isLeftMain  = targetFinger.startsWith('L');
+                const mainHand    = isLeftMain ? handLeft  : handRight;
+                const otherHand   = isLeftMain ? handRight : handLeft;
+                const wrap        = document.querySelector('.keyboard-wrapper');
+                const wrapRect    = wrap.getBoundingClientRect();
+
+                // 메인 손: 해당 손가락이 키 위에 오도록 이동
+                document.getElementById(`finger-${targetFinger}`)?.classList.add('striking');
+                positionHand(mainHand, targetFinger, targetDiv, wrapRect, 'active');
+
+                if (isShiftRequired) {
+                    // 쉬프트: 반대 손 새끼손가락도 이동
+                    const shiftKeyId  = isLeftMain ? 'ShiftRight' : 'ShiftLeft';
+                    const shiftDiv    = document.getElementById(`key-${shiftKeyId}`);
+                    const shiftFinger = isLeftMain ? 'R5' : 'L5';
+                    if (shiftDiv) {
+                        shiftDiv.classList.add('target');
+                        document.getElementById(`finger-${shiftFinger}`)?.classList.add('striking');
+                        positionHand(otherHand, shiftFinger, shiftDiv, wrapRect, 'active');
+                    }
+                } else {
+                    // 반대 손: 홈 포지션에 반투명 대기
+                    const homeFinger = isLeftMain ? 'R2' : 'L2';
+                    const homeEl = isLeftMain
+                        ? (currentLang === 'ko' ? document.getElementById('key-ㅓ') : document.getElementById('key-KeyJ'))
+                        : (currentLang === 'ko' ? document.getElementById('key-ㄹ') : document.getElementById('key-KeyF'));
+                    positionHand(otherHand, homeFinger, homeEl, wrapRect, 'home');
+                }
+            }
+        }
         speakText(targetChar);
     }
 
@@ -539,7 +838,7 @@
             if (inputChar.length === 1 && targetChar === targetChar.toUpperCase()) inputChar = inputChar.toUpperCase();
         }
 
-        const keyDiv = document.getElementById(`key-${inputChar.toUpperCase()}`) || document.getElementById(`key-${inputChar}`);
+        const keyDiv = document.getElementById(`key-${e.code}`) || getKeyEl(inputChar);
         if (keyDiv) {
             keyDiv.classList.add('active');
             setTimeout(() => keyDiv.classList.remove('active'), 100);
@@ -584,6 +883,24 @@
     }
 
     function retryPractice() { document.getElementById('result-modal').style.display = 'none'; resetPractice(); nextChar(); }
+    
+    // [v16] 손가락 가이드 토글 시스템
+    function toggleHands() {
+        showHands = !showHands;
+        localStorage.setItem('showHands', showHands ? 'on' : 'off');
+        applyHandToggle();
+    }
+
+    function applyHandToggle() {
+        const wrap = document.querySelector('.hand-overlay-container');
+        const btn = document.getElementById('hand-toggle-btn');
+        const status = document.getElementById('hand-toggle-status');
+        if (wrap) wrap.style.display = showHands ? 'block' : 'none';
+        if (btn) btn.classList.toggle('off', !showHands);
+        if (status) status.innerText = showHands ? 'ON' : 'OFF';
+        if (showHands) setTimeout(setDefaultHandPositions, 150);
+    }
+
     function saveAndExit() {
         // 내부 변수 기반 최종 데이터 산출
         const accuracy = (completedCount + errors === 0) ? 100 : Math.round((completedCount / (completedCount + errors)) * 100);
@@ -602,13 +919,48 @@
     function speakText(text) {
         if (!soundEnabled || !text || text === '-') return;
         window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance(text);
+        
+        let spokenText = text;
+        if (currentLang === 'ko') {
+            const koMap = {
+                ';': '세미콜론', "'": '작은따옴표', ',': '쉼표', '.': '마침표', '/': '슬래시', 
+                '[': '대괄호 열기', ']': '대괄호 닫기',
+                ')': '괄호닫기', '(': '괄호열기', '!': '느낌표', '?': '물음표', ':': '콜론', 
+                '$': '달러', '{': '중괄호열기', '}': '중괄호닫기', '%': '퍼센트', '<': '작다', 
+                '>': '크다', '+': '플러스', '~': '물결', '*': '별', '^': '캐릿',
+                '"': '큰따옴표', '#': '샵', '_': '언더라인'
+            };
+            if (koMap[text]) spokenText = koMap[text];
+        } else {
+            const enMap = {
+                ';': 'semicolon', "'": 'quote', ',': 'comma', '.': 'period', '/': 'slash', 
+                '[': 'left bracket', ']': 'right bracket',
+                ')': 'right parenthesis', '(': 'left parenthesis', '!': 'exclamation', '?': 'question mark', ':': 'colon', 
+                '$': 'dollar', '{': 'left brace', '}': 'right brace', '%': 'percent', '<': 'less than', 
+                '>': 'greater than', '+': 'plus', '~': 'tilde', '*': 'asterisk', '^': 'caret',
+                '"': 'double quote', '#': 'hash', '_': 'underline'
+            };
+            if (enMap[text]) spokenText = enMap[text];
+        }
+
+        const msg = new SpeechSynthesisUtterance(spokenText);
         msg.lang = (currentLang === 'ko') ? 'ko-KR' : (currentLang === 'ja' ? 'ja-JP' : 'en-US');
         msg.rate = 1.3;
         window.speechSynthesis.speak(msg);
     }
 
-    initKeyboard();
     updateLockStates();
+    
+    // UI 버튼 상태 동기화 (초기 렌더링 시 parameter 에 맞춰 선택 버튼 업데이트)
+    document.querySelectorAll('.lang-toggle .toggle-btn:not(.tp-control-btn)').forEach(btn => {
+        const onclick = btn.getAttribute('onclick') || '';
+        btn.classList.toggle('active', onclick.includes(`'${currentLang}'`));
+    });
+    document.querySelectorAll('.level-btn').forEach(btn => {
+        const levelAttr = btn.getAttribute('data-level');
+        btn.classList.toggle('active', levelAttr === currentLevel);
+    });
+    
+    initKeyboard();
 </script>
 {% endblock %}

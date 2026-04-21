@@ -170,18 +170,23 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const isFullMember = {% if is_full_member %}true{% else %}false{% endif %};
+        const isPermanent = {% if is_permanent %}true{% else %}false{% endif %};
+        const getStorage = () => isPermanent ? localStorage : sessionStorage;
+
         const lang = "{{ language|default:'ko' }}";
         const storageKey = `typing_unlocked_levels_${lang}`;
         
-        // 데이터 이관: 기존 범용 데이터가 있고, 한국어 탭이며, 아직 한국어 전용 데이터가 없을 때 이관
-        const oldData = localStorage.getItem('typing_unlocked_levels');
-        const currentData = localStorage.getItem(storageKey);
-        if (oldData && lang === 'ko' && !currentData) {
-            localStorage.setItem(storageKey, oldData);
-            // localStorage.removeItem('typing_unlocked_levels'); // 이관 후 삭제는 신중히, 일단 유지
+        // 데이터 이관: 정회원인 경우에만 기존 범용 데이터 이관
+        if (isFullMember) {
+            const oldData = localStorage.getItem('typing_unlocked_levels');
+            const currentData = localStorage.getItem(storageKey);
+            if (oldData && lang === 'ko' && !currentData) {
+                localStorage.setItem(storageKey, oldData);
+            }
         }
 
-        const unlockedLevels = JSON.parse(localStorage.getItem(storageKey) || '["home"]');
+        const unlockedLevels = JSON.parse(getStorage().getItem(storageKey) || '["home"]');
         document.querySelectorAll('.select-card').forEach(card => {
             const level = card.getAttribute('data-level');
             if (!unlockedLevels.includes(level)) {

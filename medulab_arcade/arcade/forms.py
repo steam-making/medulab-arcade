@@ -165,6 +165,16 @@ class SignUpForm(UserCreationForm):
         ('medulab_staff', '🛠️ 메듀랩스탭'),
     ]
 
+    real_name = forms.CharField(label='이름', widget=forms.TextInput(attrs={
+        'placeholder': '실명을 입력하세요',
+        'class': 'form-input',
+    }))
+
+    birth_date = forms.CharField(label='생년월일', widget=forms.TextInput(attrs={
+        'placeholder': '예: 1989.01.16',
+        'class': 'form-input',
+    }))
+
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={
         'placeholder': '이메일 주소',
         'class': 'form-input',
@@ -179,16 +189,19 @@ class SignUpForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ('username', 'email')
+        fields = ('real_name', 'birth_date', 'username', 'email')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # 닉네임 라벨을 ID로 변경
+        self.fields['username'].label = 'ID'
         # 한글 ID 지원을 위해 UnicodeUsernameValidator 적용
         self.fields['username'].validators = [UnicodeUsernameValidator()]
         self.fields['username'].help_text = '한글, 영문, 숫자, @/./+/-/_ 만 사용 가능합니다.'
         self.fields['username'].widget.attrs.update({
-            'placeholder': '아이디 (한글 가능 예: 박종석890111)',
+            'placeholder': '사용할 아이디를 입력하세요',
             'class': 'form-input',
+            'id': 'id_username_field'  # JS 연동을 위한 ID 명시
         })
         self.fields['email'].widget.attrs.update({
             'placeholder': '이메일 주소 (로그인에 사용 가능)',
@@ -199,6 +212,20 @@ class SignUpForm(UserCreationForm):
             self.fields['password1'].widget.attrs.update({'class': 'form-input', 'placeholder': '비밀번호'})
         if 'password2' in self.fields:
             self.fields['password2'].widget.attrs.update({'class': 'form-input', 'placeholder': '비밀번호 확인'})
+
+    def clean_birth_date(self):
+        bd_str = self.cleaned_data.get('birth_date', '').strip()
+        if not bd_str:
+            return None
+        # YYYY.MM.DD 또는 YYYYMMDD 형식을 Date 객체로 변환 시도
+        import datetime
+        formats = ['%Y.%m.%d', '%Y-%m-%d', '%Y%m%d']
+        for fmt in formats:
+            try:
+                return datetime.datetime.strptime(bd_str, fmt).date()
+            except ValueError:
+                continue
+        raise forms.ValidationError('날짜 형식이 올바르지 않습니다. (예: 1989.01.16)')
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -211,8 +238,14 @@ class SignUpForm(UserCreationForm):
         if commit:
             from .models import UserProfile
             user_type = self.cleaned_data.get('user_type', 'general')
+            real_name = self.cleaned_data.get('real_name')
+            birth_date = self.cleaned_data.get('birth_date')
+            
             profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.user_type = user_type
+            profile.real_name = real_name
+            profile.birth_date = birth_date
+            
             # 학생/일반 회원은 자동 승인
             if user_type in UserProfile.AUTO_APPROVE_TYPES:
                 profile.is_approved = True

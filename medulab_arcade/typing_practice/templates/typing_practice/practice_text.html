@@ -326,13 +326,41 @@
         font-weight: 600;
         color: var(--neon-blue);
         text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
-        opacity: 0.9;
+        outline: none;
+        cursor: pointer;
+    }
+
+    /* ── Ad Overlay ── */
+    #ad-overlay {
+        position: fixed; inset: 0; z-index: 9999;
+        background: #000; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; color: #fff;
+        text-align: center;
+    }
+    .ad-box {
+        width: 336px; height: 280px; background: #1a1a1a;
+        border: 1px solid #333; display: flex; align-items: center;
+        justify-content: center; margin-bottom: 20px; color: #555;
+        font-size: 14px;
+    }
+    .ad-countdown {
+        font-size: 18px; font-weight: 700; color: #38bdf8;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<main class="main">
+<div id="ad-overlay" style="display: none;">
+    <div class="ad-box">
+        <div>
+            <p style="margin-bottom: 8px;">ADVERTISEMENT</p>
+            <div style="font-size: 12px; opacity: 0.5;">추후 여기에 광고가 채워질 예정입니다.</div>
+        </div>
+    </div>
+    <div style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">연습 준비 중...</div>
+    <div class="ad-countdown" id="ad-timer">3</div>
+</div>
+<main class="main" style="padding-top: 40px;">
     <!-- 결과 모달 -->
     <div id="result-modal" class="result-overlay">
         <div class="result-card">
@@ -527,6 +555,11 @@
 
 {% block extra_js %}
 <script>
+    const isFullMember = {% if is_full_member %}true{% else %}false{% endif %};
+    const isPermanent = {% if is_permanent %}true{% else %}false{% endif %};
+    const showAds = {% if show_ads %}true{% else %}false{% endif %};
+    const getStorage = () => isPermanent ? localStorage : sessionStorage;
+
     const contents = {{ contents_json|safe }};
     const contentType = "{{ content_type }}";
     const lang = "{{ language }}";
@@ -542,15 +575,15 @@
     let itemStartTime = null; // 현재 단어/문장 입력 시작
     let cumulativeTime = 0; // 실제 입력에 소요된 누적 시간 (ms)
     let maxWpm = 0;
-    let soundEnabled = localStorage.getItem('typingSound') === 'on';
-    let showHands = localStorage.getItem('showHands') !== 'off';
-    let ttsRates = JSON.parse(localStorage.getItem('ttsRates') || '{"ko":"1.0", "en":"0.3", "ja":"1.0", "zh":"1.0"}');
+    let soundEnabled = getStorage().getItem('typingSound') === 'on';
+    let showHands = getStorage().getItem('showHands') !== 'off';
+    let ttsRates = JSON.parse(getStorage().getItem('ttsRates') || '{"ko":"1.0", "en":"0.3", "ja":"1.0", "zh":"1.0"}');
     const inputField = document.getElementById('typing-input');
     const targetTextContainer = document.getElementById('target-text'); // 이름 중복 방지
 
     function updateTTSRate(rate) {
         ttsRates[inputLang] = rate;
-        localStorage.setItem('ttsRates', JSON.stringify(ttsRates));
+        getStorage().setItem('ttsRates', JSON.stringify(ttsRates));
     }
 
     function initTTSRateSelect() {
@@ -757,7 +790,7 @@
 
     function toggleHands() {
         showHands = !showHands;
-        localStorage.setItem('showHands', showHands ? 'on' : 'off');
+        getStorage().setItem('showHands', showHands ? 'on' : 'off');
         applyHandToggle();
     }
 
@@ -898,7 +931,7 @@
 
     function toggleSound() {
         soundEnabled = !soundEnabled;
-        localStorage.setItem('typingSound', soundEnabled ? 'on' : 'off');
+        getStorage().setItem('typingSound', soundEnabled ? 'on' : 'off');
         updateSoundIcon();
         if (soundEnabled) speakText(targetTextContainer.innerText);
     }
@@ -911,7 +944,7 @@
 
     function updateTTSRate(val) {
         ttsRates[inputLang] = val;
-        localStorage.setItem('ttsRates', JSON.stringify(ttsRates));
+        getStorage().setItem('ttsRates', JSON.stringify(ttsRates));
         if (soundEnabled) speakText(targetTextContainer.innerText);
     }
 
@@ -1166,7 +1199,51 @@
 
 
 
-    init();
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        getStorage().setItem('typingSound', soundEnabled ? 'on' : 'off');
+        const icon = document.getElementById('sound-icon');
+        if (icon) icon.innerText = soundEnabled ? '🔊' : '🔇';
+    }
+
+    function toggleHands() {
+        showHands = !showHands;
+        getStorage().setItem('showHands', showHands ? 'on' : 'off');
+        const status = document.getElementById('hand-toggle-status');
+        if (status) status.innerText = showHands ? 'ON' : 'OFF';
+
+        if (showHands) {
+            document.querySelector('.hand-container').style.display = 'block';
+            setTimeout(setDefaultHandPositions, 100);
+        } else {
+            document.querySelector('.hand-container').style.display = 'none';
+        }
+    }
+
+    // init 래퍼: 광고 노출 여부에 따라 시작
+    function startWithAd() {
+        if (!showAds) {
+            init();
+            return;
+        }
+
+        const overlay = document.getElementById('ad-overlay');
+        const timerText = document.getElementById('ad-timer');
+        overlay.style.display = 'flex';
+        let count = 3;
+
+        const interval = setInterval(() => {
+            count--;
+            timerText.innerText = count;
+            if (count <= 0) {
+                clearInterval(interval);
+                overlay.style.display = 'none';
+                init();
+            }
+        }, 1000);
+    }
+
+    startWithAd();
 
     window.addEventListener('resize', () => {
         if (showHands) setDefaultHandPositions();

@@ -207,10 +207,37 @@
         color: #fff;
         opacity: 0.8;
     }
+
+    /* ── Ad Overlay ── */
+    #ad-overlay {
+        position: fixed; inset: 0; z-index: 9999;
+        background: #000; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; color: #fff;
+        text-align: center;
+    }
+    .ad-box {
+        width: 336px; height: 280px; background: #1a1a1a;
+        border: 1px solid #333; display: flex; align-items: center;
+        justify-content: center; margin-bottom: 20px; color: #555;
+        font-size: 14px;
+    }
+    .ad-countdown {
+        font-size: 18px; font-weight: 700; color: #38bdf8;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+<div id="ad-overlay" style="display: none;">
+    <div class="ad-box">
+        <div>
+            <p style="margin-bottom: 8px;">ADVERTISEMENT</p>
+            <div style="font-size: 12px; opacity: 0.5;">추후 여기에 광고가 채워질 예정입니다.</div>
+        </div>
+    </div>
+    <div style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">연습 준비 중...</div>
+    <div class="ad-countdown" id="ad-timer">3</div>
+</div>
 <main class="main">
     <!-- 결과 모달 -->
     <div id="result-modal" class="result-overlay">
@@ -332,6 +359,11 @@
 
 {% block extra_js %}
 <script>
+    const isFullMember = {% if is_full_member %}true{% else %}false{% endif %};
+    const isPermanent = {% if is_permanent %}true{% else %}false{% endif %};
+    const showAds = {% if show_ads %}true{% else %}false{% endif %};
+    const getStorage = () => isPermanent ? localStorage : sessionStorage;
+
     const contents = JSON.parse('{{ contents_json|escapejs }}');
     const inputField = document.getElementById('typing-input');
     const originContainer = document.getElementById('origin-text-container');
@@ -344,6 +376,7 @@
     let startTime = null;
     let itemStartTime = null;
     let maxWpm = 0;
+    let soundEnabled = getStorage().getItem('typingSound') === 'on';
     
     let inputLang = '{{ content.language|default:"ko" }}';
     let hintLang = inputLang === 'ko' ? 'en' : 'ko';
@@ -536,6 +569,38 @@
         });
     }
 
-    render();
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        getStorage().setItem('typingSound', soundEnabled ? 'on' : 'off');
+        const icon = document.getElementById('sound-icon');
+        if (icon) icon.innerText = soundEnabled ? '🔊' : '🔇';
+    }
+
+    // init 래퍼: 광고 노출 여부에 따라 시작
+    function startWithAd() {
+        if (!showAds) {
+            render();
+            inputField.focus();
+            return;
+        }
+
+        const overlay = document.getElementById('ad-overlay');
+        const timerText = document.getElementById('ad-timer');
+        overlay.style.display = 'flex';
+        let count = 3;
+
+        const interval = setInterval(() => {
+            count--;
+            timerText.innerText = count;
+            if (count <= 0) {
+                clearInterval(interval);
+                overlay.style.display = 'none';
+                render();
+                inputField.focus();
+            }
+        }, 1000);
+    }
+
+    startWithAd();
 </script>
 {% endblock %}

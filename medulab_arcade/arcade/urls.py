@@ -16,6 +16,7 @@ urlpatterns = [
     path('api/like/<int:project_id>/', views.toggle_like, name='toggle_like'),
     path('api/bookmark/<int:project_id>/', views.toggle_bookmark, name='toggle_bookmark'),
     path('api/analyze-zip/', views.analyze_zip, name='analyze_zip'),
+    path('api/check-username/', views.check_username, name='check_username'),
 
     # 회원 관리 (관리자 전용)
     path('admin-services/members/', views.member_list, name='member_list'),

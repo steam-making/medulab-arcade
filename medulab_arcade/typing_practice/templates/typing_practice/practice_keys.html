@@ -220,10 +220,44 @@
 .res-unit     { font-size: 12px; color: rgba(255,255,255,0.4); margin-left: 3px; }
 .res-btn      { width: 100%; padding: 14px; border-radius: 12px; border: none; color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; transition: 0.22s; }
 .res-btn:hover{ filter: brightness(1.12); transform: translateY(-1px); }
+
+    .lang-tab.active {
+        background: var(--neon-blue);
+        border-color: var(--neon-blue);
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    /* ── Ad Overlay ── */
+    #ad-overlay {
+        position: fixed; inset: 0; z-index: 9999;
+        background: #000; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; color: #fff;
+        text-align: center;
+    }
+    .ad-box {
+        width: 336px; height: 280px; background: #1a1a1a;
+        border: 1px solid #333; display: flex; align-items: center;
+        justify-content: center; margin-bottom: 20px; color: #555;
+        font-size: 14px;
+    }
+    .ad-countdown {
+        font-size: 18px; font-weight: 700; color: #38bdf8;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+<div id="ad-overlay" style="display: none;">
+    <div class="ad-box">
+        <div>
+            <p style="margin-bottom: 8px;">ADVERTISEMENT</p>
+            <div style="font-size: 12px; opacity: 0.5;">추후 여기에 광고가 채워질 예정입니다.</div>
+        </div>
+    </div>
+    <div style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">연습 준비 중...</div>
+    <div class="ad-countdown" id="ad-timer">3</div>
+</div>
 <main class="main">
     <!-- 결과 모달 -->
     <div id="result-modal" class="result-overlay">
@@ -398,6 +432,12 @@
 
 {% block extra_js %}
 <script>
+    const isFullMember = {% if is_full_member %}true{% else %}false{% endif %};
+    const isPermanent = {% if is_permanent %}true{% else %}false{% endif %};
+    const showAds = {% if show_ads %}true{% else %}false{% endif %};
+    
+    const getStorage = () => isPermanent ? localStorage : sessionStorage;
+
     const KEYBOARD_LAYOUT_DATA = [
         [
             {k:'`', c:'Backquote', s:'~'}, {k:'1', c:'Digit1', s:'!'}, {k:'2', c:'Digit2', s:'@'}, {k:'3', c:'Digit3', s:'#'}, {k:'4', c:'Digit4', s:'$'}, {k:'5', c:'Digit5', s:'%'}, {k:'6', c:'Digit6', s:'^'}, {k:'7', c:'Digit7', s:'&'}, {k:'8', c:'Digit8', s:'*'}, {k:'9', c:'Digit9', s:'('}, {k:'0', c:'Digit0', s:')'}, {k:'-', c:'Minus', s:'_'}, {k:'=', c:'Equal', s:'+'}, {k:'Backspace', c:'Backspace', w:'w-back'}
@@ -466,14 +506,13 @@
     const EN_TO_KO = {'q':'ㅂ','w':'ㅈ','e':'ㄷ','r':'ㄱ','t':'ㅅ','y':'ㅛ','u':'ㅕ','i':'ㅑ','o':'ㅐ','p':'ㅔ','a':'ㅁ','s':'ㄴ','d':'ㅇ','f':'ㄹ','g':'ㅎ','h':'ㅗ','j':'ㅓ','k':'ㅏ','l':'ㅣ','z':'ㅋ','x':'ㅌ','c':'ㅊ','v':'ㅍ','b':'ㅠ','n':'ㅜ','m':'ㅡ','Q':'ㅃ','W':'ㅉ','E':'ㄸ','R':'ㄲ','T':'ㅆ','O':'ㅒ','P':'ㅖ'};
     const EN_TO_JA = {'a':'ア','i':'イ','u':'ウ','e':'エ','o':'オ','k':'カ','s':'サ','t':'タ','n':'ナ','h':'ハ','m':'マ','y':'ヤ','r':'ラ','w':'ワ'};
 
-    // --- 언어별 독립 잠금 시스템 (v14) ---
     let currentLang = "{{ language|default:'ko' }}";
     let currentLevel = "{{ level|default:'home' }}";
     let storageKey = `typing_unlocked_levels_${currentLang}`;
     let wordUnlockKey = `typing_word_unlocked_${currentLang}`;
 
     const PROGRESSION = ['home', 'top', 'bottom', 'number', 'shift', 'all'];
-    let unlockedLevels = JSON.parse(localStorage.getItem(storageKey) || '["home"]');
+    let unlockedLevels = JSON.parse(getStorage().getItem(storageKey) || '["home"]');
 
     function updateLockStates() {
         document.querySelectorAll('.level-btn').forEach(btn => {
@@ -492,13 +531,13 @@
             const next = PROGRESSION[idx + 1];
             if (!unlockedLevels.includes(next)) {
                 unlockedLevels.push(next);
-                localStorage.setItem(storageKey, JSON.stringify(unlockedLevels));
+                getStorage().setItem(storageKey, JSON.stringify(unlockedLevels));
                 updateLockStates();
                 return next;
             }
             return 'already_unlocked';
         } else if (current === 'all') {
-            localStorage.setItem(wordUnlockKey, 'true');
+            getStorage().setItem(wordUnlockKey, 'true');
             return 'word_practice_ready';
         }
         return null;
@@ -507,8 +546,8 @@
     let targetChar = '', prevChar = '-', nextCharBuffer = [];
     let completedCount = 0, completedStrokes = 0, errors = 0, totalCount = 50;
     let timeLeft = 60, startTime = null, timerInterval = null, itemStartTime = null, cumulativeTime = 0, maxWpm = 0;
-    let soundEnabled = localStorage.getItem('typingSound') === 'on';
-    let showHands = localStorage.getItem('showHands') !== 'off';
+    let soundEnabled = getStorage().getItem('typingSound') === 'on';
+    let showHands = getStorage().getItem('showHands') !== 'off';
 
     function initKeyboard() {
         const kb = document.getElementById('v-keyboard');
@@ -581,7 +620,7 @@
         // 언어 변경 시 스토리지 키 및 상태 재동기화 (v15 개선)
         storageKey = `typing_unlocked_levels_${currentLang}`;
         wordUnlockKey = `typing_word_unlocked_${currentLang}`;
-        unlockedLevels = JSON.parse(localStorage.getItem(storageKey) || '["home"]');
+        unlockedLevels = JSON.parse(getStorage().getItem(storageKey) || '["home"]');
 
         document.querySelectorAll('.lang-toggle .toggle-btn').forEach(btn => {
             if (btn.id === 'sound-btn') return;
@@ -617,7 +656,7 @@
         // 현재 레벨이 잠겨있는지 다시 한 번 체크 (URL 직접 접근 등 대비)
         if (!unlockedLevels.includes(currentLevel)) {
             currentLevel = 'home';
-            localStorage.setItem(storageKey, JSON.stringify(unlockedLevels));
+            getStorage().setItem(storageKey, JSON.stringify(unlockedLevels));
             alert("🔒 아직 열리지 않은 단계입니다! 기본자리부터 시작하세요.");
             updateLockStates();
         }
@@ -887,7 +926,7 @@
     // [v16] 손가락 가이드 토글 시스템
     function toggleHands() {
         showHands = !showHands;
-        localStorage.setItem('showHands', showHands ? 'on' : 'off');
+        getStorage().setItem('showHands', showHands ? 'on' : 'off');
         applyHandToggle();
     }
 
@@ -914,7 +953,7 @@
         }).then(() => { location.href = `{% url "practice_keys" %}?lang=${currentLang}`; });
     }
 
-    function toggleSound() { soundEnabled = !soundEnabled; localStorage.setItem('typingSound', soundEnabled ? 'on' : 'off'); updateSoundIcon(); }
+    function toggleSound() { soundEnabled = !soundEnabled; getStorage().setItem('typingSound', soundEnabled ? 'on' : 'off'); updateSoundIcon(); }
     function updateSoundIcon() { document.getElementById('sound-icon').innerText = soundEnabled ? '🔊' : '🔇'; }
     function speakText(text) {
         if (!soundEnabled || !text || text === '-') return;
@@ -961,6 +1000,29 @@
         btn.classList.toggle('active', levelAttr === currentLevel);
     });
     
-    initKeyboard();
+    // init 래퍼: 광고 노출 여부에 따라 시작
+    function startWithAd() {
+        if (!showAds) {
+            initKeyboard();
+            return;
+        }
+
+        const overlay = document.getElementById('ad-overlay');
+        const timerText = document.getElementById('ad-timer');
+        overlay.style.display = 'flex';
+        let count = 3;
+
+        const interval = setInterval(() => {
+            count--;
+            timerText.innerText = count;
+            if (count <= 0) {
+                clearInterval(interval);
+                overlay.style.display = 'none';
+                initKeyboard();
+            }
+        }, 1000);
+    }
+
+    startWithAd();
 </script>
 {% endblock %}

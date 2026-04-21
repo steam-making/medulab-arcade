@@ -1004,6 +1004,19 @@ def toggle_bookmark(request, project_id):
     })
 
 
+def check_username(request):
+    """아이디(Username) 중복 확인 API (AJAX)"""
+    username = request.GET.get('username', '').strip()
+    if not username:
+        return JsonResponse({'available': False, 'message': '아이디를 입력해주세요.'})
+    
+    exists = User.objects.filter(username__iexact=username).exists()
+    return JsonResponse({
+        'available': not exists,
+        'message': '이미 사용 중인 아이디입니다.' if exists else '사용 가능한 아이디입니다.'
+    })
+
+
 def signup(request):
     """회원가입"""
     if request.method == 'POST':

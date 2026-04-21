@@ -391,12 +391,16 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const isPermanent = {% if is_permanent %}true{% else %}false{% endif %};
         let currentLang = localStorage.getItem('typing_home_lang') || 'ko';
 
+        const getStorage = () => isPermanent ? localStorage : sessionStorage;
+
         const updateLocks = () => {
-            const wordUnlocked = localStorage.getItem(`typing_word_unlocked_${currentLang}`) === 'true';
-            const shortUnlocked = localStorage.getItem(`typing_short_unlocked_${currentLang}`) === 'true';
-            const longUnlocked = localStorage.getItem(`typing_long_unlocked_${currentLang}`) === 'true';
+            const stor = getStorage();
+            const wordUnlocked = stor.getItem(`typing_word_unlocked_${currentLang}`) === 'true';
+            const shortUnlocked = stor.getItem(`typing_short_unlocked_${currentLang}`) === 'true';
+            const longUnlocked = stor.getItem(`typing_long_unlocked_${currentLang}`) === 'true';
             
             const cardKeys = document.getElementById('card-keys');
             const cardWords = document.getElementById('card-words');
@@ -450,8 +454,18 @@
             }
         };
 
-        // 데이터 이관 헬퍼 (보완)
+        // 데이터 이관 및 영구 권한 여부에 따른 로컬 스토리지 정리
         const migrate = () => {
+            if (!isPermanent) {
+                // 로그인하지 않았으면(비회원) 로컬 스토리지의 연습 기록 흔적을 정리 (세션 기반으로만 작동하게 함)
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('typing_') && key.includes('unlocked')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                return;
+            }
+
             const oldWord = localStorage.getItem('typing_word_unlocked');
             const oldShort = localStorage.getItem('typing_short_unlocked');
             const oldLong = localStorage.getItem('typing_long_unlocked');

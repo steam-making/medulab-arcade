@@ -305,9 +305,14 @@
             <!-- 기본 정보 입력 -->
             {% for field in form %}
                 {% if field.name != 'user_type' %}
-                <div class="form-group">
-                    <label>{{ field.label }}</label>
+                <div class="form-group" id="group_{{ field.name }}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                     {{ field }}
+                    {% if field.name == 'username' %}
+                        <div id="username-check-msg" style="font-size: 12px; margin-top: 6px; margin-left: 4px; font-weight: 600;"></div>
+                    {% elif field.name == 'birth_date' %}
+                        <div id="birth-check-msg" style="font-size: 11px; margin-top: 6px; margin-left: 4px;"></div>
+                    {% endif %}
                     {% if field.help_text %}
                         <div class="help" style="color: var(--text-muted); font-size: 11px; margin-top: 4px; margin-left: 4px;">
                             {{ field.help_text }}
@@ -320,7 +325,7 @@
                 {% endif %}
             {% endfor %}
 
-            <button type="submit" class="submit-btn">계정 생성하기</button>
+            <button type="submit" class="submit-btn" id="submit-btn">계정 생성하기</button>
         </form>
 
         <div class="auth-footer">
@@ -335,16 +340,123 @@
         const note = document.getElementById('reviewNote');
         const reviewTypes = ['medulab_member', 'medulab_teacher', 'medulab_staff'];
 
+        const nameInput = document.querySelector('input[name="real_name"]');
+        const birthInput = document.querySelector('input[name="birth_date"]');
+        const birthMsg = document.getElementById('birth-check-msg');
+        const usernameInput = document.getElementById('id_username_field');
+        const checkMsg = document.getElementById('username-check-msg');
+
+        let checkTimeout = null;
+
+        // 생년월일 형식 유효성 검사 (YYYY.MM.DD, YYYY-MM-DD, YYYYMMDD)
+        function validateBirthDate(value) {
+            if (!value) {
+                birthMsg.innerText = '';
+                return false;
+            }
+
+            // 숫자만 추출
+            const digits = value.replace(/[^0-9]/g, '');
+            
+            // 8자리인지 확인
+            if (digits.length !== 8) {
+                birthMsg.style.color = '#ff6b6b';
+                birthMsg.innerText = '❌ 생년월일 8자리를 입력해주세요. (예: 1989.01.16)';
+                return false;
+            }
+
+            // 날짜 유효성 (간단 체크)
+            const y = parseInt(digits.substring(0, 4));
+            const m = parseInt(digits.substring(4, 6));
+            const d = parseInt(digits.substring(6, 8));
+            
+            if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > new Date().getFullYear()) {
+                birthMsg.style.color = '#ff6b6b';
+                birthMsg.innerText = '❌ 유효하지 않은 날짜입니다.';
+                return false;
+            }
+
+            birthMsg.style.color = 'var(--neon-green)';
+            birthMsg.innerText = '✅ 올바른 형식입니다.';
+            return true;
+        }
+
         function toggleNote() {
             const checked = document.querySelector('input[name="user_type"]:checked');
             if (checked && reviewTypes.includes(checked.value)) {
                 note.classList.add('active');
+                // 메듀랩 계열이면 ID 필드 관련 가이드 제공 및 자동화 준비
+                usernameInput.placeholder = '아이디 (이름+생년월일 자동 생성)';
+                updateGeneratedID();
             } else {
                 note.classList.remove('active');
+                usernameInput.placeholder = '사용할 아이디를 입력하세요';
             }
         }
 
-        radios.forEach(r => r.addEventListener('change', toggleNote));
+        // ID 자동 생성 로직
+        function updateGeneratedID() {
+            const checked = document.querySelector('input[name="user_type"]:checked');
+            if (!checked || !reviewTypes.includes(checked.value)) return;
+
+            const name = nameInput.value.trim();
+            const birthVal = birthInput.value.trim();
+            
+            // 생년월일이 유효할 때만 ID 생성
+            if (name && validateBirthDate(birthVal)) {
+                const digits = birthVal.replace(/[^0-9]/g, '');
+                const generated = name + digits;
+                usernameInput.value = generated;
+                validateUsername(generated);
+            }
+        }
+
+        // 실시간 중복 확인 API 호출
+        function validateUsername(username) {
+            if (!username) {
+                checkMsg.innerText = '';
+                return;
+            }
+
+            if (checkTimeout) clearTimeout(checkTimeout);
+            
+            checkTimeout = setTimeout(() => {
+                fetch(`{% url "check_username" %}?username=${encodeURIComponent(username)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.available) {
+                            checkMsg.style.color = 'var(--neon-green)';
+                            checkMsg.innerText = '✅ ' + data.message;
+                        } else {
+                            checkMsg.style.color = '#ff6b6b';
+                            checkMsg.innerText = '❌ ' + data.message;
+                        }
+                    })
+                    .catch(() => {
+                        checkMsg.innerText = '⚠️ 중복 확인 중 오류가 발생했습니다.';
+                    });
+            }, 300);
+        }
+
+        radios.forEach(r => r.addEventListener('change', () => {
+            toggleNote();
+            // 유형 변경 시 ID 생성 로직 재실행
+            const checked = document.querySelector('input[name="user_type"]:checked');
+            if (checked && reviewTypes.includes(checked.value)) {
+                updateGeneratedID();
+            }
+        }));
+
+        nameInput.addEventListener('input', updateGeneratedID);
+        birthInput.addEventListener('input', (e) => {
+            validateBirthDate(e.target.value); // 실시간 형식 검사
+            updateGeneratedID();               // ID 자동 생성 (해당하는 경우)
+        });
+
+        usernameInput.addEventListener('input', (e) => {
+            validateUsername(e.target.value);
+        });
+
         toggleNote();
     });
 </script>

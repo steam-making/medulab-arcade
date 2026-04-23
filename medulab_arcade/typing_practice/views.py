@@ -176,9 +176,9 @@ def build_language_ranking_snapshot(language, quarter_info):
             practice_sections.append({
                 "practice_type": practice_type,
                 "label": practice_label,
-                "top3": [
-                    build_rank_entry(row, "peak_speed", practice_type=practice_type)
-                    for row in rank_rows(rows, "peak_speed")[:3]
+                "entries": [
+                    build_rank_entry(row, "avg_speed", practice_type=practice_type)
+                    for row in rank_rows(rows, "avg_speed")[:5]
                 ],
             })
 
@@ -186,29 +186,12 @@ def build_language_ranking_snapshot(language, quarter_info):
         groups.append({
             "code": age_group,
             "label": label,
+            "score_section": {
+                "category": "stamina",
+                "label": "누적점수",
+                "entries": [build_rank_entry(row, "stamina") for row in rank_rows(overall_group_rows, "stamina")[:5]],
+            },
             "practice_sections": practice_sections,
-            "masters": [
-                {
-                    "category": "peak_speed",
-                    "label": MASTER_LABELS["peak_speed"],
-                    "top3": [build_rank_entry(row, "peak_speed") for row in rank_rows(overall_group_rows, "peak_speed")[:3]],
-                },
-                {
-                    "category": "avg_speed",
-                    "label": MASTER_LABELS["avg_speed"],
-                    "top3": [build_rank_entry(row, "avg_speed") for row in rank_rows(overall_group_rows, "avg_speed")[:3]],
-                },
-                {
-                    "category": "accuracy",
-                    "label": MASTER_LABELS["accuracy"],
-                    "top3": [build_rank_entry(row, "accuracy") for row in rank_rows(overall_group_rows, "accuracy")[:3]],
-                },
-                {
-                    "category": "stamina",
-                    "label": MASTER_LABELS["stamina"],
-                    "top3": [build_rank_entry(row, "stamina") for row in rank_rows(overall_group_rows, "stamina")[:3]],
-                },
-            ],
         })
 
     return groups, per_practice_rows, overall_rows
@@ -247,6 +230,7 @@ def update_hall_of_fame_for_language(language, quarter_info=None):
                     "score": leader["score"],
                     "speed": leader["best_speed"],
                     "accuracy": leader["best_accuracy"],
+                    "attempts": leader["attempts"],
                     "quarter_key": quarter_info["key"],
                     "achieved_at": leader["first_created_at"],
                 },
@@ -260,10 +244,11 @@ def update_hall_of_fame_for_language(language, quarter_info=None):
                 legend.score = leader["score"]
                 legend.speed = leader["best_speed"]
                 legend.accuracy = leader["best_accuracy"]
+                legend.attempts = leader["attempts"]
                 legend.quarter_key = quarter_info["key"]
                 legend.achieved_at = leader["first_created_at"]
                 legend.save(update_fields=[
-                    "user", "record_value", "score", "speed", "accuracy",
+                    "user", "record_value", "score", "speed", "accuracy", "attempts",
                     "quarter_key", "achieved_at", "updated_at",
                 ])
 
@@ -280,6 +265,7 @@ def update_hall_of_fame_for_language(language, quarter_info=None):
                 "score": leader["score"],
                 "speed": leader["best_speed"],
                 "accuracy": leader["best_accuracy"],
+                "attempts": leader["attempts"],
                 "quarter_key": quarter_info["key"],
                 "achieved_at": leader["first_created_at"],
             },
@@ -293,10 +279,11 @@ def update_hall_of_fame_for_language(language, quarter_info=None):
             legend.score = leader["score"]
             legend.speed = leader["best_speed"]
             legend.accuracy = leader["best_accuracy"]
+            legend.attempts = leader["attempts"]
             legend.quarter_key = quarter_info["key"]
             legend.achieved_at = leader["first_created_at"]
             legend.save(update_fields=[
-                "user", "record_value", "score", "speed", "accuracy",
+                "user", "record_value", "score", "speed", "accuracy", "attempts",
                 "quarter_key", "achieved_at", "updated_at",
             ])
 
@@ -324,6 +311,7 @@ def build_typing_home_context(request):
                     "score": legend.score,
                     "speed": legend.speed,
                     "accuracy": legend.accuracy,
+                    "attempts": legend.attempts,
                     "quarter_key": legend.quarter_key,
                 }
                 for legend in TypingHallOfFame.objects.filter(language=language)
@@ -459,7 +447,7 @@ def typing_home(request):
         'current_age_group': selected_age_group,
         'current_age_group_label': AGE_GROUP_LABELS[selected_age_group],
         'ranking_data': ranking_data,
-        'ranking_data_json': json.dumps(ranking_data, ensure_ascii=False, default=str),
+        'ranking_data_json': ranking_data,
     })
 
 def practice_keys(request):

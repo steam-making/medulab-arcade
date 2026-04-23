@@ -59,22 +59,23 @@ class TypingScore(models.Model):
 
 
 class TypingHallOfFame(models.Model):
-    language = models.CharField("언어", max_length=10, choices=LANGUAGE_CHOICES, default="ko")
+    language = models.CharField("??", max_length=10, choices=LANGUAGE_CHOICES, default="ko")
     practice_type = models.CharField(
-        "연습 유형",
+        "?? ??",
         max_length=10,
         choices=RANKING_PRACTICE_TYPE_CHOICES,
         blank=True,
         null=True,
     )
-    category = models.CharField("레전드 부문", max_length=20, choices=MASTER_CATEGORY_CHOICES)
+    category = models.CharField("??? ??", max_length=20, choices=MASTER_CATEGORY_CHOICES)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="typing_legends")
-    record_value = models.FloatField("기록 값", default=0)
-    score = models.IntegerField("점수", default=0)
-    speed = models.IntegerField("타속", default=0)
-    accuracy = models.FloatField("정확도", default=0)
-    quarter_key = models.CharField("갱신 분기", max_length=10, blank=True)
-    achieved_at = models.DateTimeField("기록 일시")
+    record_value = models.FloatField("?? ?", default=0)
+    score = models.IntegerField("??", default=0)
+    speed = models.IntegerField("??", default=0)
+    accuracy = models.FloatField("???", default=0)
+    attempts = models.IntegerField("?? ??", default=0)
+    quarter_key = models.CharField("?? ??", max_length=10, blank=True)
+    achieved_at = models.DateTimeField("?? ??")
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

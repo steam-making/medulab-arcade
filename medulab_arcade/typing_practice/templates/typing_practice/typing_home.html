@@ -70,6 +70,16 @@
         gap: 12px;
         margin-bottom: 18px;
     }
+    .shell-copy {
+        display: grid;
+        gap: 4px;
+        position: relative;
+    }
+    .shell-title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
     .shell-title {
         color: #fff;
         font-size: 24px;
@@ -78,6 +88,124 @@
     .shell-subtitle {
         color: var(--text-muted);
         font-size: 14px;
+    }
+    .legend-help-toggle {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 900;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .legend-help-toggle.is-visible {
+        display: inline-flex;
+    }
+    .group-help-toggle {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 900;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .group-help-toggle.is-visible {
+        display: inline-flex;
+    }
+    .legend-help-panel {
+        display: none;
+        position: absolute;
+        top: calc(100% + 10px);
+        left: 0;
+        z-index: 20;
+        width: min(460px, calc(100vw - 48px));
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid rgba(245, 196, 81, 0.28);
+        background: rgba(20, 22, 32, 0.96);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+    }
+    .legend-help-panel.is-open {
+        display: block;
+    }
+    .legend-help-title {
+        color: #fff;
+        font-size: 15px;
+        font-weight: 900;
+        margin-bottom: 10px;
+    }
+    .legend-help-lead {
+        color: #ffe7a5;
+        font-size: 13px;
+        font-weight: 800;
+        margin-bottom: 12px;
+    }
+    .legend-help-list {
+        display: grid;
+        gap: 8px;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.55;
+    }
+    .legend-help-item strong {
+        color: #fff;
+    }
+    .ranking-switches {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+    .ranking-switch {
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+    .switch-icon,
+    .mini-icon,
+    .rank-medal {
+        margin-right: 6px;
+    }
+    .ranking-switch:hover {
+        transform: translateY(-1px);
+        color: #fff;
+    }
+    .ranking-switch.active {
+        color: #fff;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+    }
+    .ranking-switch[data-panel="seed"].active {
+        background: rgba(52, 211, 153, 0.16);
+        border-color: rgba(52, 211, 153, 0.45);
+    }
+    .ranking-switch[data-panel="growth"].active {
+        background: rgba(90, 169, 255, 0.16);
+        border-color: rgba(90, 169, 255, 0.45);
+    }
+    .ranking-switch[data-panel="challenge"].active {
+        background: rgba(255, 122, 182, 0.16);
+        border-color: rgba(255, 122, 182, 0.45);
+    }
+    .ranking-switch[data-panel="hall"].active {
+        background: rgba(245, 196, 81, 0.16);
+        border-color: rgba(245, 196, 81, 0.45);
     }
 
     .group-stack {
@@ -93,6 +221,18 @@
     .group-card.is-me {
         border-color: rgba(90, 169, 255, 0.45);
         box-shadow: 0 0 0 1px rgba(90, 169, 255, 0.15) inset;
+    }
+    .group-card.theme-seed {
+        background: linear-gradient(180deg, rgba(52, 211, 153, 0.09), rgba(255, 255, 255, 0.025));
+        border-color: rgba(52, 211, 153, 0.24);
+    }
+    .group-card.theme-growth {
+        background: linear-gradient(180deg, rgba(90, 169, 255, 0.09), rgba(255, 255, 255, 0.025));
+        border-color: rgba(90, 169, 255, 0.24);
+    }
+    .group-card.theme-challenge {
+        background: linear-gradient(180deg, rgba(255, 122, 182, 0.09), rgba(255, 255, 255, 0.025));
+        border-color: rgba(255, 122, 182, 0.24);
     }
     .group-head {
         display: flex;
@@ -115,16 +255,16 @@
         font-weight: 800;
     }
 
-    .practice-grid,
+    .ranking-card-grid,
     .master-grid,
     .legend-grid,
     .menu-grid {
         display: grid;
         gap: 14px;
     }
-    .practice-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 14px; }
+    .ranking-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 14px; }
     .master-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .legend-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; }
+    .legend-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; align-items: start; }
     .menu-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
     .mini-card,
@@ -133,6 +273,34 @@
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.06);
         background: rgba(255, 255, 255, 0.025);
+    }
+    .theme-seed .mini-card {
+        background: rgba(52, 211, 153, 0.07);
+        border-color: rgba(52, 211, 153, 0.2);
+    }
+    .theme-growth .mini-card {
+        background: rgba(90, 169, 255, 0.07);
+        border-color: rgba(90, 169, 255, 0.2);
+    }
+    .theme-challenge .mini-card {
+        background: rgba(255, 122, 182, 0.07);
+        border-color: rgba(255, 122, 182, 0.2);
+    }
+    .mini-card.card-score {
+        background: linear-gradient(180deg, rgba(245, 196, 81, 0.16), rgba(255, 255, 255, 0.04));
+        border-color: rgba(245, 196, 81, 0.32);
+    }
+    .mini-card.card-word {
+        background: linear-gradient(180deg, rgba(52, 211, 153, 0.15), rgba(255, 255, 255, 0.04));
+        border-color: rgba(52, 211, 153, 0.28);
+    }
+    .mini-card.card-short {
+        background: linear-gradient(180deg, rgba(90, 169, 255, 0.15), rgba(255, 255, 255, 0.04));
+        border-color: rgba(90, 169, 255, 0.28);
+    }
+    .mini-card.card-long {
+        background: linear-gradient(180deg, rgba(255, 122, 182, 0.15), rgba(255, 255, 255, 0.04));
+        border-color: rgba(255, 122, 182, 0.28);
     }
 
     .mini-card,
@@ -166,40 +334,90 @@
         list-style: none;
     }
     .rank-item {
-        display: grid;
-        grid-template-columns: 28px 1fr auto;
-        gap: 10px;
-        align-items: center;
+        display: block;
         padding: 10px 12px;
         border-radius: 14px;
         background: rgba(255, 255, 255, 0.03);
+        overflow: hidden;
+    }
+    .rank-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+    .rank-body {
+        min-width: 0;
     }
     .rank-no {
-        width: 28px;
-        height: 28px;
-        border-radius: 10px;
+        min-width: 56px;
+        height: 26px;
+        padding: 0 8px;
+        border-radius: 999px;
         display: flex;
         align-items: center;
         justify-content: center;
         background: rgba(255, 255, 255, 0.08);
         color: #fff;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 900;
+        gap: 4px;
+        flex: 0 0 auto;
     }
     .rank-name {
         color: #fff;
         font-weight: 800;
         font-size: 14px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .rank-meta {
-        color: var(--text-muted);
-        font-size: 12px;
-    }
-    .rank-value {
-        color: var(--tp-gold);
-        font-size: 13px;
-        font-weight: 900;
+        font-size: 11px;
+        line-height: 1.3;
+        margin-top: 5px;
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 4px;
         white-space: nowrap;
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+    }
+    .meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 22px;
+        padding: 3px 7px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.01em;
+        flex: 1 1 0;
+        min-width: 0;
+        justify-content: center;
+    }
+    .meta-chip.score {
+        color: #ffe39a;
+        background: rgba(245, 196, 81, 0.16);
+    }
+    .meta-chip.attempts {
+        color: #d3e4ff;
+        background: rgba(90, 169, 255, 0.16);
+    }
+    .meta-chip.avg {
+        color: #bfffe6;
+        background: rgba(52, 211, 153, 0.16);
+    }
+    .meta-chip.best {
+        color: #ffe0a8;
+        background: rgba(255, 159, 67, 0.16);
+    }
+    .meta-chip.acc {
+        color: #ffd3e4;
+        background: rgba(255, 122, 182, 0.16);
     }
     .empty-text {
         color: var(--text-muted);
@@ -209,17 +427,144 @@
 
     .legend-card {
         background: linear-gradient(180deg, rgba(245, 196, 81, 0.08), rgba(255, 255, 255, 0.03));
+        padding: 14px 16px;
+        border-radius: 18px;
+    }
+    .legend-column {
+        display: grid;
+        gap: 12px;
+        align-content: start;
+        padding: 12px;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .legend-column-body {
+        display: grid;
+        gap: 12px;
+        align-content: start;
+    }
+    .legend-column-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 0 2px;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 900;
+    }
+    .legend-column-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+    .legend-view-all {
+        color: var(--tp-blue);
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+    .legend-column.is-word .legend-column-head {
+        color: #d8fff0;
+    }
+    .legend-column.is-word {
+        background: linear-gradient(180deg, rgba(52, 211, 153, 0.08), rgba(255, 255, 255, 0.02));
+        border-color: rgba(52, 211, 153, 0.16);
+    }
+    .legend-column.is-short .legend-column-head {
+        color: #dceaff;
+    }
+    .legend-column.is-short {
+        background: linear-gradient(180deg, rgba(90, 169, 255, 0.08), rgba(255, 255, 255, 0.02));
+        border-color: rgba(90, 169, 255, 0.16);
+    }
+    .legend-column.is-long .legend-column-head {
+        color: #ffe0ec;
+    }
+    .legend-column.is-long {
+        background: linear-gradient(180deg, rgba(255, 122, 182, 0.08), rgba(255, 255, 255, 0.02));
+        border-color: rgba(255, 122, 182, 0.16);
+    }
+    .legend-column.is-stamina .legend-column-head {
+        color: #ffe7a5;
+    }
+    .legend-column.is-stamina {
+        background: linear-gradient(180deg, rgba(245, 196, 81, 0.1), rgba(255, 255, 255, 0.02));
+        border-color: rgba(245, 196, 81, 0.18);
+    }
+    .legend-icon {
+        font-size: 18px;
+    }
+    .legend-card.is-word {
+        background: linear-gradient(180deg, rgba(52, 211, 153, 0.12), rgba(255, 255, 255, 0.03));
+        border-color: rgba(52, 211, 153, 0.24);
+    }
+    .legend-card.is-short {
+        background: linear-gradient(180deg, rgba(90, 169, 255, 0.12), rgba(255, 255, 255, 0.03));
+        border-color: rgba(90, 169, 255, 0.24);
+    }
+    .legend-card.is-long {
+        background: linear-gradient(180deg, rgba(255, 122, 182, 0.12), rgba(255, 255, 255, 0.03));
+        border-color: rgba(255, 122, 182, 0.24);
+    }
+    .legend-card.is-stamina {
+        background: linear-gradient(180deg, rgba(245, 196, 81, 0.14), rgba(255, 255, 255, 0.03));
+        border-color: rgba(245, 196, 81, 0.3);
+    }
+    .legend-column .legend-card {
+        background: rgba(255, 255, 255, 0.05);
     }
     .legend-name {
         color: #fff;
-        font-size: 18px;
+        font-size: 15px;
         font-weight: 900;
         margin-bottom: 4px;
+    }
+    .legend-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        margin-bottom: 6px;
+    }
+    .legend-label {
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+        white-space: nowrap;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        flex: 0 0 auto;
+    }
+    .legend-label-icon {
+        margin-right: 4px;
+    }
+    .legend-top .legend-name {
+        margin-bottom: 0;
+        font-size: 15px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .legend-meta {
         color: var(--text-muted);
         font-size: 13px;
         line-height: 1.5;
+    }
+    .legend-card .rank-meta {
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        overflow: hidden;
+        gap: 4px;
+    }
+    .legend-card .meta-chip {
+        flex: 1 1 0;
+        justify-content: center;
     }
 
     .practice-shell { margin-top: 24px; }
@@ -370,7 +715,14 @@
     }
 
     @media (max-width: 1100px) {
-        .practice-grid,
+        .shell-head {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .ranking-switches {
+            justify-content: flex-start;
+        }
+        .ranking-card-grid,
         .master-grid,
         .legend-grid,
         .menu-grid {
@@ -381,7 +733,14 @@
         .main { padding-inline: 14px; }
         .ranking-shell,
         .practice-shell { padding: 18px; }
-        .practice-grid,
+        .ranking-switches {
+            width: 100%;
+        }
+        .ranking-switch {
+            flex: 1 1 calc(50% - 8px);
+            text-align: center;
+        }
+        .ranking-card-grid,
         .master-grid,
         .legend-grid,
         .menu-grid {
@@ -409,20 +768,39 @@
 
         <section class="ranking-shell">
             <div class="shell-head">
-                <div>
-                    <div class="shell-title" id="ranking-title">{{ quarter_info.label }} 타자 마스터</div>
+                <div class="shell-copy">
+                    <div class="shell-title-row">
+                        <div class="shell-title" id="ranking-title">{{ quarter_info.label }} 타자 마스터</div>
+                        <button type="button" class="group-help-toggle" id="group-help-toggle" aria-label="랭킹 안내">?</button>
+                        <button type="button" class="legend-help-toggle" id="legend-help-toggle" aria-label="레전드 호칭 안내">?</button>
+                    </div>
                     <div class="shell-subtitle" id="ranking-subtitle">우리 그룹인 {{ current_age_group_label }}가 가장 먼저 보여집니다.</div>
+                    <div class="legend-help-panel" id="group-help-panel">
+                        <div class="legend-help-title">TOP 5 안내</div>
+                        <div class="legend-help-lead">순위는 실시간으로 바뀝니다.</div>
+                        <div class="legend-help-list">
+                            <div class="legend-help-item"><strong>누적 TOP 5</strong> : 이번 분기 누적점수가 높은 순위</div>
+                            <div class="legend-help-item"><strong>단어 TOP 5</strong> : 단어연습에서 평균 타수, 최고 타수, 정확도가 높은 순위</div>
+                            <div class="legend-help-item"><strong>짧은글 TOP 5</strong> : 짧은글연습에서 평균 타수, 최고 타수, 정확도가 높은 순위</div>
+                            <div class="legend-help-item"><strong>긴글 TOP 5</strong> : 긴글연습에서 평균 타수, 최고 타수, 정확도가 높은 순위</div>
+                        </div>
+                    </div>
+                    <div class="legend-help-panel" id="legend-help-panel">
+                        <div class="legend-help-title">레전드 호칭 안내</div>
+                        <div class="legend-help-lead">레전드 호칭은 분기별로 비교하여 교체될 수 있습니다.</div>
+                        <div class="legend-help-list">
+                            <div class="legend-help-item"><strong>불굴의 손가락</strong> : 한 분기(3개월) 동안 누적점수가 가장 높은 사람</div>
+                            <div class="legend-help-item"><strong>번개손 / 문장파쇄자 / 폭풍집필</strong> : 최고 타수가 가장 높은 사람</div>
+                            <div class="legend-help-item"><strong>리듬왕 / 리듬지배자 / 강철페이스</strong> : 평균 타수가 가장 높은 사람</div>
+                            <div class="legend-help-item"><strong>오타제로 / 정밀저격수 / 집필장인</strong> : 정확도가 가장 높은 사람</div>
+                        </div>
+                    </div>
                 </div>
+                <div class="ranking-switches" id="ranking-switches"></div>
             </div>
 
             <div id="group-rankings" class="group-stack"></div>
 
-            <div class="shell-head" style="margin-top: 24px;">
-                <div>
-                    <div class="shell-title">명예의 전당</div>
-                    <div class="shell-subtitle">분기 기록이 역대 최고를 넘으면 레전드가 교체됩니다.</div>
-                </div>
-            </div>
             <div id="hall-of-fame" class="legend-grid"></div>
         </section>
 
@@ -492,23 +870,15 @@
         let currentLang = getStorage().getItem(`${progressPrefix}_typing_home_lang`) || 'ko';
 
         const tabs = Array.from(document.querySelectorAll('.lang-tab'));
+        const rankingTitle = document.getElementById('ranking-title');
         const groupContainer = document.getElementById('group-rankings');
         const hallContainer = document.getElementById('hall-of-fame');
         const subtitle = document.getElementById('ranking-subtitle');
-
-        const metricText = {
-            peak_speed: row => `최고 ${row.best_speed} WPM`,
-            avg_speed: row => `평균 ${row.average_speed} WPM`,
-            accuracy: row => `정확도 ${row.best_accuracy}%`,
-            stamina: row => `누적 ${row.total_score}점`,
-        };
-
-        const legendMetricText = legend => {
-            if (legend.category === 'peak_speed') return `최고 ${legend.speed} WPM`;
-            if (legend.category === 'avg_speed') return `평균 ${legend.record_value} WPM`;
-            if (legend.category === 'accuracy') return `정확도 ${legend.record_value}%`;
-            return `누적 ${legend.record_value}점`;
-        };
+        const rankingSwitches = document.getElementById('ranking-switches');
+        const groupHelpToggle = document.getElementById('group-help-toggle');
+        const groupHelpPanel = document.getElementById('group-help-panel');
+        const legendHelpToggle = document.getElementById('legend-help-toggle');
+        const legendHelpPanel = document.getElementById('legend-help-panel');
 
         function getStorage() {
             return isPermanent ? localStorage : sessionStorage;
@@ -554,14 +924,29 @@
             }
             return `<ol class="rank-list">` + items.map((row, idx) => `
                 <li class="rank-item">
-                    <div class="rank-no">${idx + 1}</div>
-                    <div>
+                    <div class="rank-top">
+                        <div class="rank-no">${getRankBadge(idx)}</div>
                         <div class="rank-name">${row.username}</div>
-                        <div class="rank-meta">정확도 ${row.best_accuracy}% · 시도 ${row.attempts}회</div>
                     </div>
-                    <div class="rank-value">${metricText[category](row)}</div>
+                    <div class="rank-body">
+                        <div class="rank-meta">${getRankMeta(row, category)}</div>
+                    </div>
                 </li>
             `).join('') + `</ol>`;
+        }
+
+        function getRankMeta(row, category) {
+            if (category === 'stamina') {
+                return `
+                    <span class="meta-chip score">누적점수 ${row.total_score}점</span>
+                    <span class="meta-chip attempts">시도 ${row.attempts}회</span>
+                `;
+            }
+            return `
+                <span class="meta-chip avg">평균 ${Math.round(row.average_speed)}타</span>
+                <span class="meta-chip best">최고 ${row.best_speed}타</span>
+                <span class="meta-chip acc">정확도 ${row.best_accuracy}%</span>
+            `;
         }
 
         function buildViewAllUrl(lang, group, practice, category) {
@@ -570,53 +955,279 @@
             return `{% url 'typing_ranking' %}?${params.toString()}`;
         }
 
-        function renderRankings() {
-            const payload = rankingData[currentLang] || rankingData.ko;
-            subtitle.textContent = `우리 그룹인 ${payload.groups[0]?.label || ''}가 가장 먼저 보여집니다.`;
+        function getRankBadge(index) {
+            const labels = ['1st', '2nd', '3rd'];
+            const icons = ['🥇', '🥈', '🥉'];
+            if (index < 3) return `<span class="rank-medal">${icons[index]}</span><span>${labels[index]}</span>`;
+            return `<span class="rank-medal">🏅</span><span>${index + 1}th</span>`;
+        }
 
-            groupContainer.innerHTML = payload.groups.map((group, groupIndex) => `
-                <section class="group-card ${groupIndex === 0 ? 'is-me' : ''}">
+        function getRankingPanelKey() {
+            return `${progressPrefix}_typing_ranking_panel_${currentLang}`;
+        }
+
+        function getPanelIcon(panel) {
+            return {
+                seed: '🌱',
+                growth: '🚀',
+                challenge: '🔥',
+                hall: '🏛️',
+            }[panel] || '⭐';
+        }
+
+        function getGroupTheme(code) {
+            return {
+                seed: 'theme-seed',
+                growth: 'theme-growth',
+                challenge: 'theme-challenge',
+            }[code] || 'theme-growth';
+        }
+
+        function getSectionCardTheme(practiceType, category) {
+            if (category === 'stamina') return 'card-score';
+            return {
+                word: 'card-word',
+                short: 'card-short',
+                long: 'card-long',
+            }[practiceType] || 'card-score';
+        }
+
+        function getSectionIcon(practiceType, category) {
+            if (category === 'stamina') return '🏆';
+            return {
+                word: '🔤',
+                short: '📝',
+                long: '📘',
+            }[practiceType] || '⭐';
+        }
+
+        function getLegendTheme(legend) {
+            if (legend.category === 'stamina') return 'is-stamina';
+            return {
+                word: 'is-word',
+                short: 'is-short',
+                long: 'is-long',
+            }[legend.practice_type] || 'is-stamina';
+        }
+
+        function getLegendColumnIcon(type) {
+            return {
+                stamina: '🏆',
+                word: '🔤',
+                short: '📝',
+                long: '📘',
+            }[type] || '⭐';
+        }
+
+        function getLegendColumnLabel(type) {
+            return {
+                stamina: '점수',
+                word: '단어연습',
+                short: '짧은글연습',
+                long: '긴글연습',
+            }[type] || '명예의 전당';
+        }
+
+        function getLegendLabel(category, practiceType) {
+            if (category === 'stamina') return '불굴의 손가락';
+
+            const labelsByPractice = {
+                word: {
+                    peak_speed: '번개손',
+                    avg_speed: '리듬왕',
+                    accuracy: '오타제로',
+                },
+                short: {
+                    peak_speed: '문장파쇄자',
+                    avg_speed: '리듬지배자',
+                    accuracy: '정밀저격수',
+                },
+                long: {
+                    peak_speed: '폭풍집필',
+                    avg_speed: '강철페이스',
+                    accuracy: '집필장인',
+                },
+            };
+
+            return labelsByPractice[practiceType]?.[category] || '레전드';
+        }
+
+        function getLegendLabelIcon(category, practiceType) {
+            if (category === 'stamina') return '💪';
+
+            const iconMap = {
+                word: {
+                    peak_speed: '⚡',
+                    avg_speed: '🎵',
+                    accuracy: '🛡️',
+                },
+                short: {
+                    peak_speed: '💥',
+                    avg_speed: '👑',
+                    accuracy: '🎯',
+                },
+                long: {
+                    peak_speed: '🌪️',
+                    avg_speed: '🧱',
+                    accuracy: '✒️',
+                },
+            };
+
+            return iconMap[practiceType]?.[category] || '⭐';
+        }
+
+        function getLegendMeta(legend) {
+            if (legend.category === 'stamina') {
+                return `
+                    <span class="meta-chip score">누적점수 ${Math.round(legend.record_value)}점</span>
+                    <span class="meta-chip attempts">시도 ${legend.attempts || 0}회</span>
+                `;
+            }
+            return `
+                <span class="meta-chip avg">평균 ${Math.round(legend.category === 'avg_speed' ? legend.record_value : legend.speed)}타</span>
+                <span class="meta-chip best">최고 ${legend.speed}타</span>
+                <span class="meta-chip acc">정확도 ${legend.accuracy}%</span>
+            `;
+        }
+
+        function getLegendColumns(hallOfFame) {
+            const byKey = {};
+            hallOfFame.forEach(legend => {
+                const key = legend.category === 'stamina' ? 'stamina' : legend.practice_type;
+                if (!key) return;
+                if (!byKey[key]) byKey[key] = [];
+                byKey[key].push(legend);
+            });
+
+            const orderMap = { peak_speed: 0, avg_speed: 1, accuracy: 2, stamina: 0 };
+            return ['stamina', 'word', 'short', 'long'].map(type => ({
+                type,
+                label: getLegendColumnLabel(type),
+                icon: getLegendColumnIcon(type),
+                items: (byKey[type] || []).sort((a, b) => (orderMap[a.category] ?? 9) - (orderMap[b.category] ?? 9)),
+            }));
+        }
+
+        function getLegendViewAllUrl(type, selectedGroup) {
+            if (type === 'stamina') {
+                return buildViewAllUrl(currentLang, selectedGroup || 'seed', '', 'stamina');
+            }
+            return buildViewAllUrl(currentLang, selectedGroup || 'seed', type, 'peak_speed');
+        }
+
+        function getDefaultPanel(payload) {
+            if (Array.isArray(payload.groups) && payload.groups.length) {
+                return payload.selected_group || payload.groups[0].code;
+            }
+            return 'hall';
+        }
+
+        function getActivePanel(payload) {
+            const stored = getStorage().getItem(getRankingPanelKey());
+            const validPanels = new Set((payload.groups || []).map(group => group.code).concat('hall'));
+            if (stored && validPanels.has(stored)) return stored;
+            return getDefaultPanel(payload);
+        }
+
+        function renderRankingSwitches(payload, activePanel) {
+            const buttons = (payload.groups || []).map(group => `
+                <button type="button" class="ranking-switch ${activePanel === group.code ? 'active' : ''}" data-panel="${group.code}">
+                    <span class="switch-icon">${getPanelIcon(group.code)}</span>${group.label}
+                </button>
+            `).join('');
+
+            rankingSwitches.innerHTML = buttons + `
+                <button type="button" class="ranking-switch ${activePanel === 'hall' ? 'active' : ''}" data-panel="hall">
+                    <span class="switch-icon">${getPanelIcon('hall')}</span>타자 레전드
+                </button>
+            `;
+
+            rankingSwitches.querySelectorAll('.ranking-switch').forEach(button => {
+                button.addEventListener('click', () => {
+                    getStorage().setItem(getRankingPanelKey(), button.dataset.panel);
+                    safeRenderRankings();
+                });
+            });
+        }
+
+        function renderRankings() {
+            const payload = rankingData[currentLang] || rankingData.ko || { groups: [], hall_of_fame: [] };
+            const groups = Array.isArray(payload.groups) ? payload.groups : [];
+            const hallOfFame = Array.isArray(payload.hall_of_fame) ? payload.hall_of_fame : [];
+            const activePanel = getActivePanel(payload);
+            const activeGroup = groups.find(group => group.code === activePanel) || groups[0] || null;
+
+            renderRankingSwitches(payload, activePanel);
+
+            if (activePanel === 'hall') {
+                rankingTitle.textContent = '타자 레전드';
+                subtitle.textContent = '레전드 호칭은 분기별로 비교하여 교체될 수 있습니다.';
+                groupContainer.innerHTML = '';
+                groupContainer.style.display = 'none';
+                hallContainer.style.display = 'grid';
+                groupHelpToggle?.classList.remove('is-visible');
+                groupHelpPanel?.classList.remove('is-open');
+                legendHelpToggle?.classList.add('is-visible');
+            } else {
+                rankingTitle.textContent = '{{ quarter_info.label }} 타자 마스터';
+                subtitle.textContent = '순위는 실시간으로 바뀝니다.';
+                groupContainer.style.display = 'grid';
+                hallContainer.style.display = 'none';
+                groupHelpToggle?.classList.add('is-visible');
+                legendHelpToggle?.classList.remove('is-visible');
+                legendHelpPanel?.classList.remove('is-open');
+            }
+
+            groupContainer.innerHTML = activeGroup ? `
+                <section class="group-card ${getGroupTheme(activeGroup.code)} ${activeGroup.code === payload.selected_group ? 'is-me' : ''}">
                     <div class="group-head">
-                        <div class="group-name">${group.label}</div>
-                        ${groupIndex === 0 ? '<div class="group-badge">우리 그룹</div>' : ''}
+                        <div class="group-name">${activeGroup.label}</div>
+                        ${activeGroup.code === payload.selected_group ? '<div class="group-badge">우리 그룹</div>' : ''}
                     </div>
-                    <div class="practice-grid">
-                        ${group.practice_sections.map(section => `
-                            <article class="mini-card">
+                    <div class="ranking-card-grid">
+                        <article class="mini-card ${getSectionCardTheme('', activeGroup.score_section?.category || 'stamina')}">
+                            <div class="mini-head">
+                                <div class="mini-title"><span class="mini-icon">${getSectionIcon('', activeGroup.score_section?.category || 'stamina')}</span>${activeGroup.score_section?.label || '누적점수'} TOP 5</div>
+                                <a class="view-all" href="${buildViewAllUrl(currentLang, activeGroup.code, '', activeGroup.score_section?.category || 'stamina')}">전체보기</a>
+                            </div>
+                            ${buildRankList(activeGroup.score_section?.entries || [], activeGroup.score_section?.category || 'stamina')}
+                        </article>
+                        ${(activeGroup.practice_sections || []).map(section => `
+                            <article class="mini-card ${getSectionCardTheme(section.practice_type, 'peak_speed')}">
                                 <div class="mini-head">
-                                    <div class="mini-title">${section.label} TOP 3</div>
-                                    <a class="view-all" href="${buildViewAllUrl(currentLang, group.code, section.practice_type, 'peak_speed')}">전체보기</a>
+                                    <div class="mini-title"><span class="mini-icon">${getSectionIcon(section.practice_type, 'peak_speed')}</span>${section.label} TOP 5</div>
+                                    <a class="view-all" href="${buildViewAllUrl(currentLang, activeGroup.code, section.practice_type, 'peak_speed')}">전체보기</a>
                                 </div>
-                                ${buildRankList(section.top3, 'peak_speed')}
-                            </article>
-                        `).join('')}
-                    </div>
-                    <div class="master-grid">
-                        ${group.masters.map(section => `
-                            <article class="mini-card">
-                                <div class="mini-head">
-                                    <div class="mini-title">${section.label}</div>
-                                    <a class="view-all" href="${buildViewAllUrl(currentLang, group.code, '', section.category)}">전체보기</a>
-                                </div>
-                                ${buildRankList(section.top3, section.category)}
+                                ${buildRankList(section.entries || [], 'peak_speed')}
                             </article>
                         `).join('')}
                     </div>
                 </section>
-            `).join('');
+            ` : `<div class="empty-text">표시할 그룹 랭킹이 없습니다.</div>`;
 
-            hallContainer.innerHTML = payload.hall_of_fame.length
-                ? payload.hall_of_fame.map(legend => `
-                    <article class="legend-card">
-                        <div class="legend-head">
-                            <div class="legend-title">${legend.practice_type_label === '통합' ? legend.category_label : `${legend.practice_type_label} ${legend.category_label}`}</div>
+            hallContainer.innerHTML = hallOfFame.length
+                ? getLegendColumns(hallOfFame).map(column => `
+                    <section class="legend-column ${getLegendTheme({ category: column.type === 'stamina' ? 'stamina' : 'peak_speed', practice_type: column.type })}">
+                        <div class="legend-column-head">
+                            <div class="legend-column-title">
+                                <span class="legend-icon">${column.icon}</span>${column.label}
+                            </div>
+                            <a class="legend-view-all" href="${getLegendViewAllUrl(column.type, payload.selected_group)}">전체보기</a>
                         </div>
-                        <div class="legend-name">${legend.username}</div>
-                        <div class="legend-meta">
-                            ${legendMetricText(legend)}<br>
-                            ${legend.quarter_key || '기록 없음'}
+                        <div class="legend-column-body">
+                        ${column.items.length ? column.items.map(legend => `
+                            <article class="legend-card ${getLegendTheme(legend)}">
+                                <div class="legend-top">
+                                    <div class="legend-label"><span class="legend-label-icon">${getLegendLabelIcon(legend.category, legend.practice_type)}</span>${getLegendLabel(legend.category, legend.practice_type)}</div>
+                                    <div class="legend-name">${legend.username}</div>
+                                </div>
+                                <div class="legend-meta rank-meta legend-stats">
+                                    ${getLegendMeta(legend)}
+                                </div>
+                            </article>
+                        `).join('') : `<div class="empty-text">아직 레전드 기록이 없습니다.</div>`}
                         </div>
-                    </article>
+                    </section>
                 `).join('')
                 : `<div class="empty-text">아직 레전드 기록이 없습니다.</div>`;
         }
@@ -786,6 +1397,30 @@
                 updateLocks();
                 normalizePracticeLocks();
                 applyAdminBypassVisualState();
+            });
+        }
+
+        if (legendHelpToggle && legendHelpPanel) {
+            legendHelpToggle.addEventListener('click', () => {
+                groupHelpPanel?.classList.remove('is-open');
+                legendHelpPanel.classList.toggle('is-open');
+            });
+            document.addEventListener('click', event => {
+                if (!legendHelpPanel.classList.contains('is-open')) return;
+                if (legendHelpPanel.contains(event.target) || legendHelpToggle.contains(event.target)) return;
+                legendHelpPanel.classList.remove('is-open');
+            });
+        }
+
+        if (groupHelpToggle && groupHelpPanel) {
+            groupHelpToggle.addEventListener('click', () => {
+                legendHelpPanel?.classList.remove('is-open');
+                groupHelpPanel.classList.toggle('is-open');
+            });
+            document.addEventListener('click', event => {
+                if (!groupHelpPanel.classList.contains('is-open')) return;
+                if (groupHelpPanel.contains(event.target) || groupHelpToggle.contains(event.target)) return;
+                groupHelpPanel.classList.remove('is-open');
             });
         }
 

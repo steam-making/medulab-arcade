@@ -582,6 +582,10 @@
     let completedStrokes = 0;
     let totalErrors = 0;
     let totalChars = 0;
+    let totalTypedChars = 0;
+    let totalCorrectChars = 0;
+    let lastCommittedInput = '';
+    let isIMEComposing = false;
     let startTime = null; // 전체 연습 시작 (첫 키 입력 전용)
     let itemStartTime = null; // 현재 단어/문장 입력 시작
     let cumulativeTime = 0; // 실제 입력에 소요된 누적 시간 (ms)
@@ -980,7 +984,7 @@
 
     function updateStatus() {
         document.getElementById('progress').innerText = `${currentIndex} / ${contents.length}`;
-        const acc = totalChars === 0 ? 100 : Math.round(((totalChars - totalErrors) / totalChars) * 100);
+        const acc = totalTypedChars === 0 ? 100 : Math.round((totalCorrectChars / totalTypedChars) * 100);
         document.getElementById('accuracy').innerText = `${Math.max(0, acc)}%`;
 
         if (startTime) {
@@ -1000,12 +1004,61 @@
         }
     }
 
+    function countCommittedInputDelta(targetText, previousInput, currentInput) {
+        if (previousInput === currentInput) return;
+
+        let prefix = 0;
+        const maxPrefix = Math.min(previousInput.length, currentInput.length);
+        while (prefix < maxPrefix && previousInput[prefix] === currentInput[prefix]) {
+            prefix += 1;
+        }
+
+        let previousSuffix = previousInput.length - 1;
+        let currentSuffix = currentInput.length - 1;
+        while (
+            previousSuffix >= prefix &&
+            currentSuffix >= prefix &&
+            previousInput[previousSuffix] === currentInput[currentSuffix]
+        ) {
+            previousSuffix -= 1;
+            currentSuffix -= 1;
+        }
+
+        const insertedText = currentInput.slice(prefix, currentSuffix + 1);
+        for (let i = 0; i < insertedText.length; i++) {
+            const targetIndex = prefix + i;
+            totalTypedChars += 1;
+            if (insertedText[i] === (targetText[targetIndex] || '')) {
+                totalCorrectChars += 1;
+            }
+        }
+    }
+
+    function commitCurrentInputDelta() {
+        const currentData = contents[currentIndex];
+        if (!currentData) return;
+        const currentTarget = currentData[inputLang] || currentData['ko'];
+        const currentInput = inputField.value;
+        countCommittedInputDelta(currentTarget, lastCommittedInput, currentInput);
+        lastCommittedInput = currentInput;
+    }
+
     // 타수 감쇠 타이머 (실시간 평균 타수만 업데이트)
     setInterval(() => {
         if (startTime && currentIndex < contents.length) {
             updateStatus();
         }
     }, 100);
+
+    inputField.addEventListener('compositionstart', () => {
+        isIMEComposing = true;
+    });
+
+    inputField.addEventListener('compositionend', () => {
+        isIMEComposing = false;
+        commitCurrentInputDelta();
+        updateStatus();
+    });
 
     inputField.addEventListener('input', (e) => {
         if (!startTime) startTime = Date.now();
@@ -1093,11 +1146,19 @@
         } else {
             inputField.classList.remove('error');
         }
+
+        if (!isIMEComposing && !e.isComposing) {
+            commitCurrentInputDelta();
+        }
+
         updateStatus();
     });
 
     inputField.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
+            if (!isIMEComposing) {
+                commitCurrentInputDelta();
+            }
             const currentTarget = contents[currentIndex][inputLang] || contents[currentIndex]['ko'];
             const currentInput = inputField.value.trim();
 
@@ -1122,6 +1183,7 @@
 
                 completedStrokes += getStrokeCount(currentTarget);
                 totalChars += currentTarget.length;
+                lastCommittedInput = '';
 
                 currentIndex++;
                 updateTarget();
@@ -1140,6 +1202,10 @@
         completedStrokes = 0;
         totalErrors = 0;
         totalChars = 0;
+        totalTypedChars = 0;
+        totalCorrectChars = 0;
+        lastCommittedInput = '';
+        isIMEComposing = false;
         startTime = null;
         itemStartTime = null;
         cumulativeTime = 0;

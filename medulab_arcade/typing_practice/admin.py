@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TypingScore, TypingContent
+from .models import TypingContent, TypingHallOfFame, TypingScore
 
 @admin.register(TypingScore)
 class TypingScoreAdmin(admin.ModelAdmin):
@@ -12,3 +12,10 @@ class TypingContentAdmin(admin.ModelAdmin):
     list_display = ('content_type', 'language', 'title', 'created_at')
     list_filter = ('content_type', 'language')
     search_fields = ('title', 'text')
+
+
+@admin.register(TypingHallOfFame)
+class TypingHallOfFameAdmin(admin.ModelAdmin):
+    list_display = ('practice_type', 'category', 'language', 'user', 'record_value', 'quarter_key', 'updated_at')
+    list_filter = ('language', 'practice_type', 'category')
+    search_fields = ('user__username', 'quarter_key')

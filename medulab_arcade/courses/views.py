@@ -76,6 +76,7 @@ def safe_exec(code, input_str=""):
             "abs": abs,
             "round": round,
             "input": MockInput(input_str),
+            "type": type,
         }
         exec(code, {"__builtins__": allowed_builtins})
         output = captured.getvalue()

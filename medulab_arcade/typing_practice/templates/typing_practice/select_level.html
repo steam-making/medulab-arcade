@@ -172,18 +172,16 @@
     document.addEventListener('DOMContentLoaded', () => {
         const isFullMember = {% if is_full_member %}true{% else %}false{% endif %};
         const isPermanent = {% if is_permanent %}true{% else %}false{% endif %};
+        const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
         const getStorage = () => isPermanent ? localStorage : sessionStorage;
+        const progressKey = (name) => `${progressPrefix}_${name}`;
 
         const lang = "{{ language|default:'ko' }}";
-        const storageKey = `typing_unlocked_levels_${lang}`;
+        const storageKey = progressKey(`typing_unlocked_levels_${lang}`);
         
         // 데이터 이관: 정회원인 경우에만 기존 범용 데이터 이관
         if (isFullMember) {
-            const oldData = localStorage.getItem('typing_unlocked_levels');
-            const currentData = localStorage.getItem(storageKey);
-            if (oldData && lang === 'ko' && !currentData) {
-                localStorage.setItem(storageKey, oldData);
-            }
+            // Legacy shared progress is ignored to keep unlock state user-specific.
         }
 
         const unlockedLevels = JSON.parse(getStorage().getItem(storageKey) || '["home"]');

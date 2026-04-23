@@ -5,7 +5,7 @@
 {% block extra_css %}
 <style>
     :root {
-        --auth-glass: hsla(230, 25%, 12%, 0.65);
+        --auth-glass: hsla(230, 25%, 12%, 0.68);
         --auth-border: hsla(230, 25%, 30%, 0.4);
         --neon-green: hsl(160, 100%, 50%);
         --neon-blue: hsl(210, 100%, 60%);
@@ -18,65 +18,54 @@
         align-items: center;
         justify-content: center;
         padding: 60px 20px;
-        background: radial-gradient(circle at top right, hsla(210, 100%, 50%, 0.05), transparent 400px),
-                    radial-gradient(circle at bottom left, hsla(160, 100%, 50%, 0.05), transparent 400px);
+        background: radial-gradient(circle at top right, hsla(210, 100%, 50%, 0.07), transparent 420px),
+                    radial-gradient(circle at bottom left, hsla(160, 100%, 50%, 0.06), transparent 420px);
     }
 
     .auth-card {
         width: 100%;
-        max-width: 580px;
+        max-width: 620px;
         background: var(--auth-glass);
-        backdrop-filter: blur(24px) saturate(160%);
-        -webkit-backdrop-filter: blur(24px) saturate(160%);
         border: 1px solid var(--auth-border);
         border-radius: 32px;
-        padding: 50px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-        animation: cardAppear 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-    }
-
-    @keyframes cardAppear {
-        from { opacity: 0; transform: translateY(30px) scale(0.98); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
+        padding: 44px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
     }
 
     .auth-header {
         text-align: center;
-        margin-bottom: 40px;
+        margin-bottom: 32px;
     }
 
     .auth-title {
         font: 900 36px 'Orbitron', sans-serif;
-        letter-spacing: -1px;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         background: linear-gradient(135deg, var(--neon-green), var(--neon-blue), var(--neon-purple));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        filter: drop-shadow(0 0 10px rgba(0, 255, 180, 0.2));
     }
 
     .auth-sub {
         color: var(--text-muted);
         font-size: 15px;
-        font-weight: 500;
     }
 
-    /* 유저 타입 카드 그리드 */
-    .type-section-label {
+    .type-section-label,
+    .section-label {
         display: block;
         color: var(--text-secondary);
-        font-size: 14px;
-        font-weight: 700;
-        margin-bottom: 16px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        font-size: 13px;
+        font-weight: 800;
+        margin-bottom: 14px;
+        letter-spacing: 0.08em;
     }
 
     .type-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 12px;
-        margin-bottom: 32px;
+        margin-bottom: 28px;
     }
 
     .type-item {
@@ -89,119 +78,167 @@
     }
 
     .type-card {
-        background: rgba(255, 255, 255, 0.02);
+        background: rgba(255, 255, 255, 0.03);
         border: 1px solid var(--auth-border);
         border-radius: 16px;
         padding: 16px;
         display: flex;
         flex-direction: column;
         align-items: center;
+        gap: 6px;
         text-align: center;
-        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
     }
 
     .type-item:hover .type-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(0, 255, 180, 0.3);
-        transform: translateY(-4px);
+        transform: translateY(-3px);
+        border-color: rgba(0, 255, 180, 0.35);
     }
 
     .type-item input:checked + .type-card {
-        background: rgba(0, 255, 180, 0.06);
         border-color: var(--neon-green);
-        box-shadow: 0 0 20px rgba(0, 255, 180, 0.15);
+        background: rgba(0, 255, 180, 0.08);
+        box-shadow: 0 0 18px rgba(0, 255, 180, 0.16);
     }
 
-    .type-icon { font-size: 24px; margin-bottom: 8px; }
-    .type-name { font-size: 14px; font-weight: 600; color: var(--text-secondary); transition: color 0.2s; }
-    .type-item input:checked + .type-card .type-name { color: var(--neon-green); }
+    .type-icon {
+        font-size: 24px;
+    }
+
+    .type-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-secondary);
+    }
 
     .type-badge {
         position: absolute;
         top: -8px;
         right: -8px;
-        padding: 2px 8px;
-        border-radius: 20px;
-        font-size: 9px;
+        padding: 3px 8px;
+        border-radius: 99px;
+        font-size: 10px;
         font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        z-index: 10;
-        opacity: 0.8;
+        letter-spacing: 0.04em;
     }
-    .badge-auto { background: #00c853; color: #000; }
-    .badge-review { background: #ffc107; color: #000; }
 
-    /* 안내 메시지 */
+    .badge-auto {
+        background: #00c853;
+        color: #04210f;
+    }
+
+    .badge-review {
+        background: #ffc107;
+        color: #372700;
+    }
+
     .info-note {
         background: rgba(255, 193, 7, 0.08);
         border-left: 3px solid #ffc107;
-        padding: 12px 16px;
         border-radius: 0 12px 12px 0;
-        color: #ffc107;
+        padding: 12px 16px;
+        color: #ffd15c;
         font-size: 12.5px;
         line-height: 1.6;
-        margin-bottom: 32px;
+        margin-bottom: 28px;
         display: none;
-        animation: fadeIn 0.3s ease;
     }
-    .info-note.active { display: block; }
 
-    @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-
-    /* 입력 필드 */
-    .form-group { margin-bottom: 20px; }
-    .form-group label {
+    .info-note.active {
         display: block;
-        color: var(--text-muted);
-        font-size: 13px;
-        font-weight: 600;
+    }
+
+    .field-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group.full {
+        grid-column: 1 / -1;
+    }
+
+    .field-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         margin-bottom: 8px;
-        margin-left: 4px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .field-badge {
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+    }
+
+    .field-badge.required {
+        background: rgba(255, 107, 107, 0.18);
+        color: #ff8f8f;
+    }
+
+    .field-badge.optional {
+        background: rgba(59, 130, 246, 0.18);
+        color: #8bc3ff;
     }
 
     .form-input {
         width: 100% !important;
-        background: rgba(0, 0, 0, 0.2) !important;
+        background: rgba(0, 0, 0, 0.24) !important;
         border: 1px solid var(--auth-border) !important;
         border-radius: 14px !important;
-        padding: 14px 18px !important;
+        padding: 14px 16px !important;
         color: #fff !important;
         font-size: 15px !important;
-        transition: all 0.3s ease !important;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
     }
 
     .form-input:focus {
-        border-color: var(--neon-blue) !important;
-        background: rgba(0, 0, 0, 0.3) !important;
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
         outline: none !important;
+        border-color: var(--neon-blue) !important;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12) !important;
+    }
+
+    .help-text {
+        color: var(--text-muted);
+        font-size: 11px;
+        margin-top: 6px;
+        margin-left: 4px;
+        line-height: 1.5;
+    }
+
+    .error-msg {
+        display: block;
+        color: #ff8585;
+        font-size: 12px;
+        margin-top: 6px;
+        margin-left: 4px;
     }
 
     .submit-btn {
         width: 100%;
-        padding: 16px;
-        background: linear-gradient(135deg, var(--neon-green), var(--neon-blue));
+        margin-top: 18px;
         border: none;
         border-radius: 16px;
-        color: #000;
-        font: 800 16px 'Noto Sans KR', sans-serif;
+        padding: 16px;
+        background: linear-gradient(135deg, var(--neon-green), var(--neon-blue));
+        color: #03140e;
+        font-weight: 900;
+        font-size: 16px;
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-        margin-top: 12px;
-        box-shadow: 0 8px 30px rgba(0, 255, 180, 0.2);
+        box-shadow: 0 10px 30px rgba(0, 255, 180, 0.2);
     }
-
-    .submit-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 40px rgba(0, 255, 180, 0.35);
-        filter: brightness(1.1);
-    }
-
-    .submit-btn:active { transform: translateY(0); }
 
     .auth-footer {
-        margin-top: 32px;
+        margin-top: 28px;
         text-align: center;
         color: var(--text-muted);
         font-size: 14px;
@@ -211,22 +248,17 @@
         color: var(--neon-blue);
         text-decoration: none;
         font-weight: 700;
-        margin-left: 6px;
     }
 
-    .auth-footer a:hover { text-decoration: underline; }
+    @media (max-width: 640px) {
+        .auth-card {
+            padding: 30px 22px;
+        }
 
-    .error-msg {
-        color: #ff6b6b;
-        font-size: 12px;
-        margin-top: 6px;
-        margin-left: 4px;
-        display: block;
-    }
-
-    @media (max-width: 480px) {
-        .auth-card { padding: 30px 24px; }
-        .type-grid { grid-template-columns: 1fr; }
+        .type-grid,
+        .field-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 {% endblock %}
@@ -236,100 +268,105 @@
     <div class="auth-card">
         <div class="auth-header">
             <h1 class="auth-title">JOIN US</h1>
-            <p class="auth-sub">메듀랩의 새로운 도약을 함께하세요</p>
+            <p class="auth-sub">메듀랩 아케이드에서 사용할 계정을 만들어 보세요.</p>
         </div>
 
         <form method="POST">
             {% csrf_token %}
 
-            <!-- 회원 유형 섹션 -->
             <label class="type-section-label">ACCOUNT TYPE</label>
             <div class="type-grid">
-                {% comment %}
-                회원 유형Choices 데이터 매핑:
-                student, general, medulab_member, medulab_teacher, medulab_staff
-                {% endcomment %}
-                
                 <label class="type-item">
-                    <input type="radio" name="user_type" value="student" checked>
+                    <input type="radio" name="user_type" value="student" {% if form.user_type.value|default:'student' == 'student' %}checked{% endif %}>
                     <div class="type-card">
-                        <span class="type-icon">🧑‍🎓</span>
+                        <span class="type-icon">🎓</span>
                         <span class="type-name">학생회원</span>
                     </div>
                     <span class="type-badge badge-auto">AUTO</span>
                 </label>
 
                 <label class="type-item">
-                    <input type="radio" name="user_type" value="general">
+                    <input type="radio" name="user_type" value="general" {% if form.user_type.value == 'general' %}checked{% endif %}>
                     <div class="type-card">
-                        <span class="type-icon">👤</span>
+                        <span class="type-icon">🙂</span>
                         <span class="type-name">일반회원</span>
                     </div>
                     <span class="type-badge badge-auto">AUTO</span>
                 </label>
 
                 <label class="type-item">
-                    <input type="radio" name="user_type" value="medulab_member">
+                    <input type="radio" name="user_type" value="medulab_member" {% if form.user_type.value == 'medulab_member' %}checked{% endif %}>
                     <div class="type-card">
-                        <span class="type-icon">🏠</span>
-                        <span class="type-name">메듀랩회원</span>
+                        <span class="type-icon">🧪</span>
+                        <span class="type-name">메듀랩 회원</span>
                     </div>
                     <span class="type-badge badge-review">REVIEW</span>
                 </label>
 
                 <label class="type-item">
-                    <input type="radio" name="user_type" value="medulab_teacher">
+                    <input type="radio" name="user_type" value="medulab_teacher" {% if form.user_type.value == 'medulab_teacher' %}checked{% endif %}>
                     <div class="type-card">
-                        <span class="type-icon">👩‍🏫</span>
-                        <span class="type-name">메듀랩강사</span>
+                        <span class="type-icon">👨‍🏫</span>
+                        <span class="type-name">메듀랩 강사</span>
                     </div>
                     <span class="type-badge badge-review">REVIEW</span>
                 </label>
 
-                <div class="type-item" style="grid-column: span 2;">
-                    <label style="width: 100%; cursor: pointer;">
-                        <input type="radio" name="user_type" value="medulab_staff">
-                        <div class="type-card" style="flex-direction: row; gap: 16px; padding: 12px 24px;">
-                            <span class="type-icon" style="margin: 0;">🛠️</span>
-                            <span class="type-name">메듀랩 스탭 (운영진 전용)</span>
-                            <span class="type-badge badge-review" style="position: static; margin-left: auto;">REVIEW</span>
-                        </div>
-                    </label>
-                </div>
+                <label class="type-item" style="grid-column: 1 / -1;">
+                    <input type="radio" name="user_type" value="medulab_staff" {% if form.user_type.value == 'medulab_staff' %}checked{% endif %}>
+                    <div class="type-card" style="flex-direction: row; justify-content: center; gap: 12px;">
+                        <span class="type-icon">🛠️</span>
+                        <span class="type-name">메듀랩 스탭</span>
+                    </div>
+                    <span class="type-badge badge-review">REVIEW</span>
+                </label>
             </div>
+
+            {% if form.user_type.errors %}
+                <span class="error-msg">{{ form.user_type.errors.0 }}</span>
+            {% endif %}
 
             <div id="reviewNote" class="info-note">
-                <span style="font-weight: 800;">🔔 유의사항:</span> 선택하신 계정 유형은 관리자의 최종 승인 절차를 거치게 됩니다. 승인 완료 후 모든 정회원 서비스를 이용하실 수 있습니다.
+                메듀랩 계열 계정은 관리자 확인 후 승인됩니다. 승인 전까지 일부 서비스 이용이 제한될 수 있습니다.
             </div>
 
-            <!-- 기본 정보 입력 -->
-            {% for field in form %}
-                {% if field.name != 'user_type' %}
-                <div class="form-group" id="group_{{ field.name }}">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.name == 'username' %}
-                        <div id="username-check-msg" style="font-size: 12px; margin-top: 6px; margin-left: 4px; font-weight: 600;"></div>
-                    {% elif field.name == 'birth_date' %}
-                        <div id="birth-check-msg" style="font-size: 11px; margin-top: 6px; margin-left: 4px;"></div>
-                    {% endif %}
-                    {% if field.help_text %}
-                        <div class="help" style="color: var(--text-muted); font-size: 11px; margin-top: 4px; margin-left: 4px;">
-                            {{ field.help_text }}
+            <label class="section-label">BASIC INFO</label>
+            <div class="field-grid">
+                {% for field in form %}
+                    {% if field.name != 'user_type' %}
+                        <div class="form-group {% if field.name == 'username' or field.name == 'email' or field.name == 'password1' or field.name == 'password2' %}full{% endif %}" id="group_{{ field.name }}">
+                            <label class="field-label" for="{{ field.id_for_label }}">
+                                <span>{{ field.label }}</span>
+                                {% if field.name == 'real_name' or field.name == 'birth_date' or field.name == 'username' or field.name == 'password1' or field.name == 'password2' %}
+                                    <span class="field-badge required">필수</span>
+                                {% else %}
+                                    <span class="field-badge optional">선택</span>
+                                {% endif %}
+                            </label>
+                            {{ field }}
+
+                            {% if field.name == 'username' %}
+                                <div id="username-check-msg" class="help-text" style="font-weight: 700;"></div>
+                            {% elif field.name == 'birth_date' %}
+                                <div id="birth-check-msg" class="help-text"></div>
+                            {% endif %}
+
+                            {% if field.help_text %}
+                                <div class="help-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                                <span class="error-msg">{{ field.errors.0 }}</span>
+                            {% endif %}
                         </div>
                     {% endif %}
-                    {% if field.errors %}
-                        <span class="error-msg">{{ field.errors.0 }}</span>
-                    {% endif %}
-                </div>
-                {% endif %}
-            {% endfor %}
+                {% endfor %}
+            </div>
 
-            <button type="submit" class="submit-btn" id="submit-btn">계정 생성하기</button>
+            <button type="submit" class="submit-btn">계정 만들기</button>
         </form>
 
         <div class="auth-footer">
-            이미 계정이 있으신가요? <a href="{% url 'login' %}">로그인하기</a>
+            이미 계정이 있나요? <a href="{% url 'login' %}">로그인하기</a>
         </div>
     </div>
 </div>
@@ -342,42 +379,42 @@
 
         const nameInput = document.querySelector('input[name="real_name"]');
         const birthInput = document.querySelector('input[name="birth_date"]');
+        const phoneInput = document.querySelector('input[name="phone_number"]');
         const birthMsg = document.getElementById('birth-check-msg');
         const usernameInput = document.getElementById('id_username_field');
         const checkMsg = document.getElementById('username-check-msg');
 
         let checkTimeout = null;
 
-        // 생년월일 형식 유효성 검사 (YYYY.MM.DD, YYYY-MM-DD, YYYYMMDD)
+        function digitsOnly(value) {
+            return value.replace(/[^0-9]/g, '');
+        }
+
         function validateBirthDate(value) {
             if (!value) {
-                birthMsg.innerText = '';
+                birthMsg.textContent = '';
                 return false;
             }
 
-            // 숫자만 추출
-            const digits = value.replace(/[^0-9]/g, '');
-            
-            // 8자리인지 확인
+            const digits = digitsOnly(value);
             if (digits.length !== 8) {
-                birthMsg.style.color = '#ff6b6b';
-                birthMsg.innerText = '❌ 생년월일 8자리를 입력해주세요. (예: 1989.01.16)';
+                birthMsg.style.color = '#ff8585';
+                birthMsg.textContent = '생년월일 8자리를 입력해 주세요. (예: 20160315)';
                 return false;
             }
 
-            // 날짜 유효성 (간단 체크)
-            const y = parseInt(digits.substring(0, 4));
-            const m = parseInt(digits.substring(4, 6));
-            const d = parseInt(digits.substring(6, 8));
-            
+            const y = parseInt(digits.slice(0, 4), 10);
+            const m = parseInt(digits.slice(4, 6), 10);
+            const d = parseInt(digits.slice(6, 8), 10);
+
             if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > new Date().getFullYear()) {
-                birthMsg.style.color = '#ff6b6b';
-                birthMsg.innerText = '❌ 유효하지 않은 날짜입니다.';
+                birthMsg.style.color = '#ff8585';
+                birthMsg.textContent = '올바른 생년월일 형식이 아닙니다.';
                 return false;
             }
 
             birthMsg.style.color = 'var(--neon-green)';
-            birthMsg.innerText = '✅ 올바른 형식입니다.';
+            birthMsg.textContent = '사용 가능한 형식입니다.';
             return true;
         }
 
@@ -385,78 +422,72 @@
             const checked = document.querySelector('input[name="user_type"]:checked');
             if (checked && reviewTypes.includes(checked.value)) {
                 note.classList.add('active');
-                // 메듀랩 계열이면 ID 필드 관련 가이드 제공 및 자동화 준비
-                usernameInput.placeholder = '아이디 (이름+생년월일 자동 생성)';
+                usernameInput.placeholder = '아이디(이름+생년월일 추천)';
                 updateGeneratedID();
             } else {
                 note.classList.remove('active');
-                usernameInput.placeholder = '사용할 아이디를 입력하세요';
+                usernameInput.placeholder = '사용할 아이디를 입력해 주세요.';
             }
         }
 
-        // ID 자동 생성 로직
         function updateGeneratedID() {
             const checked = document.querySelector('input[name="user_type"]:checked');
             if (!checked || !reviewTypes.includes(checked.value)) return;
 
-            const name = nameInput.value.trim();
-            const birthVal = birthInput.value.trim();
-            
-            // 생년월일이 유효할 때만 ID 생성
-            if (name && validateBirthDate(birthVal)) {
-                const digits = birthVal.replace(/[^0-9]/g, '');
-                const generated = name + digits;
+            const name = (nameInput?.value || '').trim();
+            const birthDigits = digitsOnly(birthInput?.value || '');
+            if (name && birthDigits.length === 8) {
+                const generated = `${name}${birthDigits}`;
                 usernameInput.value = generated;
                 validateUsername(generated);
             }
         }
 
-        // 실시간 중복 확인 API 호출
         function validateUsername(username) {
             if (!username) {
-                checkMsg.innerText = '';
+                checkMsg.textContent = '';
                 return;
             }
 
             if (checkTimeout) clearTimeout(checkTimeout);
-            
             checkTimeout = setTimeout(() => {
                 fetch(`{% url "check_username" %}?username=${encodeURIComponent(username)}`)
                     .then(res => res.json())
                     .then(data => {
-                        if (data.available) {
-                            checkMsg.style.color = 'var(--neon-green)';
-                            checkMsg.innerText = '✅ ' + data.message;
-                        } else {
-                            checkMsg.style.color = '#ff6b6b';
-                            checkMsg.innerText = '❌ ' + data.message;
-                        }
+                        checkMsg.style.color = data.available ? 'var(--neon-green)' : '#ff8585';
+                        checkMsg.textContent = data.message;
                     })
                     .catch(() => {
-                        checkMsg.innerText = '⚠️ 중복 확인 중 오류가 발생했습니다.';
+                        checkMsg.style.color = '#ff8585';
+                        checkMsg.textContent = '아이디 중복 확인 중 오류가 발생했습니다.';
                     });
             }, 300);
         }
 
-        radios.forEach(r => r.addEventListener('change', () => {
-            toggleNote();
-            // 유형 변경 시 ID 생성 로직 재실행
-            const checked = document.querySelector('input[name="user_type"]:checked');
-            if (checked && reviewTypes.includes(checked.value)) {
+        if (birthInput) {
+            birthInput.addEventListener('input', function() {
+                validateBirthDate(this.value);
                 updateGeneratedID();
-            }
-        }));
+            });
+        }
 
-        nameInput.addEventListener('input', updateGeneratedID);
-        birthInput.addEventListener('input', (e) => {
-            validateBirthDate(e.target.value); // 실시간 형식 검사
-            updateGeneratedID();               // ID 자동 생성 (해당하는 경우)
-        });
+        if (nameInput) {
+            nameInput.addEventListener('input', updateGeneratedID);
+        }
 
-        usernameInput.addEventListener('input', (e) => {
-            validateUsername(e.target.value);
-        });
+        if (usernameInput) {
+            usernameInput.addEventListener('input', function() {
+                validateUsername(this.value.trim());
+            });
+        }
 
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function() {
+                this.value = digitsOnly(this.value);
+            });
+        }
+
+        radios.forEach(radio => radio.addEventListener('change', toggleNote));
         toggleNote();
     });
 </script>

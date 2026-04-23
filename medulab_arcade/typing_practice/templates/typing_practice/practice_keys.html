@@ -1,4 +1,4 @@
-{% extends "arcade/base.html" %}
+﻿{% extends "arcade/base.html" %}
 
 {% block title %}자리연습 - 타자연습{% endblock %}
 
@@ -212,7 +212,14 @@
     padding: 44px; width: 100%; max-width: 460px; text-align: center;
     box-shadow: 0 24px 60px rgba(0,0,0,0.5);
 }
-.result-title { font: 900 26px 'Orbitron',sans-serif; margin-bottom: 24px; color: #fff; }
+.result-title { font: 900 26px 'Orbitron',sans-serif; margin-bottom: 10px; color: #fff; }
+.result-message {
+    min-height: 28px;
+    margin-bottom: 18px;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.5;
+}
 .result-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
 .result-item  { background: rgba(0,0,0,0.28); padding: 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); }
 .res-label    { font-size: 10px; color: rgba(255,255,255,0.45); font-weight: 700; margin-bottom: 6px; display: block; letter-spacing: 0.04em; }
@@ -263,6 +270,7 @@
     <div id="result-modal" class="result-overlay">
         <div class="result-card">
             <div class="result-title" id="final-status">PRACTICE COMPLETE</div>
+            <div class="result-message" id="final-message"></div>
             <div class="result-grid">
                 <div class="result-item" style="border-left: 4px solid #4ade80;">
                     <span class="res-label" style="color: #4ade80;">정확도 ACCURACY</span>
@@ -504,12 +512,23 @@
     });
 
     const EN_TO_KO = {'q':'ㅂ','w':'ㅈ','e':'ㄷ','r':'ㄱ','t':'ㅅ','y':'ㅛ','u':'ㅕ','i':'ㅑ','o':'ㅐ','p':'ㅔ','a':'ㅁ','s':'ㄴ','d':'ㅇ','f':'ㄹ','g':'ㅎ','h':'ㅗ','j':'ㅓ','k':'ㅏ','l':'ㅣ','z':'ㅋ','x':'ㅌ','c':'ㅊ','v':'ㅍ','b':'ㅠ','n':'ㅜ','m':'ㅡ','Q':'ㅃ','W':'ㅉ','E':'ㄸ','R':'ㄲ','T':'ㅆ','O':'ㅒ','P':'ㅖ'};
+    const CODE_TO_KO = {
+        KeyQ:'ㅂ', KeyW:'ㅈ', KeyE:'ㄷ', KeyR:'ㄱ', KeyT:'ㅅ',
+        KeyY:'ㅛ', KeyU:'ㅕ', KeyI:'ㅑ', KeyO:'ㅐ', KeyP:'ㅔ',
+        KeyA:'ㅁ', KeyS:'ㄴ', KeyD:'ㅇ', KeyF:'ㄹ', KeyG:'ㅎ',
+        KeyH:'ㅗ', KeyJ:'ㅓ', KeyK:'ㅏ', KeyL:'ㅣ',
+        KeyZ:'ㅋ', KeyX:'ㅌ', KeyC:'ㅊ', KeyV:'ㅍ', KeyB:'ㅠ', KeyN:'ㅜ', KeyM:'ㅡ',
+        Semicolon:';', Quote:"'",
+    };
     const EN_TO_JA = {'a':'ア','i':'イ','u':'ウ','e':'エ','o':'オ','k':'カ','s':'サ','t':'タ','n':'ナ','h':'ハ','m':'マ','y':'ヤ','r':'ラ','w':'ワ'};
+
+    const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
+    const progressKey = (name) => `${progressPrefix}_${name}`;
 
     let currentLang = "{{ language|default:'ko' }}";
     let currentLevel = "{{ level|default:'home' }}";
-    let storageKey = `typing_unlocked_levels_${currentLang}`;
-    let wordUnlockKey = `typing_word_unlocked_${currentLang}`;
+    let storageKey = progressKey(`typing_unlocked_levels_${currentLang}`);
+    let wordUnlockKey = progressKey(`typing_word_unlocked_${currentLang}`);
 
     const PROGRESSION = ['home', 'top', 'bottom', 'number', 'shift', 'all'];
     let unlockedLevels = JSON.parse(getStorage().getItem(storageKey) || '["home"]');
@@ -618,8 +637,8 @@
     function setLang(lang) {
         currentLang = lang;
         // 언어 변경 시 스토리지 키 및 상태 재동기화 (v15 개선)
-        storageKey = `typing_unlocked_levels_${currentLang}`;
-        wordUnlockKey = `typing_word_unlocked_${currentLang}`;
+        storageKey = progressKey(`typing_unlocked_levels_${currentLang}`);
+        wordUnlockKey = progressKey(`typing_word_unlocked_${currentLang}`);
         unlockedLevels = JSON.parse(getStorage().getItem(storageKey) || '["home"]');
 
         document.querySelectorAll('.lang-toggle .toggle-btn').forEach(btn => {
@@ -871,7 +890,7 @@
         if (!itemStartTime) itemStartTime = Date.now();
 
         let inputChar = e.key;
-        if (currentLang === 'ko') inputChar = EN_TO_KO[e.key] || e.key;
+        if (currentLang === 'ko') inputChar = CODE_TO_KO[e.code] || EN_TO_KO[e.key] || e.key;
         else if (currentLang === 'ja') inputChar = EN_TO_JA[e.key] || e.key;
         else if (currentLang === 'zh' || currentLang === 'en') {
             if (inputChar.length === 1 && targetChar === targetChar.toUpperCase()) inputChar = inputChar.toUpperCase();
@@ -909,15 +928,16 @@
         if (isSuccess && accuracy >= 80) {
             const unlocked = unlockNextLevel(currentLevel);
             if (unlocked) {
-                if (unlocked === 'word_practice') unlockMsg = "<br><span style='color:#fbbf24; font-size:16px;'>🔓 단어 연습 모드가 해제되었습니다!</span>";
-                else unlockMsg = "<br><span style='color:#fbbf24; font-size:16px;'>🔓 새로운 단계가 열렸습니다!</span>";
+                if (unlocked === 'word_practice') unlockMsg = "<span style='color:#fbbf24; font-size:16px;'>🔓 단어 연습 모드가 해제되었습니다!</span>";
+                else unlockMsg = "<span style='color:#fbbf24; font-size:16px;'>🔓 새로운 단계가 열렸습니다!</span>";
             }
         } else if (isSuccess && accuracy < 80) {
-            unlockMsg = "<br><span style='color:#f87171; font-size:14px;'>정확도 80% 이상이어야 다음 단계가 열립니다.</span>";
+            unlockMsg = "<span style='color:#f87171; font-size:14px;'>정확도 80% 이상이어야 다음 단계가 열립니다.</span>";
         }
 
-        document.getElementById('final-accuracy').innerHTML = accuracy + (unlockMsg);
+        document.getElementById('final-accuracy').innerText = accuracy;
         document.getElementById('final-time').innerText = timeLeft;
+        document.getElementById('final-message').innerHTML = unlockMsg;
         document.getElementById('result-modal').style.display = 'flex';
     }
 

@@ -6,8 +6,12 @@ import os
 import uuid
 import base64
 from django.shortcuts import render, get_object_or_404, redirect
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.contrib.sites.shortcuts import get_current_site
 from django.views.decorators.http import require_POST
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.db.models import Count, Q
@@ -16,7 +20,7 @@ from django.contrib import messages
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import Project, Category, Like, Bookmark, Tag, UserProfile
+from .models import Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, UserProfileUpdateForm
 
 
@@ -1023,15 +1027,22 @@ def signup(request):
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
-            user_type = form.cleaned_data.get('user_type', 'general')
-            # 다중 백엔드 사용 시 로그인할 백엔드를 명시해야 함
-            user.backend = 'arcade.backends.EmailOrUsernameModelBackend'
-            login(request, user)
-            # 메듀랩 계열(승인 필요)인 경우
-            if user_type in ('medulab_member', 'medulab_teacher', 'medulab_staff'):
-                messages.info(request, '🎉 가입이 완료되었습니다! 관리자 승인을 기다려주세요. 승인 후 교육 프로그램 및 홈플레이를 이용하실 수 있습니다.')
-            else:
-                messages.success(request, '가입 완료! 환영합니다! 🎮')
+            user.is_active = False
+            user.save(update_fields=['is_active'])
+            verification = SignupEmailVerification.issue(user)
+            confirm_url = request.build_absolute_uri(reverse('confirm_signup_email', args=[verification.token]))
+            subject = '[메듀랩] 회원가입 이메일 인증'
+            body = (
+                f'{user.username}님, 메듀랩 회원가입을 완료하려면 아래 링크를 눌러 주세요.\n\n'
+                f'{confirm_url}\n\n'
+                '이 링크는 24시간 동안만 유효합니다.'
+            )
+            from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@medulab.local')
+            try:
+                send_mail(subject, body, from_email, [user.email], fail_silently=False)
+                messages.success(request, '회원가입 정보가 저장되었습니다. 입력한 이메일 주소로 인증 메일을 보냈습니다. 링크를 눌러 가입을 완료해 주세요.')
+            except Exception:
+                messages.warning(request, '회원가입 정보는 저장되었지만 인증 메일 발송에 실패했습니다. 이메일 설정 확인 후 다시 시도해 주세요.')
             return redirect('home')
     else:
         form = SignUpForm()
@@ -1047,8 +1058,27 @@ def profile_view(request):
     if request.method == 'POST':
         form = UserProfileUpdateForm(request.POST, instance=profile, user=user)
         if form.is_valid():
+            new_email = form.cleaned_data.get('email')
+            email_changed = form.email_changed()
             form.save()
-            messages.success(request, '회원 정보가 성공적으로 수정되었습니다.')
+            if email_changed:
+                change_request = EmailChangeRequest.issue(user, new_email)
+                confirm_url = request.build_absolute_uri(reverse('confirm_email_change', args=[change_request.token]))
+                subject = '[메듀랩] 이메일 변경 인증'
+                body = (
+                    f'{user.username}님의 이메일 변경 요청입니다.\n\n'
+                    f'아래 링크를 눌러야 새 이메일 주소로 변경됩니다.\n'
+                    f'{confirm_url}\n\n'
+                    '이 링크는 24시간 동안만 유효합니다.'
+                )
+                from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@medulab.local')
+                try:
+                    send_mail(subject, body, from_email, [new_email], fail_silently=False)
+                    messages.success(request, '프로필 정보는 저장되었고, 새 이메일 주소로 인증 메일을 보냈습니다. 링크를 눌러야 이메일이 변경됩니다.')
+                except Exception:
+                    messages.warning(request, '프로필 정보는 저장되었지만 인증 메일 발송에 실패했습니다. 이메일 설정을 확인한 뒤 다시 시도해 주세요.')
+            else:
+                messages.success(request, '회원 정보가 성공적으로 수정되었습니다.')
             return redirect('profile')
     else:
         form = UserProfileUpdateForm(instance=profile, user=user)
@@ -1072,6 +1102,46 @@ def profile_view(request):
         'total_bookmarks': total_bookmarks_received,
     }
     return render(request, 'arcade/profile.html', context)
+
+
+def confirm_email_change(request, token):
+    change_request = get_object_or_404(EmailChangeRequest, token=token, is_used=False)
+
+    if change_request.is_expired:
+        change_request.is_used = True
+        change_request.save(update_fields=['is_used'])
+        messages.error(request, '이메일 변경 인증 링크가 만료되었습니다. 다시 요청해 주세요.')
+        return redirect('profile')
+
+    if User.objects.filter(email__iexact=change_request.new_email).exclude(pk=change_request.user_id).exists():
+        change_request.is_used = True
+        change_request.save(update_fields=['is_used'])
+        messages.error(request, '이미 다른 회원이 사용 중인 이메일 주소입니다.')
+        return redirect('profile')
+
+    change_request.user.email = change_request.new_email
+    change_request.user.save(update_fields=['email'])
+    change_request.is_used = True
+    change_request.save(update_fields=['is_used'])
+    messages.success(request, '이메일 주소 인증이 완료되었습니다. 새 이메일 주소로 변경되었습니다.')
+    return redirect('profile')
+
+
+def confirm_signup_email(request, token):
+    verification = get_object_or_404(SignupEmailVerification, token=token, is_used=False)
+
+    if verification.is_expired:
+        verification.is_used = True
+        verification.save(update_fields=['is_used'])
+        messages.error(request, '회원가입 인증 링크가 만료되었습니다. 다시 가입을 진행해 주세요.')
+        return redirect('signup')
+
+    verification.user.is_active = True
+    verification.user.save(update_fields=['is_active'])
+    verification.is_used = True
+    verification.save(update_fields=['is_used'])
+    messages.success(request, '이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.')
+    return redirect('login')
 
 
 # ────────────────────────────────────────────────
@@ -1176,3 +1246,50 @@ def member_delete(request, user_id):
         target_user.delete()
         messages.success(request, f'회원 "{username}" 계정이 삭제되었습니다.')
     return redirect('member_list')
+
+
+def signup(request):
+    """회원가입"""
+    if request.method == 'POST':
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '회원가입이 완료되었습니다. 이제 로그인할 수 있습니다.')
+            return redirect('home')
+    else:
+        form = SignUpForm()
+    return render(request, 'arcade/signup.html', {'form': form})
+
+
+@login_required
+def profile_view(request):
+    """마이페이지 - 대시보드 및 정보 수정"""
+    user = request.user
+    profile = user.profile
+
+    if request.method == 'POST':
+        form = UserProfileUpdateForm(request.POST, instance=profile, user=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '회원 정보가 성공적으로 수정되었습니다.')
+            return redirect('profile')
+    else:
+        form = UserProfileUpdateForm(instance=profile, user=user)
+
+    my_projects = Project.objects.filter(author=user).prefetch_related('categories')
+    liked_projects = Project.objects.filter(likes__user=user).prefetch_related('author', 'categories')
+    bookmarked_projects = Project.objects.filter(bookmarks__user=user).prefetch_related('author', 'categories')
+
+    total_likes_received = Like.objects.filter(project__author=user).count()
+    total_bookmarks_received = Bookmark.objects.filter(project__author=user).count()
+
+    context = {
+        'profile': profile,
+        'form': form,
+        'my_projects': my_projects,
+        'liked_projects': liked_projects,
+        'bookmarked_projects': bookmarked_projects,
+        'total_likes': total_likes_received,
+        'total_bookmarks': total_bookmarks_received,
+    }
+    return render(request, 'arcade/profile.html', context)

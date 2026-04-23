@@ -17,14 +17,19 @@
         margin-bottom: 40px;
     }
 
-    /* ── 왼쪽: 프로필 카드 ── */
-    .profile-card {
+    .profile-card,
+    .tabs-wrapper,
+    .edit-profile-section,
+    .stat-box {
         background: rgba(255, 255, 255, 0.04);
         border: 1px solid var(--border);
         border-radius: 20px;
+        backdrop-filter: blur(10px);
+    }
+
+    .profile-card {
         padding: 30px;
         text-align: center;
-        backdrop-filter: blur(10px);
         position: sticky;
         top: 100px;
     }
@@ -51,11 +56,11 @@
 
     .user-type-badge {
         display: inline-block;
-        padding: 4px 12px;
+        padding: 5px 12px;
         background: rgba(168, 85, 247, 0.2);
         color: var(--accent-purple);
         border: 1px solid rgba(168, 85, 247, 0.3);
-        border-radius: 20px;
+        border-radius: 999px;
         font-size: 11px;
         font-weight: 700;
         margin-bottom: 20px;
@@ -73,18 +78,18 @@
     }
 
     .info-label {
-        font-size: 11px;
-        color: var(--text-muted);
         display: block;
         margin-bottom: 2px;
+        font-size: 11px;
+        color: var(--text-muted);
     }
 
     .info-value {
         font-size: 14px;
         color: var(--text-secondary);
+        line-height: 1.5;
     }
 
-    /* ── 오른쪽: 대시보드 ── */
     .dashboard-stats {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -93,17 +98,13 @@
     }
 
     .stat-box {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--border);
-        border-radius: 16px;
         padding: 24px;
         text-align: center;
         transition: transform 0.2s;
     }
 
     .stat-box:hover {
-        transform: translateY(-5px);
-        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-4px);
     }
 
     .stat-num {
@@ -119,9 +120,6 @@
     }
 
     .tabs-wrapper {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid var(--border);
-        border-radius: 20px;
         overflow: hidden;
     }
 
@@ -140,13 +138,7 @@
         font-size: 14px;
         font-weight: 700;
         cursor: pointer;
-        transition: all 0.2s;
         border-bottom: 2px solid transparent;
-    }
-
-    .tab-btn:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.02);
     }
 
     .tab-btn.active {
@@ -158,22 +150,24 @@
     .tab-content {
         display: none;
         padding: 30px;
-        animation: fadeIn 0.3s ease;
     }
 
     .tab-content.active {
         display: block;
     }
 
-    /* 정보 수정 섹션 */
     .edit-profile-section {
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 16px;
         padding: 24px;
     }
 
-    .form-group {
-        margin-bottom: 20px;
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .form-group.full {
+        grid-column: 1 / -1;
     }
 
     .form-label {
@@ -184,7 +178,9 @@
         color: var(--text-secondary);
     }
 
-    .form-input {
+    .form-input,
+    .form-group select,
+    .form-group input {
         width: 100%;
         background: rgba(255, 255, 255, 0.06);
         border: 1px solid var(--border);
@@ -194,16 +190,19 @@
         font-size: 14px;
     }
 
-    .form-input:focus {
+    .form-input:focus,
+    .form-group select:focus,
+    .form-group input:focus {
         border-color: var(--accent-green);
         outline: none;
-        box-shadow: 0 0 0 2px rgba(0, 255, 180, 0.1);
+        box-shadow: 0 0 0 2px rgba(0, 255, 180, 0.12);
     }
 
     .help-text {
         font-size: 12px;
         color: var(--text-muted);
         margin-top: 4px;
+        line-height: 1.5;
     }
 
     .submit-btn {
@@ -215,25 +214,23 @@
         color: var(--bg-primary);
         font-weight: 800;
         cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .submit-btn:hover {
-        opacity: 0.9;
-        box-shadow: 0 6px 20px rgba(0, 255, 180, 0.3);
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
     }
 
     @media (max-width: 900px) {
         .dashboard-header {
             grid-template-columns: 1fr;
         }
+
         .profile-card {
             position: static;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .form-grid,
+        .tabs-header {
+            grid-template-columns: 1fr;
+            display: grid;
         }
     }
 </style>
@@ -243,15 +240,18 @@
 <div class="main">
     <div class="profile-container">
         <div class="dashboard-header">
-            <!-- 왼쪽: 프로필 카드 -->
             <aside class="profile-card">
                 <div class="avatar-wrapper">
-                    {% if profile.user_type == 'medulab_teacher' %}👨‍🏫{% else %}👾{% endif %}
+                    {% if profile.user_type == 'medulab_teacher' %}👨‍🏫{% else %}🙂{% endif %}
                 </div>
-                <h2 class="user-name">{{ profile.nickname|default:user.username }}</h2>
+                <h2 class="user-name">{{ profile.display_name }}</h2>
                 <span class="user-type-badge">{{ profile.get_user_type_display }}</span>
-                
+
                 <div class="profile-info-list">
+                    <div class="info-item">
+                        <span class="info-label">이름</span>
+                        <span class="info-value">{{ profile.real_name|default:"미등록" }}</span>
+                    </div>
                     <div class="info-item">
                         <span class="info-label">아이디</span>
                         <span class="info-value">{{ user.username }}</span>
@@ -261,6 +261,14 @@
                         <span class="info-value">{{ user.email|default:"미등록" }}</span>
                     </div>
                     <div class="info-item">
+                        <span class="info-label">전화번호</span>
+                        <span class="info-value">{{ profile.phone_number|default:"미등록" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">생년월일</span>
+                        <span class="info-value">{{ profile.birth_date|date:"Y.m.d"|default:"미등록" }}</span>
+                    </div>
+                    <div class="info-item">
                         <span class="info-label">가입일</span>
                         <span class="info-value">{{ user.date_joined|date:"Y년 m월 d일" }}</span>
                     </div>
@@ -268,22 +276,20 @@
                         <span class="info-label">승인 상태</span>
                         <span class="info-value">
                             {% if profile.is_approved %}
-                            <span style="color: var(--accent-green);">● 승인됨</span>
+                                <span style="color: var(--accent-green);">승인 완료</span>
                             {% else %}
-                            <span style="color: #ffc107;">● 승인 대기중</span>
+                                <span style="color: #ffc107;">승인 대기중</span>
                             {% endif %}
                         </span>
                     </div>
                 </div>
             </aside>
 
-            <!-- 오른쪽: 대시보드 및 수정 -->
             <main>
-                <!-- 통계 -->
                 <div class="dashboard-stats">
                     <div class="stat-box">
                         <span class="stat-num">{{ my_projects.count }}</span>
-                        <span class="stat-label">올린 작품</span>
+                        <span class="stat-label">내 작품</span>
                     </div>
                     <div class="stat-box">
                         <span class="stat-num">{{ total_likes }}</span>
@@ -295,7 +301,6 @@
                     </div>
                 </div>
 
-                <!-- 탭 메뉴 -->
                 <div class="tabs-wrapper">
                     <div class="tabs-header">
                         <button class="tab-btn active" onclick="openTab(event, 'my-projects')">내 작품</button>
@@ -304,72 +309,109 @@
                         <button class="tab-btn" onclick="openTab(event, 'edit-profile')">정보 수정</button>
                     </div>
 
-                    <!-- 탭 1: 내 작품 -->
                     <div id="my-projects" class="tab-content active">
                         <div class="grid">
                             {% for project in my_projects %}
                                 {% include 'arcade/components/project_card.html' with project=project %}
                             {% empty %}
-                                <div class="empty" style="width: 100%; grid-column: 1/-1;">업로드한 작품이 없습니다.</div>
+                                <div class="empty" style="width: 100%; grid-column: 1/-1;">등록한 작품이 없습니다.</div>
                             {% endfor %}
                         </div>
                     </div>
 
-                    <!-- 탭 2: 좋아요한 작품 -->
                     <div id="liked" class="tab-content">
                         <div class="grid">
                             {% for project in liked_projects %}
                                 {% include 'arcade/components/project_card.html' with project=project %}
                             {% empty %}
-                                <div class="empty" style="width: 100%; grid-column: 1/-1;">좋아요를 누른 작품이 없습니다.</div>
+                                <div class="empty" style="width: 100%; grid-column: 1/-1;">좋아요한 작품이 없습니다.</div>
                             {% endfor %}
                         </div>
                     </div>
 
-                    <!-- 탭 3: 즐겨찾기 -->
                     <div id="bookmarks" class="tab-content">
                         <div class="grid">
                             {% for project in bookmarked_projects %}
                                 {% include 'arcade/components/project_card.html' with project=project %}
                             {% empty %}
-                                <div class="empty" style="width: 100%; grid-column: 1/-1;">즐겨찾기에 등록된 작품이 없습니다.</div>
+                                <div class="empty" style="width: 100%; grid-column: 1/-1;">즐겨찾기한 작품이 없습니다.</div>
                             {% endfor %}
                         </div>
                     </div>
 
-                    <!-- 탭 4: 정보 수정 -->
                     <div id="edit-profile" class="tab-content">
                         <div class="edit-profile-section">
                             <h3 style="margin-bottom: 24px; font-size: 18px;">회원 정보 수정</h3>
                             <form method="POST">
                                 {% csrf_token %}
-                                
-                                <div class="form-group">
-                                    <label class="form-label">아이디</label>
-                                    <input type="text" class="form-input" value="{{ user.username }}" disabled style="opacity: 0.5; cursor: not-allowed;">
-                                    <div class="help-text">아이디는 변경할 수 없습니다.</div>
-                                </div>
 
-                                <div class="form-group">
-                                    <label class="form-label">이메일 주소</label>
-                                    {{ form.email }}
-                                    {% if form.email.errors %}
-                                        <div class="help-text" style="color: #ff6b6b;">{{ form.email.errors.0 }}</div>
-                                    {% endif %}
-                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group full">
+                                        <label class="form-label">아이디</label>
+                                        {{ form.username }}
+                                        <div class="help-text">아이디는 변경할 수 없습니다.</div>
+                                        {% if form.username.errors %}
+                                            <div class="help-text" style="color: #ff8585;">{{ form.username.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
 
-                                <div class="form-group">
-                                    <label class="form-label">닉네임 (표시 이름)</label>
-                                    {{ form.nickname }}
-                                    <div class="help-text">{{ form.nickname.help_text }}</div>
-                                    {% if form.nickname.errors %}
-                                        <div class="help-text" style="color: #ff6b6b;">{{ form.nickname.errors.0 }}</div>
-                                    {% endif %}
+                                    <div class="form-group">
+                                        <label class="form-label">이름</label>
+                                        {{ form.real_name }}
+                                        {% if form.real_name.errors %}
+                                            <div class="help-text" style="color: #ff8585;">{{ form.real_name.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">닉네임</label>
+                                        {{ form.nickname }}
+                                        <div class="help-text">{{ form.nickname.help_text }}</div>
+                                        {% if form.nickname.errors %}
+                                            <div class="help-text" style="color: #ff8585;">{{ form.nickname.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">생년월일</label>
+                                        {{ form.birth_date }}
+                                        <div class="help-text">`2016.03.15`, `2016-03-15`, `20160315` 형식으로 입력할 수 있습니다.</div>
+                                        {% if form.birth_date.errors %}
+                                            <div class="help-text" style="color: #ff8585;">{{ form.birth_date.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">전화번호</label>
+                                        {{ form.phone_number }}
+                                        <div class="help-text">{{ form.phone_number.help_text }}</div>
+                                        {% if form.phone_number.errors %}
+                                            <div class="help-text" style="color: #ff8585;">{{ form.phone_number.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">이메일 주소</label>
+                                        {{ form.email }}
+                                        <div class="help-text">지금은 인증 없이 바로 수정됩니다.</div>
+                                        {% if form.email.errors %}
+                                            <div class="help-text" style="color: #ff8585;">{{ form.email.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">회원 유형</label>
+                                        {{ form.user_type }}
+                                        <div class="help-text">메듀랩 회원, 강사, 스탭으로 바꾸면 관리자 승인 전까지 승인 대기 상태가 됩니다.</div>
+                                        {% if form.user_type.errors %}
+                                            <div class="help-text" style="color: #ff8585;">{{ form.user_type.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
                                 </div>
 
                                 <div style="margin-top: 32px; display: flex; gap: 12px;">
                                     <button type="submit" class="submit-btn" style="flex: 2;">정보 저장하기</button>
-                                    <a href="{% url 'password_change' %}" class="nav-link" style="flex: 1; text-align: center; border: 1px solid var(--border); padding: 14px; background: rgba(255,255,255,0.05);">비밀번호 변경</a>
+                                    <a href="{% url 'password_change' %}" class="nav-link" style="flex: 1; text-align: center; border: 1px solid var(--border); padding: 14px; background: rgba(255,255,255,0.05); border-radius: 10px;">비밀번호 변경</a>
                                 </div>
                             </form>
                         </div>
@@ -384,27 +426,35 @@
 {% block extra_js %}
 <script>
     function openTab(evt, tabName) {
-        var i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tab-content");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
-            tabcontent[i].classList.remove("active");
+        const tabcontent = document.getElementsByClassName('tab-content');
+        const tablinks = document.getElementsByClassName('tab-btn');
+
+        for (let i = 0; i < tabcontent.length; i += 1) {
+            tabcontent[i].style.display = 'none';
+            tabcontent[i].classList.remove('active');
         }
-        tablinks = document.getElementsByClassName("tab-btn");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].classList.remove("active");
+
+        for (let i = 0; i < tablinks.length; i += 1) {
+            tablinks[i].classList.remove('active');
         }
-        document.getElementById(tabName).style.display = "block";
-        document.getElementById(tabName).classList.add("active");
-        evt.currentTarget.classList.add("active");
+
+        document.getElementById(tabName).style.display = 'block';
+        document.getElementById(tabName).classList.add('active');
+        evt.currentTarget.classList.add('active');
     }
 
-    // URL 해시가 있으면 해당 탭 열기 (예: #edit-profile)
-    window.addEventListener('DOMContentLoaded', (event) => {
+    window.addEventListener('DOMContentLoaded', () => {
         const hash = window.location.hash.replace('#', '');
         if (hash) {
             const btn = document.querySelector(`.tab-btn[onclick*='${hash}']`);
             if (btn) btn.click();
+        }
+
+        const phoneInput = document.querySelector('input[name="phone_number"]');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
         }
     });
 </script>

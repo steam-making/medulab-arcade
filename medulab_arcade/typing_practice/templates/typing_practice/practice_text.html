@@ -149,7 +149,15 @@
         text-align: center;
         box-shadow: 0 30px 60px rgba(0,0,0,0.5);
     }
-    .result-title { font: 900 32px 'Orbitron', sans-serif; margin-bottom: 30px; color: #fff; }
+    .result-title { font: 900 32px 'Orbitron', sans-serif; margin-bottom: 10px; color: #fff; }
+    .result-message {
+        min-height: 28px;
+        margin-bottom: 20px;
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.5;
+        text-align: center;
+    }
     .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
     .result-item { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
     .res-label { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 8px; display: block; }
@@ -365,6 +373,7 @@
     <div id="result-modal" class="result-overlay">
         <div class="result-card">
             <div class="result-title">PRACTICE COMPLETE</div>
+            <div class="result-message" id="final-message"></div>
             <div class="result-grid">
                 <div class="result-item" style="border-left: 4px solid #ffd700;">
                     <span class="res-label" style="color: #ffd700;">점수 SCORE</span>
@@ -559,6 +568,8 @@
     const isPermanent = {% if is_permanent %}true{% else %}false{% endif %};
     const showAds = {% if show_ads %}true{% else %}false{% endif %};
     const getStorage = () => isPermanent ? localStorage : sessionStorage;
+    const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
+    const progressKey = (name) => `${progressPrefix}_${name}`;
 
     const contents = {{ contents_json|safe }};
     const contentType = "{{ content_type }}";
@@ -1150,15 +1161,15 @@
 
         let unlockMsg = '';
         if (contentType === 'word' && speed >= 200) {
-            const shortStorageKey = `typing_short_unlocked_${inputLang}`;
-            if (localStorage.getItem(shortStorageKey) !== 'true') {
-                localStorage.setItem(shortStorageKey, 'true');
+            const shortStorageKey = progressKey(`typing_short_unlocked_${inputLang}`);
+            if (getStorage().getItem(shortStorageKey) !== 'true') {
+                getStorage().setItem(shortStorageKey, 'true');
                 unlockMsg = "<br><span style='color:#fbbf24; font-size:16px;'>🔓 짧은글 연습 모드가 해제되었습니다!</span>";
             }
         } else if (contentType === 'short' && speed >= 400) {
-            const longStorageKey = `typing_long_unlocked_${inputLang}`;
-            if (localStorage.getItem(longStorageKey) !== 'true') {
-                localStorage.setItem(longStorageKey, 'true');
+            const longStorageKey = progressKey(`typing_long_unlocked_${inputLang}`);
+            if (getStorage().getItem(longStorageKey) !== 'true') {
+                getStorage().setItem(longStorageKey, 'true');
                 unlockMsg = "<br><span style='color:#fbbf24; font-size:16px;'>🔓 긴글 연습 모드가 해제되었습니다!</span>";
             }
         } else if (contentType === 'word' && speed < 200) {
@@ -1167,10 +1178,11 @@
             unlockMsg = "<br><span style='color:#f87171; font-size:14px;'>평균 400타 이상 기록 시 긴글 연습이 열립니다.</span>";
         }
 
-        document.getElementById('final-score').innerHTML = score + (unlockMsg);
+        document.getElementById('final-score').innerText = score;
         document.getElementById('final-wpm').innerText = speed;
         document.getElementById('final-max').innerText = maxWpm;
         document.getElementById('final-accuracy').innerText = accuracy;
+        document.getElementById('final-message').innerHTML = unlockMsg;
         document.getElementById('result-modal').style.display = 'flex';
     }
 

@@ -525,7 +525,10 @@
     const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
     const isAdminTester = {% if request.user.is_staff %}true{% else %}false{% endif %};
     const progressKey = (name) => `${progressPrefix}_${name}`;
-    const isAdminUnlockEnabled = () => isAdminTester && localStorage.getItem(`${progressPrefix}_typing_admin_unlock_all`) === 'true';
+    const isAdminUnlockEnabled = () => isAdminTester && (
+        localStorage.getItem(`${progressPrefix}_typing_admin_bypass`) === 'true' ||
+        sessionStorage.getItem(`${progressPrefix}_typing_admin_bypass`) === 'true'
+    );
 
     let currentLang = "{{ language|default:'ko' }}";
     let currentLevel = "{{ level|default:'home' }}";
@@ -633,6 +636,7 @@
         resetPractice();
         nextChar();
         updateSoundIcon();
+        applyHandToggle();
         requestAnimationFrame(setDefaultHandPositions);
     }
 

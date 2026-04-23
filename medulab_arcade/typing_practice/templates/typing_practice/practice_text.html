@@ -1,4 +1,4 @@
-{% extends "arcade/base.html" %}
+﻿{% extends "arcade/base.html" %}
 
 {% block title %}{{ content_type|yesno:"단어,짧은글" }} 연습 - 타자연습{% endblock %}
 
@@ -1210,27 +1210,6 @@
     }
 
 
-
-    function toggleSound() {
-        soundEnabled = !soundEnabled;
-        getStorage().setItem('typingSound', soundEnabled ? 'on' : 'off');
-        const icon = document.getElementById('sound-icon');
-        if (icon) icon.innerText = soundEnabled ? '🔊' : '🔇';
-    }
-
-    function toggleHands() {
-        showHands = !showHands;
-        getStorage().setItem('showHands', showHands ? 'on' : 'off');
-        const status = document.getElementById('hand-toggle-status');
-        if (status) status.innerText = showHands ? 'ON' : 'OFF';
-
-        if (showHands) {
-            document.querySelector('.hand-container').style.display = 'block';
-            setTimeout(setDefaultHandPositions, 100);
-        } else {
-            document.querySelector('.hand-container').style.display = 'none';
-        }
-    }
 
     // init 래퍼: 광고 노출 여부에 따라 시작
     function startWithAd() {

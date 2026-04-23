@@ -179,7 +179,10 @@
 
         const lang = "{{ language|default:'ko' }}";
         const storageKey = progressKey(`typing_unlocked_levels_${lang}`);
-        const isAdminUnlockEnabled = () => isAdminTester && localStorage.getItem(`${progressPrefix}_typing_admin_unlock_all`) === 'true';
+        const isAdminUnlockEnabled = () => isAdminTester && (
+            localStorage.getItem(`${progressPrefix}_typing_admin_bypass`) === 'true' ||
+            sessionStorage.getItem(`${progressPrefix}_typing_admin_bypass`) === 'true'
+        );
         
         // 데이터 이관: 정회원인 경우에만 기존 범용 데이터 이관
         if (isFullMember) {

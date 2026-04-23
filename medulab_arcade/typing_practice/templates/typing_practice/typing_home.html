@@ -1,4 +1,4 @@
-{% extends "arcade/base.html" %}
+﻿{% extends "arcade/base.html" %}
 
 {% block title %}타자연습 센터{% endblock %}
 
@@ -410,6 +410,25 @@
         <section class="ranking-shell">
             <div class="shell-head">
                 <div>
+                    <div class="shell-title" id="ranking-title">{{ quarter_info.label }} 타자 마스터</div>
+                    <div class="shell-subtitle" id="ranking-subtitle">우리 그룹인 {{ current_age_group_label }}가 가장 먼저 보여집니다.</div>
+                </div>
+            </div>
+
+            <div id="group-rankings" class="group-stack"></div>
+
+            <div class="shell-head" style="margin-top: 24px;">
+                <div>
+                    <div class="shell-title">명예의 전당</div>
+                    <div class="shell-subtitle">분기 기록이 역대 최고를 넘으면 레전드가 교체됩니다.</div>
+                </div>
+            </div>
+            <div id="hall-of-fame" class="legend-grid"></div>
+        </section>
+
+        <section class="practice-shell">
+            <div class="shell-head">
+                <div>
                     <div class="shell-title">연습 시작</div>
                     <div class="shell-subtitle">언어별 잠금 해제 상태를 유지하면서 바로 이동합니다.</div>
                 </div>
@@ -468,7 +487,7 @@
         const canUnlockAdvanced = true;
         const isAdminTester = {% if request.user.is_staff %}true{% else %}false{% endif %};
         const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
-        const adminUnlockKey = `${progressPrefix}_typing_admin_unlock_all`;
+        const adminUnlockKey = `${progressPrefix}_typing_admin_bypass`;
         const rankingData = JSON.parse(document.getElementById('typing-ranking-data').textContent);
         let currentLang = getStorage().getItem(`${progressPrefix}_typing_home_lang`) || 'ko';
 
@@ -500,7 +519,20 @@
         }
 
         function isAdminUnlockEnabled() {
-            return isAdminTester && localStorage.getItem(adminUnlockKey) === 'true';
+            return isAdminTester && (
+                localStorage.getItem(adminUnlockKey) === 'true' ||
+                sessionStorage.getItem(adminUnlockKey) === 'true'
+            );
+        }
+
+        function setAdminUnlockEnabled(enabled) {
+            if (enabled) {
+                localStorage.setItem(adminUnlockKey, 'true');
+                sessionStorage.setItem(adminUnlockKey, 'true');
+            } else {
+                localStorage.removeItem(adminUnlockKey);
+                sessionStorage.removeItem(adminUnlockKey);
+            }
         }
 
         function syncAdminToggleButton() {
@@ -589,19 +621,15 @@
                 : `<div class="empty-text">아직 레전드 기록이 없습니다.</div>`;
         }
 
-        function updateLocks() {
-            const stor = getStorage();
-            const forceUnlock = isAdminUnlockEnabled();
-            let unlockedLevels = ['home'];
+        function safeRenderRankings() {
             try {
-                unlockedLevels = JSON.parse(stor.getItem(progressKey(`typing_unlocked_levels_${currentLang}`)) || '["home"]');
+                renderRankings();
             } catch (error) {
-                unlockedLevels = ['home'];
+                console.error('typing ranking render failed', error);
             }
-            const wordUnlocked = forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all'));
-            const shortUnlocked = forceUnlock || (wordUnlocked && stor.getItem(progressKey(`typing_short_unlocked_${currentLang}`)) === 'true');
-            const longUnlocked = forceUnlock || (shortUnlocked && stor.getItem(progressKey(`typing_long_unlocked_${currentLang}`)) === 'true');
+        }
 
+        function updateLocks() {
             const cardKeys = document.getElementById('card-keys');
             const cardWords = document.getElementById('card-words');
             const cardShort = document.getElementById('card-short');
@@ -611,28 +639,6 @@
             if (cardWords) cardWords.href = `{% url "practice_words" %}?lang=${currentLang}`;
             if (cardShort) cardShort.href = `{% url "practice_short" %}?lang=${currentLang}`;
             if (cardLong) cardLong.href = `{% url "practice_long_select" %}?lang=${currentLang}`;
-
-            const lockCard = (card, locked, message, openMessage) => {
-                if (!card) return;
-                card.classList.toggle('locked', locked);
-                const clone = card.cloneNode(true);
-                card.parentNode.replaceChild(clone, card);
-                const note = clone.querySelector('.tp-lock-note');
-                if (note) {
-                    note.textContent = locked ? message : openMessage;
-                    note.classList.toggle('is-locked', locked);
-                }
-                if (locked) {
-                    clone.addEventListener('click', event => {
-                        event.preventDefault();
-                        alert(message);
-                    });
-                }
-            };
-
-            lockCard(document.getElementById('card-words'), !wordUnlocked, `[${getLangName(currentLang)}] 자리 연습 전체 단계를 먼저 통과해야 열립니다.`);
-            lockCard(document.getElementById('card-short'), !shortUnlocked, `[${getLangName(currentLang)}] 단어 연습에서 200점 이상 기록해야 열립니다.`);
-            lockCard(document.getElementById('card-long'), !longUnlocked, `[${getLangName(currentLang)}] 짧은글 연습에서 400점 이상 기록해야 열립니다.`);
         }
 
         function normalizePracticeLocks() {
@@ -691,6 +697,10 @@
                 const card = document.getElementById(item.id);
                 if (!card) return;
                 card.classList.toggle('locked', item.locked);
+                const badge = card.querySelector('.tp-lock-badge');
+                if (badge) {
+                    badge.style.display = item.locked ? '' : 'none';
+                }
                 const note = card.querySelector('.tp-lock-note');
                 if (note) {
                     note.textContent = item.locked ? item.message : item.open;
@@ -727,6 +737,20 @@
             });
         }
 
+        function applyAdminBypassVisualState() {
+            if (!isAdminUnlockEnabled()) return;
+            ['card-words', 'card-short', 'card-long'].forEach(id => {
+                const card = document.getElementById(id);
+                if (!card) return;
+                card.classList.remove('locked');
+                const badge = card.querySelector('.tp-lock-badge');
+                if (badge) badge.style.display = 'none';
+                const note = card.querySelector('.tp-lock-note');
+                if (note) note.classList.remove('is-locked');
+                card.onclick = null;
+            });
+        }
+
         function migrateStorage() {
             if (!isPermanent) {
                 Object.keys(localStorage).forEach(key => {
@@ -746,9 +770,10 @@
                 currentLang = tab.dataset.lang;
                 getStorage().setItem(`${progressPrefix}_typing_home_lang`, currentLang);
                 tabs.forEach(button => button.classList.toggle('active', button.dataset.lang === currentLang));
-                renderRankings();
                 updateLocks();
                 normalizePracticeLocks();
+                applyAdminBypassVisualState();
+                safeRenderRankings();
             });
         });
 
@@ -756,18 +781,20 @@
         if (adminToggle) {
             adminToggle.addEventListener('click', () => {
                 const nextValue = !isAdminUnlockEnabled();
-                localStorage.setItem(adminUnlockKey, nextValue ? 'true' : 'false');
+                setAdminUnlockEnabled(nextValue);
                 syncAdminToggleButton();
                 updateLocks();
                 normalizePracticeLocks();
+                applyAdminBypassVisualState();
             });
         }
 
         migrateStorage();
         syncAdminToggleButton();
-        renderRankings();
         updateLocks();
         normalizePracticeLocks();
+        applyAdminBypassVisualState();
+        safeRenderRankings();
     });
 </script>
 {% endblock %}

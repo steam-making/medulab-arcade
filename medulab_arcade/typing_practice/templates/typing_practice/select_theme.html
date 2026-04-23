@@ -131,7 +131,10 @@
         const progressStorage = {% if request.user.is_authenticated %}localStorage{% else %}sessionStorage{% endif %};
         const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
         const progressKey = (name) => `${progressPrefix}_${name}`;
-        const forceUnlock = isAdminTester && localStorage.getItem(`${progressPrefix}_typing_admin_unlock_all`) === 'true';
+        const forceUnlock = isAdminTester && (
+            localStorage.getItem(`${progressPrefix}_typing_admin_bypass`) === 'true' ||
+            sessionStorage.getItem(`${progressPrefix}_typing_admin_bypass`) === 'true'
+        );
         let unlockedLevels = ['home'];
 
         try {

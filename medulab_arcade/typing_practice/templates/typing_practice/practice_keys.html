@@ -890,7 +890,7 @@
         if (!itemStartTime) itemStartTime = Date.now();
 
         let inputChar = e.key;
-        if (currentLang === 'ko') inputChar = CODE_TO_KO[e.code] || EN_TO_KO[e.key] || e.key;
+        if (currentLang === 'ko') inputChar = EN_TO_KO[e.key] || CODE_TO_KO[e.code] || e.key;
         else if (currentLang === 'ja') inputChar = EN_TO_JA[e.key] || e.key;
         else if (currentLang === 'zh' || currentLang === 'en') {
             if (inputChar.length === 1 && targetChar === targetChar.toUpperCase()) inputChar = inputChar.toUpperCase();

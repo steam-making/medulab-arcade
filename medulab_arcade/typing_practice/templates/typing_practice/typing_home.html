@@ -350,6 +350,24 @@
         font-size: 13px;
         font-weight: 800;
     }
+    .admin-lock-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.05);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+    .admin-lock-toggle.is-on {
+        background: rgba(74, 222, 128, 0.14);
+        border-color: rgba(74, 222, 128, 0.4);
+        color: #b8ffcf;
+    }
 
     @media (max-width: 1100px) {
         .practice-grid,
@@ -392,28 +410,14 @@
         <section class="ranking-shell">
             <div class="shell-head">
                 <div>
-                    <div class="shell-title" id="ranking-title">{{ quarter_info.label }} 타자 마스터</div>
-                    <div class="shell-subtitle" id="ranking-subtitle">우리 그룹인 {{ current_age_group_label }}가 가장 먼저 보여집니다.</div>
-                </div>
-            </div>
-
-            <div id="group-rankings" class="group-stack"></div>
-
-            <div class="shell-head" style="margin-top: 24px;">
-                <div>
-                    <div class="shell-title">명예의 전당</div>
-                    <div class="shell-subtitle">분기 기록이 역대 최고를 넘으면 레전드가 교체됩니다.</div>
-                </div>
-            </div>
-            <div id="hall-of-fame" class="legend-grid"></div>
-        </section>
-
-        <section class="practice-shell">
-            <div class="shell-head">
-                <div>
                     <div class="shell-title">연습 시작</div>
                     <div class="shell-subtitle">언어별 잠금 해제 상태를 유지하면서 바로 이동합니다.</div>
                 </div>
+                {% if request.user.is_staff %}
+                <button type="button" class="admin-lock-toggle" id="admin-lock-toggle">
+                    <span id="admin-lock-toggle-text">테스트 잠금해제 OFF</span>
+                </button>
+                {% endif %}
             </div>
 
             <div class="menu-grid">
@@ -462,7 +466,9 @@
     document.addEventListener('DOMContentLoaded', () => {
         const isPermanent = {% if is_permanent %}true{% else %}false{% endif %};
         const canUnlockAdvanced = true;
+        const isAdminTester = {% if request.user.is_staff %}true{% else %}false{% endif %};
         const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
+        const adminUnlockKey = `${progressPrefix}_typing_admin_unlock_all`;
         const rankingData = JSON.parse(document.getElementById('typing-ranking-data').textContent);
         let currentLang = getStorage().getItem(`${progressPrefix}_typing_home_lang`) || 'ko';
 
@@ -491,6 +497,19 @@
 
         function progressKey(name) {
             return `${progressPrefix}_${name}`;
+        }
+
+        function isAdminUnlockEnabled() {
+            return isAdminTester && localStorage.getItem(adminUnlockKey) === 'true';
+        }
+
+        function syncAdminToggleButton() {
+            const button = document.getElementById('admin-lock-toggle');
+            const text = document.getElementById('admin-lock-toggle-text');
+            if (!button || !text) return;
+            const enabled = isAdminUnlockEnabled();
+            button.classList.toggle('is-on', enabled);
+            text.textContent = enabled ? '테스트 잠금해제 ON' : '테스트 잠금해제 OFF';
         }
 
         function getLangName(code) {
@@ -572,15 +591,16 @@
 
         function updateLocks() {
             const stor = getStorage();
+            const forceUnlock = isAdminUnlockEnabled();
             let unlockedLevels = ['home'];
             try {
                 unlockedLevels = JSON.parse(stor.getItem(progressKey(`typing_unlocked_levels_${currentLang}`)) || '["home"]');
             } catch (error) {
                 unlockedLevels = ['home'];
             }
-            const wordUnlocked = canUnlockAdvanced && unlockedLevels.includes('all');
-            const shortUnlocked = wordUnlocked && stor.getItem(progressKey(`typing_short_unlocked_${currentLang}`)) === 'true';
-            const longUnlocked = shortUnlocked && stor.getItem(progressKey(`typing_long_unlocked_${currentLang}`)) === 'true';
+            const wordUnlocked = forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all'));
+            const shortUnlocked = forceUnlock || (wordUnlocked && stor.getItem(progressKey(`typing_short_unlocked_${currentLang}`)) === 'true');
+            const longUnlocked = forceUnlock || (shortUnlocked && stor.getItem(progressKey(`typing_long_unlocked_${currentLang}`)) === 'true');
 
             const cardKeys = document.getElementById('card-keys');
             const cardWords = document.getElementById('card-words');
@@ -617,6 +637,7 @@
 
         function normalizePracticeLocks() {
             const stor = getStorage();
+            const forceUnlock = isAdminUnlockEnabled();
             let unlockedLevels = ['home'];
             try {
                 unlockedLevels = JSON.parse(stor.getItem(progressKey(`typing_unlocked_levels_${currentLang}`)) || '["home"]');
@@ -625,9 +646,9 @@
             }
 
             const states = {
-                words: canUnlockAdvanced && unlockedLevels.includes('all'),
-                short: canUnlockAdvanced && unlockedLevels.includes('all') && stor.getItem(progressKey(`typing_short_unlocked_${currentLang}`)) === 'true',
-                long: canUnlockAdvanced && unlockedLevels.includes('all') && stor.getItem(progressKey(`typing_short_unlocked_${currentLang}`)) === 'true' && stor.getItem(progressKey(`typing_long_unlocked_${currentLang}`)) === 'true',
+                words: forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all')),
+                short: forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all') && stor.getItem(progressKey(`typing_short_unlocked_${currentLang}`)) === 'true'),
+                long: forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all') && stor.getItem(progressKey(`typing_short_unlocked_${currentLang}`)) === 'true' && stor.getItem(progressKey(`typing_long_unlocked_${currentLang}`)) === 'true'),
             };
 
             const cleanMessages = {
@@ -731,7 +752,19 @@
             });
         });
 
+        const adminToggle = document.getElementById('admin-lock-toggle');
+        if (adminToggle) {
+            adminToggle.addEventListener('click', () => {
+                const nextValue = !isAdminUnlockEnabled();
+                localStorage.setItem(adminUnlockKey, nextValue ? 'true' : 'false');
+                syncAdminToggleButton();
+                updateLocks();
+                normalizePracticeLocks();
+            });
+        }
+
         migrateStorage();
+        syncAdminToggleButton();
         renderRankings();
         updateLocks();
         normalizePracticeLocks();

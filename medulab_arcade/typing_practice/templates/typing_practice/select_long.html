@@ -95,10 +95,12 @@
         const urlParams = new URLSearchParams(window.location.search);
         const lang = urlParams.get('lang') || 'ko';
         const canUnlockAdvanced = true;
+        const isAdminTester = {% if request.user.is_staff %}true{% else %}false{% endif %};
         const progressStorage = {% if request.user.is_authenticated %}localStorage{% else %}sessionStorage{% endif %};
         const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
         const progressKey = (name) => `${progressPrefix}_${name}`;
-        const isUnlocked = canUnlockAdvanced && progressStorage.getItem(progressKey(`typing_long_unlocked_${lang}`)) === 'true';
+        const forceUnlock = isAdminTester && localStorage.getItem(`${progressPrefix}_typing_admin_unlock_all`) === 'true';
+        const isUnlocked = forceUnlock || (canUnlockAdvanced && progressStorage.getItem(progressKey(`typing_long_unlocked_${lang}`)) === 'true');
 
         if (!isUnlocked) {
             alert(`🔒 [${getLangName(lang)}] 짧은글 연습에서 평균 400타 이상을 기록해야 긴글 연습이 열립니다!`);
@@ -116,9 +118,11 @@
         const urlParams = new URLSearchParams(window.location.search);
         const lang = urlParams.get('lang') || 'ko';
         const canUnlockAdvanced = true;
+        const isAdminTester = {% if request.user.is_staff %}true{% else %}false{% endif %};
         const progressStorage = {% if request.user.is_authenticated %}localStorage{% else %}sessionStorage{% endif %};
         const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
         const progressKey = (name) => `${progressPrefix}_${name}`;
+        const forceUnlock = isAdminTester && localStorage.getItem(`${progressPrefix}_typing_admin_unlock_all`) === 'true';
         let unlockedLevels = ['home'];
 
         try {
@@ -127,9 +131,9 @@
             unlockedLevels = ['home'];
         }
 
-        const wordUnlocked = canUnlockAdvanced && unlockedLevels.includes('all');
-        const shortUnlocked = wordUnlocked && progressStorage.getItem(progressKey(`typing_short_unlocked_${lang}`)) === 'true';
-        const longUnlocked = shortUnlocked && progressStorage.getItem(progressKey(`typing_long_unlocked_${lang}`)) === 'true';
+        const wordUnlocked = forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all'));
+        const shortUnlocked = forceUnlock || (wordUnlocked && progressStorage.getItem(progressKey(`typing_short_unlocked_${lang}`)) === 'true');
+        const longUnlocked = forceUnlock || (shortUnlocked && progressStorage.getItem(progressKey(`typing_long_unlocked_${lang}`)) === 'true');
 
         if (!longUnlocked) {
             alert('짧은글 연습에서 평균 400타 이상 기록해야 긴글 연습이 열립니다.');

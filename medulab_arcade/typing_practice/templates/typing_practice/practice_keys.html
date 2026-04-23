@@ -523,7 +523,9 @@
     const EN_TO_JA = {'a':'ア','i':'イ','u':'ウ','e':'エ','o':'オ','k':'カ','s':'サ','t':'タ','n':'ナ','h':'ハ','m':'マ','y':'ヤ','r':'ラ','w':'ワ'};
 
     const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
+    const isAdminTester = {% if request.user.is_staff %}true{% else %}false{% endif %};
     const progressKey = (name) => `${progressPrefix}_${name}`;
+    const isAdminUnlockEnabled = () => isAdminTester && localStorage.getItem(`${progressPrefix}_typing_admin_unlock_all`) === 'true';
 
     let currentLang = "{{ language|default:'ko' }}";
     let currentLevel = "{{ level|default:'home' }}";
@@ -531,7 +533,7 @@
     let wordUnlockKey = progressKey(`typing_word_unlocked_${currentLang}`);
 
     const PROGRESSION = ['home', 'top', 'bottom', 'number', 'shift', 'all'];
-    let unlockedLevels = JSON.parse(getStorage().getItem(storageKey) || '["home"]');
+    let unlockedLevels = isAdminUnlockEnabled() ? [...PROGRESSION] : JSON.parse(getStorage().getItem(storageKey) || '["home"]');
 
     function updateLockStates() {
         document.querySelectorAll('.level-btn').forEach(btn => {
@@ -639,7 +641,7 @@
         // 언어 변경 시 스토리지 키 및 상태 재동기화 (v15 개선)
         storageKey = progressKey(`typing_unlocked_levels_${currentLang}`);
         wordUnlockKey = progressKey(`typing_word_unlocked_${currentLang}`);
-        unlockedLevels = JSON.parse(getStorage().getItem(storageKey) || '["home"]');
+        unlockedLevels = isAdminUnlockEnabled() ? [...PROGRESSION] : JSON.parse(getStorage().getItem(storageKey) || '["home"]');
 
         document.querySelectorAll('.lang-toggle .toggle-btn').forEach(btn => {
             if (btn.id === 'sound-btn') return;
@@ -652,7 +654,7 @@
     }
 
     function setLevel(level) {
-        if (!unlockedLevels.includes(level)) {
+        if (!isAdminUnlockEnabled() && !unlockedLevels.includes(level)) {
             alert(`🔒 [${getLangName(currentLang)}] 이전 단계를 정확도 80% 이상으로 통과해야 열립니다!`);
             return;
         }
@@ -673,7 +675,7 @@
         }
         
         // 현재 레벨이 잠겨있는지 다시 한 번 체크 (URL 직접 접근 등 대비)
-        if (!unlockedLevels.includes(currentLevel)) {
+        if (!isAdminUnlockEnabled() && !unlockedLevels.includes(currentLevel)) {
             currentLevel = 'home';
             getStorage().setItem(storageKey, JSON.stringify(unlockedLevels));
             alert("🔒 아직 열리지 않은 단계입니다! 기본자리부터 시작하세요.");
@@ -890,7 +892,9 @@
         if (!itemStartTime) itemStartTime = Date.now();
 
         let inputChar = e.key;
-        if (currentLang === 'ko') inputChar = EN_TO_KO[e.key] || CODE_TO_KO[e.code] || e.key;
+        if (currentLang === 'ko') {
+            inputChar = EN_TO_KO[e.key] || (/[a-zA-Z]/.test(e.key) ? (CODE_TO_KO[e.code] || e.key) : e.key);
+        }
         else if (currentLang === 'ja') inputChar = EN_TO_JA[e.key] || e.key;
         else if (currentLang === 'zh' || currentLang === 'en') {
             if (inputChar.length === 1 && targetChar === targetChar.toUpperCase()) inputChar = inputChar.toUpperCase();

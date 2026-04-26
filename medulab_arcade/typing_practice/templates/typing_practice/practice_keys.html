@@ -51,6 +51,31 @@
     cursor: pointer; transition: all 0.15s;
 }
 .tp-control-btn:hover { background: rgba(255,255,255,0.12); }
+.timer-admin-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
+}
+.timer-admin-wrap label {
+    color: rgba(255,255,255,0.82);
+    font-size: 12px;
+    font-weight: 800;
+}
+.timer-admin-select {
+    border: none;
+    background: transparent;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    outline: none;
+}
+.timer-admin-select option {
+    color: #111827;
+}
 
 /* ── Status Panel ── */
 .status-panel {
@@ -302,6 +327,18 @@
                     <button class="toggle-btn" onclick="setLang('ja')">일본어</button>
                     <button class="toggle-btn" onclick="setLang('zh')">중국어</button>
                     <div style="display: flex; align-items: center; gap: 10px;">
+                        {% if request.user.is_staff or request.user.is_superuser %}
+                        <div class="timer-admin-wrap">
+                            <label for="admin-timer-select">타이머</label>
+                            <select id="admin-timer-select" class="timer-admin-select">
+                                <option value="60">1분</option>
+                                <option value="90" selected>1분 30초</option>
+                                <option value="120">2분</option>
+                                <option value="150">2분 30초</option>
+                                <option value="180">3분</option>
+                            </select>
+                        </div>
+                        {% endif %}
                         <button id="hand-toggle-btn" class="tp-control-btn" onclick="toggleHands()" title="손가락 표시 끄기/켜기">
                             <span id="hand-toggle-icon">🖐️</span>
                             <span id="hand-toggle-status">ON</span>
@@ -331,7 +368,7 @@
             <div class="time-gauge-wrapper">
                 <div style="display: flex; justify-content: space-between; align-items: flex-end;">
                     <span class="stat-label">TIME ATTACK</span>
-                    <span id="time-text" style="font-family: 'Orbitron', sans-serif; font-size: 14px; color: #4ade80; font-weight: 800;">60s</span>
+                    <span id="time-text" style="font-family: 'Orbitron', sans-serif; font-size: 14px; color: #4ade80; font-weight: 800;">90s</span>
                 </div>
                 <div class="time-gauge-container">
                     <div id="time-bar"></div>
@@ -567,9 +604,19 @@
         return null;
     }
 
+    const defaultPracticeDuration = 90;
+    const adminTimerSelect = document.getElementById('admin-timer-select');
+    const timerStorageKey = progressKey('typing_key_timer');
+    let practiceDuration = defaultPracticeDuration;
+    if (adminTimerSelect) {
+        const savedTimer = parseInt(getStorage().getItem(timerStorageKey) || `${defaultPracticeDuration}`, 10);
+        practiceDuration = Number.isFinite(savedTimer) && savedTimer > 0 ? savedTimer : defaultPracticeDuration;
+        adminTimerSelect.value = `${practiceDuration}`;
+    }
+
     let targetChar = '', prevChar = '-', nextCharBuffer = [];
     let completedCount = 0, completedStrokes = 0, errors = 0, totalCount = 50;
-    let timeLeft = 60, startTime = null, timerInterval = null, itemStartTime = null, cumulativeTime = 0, maxWpm = 0;
+    let timeLeft = practiceDuration, startTime = null, timerInterval = null, itemStartTime = null, cumulativeTime = 0, maxWpm = 0;
     let soundEnabled = getStorage().getItem('typingSound') === 'on';
     let showHands = getStorage().getItem('showHands') !== 'off';
 
@@ -686,7 +733,7 @@
             updateLockStates();
         }
 
-        completedCount = 0; completedStrokes = 0; errors = 0; startTime = null; itemStartTime = null; cumulativeTime = 0; maxWpm = 0; timeLeft = 60;
+        completedCount = 0; completedStrokes = 0; errors = 0; startTime = null; itemStartTime = null; cumulativeTime = 0; maxWpm = 0; timeLeft = practiceDuration;
         targetChar = ''; prevChar = '-'; nextCharBuffer = [];
         
         const timeBar = document.getElementById('time-bar');
@@ -696,7 +743,7 @@
         }
         const timeText = document.getElementById('time-text');
         if (timeText) {
-            timeText.innerText = '60s';
+            timeText.innerText = `${practiceDuration}s`;
             timeText.style.color = '#4ade80';
         }
         updateStatus();
@@ -875,7 +922,7 @@
             const timeText = document.getElementById('time-text');
             
             if (timeBar) {
-                const percent = (timeLeft / 60) * 100;
+                const percent = (timeLeft / practiceDuration) * 100;
                 timeBar.style.width = `${percent}%`;
                 if (timeLeft <= 10) timeBar.classList.add('danger');
             }
@@ -950,6 +997,16 @@
     }
 
     function retryPractice() { document.getElementById('result-modal').style.display = 'none'; resetPractice(); nextChar(); }
+
+    function setPracticeDuration(seconds) {
+        const parsed = parseInt(seconds, 10);
+        if (!Number.isFinite(parsed) || parsed <= 0) return;
+        practiceDuration = parsed;
+        timeLeft = practiceDuration;
+        getStorage().setItem(timerStorageKey, `${practiceDuration}`);
+        resetPractice();
+        nextChar();
+    }
     
     // [v16] 손가락 가이드 토글 시스템
     function toggleHands() {
@@ -1027,6 +1084,12 @@
         const levelAttr = btn.getAttribute('data-level');
         btn.classList.toggle('active', levelAttr === currentLevel);
     });
+    if (adminTimerSelect) {
+        adminTimerSelect.value = `${practiceDuration}`;
+        adminTimerSelect.addEventListener('change', (event) => {
+            setPracticeDuration(event.target.value);
+        });
+    }
     
     // init 래퍼: 광고 노출 여부에 따라 시작
     function startWithAd() {

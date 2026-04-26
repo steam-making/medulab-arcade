@@ -33,7 +33,7 @@
             </div>
             <div class="button-row">
                 <button type="submit" class="primary-btn">평가 저장</button>
-                <a href="{% url 'homework_edit' submission.assignment.id %}" class="secondary-btn">숙제 편집으로</a>
+                <a href="{% url 'homework_edit' submission.assignment.id %}" class="secondary-btn">숙제 수정으로</a>
             </div>
         </form>
     </section>
@@ -42,117 +42,27 @@
 
 {% block extra_css %}
 <style>
-    .review-page {
-        max-width: 760px;
-        margin: 0 auto;
-        padding: 40px 20px 80px;
-    }
-    .review-card {
-        padding: 34px;
-        border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.04);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
-    }
-    .review-head {
-        margin-bottom: 22px;
-    }
-    .program-name {
-        margin-bottom: 8px;
-        color: #60a5fa;
-        font-size: 13px;
-        font-weight: 800;
-    }
-    .review-head h1 {
-        margin: 0 0 8px;
-        color: #fff;
-        font-size: 30px;
-        font-weight: 900;
-    }
-    .student-name {
-        color: var(--text-muted);
-        font-size: 14px;
-    }
-    .submit-info {
-        display: grid;
-        gap: 10px;
-        margin-bottom: 24px;
-        padding: 16px;
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(255, 255, 255, 0.04);
-    }
-    .file-link {
-        color: #93c5fd;
-        text-decoration: none;
-        font-weight: 800;
-    }
-    .info-line {
-        color: var(--text-muted);
-        font-size: 14px;
-    }
-    .info-line.note {
-        color: #cbd5e1;
-    }
-    .review-form {
-        display: grid;
-        gap: 18px;
-    }
-    .field-group label {
-        display: block;
-        margin-bottom: 8px;
-        color: var(--text-muted);
-        font-size: 14px;
-        font-weight: 700;
-    }
-    .review-card select,
-    .review-card textarea {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 12px 16px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(0, 0, 0, 0.2);
-        color: #fff;
-        font: inherit;
-    }
-    .review-card textarea {
-        min-height: 140px;
-        resize: vertical;
-    }
-    .button-row {
-        display: flex;
-        gap: 12px;
-    }
-    .primary-btn,
-    .secondary-btn {
-        flex: 1;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 48px;
-        border-radius: 12px;
-        text-decoration: none;
-        font-weight: 800;
-    }
-    .primary-btn {
-        border: none;
-        background: linear-gradient(135deg, #3b82f6, #6366f1);
-        color: #fff;
-        cursor: pointer;
-    }
-    .secondary-btn {
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.08);
-        color: #fff;
-    }
+    .review-page { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
+    .review-card { padding: 34px; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.04); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2); }
+    .review-head { margin-bottom: 22px; }
+    .program-name { margin-bottom: 8px; color: #60a5fa; font-size: 13px; font-weight: 800; }
+    .review-head h1 { margin: 0 0 8px; color: #fff; font-size: 30px; font-weight: 900; }
+    .student-name { color: var(--text-muted); font-size: 14px; }
+    .submit-info { display: grid; gap: 10px; margin-bottom: 24px; padding: 16px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); }
+    .file-link { color: #93c5fd; text-decoration: none; font-weight: 800; }
+    .info-line { color: var(--text-muted); font-size: 14px; }
+    .info-line.note { color: #cbd5e1; }
+    .review-form { display: grid; gap: 18px; }
+    .field-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; font-weight: 700; }
+    .review-card select, .review-card textarea { width: 100%; box-sizing: border-box; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.2); color: #fff; font: inherit; }
+    .review-card textarea { min-height: 140px; resize: vertical; }
+    .button-row { display: flex; gap: 12px; }
+    .primary-btn, .secondary-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 12px; text-decoration: none; font-weight: 800; }
+    .primary-btn { border: none; background: linear-gradient(135deg, #3b82f6, #6366f1); color: #fff; cursor: pointer; }
+    .secondary-btn { border: 1px solid rgba(255, 255, 255, 0.15); background: rgba(255, 255, 255, 0.08); color: #fff; }
     @media (max-width: 640px) {
-        .review-card {
-            padding: 24px;
-        }
-        .button-row {
-            flex-direction: column;
-        }
+        .review-card { padding: 24px; }
+        .button-row { flex-direction: column; }
     }
 </style>
 {% endblock %}

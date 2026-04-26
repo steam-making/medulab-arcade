@@ -28,6 +28,11 @@ PRACTICE_LABELS = dict(RANKING_PRACTICE_TYPE_CHOICES)
 MASTER_LABELS = dict(MASTER_CATEGORY_CHOICES)
 RANKING_PRACTICE_TYPES = [code for code, _ in RANKING_PRACTICE_TYPE_CHOICES]
 LANGUAGE_CODES = [code for code, _ in LANGUAGE_CHOICES]
+AGE_GROUP_DESCRIPTIONS = {
+    "seed": "유아 5세~초등3학년",
+    "growth": "초등4~6학년",
+    "challenge": "중고등~대학일반",
+}
 
 
 def get_typing_access_flags(user):
@@ -165,6 +170,8 @@ def build_language_ranking_snapshot(language, quarter_info):
         practice_type__in=RANKING_PRACTICE_TYPES,
         created_at__gte=quarter_info["start"],
         created_at__lt=quarter_info["end"],
+        user__is_staff=False,
+        user__is_superuser=False,
     )
     per_practice_rows, overall_rows = collect_typing_statistics(scores)
 
@@ -186,6 +193,7 @@ def build_language_ranking_snapshot(language, quarter_info):
         groups.append({
             "code": age_group,
             "label": label,
+            "description": AGE_GROUP_DESCRIPTIONS.get(age_group, ""),
             "score_section": {
                 "category": "stamina",
                 "label": "누적점수",
@@ -236,6 +244,8 @@ def update_hall_of_fame_for_language(language, quarter_info=None):
                 },
             )
             if (not created) and (
+                legend.user.is_staff or
+                legend.user.is_superuser or
                 record_value > legend.record_value or
                 (record_value == legend.record_value and leader["best_accuracy"] > legend.accuracy)
             ):
@@ -271,6 +281,8 @@ def update_hall_of_fame_for_language(language, quarter_info=None):
             },
         )
         if (not created) and (
+            legend.user.is_staff or
+            legend.user.is_superuser or
             leader["total_score"] > legend.record_value or
             (leader["total_score"] == legend.record_value and leader["best_accuracy"] > legend.accuracy)
         ):
@@ -314,7 +326,11 @@ def build_typing_home_context(request):
                     "attempts": legend.attempts,
                     "quarter_key": legend.quarter_key,
                 }
-                for legend in TypingHallOfFame.objects.filter(language=language)
+                for legend in TypingHallOfFame.objects.filter(
+                    language=language,
+                    user__is_staff=False,
+                    user__is_superuser=False,
+                )
                 .select_related("user")
                 .order_by("practice_type", "category")
             ],

@@ -27,6 +27,7 @@ urlpatterns = [
     path('student/courses/', views.student_course_list, name='student_course_list'),
     path('student/homework/', views.student_homework_list, name='student_homework_list'),
     path('student/homework/<int:assignment_id>/submit/', views.student_homework_submit, name='student_homework_submit'),
+    path('student/homework/submission/<int:submission_id>/action/', views.homework_submission_action, name='homework_submission_action'),
     path('student/courses/apply/<int:program_id>/', views.student_course_apply, name='student_course_apply'),
     
     # 학습 흐름

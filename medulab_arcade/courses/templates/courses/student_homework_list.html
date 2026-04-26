@@ -13,9 +13,9 @@
 
     {% if not assignments %}
     <section class="empty-state">
-        <div class="empty-icon">🗂️</div>
+        <div class="empty-icon">📚</div>
         <h2>배정된 숙제가 아직 없어요</h2>
-        <p>새로운 숙제가 등록되면 이곳에서 바로 확인할 수 있어요.</p>
+        <p>새 숙제가 등록되면 이곳에서 바로 확인할 수 있어요.</p>
     </section>
     {% else %}
     <div class="homework-list">
@@ -30,8 +30,12 @@
                     {% endif %}
                 </div>
                 <div class="card-status">
-                    <div class="status-label {% if assignment.is_completed %}done{% elif assignment.submission and assignment.submission.status == 'revision' %}revision{% else %}progress{% endif %}">
-                        {% if assignment.is_completed %}완료{% elif assignment.submission and assignment.submission.status == 'revision' %}보완 필요{% elif assignment.submission %}제출 완료{% else %}진행 중{% endif %}
+                    <div class="status-label {% if assignment.is_completed %}done{% elif not user.is_staff and assignment.submission and assignment.submission.status == 'revision' %}revision{% else %}progress{% endif %}">
+                        {% if user.is_staff or user.is_superuser %}
+                            {% if assignment.is_completed %}최종 완료{% elif assignment.admin_submissions %}제출 확인{% else %}진행 중{% endif %}
+                        {% else %}
+                            {% if assignment.is_completed %}최종 완료{% elif assignment.submission and assignment.submission.status == 'revision' %}수정 요청{% elif assignment.submission %}제출 완료{% else %}진행 중{% endif %}
+                        {% endif %}
                     </div>
                     <div class="status-meta">{{ assignment.progress_text }}</div>
                 </div>
@@ -63,13 +67,65 @@
                 </section>
                 {% endif %}
 
-                {% if not user.is_staff and not user.is_superuser %}
+                {% if user.is_staff or user.is_superuser %}
+                <section class="submission-panel admin-panel">
+                    <div class="panel-head">
+                        <h3>📥 학생 제출 현황</h3>
+                        <span class="panel-status">{{ assignment.admin_submissions|length }}건</span>
+                    </div>
+
+                    {% if assignment.admin_submissions %}
+                    <div class="admin-submission-list">
+                        {% for submission in assignment.admin_submissions %}
+                        <div class="admin-submission-card">
+                            <div class="admin-submission-summary">
+                                <div>
+                                    <strong>{{ submission.student.get_full_name|default:submission.student.username }}</strong>
+                                    <span class="admin-status-chip {% if submission.status == 'completed' %}is-done{% elif submission.status == 'revision' %}is-revision{% else %}is-submitted{% endif %}">
+                                        {{ submission.get_status_display }}
+                                    </span>
+                                </div>
+                                <p>최근 제출: {{ submission.updated_at|date:"Y-m-d H:i" }}</p>
+                                {% if submission.file and submission.status != 'completed' %}
+                                <a href="{{ submission.file.url }}" target="_blank" class="submitted-link">제출 파일 보기</a>
+                                {% endif %}
+                                {% if submission.note %}
+                                <p class="submission-note"><strong>학생 메모</strong> {{ submission.note }}</p>
+                                {% endif %}
+                                {% if submission.teacher_comment %}
+                                <p class="submission-note feedback"><strong>관리자 메모</strong> {{ submission.teacher_comment }}</p>
+                                {% endif %}
+                            </div>
+
+                            {% if submission.status != 'completed' %}
+                            <form method="POST" action="{% url 'homework_submission_action' submission.id %}" class="admin-action-form">
+                                {% csrf_token %}
+                                <textarea name="teacher_comment" rows="3" placeholder="수정 요청 내용이나 완료 메모를 적어주세요">{{ submission.teacher_comment }}</textarea>
+                                <div class="admin-action-buttons">
+                                    <button type="submit" name="action" value="revision" class="secondary-action-btn">수정 요청</button>
+                                    <button type="submit" name="action" value="completed" class="primary-action-btn">완료</button>
+                                </div>
+                            </form>
+                            {% else %}
+                            <div class="final-badge">최종 완료 처리됨</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="empty-copy">아직 제출한 파일이 없습니다.</p>
+                    {% endif %}
+                </section>
+                {% else %}
                 <section class="submission-panel">
                     <div class="panel-head">
                         <h3>📤 파일 제출</h3>
                         <span class="panel-status">현재 상태: <strong>{{ assignment.submission_status_label }}</strong></span>
                     </div>
 
+                    {% if assignment.submission and assignment.submission.status == 'completed' %}
+                    <div class="final-badge">관리자 확인이 완료된 숙제입니다. 최종 완료로 처리되었어요.</div>
+                    {% else %}
                     <form method="POST" enctype="multipart/form-data" action="{% url 'student_homework_submit' assignment.id %}" class="submission-form">
                         {% csrf_token %}
                         <div class="field-wrap">
@@ -88,10 +144,11 @@
                             <button type="submit" class="submit-btn">제출 완료</button>
                         </div>
                     </form>
+                    {% endif %}
 
                     {% if assignment.submission and assignment.submission.teacher_comment %}
                     <div class="teacher-feedback">
-                        <strong>관리자 평가</strong>
+                        <strong>관리자 메모</strong>
                         <p>{{ assignment.submission.teacher_comment }}</p>
                     </div>
                     {% endif %}
@@ -121,291 +178,72 @@
 
 {% block extra_css %}
 <style>
-    .homework-page {
-        max-width: 980px;
-        margin: 0 auto;
-        padding: 60px 20px 80px;
-    }
-    .homeplay-header {
-        margin-bottom: 50px;
-        text-align: center;
-    }
-    .homeplay-header h1 {
-        margin: 0 0 12px;
-        font-family: 'Orbitron', sans-serif;
-        font-size: clamp(2rem, 5vw, 3.25rem);
-        font-weight: 900;
-        letter-spacing: -1.5px;
-        color: #fff;
-    }
-    .homeplay-header h1 span {
-        color: #60a5fa;
-    }
-    .homeplay-bar {
-        width: 60px;
-        height: 4px;
-        margin: 0 auto 18px;
-        border-radius: 999px;
-        background: #60a5fa;
-    }
-    .homeplay-header p {
-        margin: 0;
-        color: var(--text-muted);
-        font-size: 1.0625rem;
-    }
-    .empty-state,
-    .homework-card {
-        border-radius: 28px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(255, 255, 255, 0.04);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
-    }
-    .empty-state {
-        padding: 110px 24px;
-        text-align: center;
-    }
-    .empty-icon {
-        font-size: 64px;
-        margin-bottom: 20px;
-    }
-    .empty-state h2 {
-        margin: 0 0 12px;
-        color: #fff;
-        font-size: 1.5rem;
-        font-weight: 800;
-    }
-    .empty-state p {
-        margin: 0;
-        color: var(--text-muted);
-    }
-    .homework-list {
-        display: grid;
-        gap: 24px;
-    }
-    .homework-card {
-        padding: 32px;
-    }
-    .card-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 20px;
-        margin-bottom: 24px;
-    }
-    .program-badge {
-        display: inline-flex;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: rgba(96, 165, 250, 0.13);
-        color: #7db6ff;
-        font-size: 12px;
-        font-weight: 800;
-    }
-    .card-heading h2 {
-        margin: 12px 0 10px;
-        color: #fff;
-        font-size: 2rem;
-        font-weight: 900;
-        line-height: 1.2;
-    }
-    .card-heading p {
-        margin: 0;
-        color: var(--text-muted);
-        font-size: 15px;
-        line-height: 1.7;
-        white-space: pre-line;
-    }
-    .card-status {
-        min-width: 140px;
-        text-align: right;
-    }
-    .status-label {
-        font-size: 15px;
-        font-weight: 800;
-    }
+    .homework-page { max-width: 980px; margin: 0 auto; padding: 60px 20px 80px; }
+    .homeplay-header { margin-bottom: 50px; text-align: center; }
+    .homeplay-header h1 { margin: 0 0 12px; font-family: 'Orbitron', sans-serif; font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 900; letter-spacing: -1.5px; color: #fff; }
+    .homeplay-header h1 span { color: #60a5fa; }
+    .homeplay-bar { width: 60px; height: 4px; margin: 0 auto 18px; border-radius: 999px; background: #60a5fa; }
+    .homeplay-header p { margin: 0; color: var(--text-muted); font-size: 1.0625rem; }
+    .empty-state, .homework-card { border-radius: 28px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22); }
+    .empty-state { padding: 110px 24px; text-align: center; }
+    .empty-icon { font-size: 64px; margin-bottom: 20px; }
+    .empty-state h2 { margin: 0 0 12px; color: #fff; font-size: 1.5rem; font-weight: 800; }
+    .empty-state p { margin: 0; color: var(--text-muted); }
+    .homework-list { display: grid; gap: 24px; }
+    .homework-card { padding: 32px; }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 24px; }
+    .program-badge { display: inline-flex; padding: 6px 12px; border-radius: 999px; background: rgba(96, 165, 250, 0.13); color: #7db6ff; font-size: 12px; font-weight: 800; }
+    .card-heading h2 { margin: 12px 0 10px; color: #fff; font-size: 2rem; font-weight: 900; line-height: 1.2; }
+    .card-heading p { margin: 0; color: var(--text-muted); font-size: 15px; line-height: 1.7; white-space: pre-line; }
+    .card-status { min-width: 160px; text-align: right; }
+    .status-label { font-size: 15px; font-weight: 800; }
     .status-label.done { color: #4ade80; }
     .status-label.revision { color: #fb923c; }
     .status-label.progress { color: #f59e0b; }
-    .status-meta {
-        margin-top: 6px;
-        color: var(--text-muted);
-        font-size: 13px;
-    }
-    .card-body {
-        display: grid;
-        gap: 20px;
-        padding: 20px;
-        border-radius: 18px;
-        background: rgba(0, 0, 0, 0.2);
-    }
-    .info-block h3,
-    .submission-panel h3 {
-        margin: 0 0 12px;
-        color: #fff;
-        font-size: 15px;
-        font-weight: 800;
-    }
-    .link-list {
-        display: grid;
-        gap: 10px;
-    }
-    .file-link {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 14px;
-        border-radius: 12px;
-        text-decoration: none;
-        color: #d9ebff;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .file-action {
-        color: var(--text-muted);
-        font-size: 12px;
-    }
-    .item-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    .item-tag {
-        display: inline-flex;
-        align-items: center;
-        padding: 8px 14px;
-        border-radius: 10px;
-        text-decoration: none;
-        color: #dbeafe;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .submission-panel {
-        padding: 18px;
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .panel-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 14px;
-        flex-wrap: wrap;
-    }
-    .panel-status {
-        color: var(--text-muted);
-        font-size: 13px;
-    }
-    .panel-status strong {
-        color: #fff;
-    }
-    .submission-form {
-        display: grid;
-        gap: 12px;
-    }
-    .field-wrap input[type="file"],
-    .field-wrap textarea {
-        width: 100%;
-        box-sizing: border-box;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(255, 255, 255, 0.06);
-        color: #fff;
-        padding: 12px 14px;
-        font: inherit;
-    }
-    .field-wrap textarea {
-        min-height: 92px;
-        resize: vertical;
-    }
-    .submission-actions {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-    .submitted-link {
-        color: #93c5fd;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 700;
-    }
-    .submit-btn,
-    .external-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 46px;
-        padding: 0 20px;
-        border-radius: 12px;
-        border: 1px solid rgba(96, 165, 250, 0.25);
-        background: linear-gradient(135deg, #3b82f6, #6366f1);
-        color: #fff;
-        font-weight: 800;
-        text-decoration: none;
-        cursor: pointer;
-    }
-    .teacher-feedback {
-        margin-top: 14px;
-        padding: 14px 16px;
-        border-radius: 14px;
-        border: 1px solid rgba(245, 158, 11, 0.24);
-        background: rgba(245, 158, 11, 0.12);
-        color: #fde68a;
-    }
-    .teacher-feedback strong {
-        display: block;
-        margin-bottom: 6px;
-    }
-    .teacher-feedback p {
-        margin: 0;
-        white-space: pre-line;
-    }
-    .card-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        padding-top: 14px;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-        flex-wrap: wrap;
-    }
-    .external-link {
-        min-height: 40px;
-        padding: 0 16px;
-        font-size: 13px;
-        background: rgba(139, 92, 246, 0.18);
-        border-color: rgba(139, 92, 246, 0.28);
-        color: #c4b5fd;
-    }
-    .due-date {
-        color: var(--text-muted);
-        font-size: 13px;
-    }
-    .due-date .is-live {
-        color: #f87171;
-        font-weight: 800;
-    }
+    .status-meta { margin-top: 6px; color: var(--text-muted); font-size: 13px; }
+    .card-body { display: grid; gap: 20px; padding: 20px; border-radius: 18px; background: rgba(0, 0, 0, 0.2); }
+    .info-block h3, .submission-panel h3 { margin: 0 0 12px; color: #fff; font-size: 15px; font-weight: 800; }
+    .link-list { display: grid; gap: 10px; }
+    .file-link { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; text-decoration: none; color: #d9ebff; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .file-action { color: var(--text-muted); font-size: 12px; }
+    .item-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+    .item-tag { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 10px; text-decoration: none; color: #dbeafe; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+    .submission-panel { padding: 18px; border-radius: 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+    .panel-status { color: var(--text-muted); font-size: 13px; }
+    .panel-status strong { color: #fff; }
+    .submission-form, .admin-action-form { display: grid; gap: 12px; }
+    .field-wrap input[type="file"], .field-wrap textarea, .admin-action-form textarea { width: 100%; box-sizing: border-box; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.06); color: #fff; padding: 12px 14px; font: inherit; }
+    .field-wrap textarea, .admin-action-form textarea { min-height: 92px; resize: vertical; }
+    .submission-actions, .admin-action-buttons { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .submitted-link { color: #93c5fd; text-decoration: none; font-size: 13px; font-weight: 700; }
+    .submit-btn, .external-link, .primary-action-btn, .secondary-action-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: 12px; font-weight: 800; text-decoration: none; cursor: pointer; }
+    .submit-btn, .primary-action-btn { border: 1px solid rgba(96, 165, 250, 0.25); background: linear-gradient(135deg, #3b82f6, #6366f1); color: #fff; }
+    .secondary-action-btn { border: 1px solid rgba(251, 146, 60, 0.28); background: rgba(251, 146, 60, 0.14); color: #fdba74; }
+    .teacher-feedback { margin-top: 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(245, 158, 11, 0.24); background: rgba(245, 158, 11, 0.12); color: #fde68a; }
+    .teacher-feedback strong { display: block; margin-bottom: 6px; }
+    .teacher-feedback p, .submission-note { margin: 0; white-space: pre-line; }
+    .admin-submission-list { display: grid; gap: 14px; }
+    .admin-submission-card { display: grid; gap: 12px; padding: 16px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+    .admin-submission-summary strong { color: #fff; font-size: 16px; }
+    .admin-submission-summary p { margin: 6px 0 0; color: var(--text-muted); font-size: 13px; }
+    .admin-status-chip { display: inline-flex; margin-left: 10px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+    .admin-status-chip.is-submitted { background: rgba(59,130,246,0.16); color: #93c5fd; }
+    .admin-status-chip.is-revision { background: rgba(251,146,60,0.16); color: #fdba74; }
+    .admin-status-chip.is-done { background: rgba(74,222,128,0.16); color: #86efac; }
+    .feedback { color: #fde68a !important; }
+    .final-badge { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(74, 222, 128, 0.24); background: rgba(74, 222, 128, 0.12); color: #86efac; font-weight: 800; }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.06); flex-wrap: wrap; }
+    .external-link { min-height: 40px; padding: 0 16px; font-size: 13px; background: rgba(139, 92, 246, 0.18); border: 1px solid rgba(139, 92, 246, 0.28); color: #c4b5fd; }
+    .due-date { color: var(--text-muted); font-size: 13px; }
+    .due-date .is-live { color: #f87171; font-weight: 800; }
+    .empty-copy { margin: 0; color: var(--text-muted); }
     @media (max-width: 720px) {
-        .homework-card {
-            padding: 22px;
-        }
-        .card-top {
-            flex-direction: column;
-        }
-        .card-status {
-            min-width: auto;
-            text-align: left;
-        }
-        .card-heading h2 {
-            font-size: 1.6rem;
-        }
-        .card-body {
-            padding: 16px;
-        }
+        .homework-card { padding: 22px; }
+        .card-top { flex-direction: column; }
+        .card-status { min-width: auto; text-align: left; }
+        .card-heading h2 { font-size: 1.6rem; }
+        .card-body { padding: 16px; }
     }
 </style>
 {% endblock %}

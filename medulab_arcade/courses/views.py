@@ -486,20 +486,25 @@ def item_delete(request, item_id):
         return redirect("chapter_detail", chapter_id=chapter_id)
     return render(request, "courses/item_confirm_delete.html", {"item": item})
 # --- (8) 학생용 숙제 관리 (홈플레이) ---
+
 @login_required
 @require_full_member
 def student_homework_list(request):
     if request.user.is_staff or request.user.is_superuser:
         assignments = HomeworkAssignment.objects.filter(
             is_active=True
-        ).select_related('program').prefetch_related('linked_items', 'assigned_users', 'attachments').distinct().order_by('due_date', '-created_at')
+        ).select_related('program').prefetch_related(
+            'linked_items', 'assigned_users', 'attachments', 'submissions__student'
+        ).distinct().order_by('due_date', '-created_at')
     else:
         enrolled_ids = LearningEnrollment.objects.filter(user=request.user).values_list("program_id", flat=True)
         assignments = HomeworkAssignment.objects.filter(
             Q(program_id__in=enrolled_ids, assigned_users__isnull=True) |
             Q(assigned_users=request.user),
             is_active=True
-        ).select_related('program').prefetch_related('linked_items', 'assigned_users', 'attachments').distinct().order_by('due_date', '-created_at')
+        ).select_related('program').prefetch_related(
+            'linked_items', 'assigned_users', 'attachments'
+        ).distinct().order_by('due_date', '-created_at')
 
     submissions_by_assignment = {}
     if not (request.user.is_staff or request.user.is_superuser):
@@ -520,35 +525,47 @@ def student_homework_list(request):
                 completed_count = UserProgress.objects.filter(
                     user=request.user,
                     item__in=items,
-                    completed=True
+                    completed=True,
                 ).count()
             assignment.is_completed = (completed_count == items.count())
             assignment.progress_text = f"{completed_count}/{items.count()}"
         else:
             assignment.is_completed = False
-            assignment.progress_text = "N/A"
+            assignment.progress_text = '제출형 숙제'
 
         assignment.attachments_list = list(assignment.attachments.all())
 
         if request.user.is_staff or request.user.is_superuser:
+            submissions = list(assignment.submissions.all().order_by('-updated_at'))
+            assignment.admin_submissions = submissions
             assignment.submission = None
             assignment.submission_form = None
-            assignment.submission_status_label = ""
+            assignment.submission_status_label = ''
+            if submissions:
+                if any(sub.status == HomeworkSubmission.STATUS_SUBMITTED for sub in submissions):
+                    assignment.progress_text = f'제출 {len(submissions)}건'
+                elif any(sub.status == HomeworkSubmission.STATUS_REVISION for sub in submissions):
+                    assignment.progress_text = f'수정 요청 {len(submissions)}건'
+                elif all(sub.status == HomeworkSubmission.STATUS_COMPLETED for sub in submissions):
+                    assignment.is_completed = True
+                    assignment.progress_text = f'최종 완료 {len(submissions)}건'
+            else:
+                assignment.progress_text = '제출 대기'
         else:
             submission = submissions_by_assignment.get(assignment.id)
             assignment.submission = submission
             assignment.submission_form = HomeworkSubmissionForm(instance=submission)
-            assignment.submission_status_label = submission.get_status_display() if submission else "???"
+            assignment.submission_status_label = submission.get_status_display() if submission else '미제출'
             if submission and submission.status == HomeworkSubmission.STATUS_COMPLETED:
                 assignment.is_completed = True
-                assignment.progress_text = "?? ??"
+                assignment.progress_text = '평가 완료'
             elif submission and submission.status == HomeworkSubmission.STATUS_SUBMITTED:
-                assignment.progress_text = "?? ??"
+                assignment.progress_text = '제출 완료'
             elif submission and submission.status == HomeworkSubmission.STATUS_REVISION:
-                assignment.progress_text = "?? ??"
+                assignment.progress_text = '보완 필요'
 
-    return render(request, "courses/student_homework_list.html", {
-        "assignments": assignments,
+    return render(request, 'courses/student_homework_list.html', {
+        'assignments': assignments,
     })
 
 
@@ -556,14 +573,14 @@ def student_homework_list(request):
 @require_full_member
 def student_homework_submit(request, assignment_id):
     if request.user.is_staff or request.user.is_superuser:
-        messages.warning(request, "??? ????? ?? ??? ??? ? ????.")
-        return redirect("student_homework_list")
+        messages.warning(request, '관리자는 학생 제출 화면에서 직접 제출할 수 없습니다.')
+        return redirect('student_homework_list')
 
     assignment = get_object_or_404(HomeworkAssignment, id=assignment_id, is_active=True)
     submission = HomeworkSubmission.objects.filter(assignment=assignment, student=request.user).first()
 
-    if request.method != "POST":
-        return redirect("student_homework_list")
+    if request.method != 'POST':
+        return redirect('student_homework_list')
 
     form = HomeworkSubmissionForm(request.POST, request.FILES, instance=submission)
     if form.is_valid():
@@ -573,274 +590,142 @@ def student_homework_submit(request, assignment_id):
         homework_submission.status = HomeworkSubmission.STATUS_SUBMITTED
         homework_submission.reviewed_at = None
         homework_submission.save()
-        messages.success(request, f"'{assignment.title}' ??? ???????.")
+        messages.success(request, f"'{assignment.title}' 숙제를 제출했습니다.")
     else:
-        messages.error(request, "?? ??? ??????.")
-    return redirect("student_homework_list")
+        messages.error(request, '제출 내용을 다시 확인해 주세요.')
+    return redirect('student_homework_list')
+
+
+@login_required
+@user_passes_test(is_admin)
+def homework_submission_action(request, submission_id):
+    submission = get_object_or_404(
+        HomeworkSubmission.objects.select_related('assignment', 'student'),
+        id=submission_id,
+    )
+    if request.method != 'POST':
+        return redirect('student_homework_list')
+
+    action = request.POST.get('action')
+    teacher_comment = (request.POST.get('teacher_comment') or '').strip()
+
+    if action == 'revision':
+        submission.status = HomeworkSubmission.STATUS_REVISION
+        submission.teacher_comment = teacher_comment
+        submission.reviewed_at = timezone.now()
+        submission.save(update_fields=['status', 'teacher_comment', 'reviewed_at', 'updated_at'])
+        messages.success(request, f'{submission.student.username} 학생에게 수정 요청을 보냈습니다.')
+    elif action == 'completed':
+        if submission.file:
+            submission.file.delete(save=False)
+        submission.status = HomeworkSubmission.STATUS_COMPLETED
+        submission.teacher_comment = teacher_comment
+        submission.reviewed_at = timezone.now()
+        submission.save(update_fields=['status', 'teacher_comment', 'reviewed_at', 'updated_at'])
+        messages.success(request, f'{submission.student.username} 학생 숙제를 최종 완료 처리했습니다.')
+    else:
+        messages.warning(request, '처리할 작업을 다시 선택해 주세요.')
+
+    return redirect('student_homework_list')
 
 
 @login_required
 @user_passes_test(is_admin)
 def homework_admin_list(request):
     assignments = HomeworkAssignment.objects.all().select_related('program').order_by('-created_at')
-    return render(request, "courses/homework_admin_list.html", {"assignments": assignments})
+    return render(request, 'courses/homework_admin_list.html', {'assignments': assignments})
+
 
 @login_required
 @user_passes_test(is_admin)
 def homework_create(request):
-    if request.method == "POST":
+    if request.method == 'POST':
         form = HomeworkForm(request.POST, request.FILES)
         if form.is_valid():
             assignment = form.save()
-            for uploaded_file in request.FILES.getlist("attachment_files"):
+            for uploaded_file in request.FILES.getlist('attachment_files'):
                 HomeworkAttachment.objects.create(
                     assignment=assignment,
                     title=uploaded_file.name,
                     file=uploaded_file,
                 )
-            messages.success(request, "? ??? ???????.")
-            return redirect("homework_admin_list")
+            messages.success(request, '새 숙제를 등록했습니다.')
+            return redirect('homework_admin_list')
     else:
         form = HomeworkForm()
-    return render(request, "courses/homework_form.html", {
-        "form": form,
-        "title": "? ?? ??",
-        "attachments": [],
-        "submissions": [],
+    return render(request, 'courses/homework_form.html', {
+        'form': form,
+        'title': '숙제 등록',
+        'attachments': [],
+        'submissions': [],
     })
+
 
 @login_required
 @user_passes_test(is_admin)
 def homework_edit(request, homework_id):
     assignment = get_object_or_404(HomeworkAssignment, id=homework_id)
-    if request.method == "POST":
+    if request.method == 'POST':
         form = HomeworkForm(request.POST, request.FILES, instance=assignment)
         if form.is_valid():
             form.save()
-            delete_ids = request.POST.getlist("delete_attachment_ids")
+            delete_ids = request.POST.getlist('delete_attachment_ids')
             if delete_ids:
                 HomeworkAttachment.objects.filter(assignment=assignment, id__in=delete_ids).delete()
-            for uploaded_file in request.FILES.getlist("attachment_files"):
+            for uploaded_file in request.FILES.getlist('attachment_files'):
                 HomeworkAttachment.objects.create(
                     assignment=assignment,
                     title=uploaded_file.name,
                     file=uploaded_file,
                 )
-            messages.success(request, f"'{assignment.title}' ??? ???????.")
-            return redirect("homework_edit", homework_id=assignment.id)
+            messages.success(request, f"'{assignment.title}' 숙제를 수정했습니다.")
+            return redirect('homework_edit', homework_id=assignment.id)
     else:
         form = HomeworkForm(instance=assignment)
 
-    submissions = assignment.submissions.select_related("student").order_by("-updated_at")
-    return render(request, "courses/homework_form.html", {
-        "form": form,
-        "title": "?? ??",
-        "assignment": assignment,
-        "attachments": assignment.attachments.all(),
-        "submissions": submissions,
+    submissions = assignment.submissions.select_related('student').order_by('-updated_at')
+    return render(request, 'courses/homework_form.html', {
+        'form': form,
+        'title': '숙제 수정',
+        'assignment': assignment,
+        'attachments': assignment.attachments.all(),
+        'submissions': submissions,
     })
+
 
 @login_required
 @user_passes_test(is_admin)
 def homework_delete(request, homework_id):
     assignment = get_object_or_404(HomeworkAssignment, id=homework_id)
-    if request.method == "POST":
+    if request.method == 'POST':
         assignment.delete()
-        messages.success(request, "??? ???????.")
-        return redirect("homework_admin_list")
-    return render(request, "courses/homework_confirm_delete.html", {"assignment": assignment})
+        messages.success(request, '숙제를 삭제했습니다.')
+        return redirect('homework_admin_list')
+    return render(request, 'courses/homework_confirm_delete.html', {'assignment': assignment})
+
 
 @login_required
 @user_passes_test(is_admin)
 def homework_submission_review(request, submission_id):
     submission = get_object_or_404(
-        HomeworkSubmission.objects.select_related("assignment", "student", "assignment__program"),
+        HomeworkSubmission.objects.select_related('assignment', 'student', 'assignment__program'),
         id=submission_id,
     )
-    if request.method == "POST":
+    if request.method == 'POST':
         form = HomeworkSubmissionReviewForm(request.POST, instance=submission)
         if form.is_valid():
             reviewed_submission = form.save(commit=False)
             reviewed_submission.reviewed_at = timezone.now()
             reviewed_submission.save()
-            messages.success(request, f"{submission.student.username} ??? ???? ??????.")
-            return redirect("homework_edit", homework_id=submission.assignment_id)
+            messages.success(request, f'{submission.student.username} 학생 제출물을 평가했습니다.')
+            return redirect('homework_edit', homework_id=submission.assignment_id)
     else:
         form = HomeworkSubmissionReviewForm(instance=submission)
 
-    return render(request, "courses/homework_submission_review.html", {
-        "form": form,
-        "submission": submission,
+    return render(request, 'courses/homework_submission_review.html', {
+        'form': form,
+        'submission': submission,
     })
-
-# --- (10) 아이템 수정 ---
-@login_required
-@user_passes_test(is_admin)
-def item_edit(request, item_id):
-    item = get_object_or_404(Item, id=item_id)
-    if request.method == "POST":
-        form = ItemForm(request.POST, instance=item)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f"'{item.title}' 아이템이 수정되었습니다.")
-            return redirect("item_page", item_id=item.id)
-    else:
-        form = ItemForm(instance=item)
-    
-    return render(request, "courses/item_form.html", {
-        "form": form,
-        "title": "아이템 수정",
-        "item": item
-    })
-
-# --- (11) 아이템 삭제 ---
-@login_required
-@user_passes_test(is_admin)
-def item_delete(request, item_id):
-    item = get_object_or_404(Item, id=item_id)
-    chapter_id = item.chapter.id
-    if request.method == "POST":
-        title = item.title
-        item.delete()
-        messages.success(request, f"'{title}' 아이템이 삭제되었습니다.")
-        return redirect("chapter_detail", chapter_id=chapter_id)
-    return render(request, "courses/item_confirm_delete.html", {"item": item})
-# --- (8) 학생용 숙제 관리 (홈플레이) ---
-@login_required
-@require_full_member
-def student_homework_list(request):
-    if request.user.is_staff or request.user.is_superuser:
-        assignments = HomeworkAssignment.objects.filter(
-            is_active=True
-        ).select_related('program').prefetch_related('linked_items', 'assigned_users', 'attachments').distinct().order_by('due_date', '-created_at')
-    else:
-        enrolled_ids = LearningEnrollment.objects.filter(user=request.user).values_list("program_id", flat=True)
-        assignments = HomeworkAssignment.objects.filter(
-            Q(program_id__in=enrolled_ids, assigned_users__isnull=True) |
-            Q(assigned_users=request.user),
-            is_active=True
-        ).select_related('program').prefetch_related('linked_items', 'assigned_users', 'attachments').distinct().order_by('due_date', '-created_at')
-
-    submissions_by_assignment = {}
-    if not (request.user.is_staff or request.user.is_superuser):
-        submissions_by_assignment = {
-            submission.assignment_id: submission
-            for submission in HomeworkSubmission.objects.filter(
-                student=request.user,
-                assignment__in=assignments,
-            )
-        }
-
-    for assignment in assignments:
-        items = assignment.linked_items.all()
-        if items.exists():
-            if request.user.is_staff or request.user.is_superuser:
-                completed_count = 0
-            else:
-                completed_count = UserProgress.objects.filter(
-                    user=request.user,
-                    item__in=items,
-                    completed=True
-                ).count()
-            assignment.is_completed = (completed_count == items.count())
-            assignment.progress_text = f"{completed_count}/{items.count()}"
-        else:
-            assignment.is_completed = False
-            assignment.progress_text = "N/A"
-
-        assignment.attachments_list = list(assignment.attachments.all())
-
-        if request.user.is_staff or request.user.is_superuser:
-            assignment.submission = None
-            assignment.submission_form = None
-            assignment.submission_status_label = ""
-        else:
-            submission = submissions_by_assignment.get(assignment.id)
-            assignment.submission = submission
-            assignment.submission_form = HomeworkSubmissionForm(instance=submission)
-            assignment.submission_status_label = submission.get_status_display() if submission else "???"
-            if submission and submission.status == HomeworkSubmission.STATUS_COMPLETED:
-                assignment.is_completed = True
-                assignment.progress_text = "?? ??"
-            elif submission and submission.status == HomeworkSubmission.STATUS_SUBMITTED:
-                assignment.progress_text = "?? ??"
-            elif submission and submission.status == HomeworkSubmission.STATUS_REVISION:
-                assignment.progress_text = "?? ??"
-
-    return render(request, "courses/student_homework_list.html", {
-        "assignments": assignments,
-    })
-
-
-@login_required
-@require_full_member
-def student_homework_submit(request, assignment_id):
-    if request.user.is_staff or request.user.is_superuser:
-        messages.warning(request, "??? ????? ?? ??? ??? ? ????.")
-        return redirect("student_homework_list")
-
-    assignment = get_object_or_404(HomeworkAssignment, id=assignment_id, is_active=True)
-    submission = HomeworkSubmission.objects.filter(assignment=assignment, student=request.user).first()
-
-    if request.method != "POST":
-        return redirect("student_homework_list")
-
-    form = HomeworkSubmissionForm(request.POST, request.FILES, instance=submission)
-    if form.is_valid():
-        homework_submission = form.save(commit=False)
-        homework_submission.assignment = assignment
-        homework_submission.student = request.user
-        homework_submission.status = HomeworkSubmission.STATUS_SUBMITTED
-        homework_submission.reviewed_at = None
-        homework_submission.save()
-        messages.success(request, f"'{assignment.title}' ??? ???????.")
-    else:
-        messages.error(request, "?? ??? ??????.")
-    return redirect("student_homework_list")
-
-
-@login_required
-@user_passes_test(is_admin)
-def homework_admin_list(request):
-    assignments = HomeworkAssignment.objects.all().select_related('program').order_by('-created_at')
-    return render(request, "courses/homework_admin_list.html", {"assignments": assignments})
-
-@login_required
-@user_passes_test(is_admin)
-def homework_create(request):
-    if request.method == "POST":
-        form = HomeworkForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "새 과제가 등록되었습니다.")
-            return redirect("homework_admin_list")
-    else:
-        form = HomeworkForm()
-    return render(request, "courses/homework_form.html", {"form": form, "title": "새 과제 등록"})
-
-@login_required
-@user_passes_test(is_admin)
-def homework_edit(request, homework_id):
-    assignment = get_object_or_404(HomeworkAssignment, id=homework_id)
-    if request.method == "POST":
-        form = HomeworkForm(request.POST, instance=assignment)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f"'{assignment.title}' 과제가 수정되었습니다.")
-            return redirect("homework_admin_list")
-    else:
-        form = HomeworkForm(instance=assignment)
-    return render(request, "courses/homework_form.html", {"form": form, "title": "과제 수정"})
-
-@login_required
-@user_passes_test(is_admin)
-def homework_delete(request, homework_id):
-    assignment = get_object_or_404(HomeworkAssignment, id=homework_id)
-    if request.method == "POST":
-        assignment.delete()
-        messages.success(request, "과제가 삭제되었습니다.")
-        return redirect("homework_admin_list")
-    return render(request, "courses/homework_confirm_delete.html", {"assignment": assignment})
 
 # --- (10) API: 프로그램 구조 조회 (과정 → 단원 → 문제) ---
 @login_required

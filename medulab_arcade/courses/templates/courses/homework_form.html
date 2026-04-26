@@ -26,7 +26,7 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">과제 받을 학생</label>
+                <label class="form-label">숙제를 받을 학생</label>
                 <div class="toolbar-row">
                     <input type="text" id="student-search" class="form-input" placeholder="이름 또는 아이디로 학생을 검색하세요." autocomplete="off">
                     <button type="button" id="btn-select-all" class="btn-sm">전체 선택</button>
@@ -47,7 +47,7 @@
             <div class="form-group">
                 <label class="form-label">관리자 첨부 파일</label>
                 {{ form.attachment_files }}
-                <p class="helper-text">학생에게 제공할 예시 파일, 템플릿, 참고자료를 올릴 수 있습니다.</p>
+                <p class="helper-text">학생에게 제공할 예시 파일, 샘플, 참고 자료를 올릴 수 있습니다.</p>
 
                 {% if attachments %}
                 <div class="attachment-list">
@@ -100,7 +100,7 @@
                 <div class="submission-main">
                     <h3>{{ submission.student.get_full_name|default:submission.student.username }}</h3>
                     <div class="submission-meta">{{ submission.get_status_display }} · {{ submission.updated_at|date:"Y-m-d H:i" }}</div>
-                    {% if submission.file %}
+                    {% if submission.file and submission.status != 'completed' %}
                     <a href="{{ submission.file.url }}" target="_blank" class="submission-link">제출 파일 보기</a>
                     {% endif %}
                     {% if submission.note %}
@@ -124,447 +124,209 @@
 
 {% block extra_css %}
 <style>
-    .homework-admin-page {
-        max-width: 940px;
-        margin: 0 auto;
-        padding: 40px 20px 80px;
-        display: grid;
-        gap: 28px;
-    }
-    .admin-card {
-        padding: 36px;
-        border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        background: rgba(255, 255, 255, 0.04);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
-    }
-    .admin-card h1,
-    .admin-card h2 {
-        margin: 0 0 24px;
-        color: #fff;
-        font-weight: 900;
-    }
-    .form-group {
-        margin-bottom: 24px;
-    }
-    .form-label {
-        display: block;
-        margin-bottom: 8px;
-        color: var(--text-muted);
-        font-size: 14px;
-        font-weight: 700;
-    }
-    .toolbar-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 12px;
-        flex-wrap: wrap;
-    }
-    .form-input,
-    .admin-card input[type="text"],
-    .admin-card input[type="url"],
-    .admin-card input[type="datetime-local"],
-    .admin-card textarea,
-    .admin-card select,
-    .admin-card input[type="file"] {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 12px 16px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(0, 0, 0, 0.2);
-        color: #fff;
-        font: inherit;
-    }
-    .admin-card textarea {
-        min-height: 130px;
-        resize: vertical;
-    }
-    .picker-box {
-        max-height: 220px;
-        overflow-y: auto;
-        padding: 10px;
-        border-radius: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(0, 0, 0, 0.2);
-    }
-    .picker-box-large {
-        min-height: 120px;
-    }
-    .picker-placeholder,
-    .empty-copy {
-        margin: 0;
-        color: var(--text-muted);
-        text-align: center;
-        padding: 28px 12px;
-    }
-    .helper-text {
-        margin: 8px 0 0;
-        color: var(--text-muted);
-        font-size: 12px;
-    }
-    .attachment-list,
-    .submission-list {
-        display: grid;
-        gap: 10px;
-        margin-top: 14px;
-    }
-    .attachment-item,
-    .submission-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 14px;
-        padding: 14px 16px;
-        border-radius: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(255, 255, 255, 0.04);
-    }
-    .attachment-item a,
-    .submission-link {
-        color: #93c5fd;
-        text-decoration: none;
-        font-weight: 700;
-    }
-    .delete-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        color: #fca5a5;
-        font-size: 13px;
-    }
-    .checkbox-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .action-row {
-        display: flex;
-        gap: 14px;
-        margin-top: 36px;
-    }
-    .primary-btn,
-    .secondary-btn,
-    .btn-sm {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 48px;
-        padding: 0 18px;
-        border-radius: 12px;
-        text-decoration: none;
-        font-weight: 800;
-        cursor: pointer;
-        border: 1px solid transparent;
-    }
-    .primary-btn,
-    .btn-sm {
-        background: linear-gradient(135deg, #3b82f6, #6366f1);
-        color: #fff;
-    }
-    .primary-btn.small {
-        min-height: 42px;
-        padding: 0 16px;
-    }
-    .secondary-btn,
-    .btn-sm.btn-muted {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.15);
-        color: #fff;
-    }
-    .action-row > * {
-        flex: 1;
-    }
-    .section-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
-    }
-    .section-head span {
-        color: var(--text-muted);
-        font-size: 13px;
-    }
-    .submission-item {
-        align-items: flex-start;
-    }
-    .submission-main h3 {
-        margin: 0 0 6px;
-        color: #fff;
-        font-size: 17px;
-        font-weight: 800;
-    }
-    .submission-meta {
-        color: var(--text-muted);
-        font-size: 13px;
-        margin-bottom: 6px;
-    }
-    .submission-note {
-        margin: 8px 0 0;
-        color: #cbd5e1;
-        font-size: 13px;
-    }
-    .submission-note.feedback {
-        color: #fde68a;
-    }
-    .student-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 12px;
-        border-radius: 8px;
-        transition: background 0.15s;
-        cursor: pointer;
-    }
-    .student-item:hover,
-    .item-row:hover,
-    .chapter-header:hover {
-        background: rgba(255, 255, 255, 0.05);
-    }
-    .student-item input[type="checkbox"],
-    .item-row input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        accent-color: #60a5fa;
-    }
-    .student-item label,
-    .item-row label {
-        color: #fff;
-        cursor: pointer;
-        flex: 1;
-    }
-    .student-item .username,
-    .chapter-header .ch-count,
-    .item-row .item-type {
-        color: var(--text-muted);
-        font-size: 12px;
-    }
-    .chapter-group {
-        margin-bottom: 8px;
-    }
-    .chapter-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 12px;
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.04);
-        cursor: pointer;
-        user-select: none;
-    }
-    .chapter-header .arrow {
-        color: var(--text-muted);
-        font-size: 12px;
-        transition: transform 0.2s;
-    }
-    .chapter-header .arrow.open {
-        transform: rotate(90deg);
-    }
-    .chapter-header .ch-title {
-        color: #fff;
-        font-weight: 700;
-        flex: 1;
-    }
-    .chapter-items {
-        display: none;
-        padding: 6px 0 6px 32px;
-    }
-    .chapter-items.open {
-        display: block;
-    }
-    .item-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 7px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-    }
-    .item-row .item-type {
-        padding: 2px 8px;
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.06);
-    }
+    .homework-admin-page { max-width: 940px; margin: 0 auto; padding: 40px 20px 80px; display: grid; gap: 28px; }
+    .admin-card { padding: 36px; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.09); background: rgba(255, 255, 255, 0.04); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2); }
+    .admin-card h1, .admin-card h2 { margin: 0 0 24px; color: #fff; font-weight: 900; }
+    .form-group { margin-bottom: 24px; }
+    .form-label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; font-weight: 700; }
+    .toolbar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+    .form-input, .admin-card input[type="text"], .admin-card input[type="url"], .admin-card input[type="datetime-local"], .admin-card textarea, .admin-card select, .admin-card input[type="file"] { width: 100%; box-sizing: border-box; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.2); color: #fff; font: inherit; }
+    .admin-card textarea { min-height: 130px; resize: vertical; }
+    .picker-box { max-height: 220px; overflow-y: auto; padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.2); }
+    .picker-box-large { min-height: 120px; }
+    .picker-placeholder, .empty-copy { margin: 0; color: var(--text-muted); text-align: center; padding: 28px 12px; }
+    .helper-text { margin: 8px 0 0; color: var(--text-muted); font-size: 12px; }
+    .attachment-list, .submission-list { display: grid; gap: 10px; margin-top: 14px; }
+    .attachment-item, .submission-item { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+    .attachment-item a, .submission-link { color: #93c5fd; text-decoration: none; font-weight: 700; }
+    .delete-toggle { color: var(--text-muted); font-size: 13px; }
+    .checkbox-row { display: flex; align-items: center; gap: 10px; }
+    .action-row, .section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .primary-btn, .secondary-btn, .btn-sm { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 12px; font-weight: 800; text-decoration: none; }
+    .primary-btn, .btn-sm { border: none; background: linear-gradient(135deg, #3b82f6, #6366f1); color: #fff; cursor: pointer; }
+    .secondary-btn, .btn-muted { border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #fff; }
+    .primary-btn.small { min-height: 40px; padding: 0 16px; }
+    .submission-main h3 { margin: 0 0 8px; color: #fff; font-size: 16px; }
+    .submission-meta { color: var(--text-muted); font-size: 13px; }
+    .submission-note { margin: 8px 0 0; color: #d1d5db; white-space: pre-line; }
+    .submission-note strong { color: #fff; margin-right: 8px; }
+    .submission-note.feedback strong { color: #fde68a; }
     @media (max-width: 720px) {
-        .admin-card {
-            padding: 24px;
-        }
-        .attachment-item,
-        .submission-item {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        .action-row {
-            flex-direction: column;
-        }
+        .admin-card { padding: 24px; }
+        .attachment-item, .submission-item { flex-direction: column; align-items: flex-start; }
+        .action-row { flex-direction: column; }
+        .primary-btn, .secondary-btn { width: 100%; }
     }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-(function() {
-    const programSelect = document.getElementById('id_program');
-    const itemTree = document.getElementById('item-tree');
-    const linkedItemsSelect = document.getElementById('id_linked_items');
-    const assignedUsersSelect = document.getElementById('id_assigned_users');
-    const studentSearch = document.getElementById('student-search');
-    const studentList = document.getElementById('student-list');
-    let selectedItemIds = new Set();
-    let selectedUserIds = new Set();
+    (function() {
+        const programSelect = document.getElementById('id_program');
+        const studentSearch = document.getElementById('student-search');
+        const studentList = document.getElementById('student-list');
+        const assignedUsersSelect = document.getElementById('id_assigned_users');
+        const linkedItemsSelect = document.getElementById('id_linked_items');
+        const itemTree = document.getElementById('item-tree');
+        const selectAllBtn = document.getElementById('btn-select-all');
+        const deselectAllBtn = document.getElementById('btn-deselect-all');
 
-    for (const opt of linkedItemsSelect.options) {
-        if (opt.selected) selectedItemIds.add(parseInt(opt.value));
-    }
-    for (const opt of assignedUsersSelect.options) {
-        if (opt.selected) selectedUserIds.add(parseInt(opt.value));
-    }
-
-    let allStudentData = [];
-
-    function renderStudents(students) {
-        studentList.innerHTML = '';
-        if (!students.length) {
-            studentList.innerHTML = '<p class="picker-placeholder">검색된 학생이 없습니다.</p>';
+        if (!programSelect || !studentList || !assignedUsersSelect || !linkedItemsSelect || !itemTree) {
             return;
         }
-        students.forEach((u) => {
-            const div = document.createElement('div');
-            div.className = 'student-item';
-            const checked = selectedUserIds.has(u.id) ? 'checked' : '';
-            div.innerHTML = `
-                <input type="checkbox" id="user_${u.id}" value="${u.id}" ${checked}>
-                <label for="user_${u.id}">${u.name}</label>
-                <span class="username">@${u.username}</span>
-            `;
-            div.querySelector('input').addEventListener('change', function() {
-                if (this.checked) selectedUserIds.add(u.id);
-                else selectedUserIds.delete(u.id);
-                syncAssignedUsers();
+
+        function getSelectedValues(selectEl) {
+            return new Set(Array.from(selectEl.options).filter(option => option.selected).map(option => String(option.value)));
+        }
+
+        function syncSelectOptions(selectEl, values) {
+            Array.from(selectEl.options).forEach(option => {
+                option.selected = values.has(String(option.value));
             });
-            studentList.appendChild(div);
+        }
+
+        async function loadStudents(query = '') {
+            const url = `{% url 'api_search_users' %}?q=${encodeURIComponent(query)}`;
+            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await response.json();
+            const selected = getSelectedValues(assignedUsersSelect);
+
+            if (!data.users || !data.users.length) {
+                studentList.innerHTML = '<p class="picker-placeholder">검색된 학생이 없습니다.</p>';
+                return;
+            }
+
+            studentList.innerHTML = data.users.map(user => `
+                <label class="picker-item">
+                    <input type="checkbox" value="${user.id}" ${selected.has(String(user.id)) ? 'checked' : ''}>
+                    <span class="picker-title">${user.name}</span>
+                    <span class="picker-meta">@${user.username}</span>
+                </label>
+            `).join('');
+
+            studentList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const nextSelected = getSelectedValues(assignedUsersSelect);
+                    if (checkbox.checked) {
+                        nextSelected.add(String(checkbox.value));
+                    } else {
+                        nextSelected.delete(String(checkbox.value));
+                    }
+                    syncSelectOptions(assignedUsersSelect, nextSelected);
+                });
+            });
+        }
+
+        async function loadProgramItems(programId) {
+            if (!programId) {
+                itemTree.innerHTML = '<p class="picker-placeholder">과정을 선택하면 문제 목록이 표시됩니다.</p>';
+                return;
+            }
+
+            const url = `{% url 'api_program_structure' 0 %}`.replace('/0/', `/${programId}/`);
+            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await response.json();
+            const selected = getSelectedValues(linkedItemsSelect);
+
+            if (!data.chapters || !data.chapters.length) {
+                itemTree.innerHTML = '<p class="picker-placeholder">선택한 과정에 등록된 문제가 없습니다.</p>';
+                return;
+            }
+
+            itemTree.innerHTML = data.chapters.map(chapter => `
+                <section class="chapter-block">
+                    <h4>${chapter.chapter_title}</h4>
+                    <div class="chapter-items">
+                        ${chapter.items.map(item => `
+                            <label class="picker-item">
+                                <input type="checkbox" value="${item.id}" ${selected.has(String(item.id)) ? 'checked' : ''}>
+                                <span class="picker-title">${item.title}</span>
+                                <span class="picker-meta">${item.type}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </section>
+            `).join('');
+
+            itemTree.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const nextSelected = getSelectedValues(linkedItemsSelect);
+                    if (checkbox.checked) {
+                        nextSelected.add(String(checkbox.value));
+                    } else {
+                        nextSelected.delete(String(checkbox.value));
+                    }
+                    syncSelectOptions(linkedItemsSelect, nextSelected);
+                });
+            });
+        }
+
+        studentSearch.addEventListener('input', () => {
+            loadStudents(studentSearch.value.trim());
         });
-    }
 
-    function syncAssignedUsers() {
-        for (const opt of assignedUsersSelect.options) {
-            opt.selected = selectedUserIds.has(parseInt(opt.value));
-        }
-    }
-
-    function loadStudents(query) {
-        fetch('/courses/api/users/search/?q=' + encodeURIComponent(query || ''))
-            .then((r) => r.json())
-            .then((data) => {
-                allStudentData = data.users;
-                data.users.forEach((u) => {
-                    let exists = false;
-                    for (const opt of assignedUsersSelect.options) {
-                        if (parseInt(opt.value) === u.id) {
-                            exists = true;
-                            break;
-                        }
-                    }
-                    if (!exists) {
-                        const opt = document.createElement('option');
-                        opt.value = u.id;
-                        opt.text = u.name;
-                        assignedUsersSelect.appendChild(opt);
-                    }
-                });
-                renderStudents(data.users);
+        selectAllBtn.addEventListener('click', () => {
+            const checkboxes = studentList.querySelectorAll('input[type="checkbox"]');
+            const nextSelected = getSelectedValues(assignedUsersSelect);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                nextSelected.add(String(checkbox.value));
             });
-    }
+            syncSelectOptions(assignedUsersSelect, nextSelected);
+        });
 
-    loadStudents('');
-    let searchTimer;
-    studentSearch.addEventListener('input', function() {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => loadStudents(this.value), 300);
-    });
-
-    document.getElementById('btn-select-all').addEventListener('click', function() {
-        allStudentData.forEach((u) => selectedUserIds.add(u.id));
-        renderStudents(allStudentData);
-        syncAssignedUsers();
-    });
-
-    document.getElementById('btn-deselect-all').addEventListener('click', function() {
-        selectedUserIds.clear();
-        renderStudents(allStudentData);
-        syncAssignedUsers();
-    });
-
-    function loadProgramStructure(programId) {
-        if (!programId) {
-            itemTree.innerHTML = '<p class="picker-placeholder">과정을 선택하면 문제 목록이 표시됩니다.</p>';
-            return;
-        }
-
-        itemTree.innerHTML = '<p class="picker-placeholder">문제 목록을 불러오는 중입니다.</p>';
-
-        fetch('/courses/api/program/' + programId + '/structure/')
-            .then((r) => r.json())
-            .then((data) => {
-                itemTree.innerHTML = '';
-                if (!data.chapters.length) {
-                    itemTree.innerHTML = '<p class="picker-placeholder">이 과정에는 아직 등록된 문제가 없습니다.</p>';
-                    return;
-                }
-                data.chapters.forEach((ch) => {
-                    const group = document.createElement('div');
-                    group.className = 'chapter-group';
-                    const header = document.createElement('div');
-                    header.className = 'chapter-header';
-                    header.innerHTML = `
-                        <span class="arrow">▶</span>
-                        <span class="ch-title">${ch.chapter_title}</span>
-                        <span class="ch-count">${ch.items.length}문항</span>
-                    `;
-                    const itemsDiv = document.createElement('div');
-                    itemsDiv.className = 'chapter-items';
-                    ch.items.forEach((item) => {
-                        const row = document.createElement('div');
-                        row.className = 'item-row';
-                        const checked = selectedItemIds.has(item.id) ? 'checked' : '';
-                        row.innerHTML = `
-                            <input type="checkbox" id="item_${item.id}" value="${item.id}" ${checked}>
-                            <label for="item_${item.id}">${item.title}</label>
-                            <span class="item-type">${item.type}</span>
-                        `;
-                        row.querySelector('input').addEventListener('change', function() {
-                            if (this.checked) selectedItemIds.add(item.id);
-                            else selectedItemIds.delete(item.id);
-                            syncLinkedItems();
-                        });
-                        itemsDiv.appendChild(row);
-                    });
-                    header.addEventListener('click', () => {
-                        itemsDiv.classList.toggle('open');
-                        header.querySelector('.arrow').classList.toggle('open');
-                    });
-                    group.appendChild(header);
-                    group.appendChild(itemsDiv);
-                    itemTree.appendChild(group);
-                });
+        deselectAllBtn.addEventListener('click', () => {
+            studentList.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
             });
-    }
+            syncSelectOptions(assignedUsersSelect, new Set());
+        });
 
-    function syncLinkedItems() {
-        for (const opt of linkedItemsSelect.options) {
-            opt.selected = selectedItemIds.has(parseInt(opt.value));
-        }
-    }
+        programSelect.addEventListener('change', () => {
+            loadProgramItems(programSelect.value);
+        });
 
-    programSelect.addEventListener('change', function() {
-        loadProgramStructure(this.value);
-    });
-
-    if (programSelect.value) {
-        loadProgramStructure(programSelect.value);
-    }
-})();
+        loadStudents('');
+        loadProgramItems(programSelect.value);
+    })();
 </script>
+
+<style>
+    .picker-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        color: #fff;
+        cursor: pointer;
+    }
+    .picker-item:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    .picker-item input[type="checkbox"] {
+        width: auto;
+        margin: 0;
+    }
+    .picker-title {
+        font-weight: 700;
+    }
+    .picker-meta {
+        margin-left: auto;
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+    .chapter-block + .chapter-block {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .chapter-block h4 {
+        margin: 0 0 10px;
+        color: #cbd5e1;
+        font-size: 14px;
+        font-weight: 800;
+    }
+</style>
 {% endblock %}

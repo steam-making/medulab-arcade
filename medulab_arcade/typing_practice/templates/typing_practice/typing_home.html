@@ -246,6 +246,12 @@
         font-size: 22px;
         font-weight: 900;
     }
+    .group-name small {
+        margin-left: 10px;
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 700;
+    }
     .group-badge {
         padding: 7px 12px;
         border-radius: 999px;
@@ -1181,7 +1187,7 @@
             groupContainer.innerHTML = activeGroup ? `
                 <section class="group-card ${getGroupTheme(activeGroup.code)} ${activeGroup.code === payload.selected_group ? 'is-me' : ''}">
                     <div class="group-head">
-                        <div class="group-name">${activeGroup.label}</div>
+                        <div class="group-name">${activeGroup.label}${activeGroup.description ? `<small>(${activeGroup.description})</small>` : ''}</div>
                         ${activeGroup.code === payload.selected_group ? '<div class="group-badge">우리 그룹</div>' : ''}
                     </div>
                     <div class="ranking-card-grid">

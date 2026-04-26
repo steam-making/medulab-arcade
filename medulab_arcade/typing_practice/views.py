@@ -78,7 +78,7 @@ def estimate_school_grade_from_birth_year(birth_date, today=None):
     if not birth_date:
         return None
     today = today or timezone.localdate()
-    return today.year - birth_date.year - 7
+    return today.year - birth_date.year - 6
 
 
 def get_age_group_for_user(user, today=None):

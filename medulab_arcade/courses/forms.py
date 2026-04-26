@@ -1,6 +1,17 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import LearningProgram, ProgramType, Item, Chapter, HomeworkAssignment
+from .models import (
+    LearningProgram,
+    ProgramType,
+    Item,
+    Chapter,
+    HomeworkAssignment,
+    HomeworkSubmission,
+)
+
+
+class MultiFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
 
 class CourseForm(forms.ModelForm):
     class Meta:
@@ -40,15 +51,41 @@ class ItemForm(forms.ModelForm):
         }
 
 class HomeworkForm(forms.ModelForm):
+    attachment_files = forms.FileField(
+        required=False,
+        widget=MultiFileInput(attrs={'class': 'form-input', 'multiple': True}),
+        label='?? ?? ??'
+    )
+
     class Meta:
         model = HomeworkAssignment
         fields = ['program', 'title', 'description', 'assigned_users', 'linked_items', 'external_url', 'due_date', 'is_active']
         widgets = {
             'program': forms.Select(attrs={'class': 'form-input', 'id': 'id_program'}),
-            'title': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '숙제 제목 (예: 파이썬 문제 풀어오기)'}),
-            'description': forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': '숙제에 대한 추가 설명'}),
+            'title': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '?? ??? ?????'}),
+            'description': forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': '???? ??? ???? ??? ?????'}),
             'assigned_users': forms.SelectMultiple(attrs={'class': 'form-input', 'style': 'display:none;', 'id': 'id_assigned_users'}),
             'linked_items': forms.SelectMultiple(attrs={'class': 'form-input', 'style': 'display:none;', 'id': 'id_linked_items'}),
             'external_url': forms.URLInput(attrs={'class': 'form-input', 'placeholder': 'https://...'}),
             'due_date': forms.DateTimeInput(attrs={'class': 'form-input', 'type': 'datetime-local'}),
+        }
+
+
+class HomeworkSubmissionForm(forms.ModelForm):
+    class Meta:
+        model = HomeworkSubmission
+        fields = ['file', 'note']
+        widgets = {
+            'file': forms.ClearableFileInput(attrs={'class': 'form-input'}),
+            'note': forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': '?? ?? ???? ??? ?????'}),
+        }
+
+
+class HomeworkSubmissionReviewForm(forms.ModelForm):
+    class Meta:
+        model = HomeworkSubmission
+        fields = ['status', 'teacher_comment']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-input'}),
+            'teacher_comment': forms.Textarea(attrs={'class': 'form-input', 'rows': 4, 'placeholder': '?? ??? ?????'}),
         }

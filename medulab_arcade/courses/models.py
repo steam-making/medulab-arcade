@@ -116,3 +116,48 @@ class HomeworkAssignment(models.Model):
 
     def __str__(self):
         return f"[{self.program.name}] {self.title}"
+
+
+class HomeworkAttachment(models.Model):
+    assignment = models.ForeignKey(HomeworkAssignment, on_delete=models.CASCADE, related_name="attachments")
+    title = models.CharField("파일명", max_length=200, blank=True)
+    file = models.FileField("첨부 파일", upload_to="homework/attachments/%Y/%m/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["uploaded_at"]
+        verbose_name = "숙제 첨부 파일"
+        verbose_name_plural = "숙제 첨부 파일"
+
+    def __str__(self):
+        return self.title or self.file.name.split("/")[-1]
+
+
+class HomeworkSubmission(models.Model):
+    STATUS_SUBMITTED = "submitted"
+    STATUS_REVISION = "revision"
+    STATUS_COMPLETED = "completed"
+    STATUS_CHOICES = [
+        (STATUS_SUBMITTED, "제출 완료"),
+        (STATUS_REVISION, "보완 필요"),
+        (STATUS_COMPLETED, "평가 완료"),
+    ]
+
+    assignment = models.ForeignKey(HomeworkAssignment, on_delete=models.CASCADE, related_name="submissions")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="homework_submissions")
+    file = models.FileField("제출 파일", upload_to="homework/submissions/%Y/%m/")
+    note = models.TextField("학생 메모", blank=True)
+    status = models.CharField("제출 상태", max_length=20, choices=STATUS_CHOICES, default=STATUS_SUBMITTED)
+    teacher_comment = models.TextField("관리자 평가", blank=True)
+    submitted_at = models.DateTimeField("제출일", auto_now_add=True)
+    reviewed_at = models.DateTimeField("평가일", blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        unique_together = ("assignment", "student")
+        verbose_name = "숙제 제출"
+        verbose_name_plural = "숙제 제출"
+
+    def __str__(self):
+        return f"{self.assignment.title} - {self.student.username}"

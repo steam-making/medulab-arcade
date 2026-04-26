@@ -777,7 +777,7 @@
                     <div class="shell-subtitle" id="ranking-subtitle">우리 그룹인 {{ current_age_group_label }}가 가장 먼저 보여집니다.</div>
                     <div class="legend-help-panel" id="group-help-panel">
                         <div class="legend-help-title">TOP 5 안내</div>
-                        <div class="legend-help-lead">순위는 실시간으로 바뀝니다.</div>
+                        <div class="legend-help-lead">순위는 분기(3개월)마다 초기화되며 실시간으로 바뀝니다.</div>
                         <div class="legend-help-list">
                             <div class="legend-help-item"><strong>누적 TOP 5</strong> : 이번 분기 누적점수가 높은 순위</div>
                             <div class="legend-help-item"><strong>단어 TOP 5</strong> : 단어연습에서 평균 타수, 최고 타수, 정확도가 높은 순위</div>
@@ -1170,7 +1170,7 @@
                 legendHelpToggle?.classList.add('is-visible');
             } else {
                 rankingTitle.textContent = '{{ quarter_info.label }} 타자 마스터';
-                subtitle.textContent = '순위는 실시간으로 바뀝니다.';
+                subtitle.textContent = '순위는 분기(3개월)마다 초기화되며 실시간으로 바뀝니다.';
                 groupContainer.style.display = 'grid';
                 hallContainer.style.display = 'none';
                 groupHelpToggle?.classList.add('is-visible');

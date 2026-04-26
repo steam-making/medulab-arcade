@@ -6,8 +6,26 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse, Http404
-from .models import LearningProgram, Chapter, Item, LearningEnrollment, UserProgress, ProgramType, HomeworkAssignment
-from .forms import CourseForm, ProgramTypeForm, ItemForm, HomeworkForm
+from django.utils import timezone
+from .models import (
+    LearningProgram,
+    Chapter,
+    Item,
+    LearningEnrollment,
+    UserProgress,
+    ProgramType,
+    HomeworkAssignment,
+    HomeworkAttachment,
+    HomeworkSubmission,
+)
+from .forms import (
+    CourseForm,
+    ProgramTypeForm,
+    ItemForm,
+    HomeworkForm,
+    HomeworkSubmissionForm,
+    HomeworkSubmissionReviewForm,
+)
 from django.db.models import Count, Q
 
 # --- 권한 체크 유틸리티 ---
@@ -471,38 +489,316 @@ def item_delete(request, item_id):
 @login_required
 @require_full_member
 def student_homework_list(request):
-    # 내가 수강 신청한 프로그램 ID 목록
-    enrolled_ids = LearningEnrollment.objects.filter(user=request.user).values_list("program_id", flat=True)
-    
-    # 노출 조건:
-    # 1. (내가 수강 중인 과정의 과제) AND (특정 배정이 없는 전체 공개 과제)
-    # 2. OR (내가 직접 배정인원으로 등록된 모든 과제)
-    assignments = HomeworkAssignment.objects.filter(
-        Q(program_id__in=enrolled_ids, assigned_users__isnull=True) |
-        Q(assigned_users=request.user),
-        is_active=True
-    ).select_related('program').prefetch_related('linked_items', 'assigned_users').distinct().order_by('due_date', '-created_at')
-    
-    # 각 과제별 진행 상태 및 완료 여부 계산
+    if request.user.is_staff or request.user.is_superuser:
+        assignments = HomeworkAssignment.objects.filter(
+            is_active=True
+        ).select_related('program').prefetch_related('linked_items', 'assigned_users', 'attachments').distinct().order_by('due_date', '-created_at')
+    else:
+        enrolled_ids = LearningEnrollment.objects.filter(user=request.user).values_list("program_id", flat=True)
+        assignments = HomeworkAssignment.objects.filter(
+            Q(program_id__in=enrolled_ids, assigned_users__isnull=True) |
+            Q(assigned_users=request.user),
+            is_active=True
+        ).select_related('program').prefetch_related('linked_items', 'assigned_users', 'attachments').distinct().order_by('due_date', '-created_at')
+
+    submissions_by_assignment = {}
+    if not (request.user.is_staff or request.user.is_superuser):
+        submissions_by_assignment = {
+            submission.assignment_id: submission
+            for submission in HomeworkSubmission.objects.filter(
+                student=request.user,
+                assignment__in=assignments,
+            )
+        }
+
     for assignment in assignments:
         items = assignment.linked_items.all()
         if items.exists():
-            completed_count = UserProgress.objects.filter(
-                user=request.user, 
-                item__in=items, 
-                completed=True
-            ).count()
+            if request.user.is_staff or request.user.is_superuser:
+                completed_count = 0
+            else:
+                completed_count = UserProgress.objects.filter(
+                    user=request.user,
+                    item__in=items,
+                    completed=True
+                ).count()
             assignment.is_completed = (completed_count == items.count())
             assignment.progress_text = f"{completed_count}/{items.count()}"
         else:
-            assignment.is_completed = True
+            assignment.is_completed = False
             assignment.progress_text = "N/A"
-        
+
+        assignment.attachments_list = list(assignment.attachments.all())
+
+        if request.user.is_staff or request.user.is_superuser:
+            assignment.submission = None
+            assignment.submission_form = None
+            assignment.submission_status_label = ""
+        else:
+            submission = submissions_by_assignment.get(assignment.id)
+            assignment.submission = submission
+            assignment.submission_form = HomeworkSubmissionForm(instance=submission)
+            assignment.submission_status_label = submission.get_status_display() if submission else "???"
+            if submission and submission.status == HomeworkSubmission.STATUS_COMPLETED:
+                assignment.is_completed = True
+                assignment.progress_text = "?? ??"
+            elif submission and submission.status == HomeworkSubmission.STATUS_SUBMITTED:
+                assignment.progress_text = "?? ??"
+            elif submission and submission.status == HomeworkSubmission.STATUS_REVISION:
+                assignment.progress_text = "?? ??"
+
     return render(request, "courses/student_homework_list.html", {
         "assignments": assignments,
     })
 
-# --- (9) 관리자용 숙제 관리 (CRUD) ---
+
+@login_required
+@require_full_member
+def student_homework_submit(request, assignment_id):
+    if request.user.is_staff or request.user.is_superuser:
+        messages.warning(request, "??? ????? ?? ??? ??? ? ????.")
+        return redirect("student_homework_list")
+
+    assignment = get_object_or_404(HomeworkAssignment, id=assignment_id, is_active=True)
+    submission = HomeworkSubmission.objects.filter(assignment=assignment, student=request.user).first()
+
+    if request.method != "POST":
+        return redirect("student_homework_list")
+
+    form = HomeworkSubmissionForm(request.POST, request.FILES, instance=submission)
+    if form.is_valid():
+        homework_submission = form.save(commit=False)
+        homework_submission.assignment = assignment
+        homework_submission.student = request.user
+        homework_submission.status = HomeworkSubmission.STATUS_SUBMITTED
+        homework_submission.reviewed_at = None
+        homework_submission.save()
+        messages.success(request, f"'{assignment.title}' ??? ???????.")
+    else:
+        messages.error(request, "?? ??? ??????.")
+    return redirect("student_homework_list")
+
+
+@login_required
+@user_passes_test(is_admin)
+def homework_admin_list(request):
+    assignments = HomeworkAssignment.objects.all().select_related('program').order_by('-created_at')
+    return render(request, "courses/homework_admin_list.html", {"assignments": assignments})
+
+@login_required
+@user_passes_test(is_admin)
+def homework_create(request):
+    if request.method == "POST":
+        form = HomeworkForm(request.POST, request.FILES)
+        if form.is_valid():
+            assignment = form.save()
+            for uploaded_file in request.FILES.getlist("attachment_files"):
+                HomeworkAttachment.objects.create(
+                    assignment=assignment,
+                    title=uploaded_file.name,
+                    file=uploaded_file,
+                )
+            messages.success(request, "? ??? ???????.")
+            return redirect("homework_admin_list")
+    else:
+        form = HomeworkForm()
+    return render(request, "courses/homework_form.html", {
+        "form": form,
+        "title": "? ?? ??",
+        "attachments": [],
+        "submissions": [],
+    })
+
+@login_required
+@user_passes_test(is_admin)
+def homework_edit(request, homework_id):
+    assignment = get_object_or_404(HomeworkAssignment, id=homework_id)
+    if request.method == "POST":
+        form = HomeworkForm(request.POST, request.FILES, instance=assignment)
+        if form.is_valid():
+            form.save()
+            delete_ids = request.POST.getlist("delete_attachment_ids")
+            if delete_ids:
+                HomeworkAttachment.objects.filter(assignment=assignment, id__in=delete_ids).delete()
+            for uploaded_file in request.FILES.getlist("attachment_files"):
+                HomeworkAttachment.objects.create(
+                    assignment=assignment,
+                    title=uploaded_file.name,
+                    file=uploaded_file,
+                )
+            messages.success(request, f"'{assignment.title}' ??? ???????.")
+            return redirect("homework_edit", homework_id=assignment.id)
+    else:
+        form = HomeworkForm(instance=assignment)
+
+    submissions = assignment.submissions.select_related("student").order_by("-updated_at")
+    return render(request, "courses/homework_form.html", {
+        "form": form,
+        "title": "?? ??",
+        "assignment": assignment,
+        "attachments": assignment.attachments.all(),
+        "submissions": submissions,
+    })
+
+@login_required
+@user_passes_test(is_admin)
+def homework_delete(request, homework_id):
+    assignment = get_object_or_404(HomeworkAssignment, id=homework_id)
+    if request.method == "POST":
+        assignment.delete()
+        messages.success(request, "??? ???????.")
+        return redirect("homework_admin_list")
+    return render(request, "courses/homework_confirm_delete.html", {"assignment": assignment})
+
+@login_required
+@user_passes_test(is_admin)
+def homework_submission_review(request, submission_id):
+    submission = get_object_or_404(
+        HomeworkSubmission.objects.select_related("assignment", "student", "assignment__program"),
+        id=submission_id,
+    )
+    if request.method == "POST":
+        form = HomeworkSubmissionReviewForm(request.POST, instance=submission)
+        if form.is_valid():
+            reviewed_submission = form.save(commit=False)
+            reviewed_submission.reviewed_at = timezone.now()
+            reviewed_submission.save()
+            messages.success(request, f"{submission.student.username} ??? ???? ??????.")
+            return redirect("homework_edit", homework_id=submission.assignment_id)
+    else:
+        form = HomeworkSubmissionReviewForm(instance=submission)
+
+    return render(request, "courses/homework_submission_review.html", {
+        "form": form,
+        "submission": submission,
+    })
+
+# --- (10) 아이템 수정 ---
+@login_required
+@user_passes_test(is_admin)
+def item_edit(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    if request.method == "POST":
+        form = ItemForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"'{item.title}' 아이템이 수정되었습니다.")
+            return redirect("item_page", item_id=item.id)
+    else:
+        form = ItemForm(instance=item)
+    
+    return render(request, "courses/item_form.html", {
+        "form": form,
+        "title": "아이템 수정",
+        "item": item
+    })
+
+# --- (11) 아이템 삭제 ---
+@login_required
+@user_passes_test(is_admin)
+def item_delete(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    chapter_id = item.chapter.id
+    if request.method == "POST":
+        title = item.title
+        item.delete()
+        messages.success(request, f"'{title}' 아이템이 삭제되었습니다.")
+        return redirect("chapter_detail", chapter_id=chapter_id)
+    return render(request, "courses/item_confirm_delete.html", {"item": item})
+# --- (8) 학생용 숙제 관리 (홈플레이) ---
+@login_required
+@require_full_member
+def student_homework_list(request):
+    if request.user.is_staff or request.user.is_superuser:
+        assignments = HomeworkAssignment.objects.filter(
+            is_active=True
+        ).select_related('program').prefetch_related('linked_items', 'assigned_users', 'attachments').distinct().order_by('due_date', '-created_at')
+    else:
+        enrolled_ids = LearningEnrollment.objects.filter(user=request.user).values_list("program_id", flat=True)
+        assignments = HomeworkAssignment.objects.filter(
+            Q(program_id__in=enrolled_ids, assigned_users__isnull=True) |
+            Q(assigned_users=request.user),
+            is_active=True
+        ).select_related('program').prefetch_related('linked_items', 'assigned_users', 'attachments').distinct().order_by('due_date', '-created_at')
+
+    submissions_by_assignment = {}
+    if not (request.user.is_staff or request.user.is_superuser):
+        submissions_by_assignment = {
+            submission.assignment_id: submission
+            for submission in HomeworkSubmission.objects.filter(
+                student=request.user,
+                assignment__in=assignments,
+            )
+        }
+
+    for assignment in assignments:
+        items = assignment.linked_items.all()
+        if items.exists():
+            if request.user.is_staff or request.user.is_superuser:
+                completed_count = 0
+            else:
+                completed_count = UserProgress.objects.filter(
+                    user=request.user,
+                    item__in=items,
+                    completed=True
+                ).count()
+            assignment.is_completed = (completed_count == items.count())
+            assignment.progress_text = f"{completed_count}/{items.count()}"
+        else:
+            assignment.is_completed = False
+            assignment.progress_text = "N/A"
+
+        assignment.attachments_list = list(assignment.attachments.all())
+
+        if request.user.is_staff or request.user.is_superuser:
+            assignment.submission = None
+            assignment.submission_form = None
+            assignment.submission_status_label = ""
+        else:
+            submission = submissions_by_assignment.get(assignment.id)
+            assignment.submission = submission
+            assignment.submission_form = HomeworkSubmissionForm(instance=submission)
+            assignment.submission_status_label = submission.get_status_display() if submission else "???"
+            if submission and submission.status == HomeworkSubmission.STATUS_COMPLETED:
+                assignment.is_completed = True
+                assignment.progress_text = "?? ??"
+            elif submission and submission.status == HomeworkSubmission.STATUS_SUBMITTED:
+                assignment.progress_text = "?? ??"
+            elif submission and submission.status == HomeworkSubmission.STATUS_REVISION:
+                assignment.progress_text = "?? ??"
+
+    return render(request, "courses/student_homework_list.html", {
+        "assignments": assignments,
+    })
+
+
+@login_required
+@require_full_member
+def student_homework_submit(request, assignment_id):
+    if request.user.is_staff or request.user.is_superuser:
+        messages.warning(request, "??? ????? ?? ??? ??? ? ????.")
+        return redirect("student_homework_list")
+
+    assignment = get_object_or_404(HomeworkAssignment, id=assignment_id, is_active=True)
+    submission = HomeworkSubmission.objects.filter(assignment=assignment, student=request.user).first()
+
+    if request.method != "POST":
+        return redirect("student_homework_list")
+
+    form = HomeworkSubmissionForm(request.POST, request.FILES, instance=submission)
+    if form.is_valid():
+        homework_submission = form.save(commit=False)
+        homework_submission.assignment = assignment
+        homework_submission.student = request.user
+        homework_submission.status = HomeworkSubmission.STATUS_SUBMITTED
+        homework_submission.reviewed_at = None
+        homework_submission.save()
+        messages.success(request, f"'{assignment.title}' ??? ???????.")
+    else:
+        messages.error(request, "?? ??? ??????.")
+    return redirect("student_homework_list")
+
+
 @login_required
 @user_passes_test(is_admin)
 def homework_admin_list(request):

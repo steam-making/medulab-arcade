@@ -3,122 +3,403 @@
 {% block title %}{{ title }} | 메듀랩{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 850px; margin: 0 auto; padding: 40px 20px;">
-    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 40px;">
-        <h1 style="color: #fff; font-size: 24px; font-weight: 800; margin-bottom: 30px;">{{ title }}</h1>
+<div class="container homework-admin-page">
+    <section class="admin-card">
+        <h1>{{ title }}</h1>
 
-        <form method="POST" id="homework-form">
+        <form method="POST" enctype="multipart/form-data" id="homework-form">
             {% csrf_token %}
 
-            <!-- 과정 선택 -->
             <div class="form-group">
                 <label class="form-label">과정 선택</label>
                 {{ form.program }}
             </div>
 
-            <!-- 숙제 제목 -->
             <div class="form-group">
                 <label class="form-label">숙제 제목</label>
                 {{ form.title }}
             </div>
 
-            <!-- 설명 -->
             <div class="form-group">
                 <label class="form-label">설명</label>
                 {{ form.description }}
             </div>
 
-            <!-- 학생 배정 (검색 UI) -->
             <div class="form-group">
                 <label class="form-label">과제 받을 학생</label>
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                    <input type="text" id="student-search" class="form-input" placeholder="학생 이름 또는 아이디를 입력하세요..." style="flex: 1;" autocomplete="off">
-                    <button type="button" id="btn-select-all" class="btn-sm" style="white-space: nowrap;">전체 선택</button>
-                    <button type="button" id="btn-deselect-all" class="btn-sm btn-muted" style="white-space: nowrap;">전체 해제</button>
+                <div class="toolbar-row">
+                    <input type="text" id="student-search" class="form-input" placeholder="이름 또는 아이디로 학생을 검색하세요." autocomplete="off">
+                    <button type="button" id="btn-select-all" class="btn-sm">전체 선택</button>
+                    <button type="button" id="btn-deselect-all" class="btn-sm btn-muted">선택 해제</button>
                 </div>
-                <div id="student-list" style="max-height: 200px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; background: rgba(0,0,0,0.2);"></div>
+                <div id="student-list" class="picker-box"></div>
                 {{ form.assigned_users }}
             </div>
 
-            <!-- 연결된 문제 (단원별 트리 UI) -->
             <div class="form-group">
                 <label class="form-label">과정 연결하기 (문제 선택)</label>
-                <div id="item-tree" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; background: rgba(0,0,0,0.2); min-height: 100px;">
-                    <p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 30px;">먼저 과정을 선택하세요.</p>
+                <div id="item-tree" class="picker-box picker-box-large">
+                    <p class="picker-placeholder">과정을 선택하면 문제 목록이 표시됩니다.</p>
                 </div>
                 {{ form.linked_items }}
             </div>
 
-            <!-- 외부 URL -->
             <div class="form-group">
-                <label class="form-label">외부 URL (참고 링크)</label>
+                <label class="form-label">관리자 첨부 파일</label>
+                {{ form.attachment_files }}
+                <p class="helper-text">학생에게 제공할 예시 파일, 템플릿, 참고자료를 올릴 수 있습니다.</p>
+
+                {% if attachments %}
+                <div class="attachment-list">
+                    {% for attachment in attachments %}
+                    <label class="attachment-item">
+                        <a href="{{ attachment.file.url }}" target="_blank">{{ attachment.title|default:attachment.file.name }}</a>
+                        <span class="delete-toggle">
+                            <input type="checkbox" name="delete_attachment_ids" value="{{ attachment.id }}">
+                            삭제
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">외부 URL</label>
                 {{ form.external_url }}
             </div>
 
-            <!-- 제출 기한 -->
             <div class="form-group">
                 <label class="form-label">제출 기한</label>
                 {{ form.due_date }}
             </div>
 
-            <!-- 활성화 -->
-            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
-                <label class="form-label" style="margin: 0;">활성화</label>
+            <div class="form-group checkbox-row">
+                <label class="form-label">활성화</label>
                 {{ form.is_active }}
             </div>
 
-            <div style="display: flex; gap: 15px; margin-top: 40px;">
-                <button type="submit" class="btn" style="flex: 1; height: 50px; background: #60a5fa; color: #fff; font-weight: 700;">저장하기</button>
-                <a href="{% url 'homework_admin_list' %}" class="btn" style="flex: 1; height: 50px; background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); text-align: center; line-height: 50px; text-decoration: none;">취소</a>
+            <div class="action-row">
+                <button type="submit" class="primary-btn">저장하기</button>
+                <a href="{% url 'homework_admin_list' %}" class="secondary-btn">목록으로</a>
             </div>
         </form>
-    </div>
+    </section>
+
+    {% if assignment %}
+    <section class="admin-card submissions-card">
+        <div class="section-head">
+            <h2>학생 제출 현황</h2>
+            <span>{{ submissions|length }}명</span>
+        </div>
+
+        {% if submissions %}
+        <div class="submission-list">
+            {% for submission in submissions %}
+            <article class="submission-item">
+                <div class="submission-main">
+                    <h3>{{ submission.student.get_full_name|default:submission.student.username }}</h3>
+                    <div class="submission-meta">{{ submission.get_status_display }} · {{ submission.updated_at|date:"Y-m-d H:i" }}</div>
+                    {% if submission.file %}
+                    <a href="{{ submission.file.url }}" target="_blank" class="submission-link">제출 파일 보기</a>
+                    {% endif %}
+                    {% if submission.note %}
+                    <p class="submission-note"><strong>학생 메모</strong> {{ submission.note }}</p>
+                    {% endif %}
+                    {% if submission.teacher_comment %}
+                    <p class="submission-note feedback"><strong>평가 메모</strong> {{ submission.teacher_comment }}</p>
+                    {% endif %}
+                </div>
+                <a href="{% url 'homework_submission_review' submission.id %}" class="primary-btn small">평가하기</a>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-copy">아직 제출한 학생이 없습니다.</p>
+        {% endif %}
+    </section>
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-    .form-group { margin-bottom: 24px; }
-    .form-label { display: block; color: var(--text-muted); font-size: 14px; font-weight: 600; margin-bottom: 8px; }
-    .form-input {
-        width: 100%; padding: 12px 16px;
-        background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px; color: #fff; font-family: inherit; font-size: 15px;
-        transition: all 0.2s; box-sizing: border-box;
+    .homework-admin-page {
+        max-width: 940px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+        display: grid;
+        gap: 28px;
     }
-    .form-input:focus { outline: none; border-color: #60a5fa; background: rgba(96,165,250,0.05); box-shadow: 0 0 15px rgba(96,165,250,0.1); }
-    select.form-input option { background: #1a1a1a; padding: 8px; }
-    .btn-sm { padding: 8px 16px; border-radius: 8px; background: #60a5fa; color: #fff; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
-    .btn-sm:hover { background: #3b82f6; }
-    .btn-sm.btn-muted { background: rgba(255,255,255,0.08); color: var(--text-muted); }
-    .btn-sm.btn-muted:hover { background: rgba(255,255,255,0.15); }
-
-    /* 학생 목록 */
-    .student-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; transition: background 0.15s; cursor: pointer; }
-    .student-item:hover { background: rgba(255,255,255,0.05); }
-    .student-item input[type="checkbox"] { accent-color: #60a5fa; width: 16px; height: 16px; cursor: pointer; }
-    .student-item label { color: #fff; font-size: 14px; cursor: pointer; flex: 1; }
-    .student-item .username { color: var(--text-muted); font-size: 12px; }
-
-    /* 단원 트리 */
-    .chapter-group { margin-bottom: 8px; }
+    .admin-card {
+        padding: 36px;
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        background: rgba(255, 255, 255, 0.04);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+    }
+    .admin-card h1,
+    .admin-card h2 {
+        margin: 0 0 24px;
+        color: #fff;
+        font-weight: 900;
+    }
+    .form-group {
+        margin-bottom: 24px;
+    }
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-muted);
+        font-size: 14px;
+        font-weight: 700;
+    }
+    .toolbar-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+    .form-input,
+    .admin-card input[type="text"],
+    .admin-card input[type="url"],
+    .admin-card input[type="datetime-local"],
+    .admin-card textarea,
+    .admin-card select,
+    .admin-card input[type="file"] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px 16px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(0, 0, 0, 0.2);
+        color: #fff;
+        font: inherit;
+    }
+    .admin-card textarea {
+        min-height: 130px;
+        resize: vertical;
+    }
+    .picker-box {
+        max-height: 220px;
+        overflow-y: auto;
+        padding: 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.2);
+    }
+    .picker-box-large {
+        min-height: 120px;
+    }
+    .picker-placeholder,
+    .empty-copy {
+        margin: 0;
+        color: var(--text-muted);
+        text-align: center;
+        padding: 28px 12px;
+    }
+    .helper-text {
+        margin: 8px 0 0;
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+    .attachment-list,
+    .submission-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+    }
+    .attachment-item,
+    .submission-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+    }
+    .attachment-item a,
+    .submission-link {
+        color: #93c5fd;
+        text-decoration: none;
+        font-weight: 700;
+    }
+    .delete-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #fca5a5;
+        font-size: 13px;
+    }
+    .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .action-row {
+        display: flex;
+        gap: 14px;
+        margin-top: 36px;
+    }
+    .primary-btn,
+    .secondary-btn,
+    .btn-sm {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0 18px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 800;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+    .primary-btn,
+    .btn-sm {
+        background: linear-gradient(135deg, #3b82f6, #6366f1);
+        color: #fff;
+    }
+    .primary-btn.small {
+        min-height: 42px;
+        padding: 0 16px;
+    }
+    .secondary-btn,
+    .btn-sm.btn-muted {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: #fff;
+    }
+    .action-row > * {
+        flex: 1;
+    }
+    .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+    .section-head span {
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+    .submission-item {
+        align-items: flex-start;
+    }
+    .submission-main h3 {
+        margin: 0 0 6px;
+        color: #fff;
+        font-size: 17px;
+        font-weight: 800;
+    }
+    .submission-meta {
+        color: var(--text-muted);
+        font-size: 13px;
+        margin-bottom: 6px;
+    }
+    .submission-note {
+        margin: 8px 0 0;
+        color: #cbd5e1;
+        font-size: 13px;
+    }
+    .submission-note.feedback {
+        color: #fde68a;
+    }
+    .student-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: background 0.15s;
+        cursor: pointer;
+    }
+    .student-item:hover,
+    .item-row:hover,
+    .chapter-header:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .student-item input[type="checkbox"],
+    .item-row input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #60a5fa;
+    }
+    .student-item label,
+    .item-row label {
+        color: #fff;
+        cursor: pointer;
+        flex: 1;
+    }
+    .student-item .username,
+    .chapter-header .ch-count,
+    .item-row .item-type {
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+    .chapter-group {
+        margin-bottom: 8px;
+    }
     .chapter-header {
-        display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-        background: rgba(255,255,255,0.04); border-radius: 10px; cursor: pointer;
-        transition: background 0.15s; user-select: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.04);
+        cursor: pointer;
+        user-select: none;
     }
-    .chapter-header:hover { background: rgba(255,255,255,0.08); }
-    .chapter-header .arrow { transition: transform 0.2s; font-size: 12px; color: var(--text-muted); }
-    .chapter-header .arrow.open { transform: rotate(90deg); }
-    .chapter-header .ch-title { color: #fff; font-weight: 700; font-size: 15px; flex: 1; }
-    .chapter-header .ch-count { color: var(--text-muted); font-size: 12px; }
-    .chapter-items { display: none; padding: 6px 0 6px 32px; }
-    .chapter-items.open { display: block; }
-    .item-row { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 8px; transition: background 0.15s; cursor: pointer; }
-    .item-row:hover { background: rgba(96,165,250,0.08); }
-    .item-row input[type="checkbox"] { accent-color: #60a5fa; width: 16px; height: 16px; cursor: pointer; }
-    .item-row label { color: #ddd; font-size: 14px; cursor: pointer; flex: 1; }
-    .item-row .item-type { color: var(--text-muted); font-size: 11px; background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 6px; }
+    .chapter-header .arrow {
+        color: var(--text-muted);
+        font-size: 12px;
+        transition: transform 0.2s;
+    }
+    .chapter-header .arrow.open {
+        transform: rotate(90deg);
+    }
+    .chapter-header .ch-title {
+        color: #fff;
+        font-weight: 700;
+        flex: 1;
+    }
+    .chapter-items {
+        display: none;
+        padding: 6px 0 6px 32px;
+    }
+    .chapter-items.open {
+        display: block;
+    }
+    .item-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    .item-row .item-type {
+        padding: 2px 8px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.06);
+    }
+    @media (max-width: 720px) {
+        .admin-card {
+            padding: 24px;
+        }
+        .attachment-item,
+        .submission-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .action-row {
+            flex-direction: column;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -131,29 +412,25 @@
     const assignedUsersSelect = document.getElementById('id_assigned_users');
     const studentSearch = document.getElementById('student-search');
     const studentList = document.getElementById('student-list');
-
-    // --- 기존 선택된 값들 추적 ---
     let selectedItemIds = new Set();
     let selectedUserIds = new Set();
 
-    // 기존 폼 데이터(수정 시)에서 선택된 값 불러오기
-    for (let opt of linkedItemsSelect.options) {
+    for (const opt of linkedItemsSelect.options) {
         if (opt.selected) selectedItemIds.add(parseInt(opt.value));
     }
-    for (let opt of assignedUsersSelect.options) {
+    for (const opt of assignedUsersSelect.options) {
         if (opt.selected) selectedUserIds.add(parseInt(opt.value));
     }
 
-    // ===================== 학생 선택 =====================
     let allStudentData = [];
 
     function renderStudents(students) {
         studentList.innerHTML = '';
         if (!students.length) {
-            studentList.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 15px; font-size: 13px;">검색 결과가 없습니다.</p>';
+            studentList.innerHTML = '<p class="picker-placeholder">검색된 학생이 없습니다.</p>';
             return;
         }
-        students.forEach(u => {
+        students.forEach((u) => {
             const div = document.createElement('div');
             div.className = 'student-item';
             const checked = selectedUserIds.has(u.id) ? 'checked' : '';
@@ -172,22 +449,23 @@
     }
 
     function syncAssignedUsers() {
-        // hidden select에 선택된 값 반영
-        for (let opt of assignedUsersSelect.options) {
+        for (const opt of assignedUsersSelect.options) {
             opt.selected = selectedUserIds.has(parseInt(opt.value));
         }
     }
 
     function loadStudents(query) {
         fetch('/courses/api/users/search/?q=' + encodeURIComponent(query || ''))
-            .then(r => r.json())
-            .then(data => {
+            .then((r) => r.json())
+            .then((data) => {
                 allStudentData = data.users;
-                // 새로 불러온 학생 목록의 option을 hidden select에도 동기화
-                data.users.forEach(u => {
+                data.users.forEach((u) => {
                     let exists = false;
-                    for (let opt of assignedUsersSelect.options) {
-                        if (parseInt(opt.value) === u.id) { exists = true; break; }
+                    for (const opt of assignedUsersSelect.options) {
+                        if (parseInt(opt.value) === u.id) {
+                            exists = true;
+                            break;
+                        }
                     }
                     if (!exists) {
                         const opt = document.createElement('option');
@@ -200,9 +478,7 @@
             });
     }
 
-    // 초기 로딩
     loadStudents('');
-
     let searchTimer;
     studentSearch.addEventListener('input', function() {
         clearTimeout(searchTimer);
@@ -210,7 +486,7 @@
     });
 
     document.getElementById('btn-select-all').addEventListener('click', function() {
-        allStudentData.forEach(u => selectedUserIds.add(u.id));
+        allStudentData.forEach((u) => selectedUserIds.add(u.id));
         renderStudents(allStudentData);
         syncAssignedUsers();
     });
@@ -221,40 +497,35 @@
         syncAssignedUsers();
     });
 
-    // ===================== 단원별 문제 선택 =====================
     function loadProgramStructure(programId) {
         if (!programId) {
-            itemTree.innerHTML = '<p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 30px;">먼저 과정을 선택하세요.</p>';
+            itemTree.innerHTML = '<p class="picker-placeholder">과정을 선택하면 문제 목록이 표시됩니다.</p>';
             return;
         }
-        itemTree.innerHTML = '<p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 30px;">로딩 중...</p>';
+
+        itemTree.innerHTML = '<p class="picker-placeholder">문제 목록을 불러오는 중입니다.</p>';
 
         fetch('/courses/api/program/' + programId + '/structure/')
-            .then(r => r.json())
-            .then(data => {
+            .then((r) => r.json())
+            .then((data) => {
                 itemTree.innerHTML = '';
                 if (!data.chapters.length) {
-                    itemTree.innerHTML = '<p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 30px;">이 과정에 등록된 단원이 없습니다.</p>';
+                    itemTree.innerHTML = '<p class="picker-placeholder">이 과정에는 아직 등록된 문제가 없습니다.</p>';
                     return;
                 }
-                data.chapters.forEach(ch => {
+                data.chapters.forEach((ch) => {
                     const group = document.createElement('div');
                     group.className = 'chapter-group';
-
-                    // 헤더
                     const header = document.createElement('div');
                     header.className = 'chapter-header';
                     header.innerHTML = `
                         <span class="arrow">▶</span>
                         <span class="ch-title">${ch.chapter_title}</span>
-                        <span class="ch-count">${ch.items.length}개 문제</span>
+                        <span class="ch-count">${ch.items.length}문항</span>
                     `;
-
-                    // 아이템 목록
                     const itemsDiv = document.createElement('div');
                     itemsDiv.className = 'chapter-items';
-
-                    ch.items.forEach(item => {
+                    ch.items.forEach((item) => {
                         const row = document.createElement('div');
                         row.className = 'item-row';
                         const checked = selectedItemIds.has(item.id) ? 'checked' : '';
@@ -268,48 +539,29 @@
                             else selectedItemIds.delete(item.id);
                             syncLinkedItems();
                         });
-
-                        // hidden select에 option 추가
-                        let exists = false;
-                        for (let opt of linkedItemsSelect.options) {
-                            if (parseInt(opt.value) === item.id) { exists = true; break; }
-                        }
-                        if (!exists) {
-                            const opt = document.createElement('option');
-                            opt.value = item.id;
-                            opt.text = item.title;
-                            linkedItemsSelect.appendChild(opt);
-                        }
-
                         itemsDiv.appendChild(row);
                     });
-
-                    header.addEventListener('click', function() {
-                        const arrow = this.querySelector('.arrow');
-                        arrow.classList.toggle('open');
+                    header.addEventListener('click', () => {
                         itemsDiv.classList.toggle('open');
+                        header.querySelector('.arrow').classList.toggle('open');
                     });
-
                     group.appendChild(header);
                     group.appendChild(itemsDiv);
                     itemTree.appendChild(group);
                 });
-                syncLinkedItems();
             });
     }
 
     function syncLinkedItems() {
-        for (let opt of linkedItemsSelect.options) {
+        for (const opt of linkedItemsSelect.options) {
             opt.selected = selectedItemIds.has(parseInt(opt.value));
         }
     }
 
-    // 과정 변경 시 트리 갱신
     programSelect.addEventListener('change', function() {
         loadProgramStructure(this.value);
     });
 
-    // 초기 로딩 (수정 시)
     if (programSelect.value) {
         loadProgramStructure(programSelect.value);
     }

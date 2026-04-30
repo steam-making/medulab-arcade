@@ -244,6 +244,9 @@
                         <a href="{% url 'chapter_manage' p.id %}" class="admin-link">
                             ⚙️ Manage Structure
                         </a>
+                        <a href="{% url 'export_program_to_excel' p.id %}" class="admin-link">
+                            📥 데이터 엑셀 다운로드
+                        </a>
                     {% endif %}
                 </div>
             </div>

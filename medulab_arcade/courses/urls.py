@@ -17,6 +17,7 @@ urlpatterns = [
     # 관리자용 - 데이터 관리
     path('program/<int:program_id>/manage/', views.chapter_manage, name='chapter_manage'),
     path('download-template/', views.download_course_template, name='download_course_template'),
+    path('program/<int:program_id>/export/', views.export_program_to_excel, name='export_program_to_excel'),
     
     # 아이템 개별 관리
     path('chapter/<int:chapter_id>/item/add/', views.item_create, name='item_create'),

@@ -236,6 +236,47 @@ def download_course_template(request):
     wb.save(response)
     return response
 
+# --- (1-9) 특정 과정 데이터 엑셀로 내보내기 ---
+@login_required
+@user_passes_test(is_admin)
+def export_program_to_excel(request, program_id):
+    program = get_object_or_404(LearningProgram, id=program_id)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "CourseData"
+
+    headers = [
+        '장번호', '장제목', '장설명',
+        '항목순서', '아이템키', '아이템제목', '유형',
+        '설명HTML', '힌트', '정답코드', '예시입력', '예상출력'
+    ]
+    ws.append(headers)
+
+    for chapter in program.chapters.all():
+        for item in chapter.items.all():
+            ws.append([
+                chapter.number,
+                chapter.title,
+                chapter.content or '',
+                item.number,
+                item.key,
+                item.title,
+                item.item_type,
+                item.explain_html or '',
+                item.hint or '',
+                item.answer_code or '',
+                item.example_input or '',
+                item.expected_output or '',
+            ])
+
+    safe_name = program.name.replace(' ', '_').replace('/', '_')
+    filename = f"medulab_course_{safe_name}.xlsx"
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
+
 # --- (2) 학생용 나의 코스 목록 ---
 @login_required
 @require_full_member

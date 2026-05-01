@@ -74,6 +74,21 @@
     }
     .part-content { color: #ccd6f6; line-height: 1.8; font-size: 15px; }
     .part-content h2, .part-content h3 { color: #fff; margin: 0 0 12px; font-size: 18px; }
+    .part-content pre {
+        margin: 14px 0 0;
+        padding: 14px 16px;
+        background: #0b0d12;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        line-height: 1.6;
+    }
+    .part-content code {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        color: #e5e7eb;
+    }
     
     .code-view, .output-view {
         background: #000;
@@ -199,6 +214,50 @@
     .btn-run:hover { background: #3b82f6; color: #fff; }
     .btn-grade { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
     .btn-grade:hover { background: #10b981; color: #000; }
+
+    .objective-wrap {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .objective-option {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .objective-option:hover {
+        border-color: rgba(59, 130, 246, 0.35);
+        background: rgba(59, 130, 246, 0.08);
+    }
+    .objective-option input {
+        margin-top: 3px;
+        accent-color: #3b82f6;
+    }
+    .objective-label {
+        min-width: 28px;
+        font-size: 14px;
+        font-weight: 800;
+        color: #fbbf24;
+    }
+    .objective-text {
+        color: #e5e7eb;
+        line-height: 1.7;
+        font-size: 15px;
+    }
+    .objective-help {
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.7;
+    }
 </style>
 {% endblock %}
 
@@ -225,15 +284,26 @@
             {% endif %}
 
             <!-- 3. 테스트용 입력값 (데이터가 있을 때만 노출) -->
-            {% if item.example_input %}
+            {% if item.example_input and item.item_type != 'objective' %}
             <div class="section-part">
                 <div class="part-label">📥 테스트 입력값</div>
                 <pre class="output-view" style="color: #fbbf24; border-color: rgba(251, 191, 36, 0.1);">{{ item.example_input }}</pre>
             </div>
             {% endif %}
 
+            {% if item.item_type == 'objective' and objective_options %}
+            <div class="section-part">
+                <div class="part-label">📝 보기</div>
+                <div class="part-content">
+                    {% for option in objective_options %}
+                    <p><strong>{{ option.label }}.</strong> {{ option.text }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <!-- 4. 예시 실행 결과 (데이터가 있을 때만) -->
-            {% if item.expected_output %}
+            {% if item.expected_output and item.item_type != 'objective' %}
             <div class="section-part">
                 <div class="part-label">🔎 실행 결과</div>
                 <pre class="output-view">{{ item.expected_output }}</pre>
@@ -282,16 +352,31 @@
         </div>
     </section>
 
-    <!-- 중앙: 코드 에디터 -->
+    <!-- 중앙: 코드 에디터 / 객관식 선택 -->
     <section class="panel panel-center">
         <div class="panel-header">
-            <span>PYTHON 3 EDITOR</span>
+            <span>{% if item.item_type == 'objective' %}OBJECTIVE CHECKER{% else %}PYTHON 3 EDITOR{% endif %}</span>
             {% if user_progress.completed %}
                 <span id="status-text" style="color: var(--accent-green); font-size: 10px;">● COMPLETED</span>
             {% else %}
                 <span id="status-text" style="color: #64748b; font-size: 10px;">● READY</span>
             {% endif %}
         </div>
+        {% if item.item_type == 'objective' %}
+        <div class="objective-wrap">
+            <div class="objective-help">정답이라고 생각하는 보기를 선택한 뒤 `정답 확인` 버튼을 눌러 채점하세요.</div>
+            {% for option in objective_options %}
+            <label class="objective-option">
+                <input type="radio" name="objective_option" value="{{ option.label }}" {% if objective_selected == option.label %}checked{% endif %}>
+                <div class="objective-label">{{ option.label }}.</div>
+                <div class="objective-text">{{ option.text }}</div>
+            </label>
+            {% endfor %}
+        </div>
+        <div class="editor-footer">
+            <button id="objective-action-button" class="btn-main btn-grade" onclick="submitObjective()">{% if user_progress.completed and next_item %}다음 문제 (Next){% else %}정답 확인 (Check){% endif %}</button>
+        </div>
+        {% else %}
         <div class="editor-wrapper">
             <div id="editor">{{ user_progress.code|default:"" }}</div>
         </div>
@@ -299,27 +384,28 @@
             <button class="btn-main btn-run" onclick="runCode()">실행 (Run)</button>
             <button class="btn-main btn-grade" onclick="submitCode()">채점하기 (Grade)</button>
         </div>
+        {% endif %}
     </section>
 
     <!-- 오른쪽: 입출력 및 채점 -->
     <section class="panel panel-right">
         <div class="panel-header">실행 결과</div>
         <div class="console-section">
-            <div class="console-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="console-title" style="display: flex; justify-content: space-between; align-items: center; {% if item.item_type == 'objective' %}display:none;{% endif %}">
                 <span>INPUT (입력값)</span>
                 <span id="input-mode-badge" style="font-size: 9px; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: var(--accent-blue);">SMART MODE</span>
             </div>
             
             <!-- 동적 입력 영역 -->
-            <div id="dynamic-inputs-area" class="dynamic-input-container">
+            <div id="dynamic-inputs-area" class="dynamic-input-container" {% if item.item_type == 'objective' %}style="display:none;"{% endif %}>
                 <!-- JS에서 생성됨 -->
             </div>
             
             <!-- 기본 입력 영역 (동적 입력이 없을 때 노출) -->
-            <textarea id="input-box" class="input-box" placeholder="input() 시 사용할 값을 입력..." style="display:none;"></textarea>
+            <textarea id="input-box" class="input-box" placeholder="input() 시 사용할 값을 입력..." style="display:none;{% if item.item_type == 'objective' %}display:none;{% endif %}"></textarea>
             
             <div class="console-title">OUTPUT (출력값)</div>
-            <div id="output-box" class="output-box">{{ user_progress.last_output|default:"코드를 실행하면 결과가 여기에 나타납니다." }}</div>
+            <div id="output-box" class="output-box">{% if item.item_type == 'objective' %}{{ user_progress.last_output|default:"정답을 선택하면 결과가 여기에 표시됩니다." }}{% else %}{{ user_progress.last_output|default:"코드를 실행하면 결과가 여기에 나타납니다." }}{% endif %}</div>
             
             <div id="grade-display" class="grade-display" {% if user_progress.completed %}style="display: block; background: rgba(16, 185, 129, 0.1); color: #10b981;"{% endif %}>
                 {% if user_progress.completed %}✨ 정답 기록이 있습니다!{% endif %}
@@ -333,21 +419,29 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if item.item_type != 'objective' %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
+{% endif %}
 <script>
+    const isObjective = {{ is_objective|yesno:'true,false' }};
+    const objectiveNextUrl = `{% if next_item %}{% url 'item_page' next_item.id %}{% endif %}`;
+
     // Ace Editor 초기화
-    var editor = ace.edit("editor");
-    editor.setTheme("ace/theme/tomorrow_night_eighties");
-    editor.session.setMode("ace/mode/python");
-    editor.setOptions({
-        fontSize: "16px",
-        showPrintMargin: false,
-        enableBasicAutocompletion: true,
-        enableLiveAutocompletion: true,
-        fontFamily: 'JetBrains Mono',
-        tabSize: 4,
-        useSoftTabs: true
-    });
+    var editor = null;
+    if (!isObjective) {
+        editor = ace.edit("editor");
+        editor.setTheme("ace/theme/tomorrow_night_eighties");
+        editor.session.setMode("ace/mode/python");
+        editor.setOptions({
+            fontSize: "16px",
+            showPrintMargin: false,
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true,
+            fontFamily: 'JetBrains Mono',
+            tabSize: 4,
+            useSoftTabs: true
+        });
+    }
 
     // 지능형 입력 가이드 감지 로직
     const inputArea = document.getElementById('dynamic-inputs-area');
@@ -395,8 +489,10 @@
         }
     }
 
-    editor.on('change', refreshInputGuide);
-    refreshInputGuide(); // 초기 실행
+    if (!isObjective) {
+        editor.on('change', refreshInputGuide);
+        refreshInputGuide();
+    }
 
     function toggleAux(id) {
         const el = document.getElementById(id);
@@ -422,6 +518,9 @@
     }
 
     function runCode() {
+        if (isObjective) {
+            return;
+        }
         const code = editor.getValue();
         const inputData = getSerializedInput();
         const out = document.getElementById('output-box');
@@ -454,6 +553,9 @@
     }
 
     function submitCode() {
+        if (isObjective) {
+            return;
+        }
         const code = editor.getValue();
         const inputData = getSerializedInput();
         const gd = document.getElementById('grade-display');
@@ -481,6 +583,74 @@
                 showToast("다시 시도해보세요.", 'error');
             }
         });
+    }
+
+    function submitObjective() {
+        const actionButton = document.getElementById('objective-action-button');
+
+        if (actionButton && actionButton.dataset.mode === 'next' && objectiveNextUrl) {
+            window.location.href = objectiveNextUrl;
+            return;
+        }
+
+        const selected = document.querySelector('input[name="objective_option"]:checked');
+        const gd = document.getElementById('grade-display');
+        const out = document.getElementById('output-box');
+
+        if (!selected) {
+            gd.style.display = 'block';
+            gd.innerText = '보기를 하나 선택해 주세요.';
+            gd.style.background = 'rgba(239, 68, 68, 0.2)';
+            gd.style.color = '#ef4444';
+            showToast('보기를 선택해 주세요.', 'error');
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('item_id', '{{ item.id }}');
+        fd.append('selected_option', selected.value);
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('{% url "grade_code" %}', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+            out.innerText = data.output || '채점 완료';
+            gd.style.display = 'block';
+            if (data.is_correct) {
+                gd.innerText = '✨ 정답입니다!';
+                gd.style.background = 'rgba(16, 185, 129, 0.2)';
+                gd.style.color = '#10b981';
+                document.getElementById('status-text').innerText = '● COMPLETED';
+                document.getElementById('status-text').style.color = '#10b981';
+                if (actionButton) {
+                    if (objectiveNextUrl) {
+                        actionButton.innerText = '다음 문제 (Next)';
+                        actionButton.dataset.mode = 'next';
+                    } else {
+                        actionButton.innerText = '완료';
+                        actionButton.disabled = true;
+                    }
+                }
+                showToast('정답입니다!', 'success');
+            } else {
+                gd.innerText = '❌ 오답입니다.';
+                gd.style.background = 'rgba(239, 68, 68, 0.2)';
+                gd.style.color = '#ef4444';
+                if (actionButton) {
+                    actionButton.innerText = '정답 확인 (Check)';
+                    actionButton.dataset.mode = 'check';
+                    actionButton.disabled = false;
+                }
+                showToast('다시 시도해보세요.', 'error');
+            }
+        });
+    }
+
+    if (isObjective) {
+        const actionButton = document.getElementById('objective-action-button');
+        if (actionButton) {
+            actionButton.dataset.mode = ({% if user_progress.completed and next_item %}'next'{% else %}'check'{% endif %});
+        }
     }
 
     // 코드 복사 공통 함수

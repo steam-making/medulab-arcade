@@ -50,6 +50,7 @@ class Chapter(models.Model):
 class Item(models.Model):
     ITEM_TYPES = [
         ('example', '예제'),
+        ('objective', '객관식'),
         ('problem', '실습문제'),
         ('project', '프로젝트'),
         ('homework', '과제'),

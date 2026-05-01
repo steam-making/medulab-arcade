@@ -1,5 +1,6 @@
 import io
 import sys
+import re
 import openpyxl
 from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
@@ -61,6 +62,24 @@ PYTHON_ERROR_GUIDE = {
     "ModuleNotFoundError": "설치되지 않았거나 존재하지 않는 모듈을 불러오려고 했습니다.",
 }
 
+
+def get_korean_error_hint(error):
+    error_type = type(error).__name__
+    message = str(error)
+
+    if error_type == "ValueError":
+        lowered = message.lower()
+        if "not enough values to unpack" in lowered:
+            return "입력값이 부족합니다. 문제에서 요구한 개수만큼 입력했는지 확인해 보세요. 예를 들어 두 수를 입력해야 하면 `3 4`처럼 넣어야 합니다."
+        if "too many values to unpack" in lowered:
+            return "입력값이 너무 많습니다. 문제에서 요구한 개수보다 더 많이 입력하지 않았는지 확인해 보세요."
+        if "invalid literal for int()" in lowered:
+            return "숫자로 바꿀 수 없는 값을 입력했습니다. `int()`로 바꾸는 값이 숫자인지 확인해 보세요."
+        if "invalid literal for float()" in lowered:
+            return "실수로 바꿀 수 없는 값을 입력했습니다. `float()`로 바꾸는 값이 숫자인지 확인해 보세요."
+
+    return PYTHON_ERROR_GUIDE.get(error_type, "오류가 발생했습니다. 코드를 다시 차근차근 확인해 보세요.")
+
 # --- Python 코드 안전 실행 유틸리티 ---
 def safe_exec(code, input_str=""):
     old_stdout = sys.stdout
@@ -89,23 +108,53 @@ def safe_exec(code, input_str=""):
             "str": str,
             "float": float,
             "list": list,
+            "tuple": tuple,
             "dict": dict,
+            "set": set,
             "sum": sum,
             "abs": abs,
             "round": round,
+            "map": map,
+            "max": max,
+            "min": min,
+            "sorted": sorted,
+            "enumerate": enumerate,
+            "zip": zip,
             "input": MockInput(input_str),
             "type": type,
         }
         exec(code, {"__builtins__": allowed_builtins})
         output = captured.getvalue()
     except Exception as e:
-        error_type = type(e).__name__
-        korean_hint = PYTHON_ERROR_GUIDE.get(error_type, "오류가 발생했습니다. 코드를 다시 차근차근 확인해 보세요.")
+        korean_hint = get_korean_error_hint(e)
         # SyntaxError/IndentationError 등은 e.msg에 메시지가 있고 str(e)에 위치가 포함됨
         output = f"Traceback (Error Notification):\n{e}\n\n[💡 도움말]\n{korean_hint}"
     finally:
         sys.stdout = old_stdout
     return output
+
+
+def parse_objective_options(raw_text):
+    options = []
+    if not raw_text:
+        return options
+
+    for line in raw_text.replace("\r\n", "\n").split("\n"):
+        text = line.strip()
+        if not text:
+            continue
+
+        match = re.match(r"^([A-Za-z0-9]+)[\.)\s:-]+(.*)$", text)
+        if match:
+            label = match.group(1).strip().upper()
+            content = match.group(2).strip()
+        else:
+            label = str(len(options) + 1)
+            content = text
+
+        options.append({"label": label, "text": content})
+
+    return options
 
 # --- (1) 관리자용 학습 프로그램 목록 ---
 @login_required
@@ -364,6 +413,7 @@ def item_page(request, item_id):
 
     # 유저 진행 상황 (기존 코드 등 로드)
     progress, _ = UserProgress.objects.get_or_create(user=request.user, item=item)
+    objective_options = parse_objective_options(item.example_input) if item.item_type == "objective" else []
 
     # 템플릿 결정 (과정 이름이나 유형에 따라 분기 가능)
     template_name = "learning_program/item_page.html"
@@ -383,7 +433,10 @@ def item_page(request, item_id):
         "prev_item": prev_item,
         "next_item": next_item,
         "program": program,
-        "user_progress": progress
+        "user_progress": progress,
+        "objective_options": objective_options,
+        "objective_selected": progress.code.strip(),
+        "is_objective": item.item_type == "objective",
     })
 
 # --- (7) 코드 채점 API ---
@@ -397,6 +450,30 @@ def grade_code(request):
     input_str = request.POST.get("input", "")
     
     item = get_object_or_404(Item, id=item_id)
+
+    if item.item_type == "objective":
+        selected = (request.POST.get("selected_option") or code or "").strip().upper()
+        correct = (item.answer_code or "").strip().upper()
+        is_correct = selected == correct and bool(selected)
+        score = 100 if is_correct else 0
+        explanation = item.expected_output or ""
+        output_message = explanation if is_correct else f"선택한 답: {selected or '-'}"
+
+        progress, _ = UserProgress.objects.get_or_create(user=request.user, item=item)
+        progress.code = selected
+        progress.last_output = output_message
+        progress.score = score
+        progress.completed = is_correct
+        progress.save()
+
+        return JsonResponse({
+            "is_correct": is_correct,
+            "output": output_message,
+            "expected": correct,
+            "score": score,
+            "selected": selected,
+        })
+
     output = safe_exec(code, input_str)
     
     # 정답 비교 (줄바꿈 문자 정규화 및 공백 제거)

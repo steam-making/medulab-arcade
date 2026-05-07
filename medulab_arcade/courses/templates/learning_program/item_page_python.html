@@ -508,6 +508,15 @@
         setTimeout(() => { t.style.display = 'none'; }, 2000);
     }
 
+    function showNewBadgeToast(newBadges) {
+        if (!Array.isArray(newBadges) || !newBadges.length) {
+            return;
+        }
+        const first = newBadges[0];
+        const extra = newBadges.length > 1 ? ` 외 ${newBadges.length - 1}개` : '';
+        showToast(`새 배지 획득! ${first.icon || '🏅'} ${first.name}${extra}`, 'success');
+    }
+
     // 입력 데이터 수집 (동적 필드 또는 기본 텍스트 박스)
     function getSerializedInput() {
         if (inputArea.style.display !== 'none') {
@@ -576,6 +585,7 @@
                 gd.style.background = "rgba(16, 185, 129, 0.2)";
                 gd.style.color = "#10b981";
                 showToast("정답입니다!", 'success');
+                showNewBadgeToast(data.new_badges);
             } else {
                 gd.innerText = "❌ 오답입니다.";
                 gd.style.background = "rgba(239, 68, 68, 0.2)";
@@ -632,6 +642,7 @@
                     }
                 }
                 showToast('정답입니다!', 'success');
+                showNewBadgeToast(data.new_badges);
             } else {
                 gd.innerText = '❌ 오답입니다.';
                 gd.style.background = 'rgba(239, 68, 68, 0.2)';

@@ -8,6 +8,14 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse, Http404
 from django.utils import timezone
+from arcade.badge_service import (
+    evaluate_homework_badges,
+    evaluate_mission_badges,
+    evaluate_program_badges,
+    get_active_badges_with_user_state,
+    get_program_completion_badge,
+    get_recent_user_badges,
+)
 from .models import (
     LearningProgram,
     Chapter,
@@ -363,6 +371,17 @@ def student_course_apply(request, program_id):
 def course_home(request, program_id):
     program = get_object_or_404(LearningProgram, id=program_id)
     chapters = Chapter.objects.filter(program=program).order_by("number")
+    program_badge = get_program_completion_badge(program)
+    program_badge_awarded = request.user.earned_badges.filter(badge=program_badge).exists()
+    badge_catalog = get_active_badges_with_user_state(request.user)
+    course_badges_with_status = [
+        badge for badge in badge_catalog
+        if badge['category'] in {program_badge.category, 'milestone'}
+        and not (
+            badge['criteria_type'] == 'program_completion'
+            and badge['related_program_id'] == program.id
+        )
+    ]
     
     # 챕터별 진도율 계산하여 챕터 객체에 주입
     for ch in chapters:
@@ -377,6 +396,10 @@ def course_home(request, program_id):
     return render(request, "learning_program/course_home.html", {
         "program": program,
         "chapters": chapters,
+        "program_badge": program_badge,
+        "program_badge_awarded": program_badge_awarded,
+        "recent_badges": get_recent_user_badges(request.user, limit=4),
+        "course_badges_with_status": course_badges_with_status,
     })
 
 # --- (5) 챕터 상세 (항목 목록) ---
@@ -465,6 +488,10 @@ def grade_code(request):
         progress.score = score
         progress.completed = is_correct
         progress.save()
+        new_badges = []
+        if is_correct:
+            new_badges.extend(evaluate_mission_badges(request.user))
+            new_badges.extend(evaluate_program_badges(request.user, item.chapter.program))
 
         return JsonResponse({
             "is_correct": is_correct,
@@ -472,6 +499,7 @@ def grade_code(request):
             "expected": correct,
             "score": score,
             "selected": selected,
+            "new_badges": new_badges,
         })
 
     output = safe_exec(code, input_str)
@@ -495,12 +523,17 @@ def grade_code(request):
     progress.score = score
     progress.completed = is_correct
     progress.save()
+    new_badges = []
+    if is_correct:
+        new_badges.extend(evaluate_mission_badges(request.user))
+        new_badges.extend(evaluate_program_badges(request.user, item.chapter.program))
     
     return JsonResponse({
         "is_correct": is_correct,
         "output": output,
         "expected": expected_out,
-        "score": score
+        "score": score,
+        "new_badges": new_badges,
     })
 
 # --- (8) 챕터 관리 및 엑셀 업로드 ---
@@ -740,6 +773,7 @@ def homework_submission_action(request, submission_id):
         submission.teacher_comment = teacher_comment
         submission.reviewed_at = timezone.now()
         submission.save(update_fields=['status', 'teacher_comment', 'reviewed_at', 'updated_at'])
+        evaluate_homework_badges(submission.student)
         messages.success(request, f'{submission.student.username} 학생 숙제를 최종 완료 처리했습니다.')
     else:
         messages.warning(request, '처리할 작업을 다시 선택해 주세요.')
@@ -835,6 +869,8 @@ def homework_submission_review(request, submission_id):
             reviewed_submission = form.save(commit=False)
             reviewed_submission.reviewed_at = timezone.now()
             reviewed_submission.save()
+            if reviewed_submission.status == HomeworkSubmission.STATUS_COMPLETED:
+                evaluate_homework_badges(reviewed_submission.student)
             messages.success(request, f'{submission.student.username} 학생 제출물을 평가했습니다.')
             return redirect('homework_edit', homework_id=submission.assignment_id)
     else:

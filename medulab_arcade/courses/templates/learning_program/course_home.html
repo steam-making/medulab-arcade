@@ -89,6 +89,117 @@
         max-width: 500px;
     }
 
+    .hero-badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 24px;
+    }
+
+    .achievement-card {
+        min-width: 220px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.04);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .achievement-card.is-locked {
+        opacity: 0.6;
+        filter: grayscale(100%);
+    }
+
+    .achievement-card.is-earned {
+        border-color: rgba(245, 196, 81, 0.4);
+        box-shadow: 0 0 0 1px rgba(245, 196, 81, 0.15) inset, 0 8px 24px rgba(0, 0, 0, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .achievement-card.is-earned:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 0 0 1px rgba(245, 196, 81, 0.3) inset, 0 12px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .achievement-status-label {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 4px 8px;
+        border-radius: 8px;
+        letter-spacing: 0.5px;
+    }
+
+    .achievement-card.is-earned .achievement-status-label {
+        background: rgba(245, 196, 81, 0.15);
+        color: #f5c451;
+    }
+
+    .achievement-card.is-locked .achievement-status-label {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-muted);
+    }
+
+    .achievement-label {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.8px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .achievement-name {
+        color: #fff;
+        font-size: 16px;
+        font-weight: 800;
+        margin-bottom: 6px;
+        transition: all 0.3s ease;
+    }
+
+    .achievement-desc,
+    .achievement-state,
+    .recent-badge-date {
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--text-muted);
+    }
+
+    .recent-badge-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .badge-pill {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        min-width: 140px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .badge-pill.is-locked {
+        opacity: 0.5;
+        filter: grayscale(100%);
+    }
+
+    .badge-pill.is-earned {
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .badge-pill.is-earned:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
     /* 챕터 목록 */
     .chapter-section {
         max-width: 1000px;
@@ -218,6 +329,42 @@
             <span class="hero-label">CURRICULUM DASHBOARD</span>
             <h1 class="hero-title">{{ program.name }}</h1>
             <p class="hero-desc">{{ program.description }}</p>
+            <div class="hero-badge-row">
+                <div class="achievement-card {% if program_badge_awarded %}is-earned{% else %}is-locked{% endif %}">
+                    <div class="achievement-status-label">
+                        {% if program_badge_awarded %}획득{% else %}미획득{% endif %}
+                    </div>
+                    <div class="achievement-label">COURSE BADGE</div>
+                    <div class="achievement-name" style="{% if program_badge_awarded %}color: {{ program_badge.color|default:'#f5c451' }}; text-shadow: 0 0 10px {{ program_badge.color|default:'#f5c451' }}40;{% endif %}">{{ program_badge.icon }} {{ program_badge.name }}</div>
+                    <div class="achievement-desc">{{ program_badge.description }}</div>
+                    <div class="achievement-state">
+                        {% if program_badge_awarded %}
+                            획득 완료 ✨
+                        {% else %}
+                            모든 단원을 완료하면 자동으로 지급됩니다.
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="achievement-card" style="flex: 1;">
+                    <div class="achievement-label">COURSE BADGES</div>
+                    <div class="recent-badge-list">
+                        {% for item in course_badges_with_status %}
+                        <div class="badge-pill {% if item.is_earned %}is-earned{% else %}is-locked{% endif %}">
+                            <div class="achievement-name" style="font-size: 14px; margin-bottom: 2px; {% if item.is_earned %}color: {{ item.color }}; text-shadow: 0 0 8px {{ item.color }}40;{% endif %}">{{ item.icon }} {{ item.name }}</div>
+                            <div class="recent-badge-date">
+                                {% if item.is_earned %}
+                                    {{ item.awarded_at|date:"m.d" }} 획득
+                                {% else %}
+                                    🔒 잠김
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="achievement-state">이 코스에 등록된 배지가 없습니다.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

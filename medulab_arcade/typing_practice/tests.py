@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.utils import timezone
 
-from typing_practice.models import TypingHallOfFame, TypingScore
+from typing_practice.models import TypingHallOfFame, TypingScore, TypingUnlockProgress
 from typing_practice.views import (
     get_age_group_for_user,
     get_current_quarter_info,
@@ -84,3 +84,67 @@ class TypingRankingTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "명예의 전당")
+
+    def test_save_score_merges_authenticated_unlock_progress(self):
+        self.client.force_login(self.growth_user)
+        response = self.client.post(
+            "/typing/api/save-score/",
+            data={
+                "type": "key",
+                "lang": "ko",
+                "score": 900,
+                "speed": 90,
+                "accuracy": 91,
+                "unlocks": {
+                    "key_levels": ["home", "top", "bottom", "number", "shift", "all"],
+                    "word_unlocked": True,
+                    "short_unlocked": False,
+                    "long_unlocked": False,
+                },
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        progress = TypingUnlockProgress.objects.get(user=self.growth_user, language="ko")
+        self.assertEqual(progress.key_levels, ["home", "top", "bottom", "number", "shift", "all"])
+        self.assertTrue(progress.word_unlocked)
+
+        response = self.client.post(
+            "/typing/api/save-score/",
+            data={
+                "type": "short",
+                "lang": "ko",
+                "score": 3600,
+                "speed": 450,
+                "accuracy": 98,
+                "unlocks": {
+                    "key_levels": ["home"],
+                    "word_unlocked": False,
+                    "short_unlocked": False,
+                    "long_unlocked": True,
+                },
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        progress.refresh_from_db()
+        self.assertEqual(progress.key_levels, ["home", "top", "bottom", "number", "shift", "all"])
+        self.assertTrue(progress.word_unlocked)
+        self.assertTrue(progress.long_unlocked)
+
+    def test_typing_home_renders_server_unlock_state_for_authenticated_user(self):
+        TypingUnlockProgress.objects.create(
+            user=self.growth_user,
+            language="ko",
+            key_levels=["home", "top", "bottom", "number", "shift", "all"],
+            word_unlocked=True,
+            short_unlocked=True,
+        )
+        self.client.force_login(self.growth_user)
+
+        response = self.client.get("/typing/?lang=ko")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '"short_unlocked": true')

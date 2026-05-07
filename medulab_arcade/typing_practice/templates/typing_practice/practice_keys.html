@@ -561,6 +561,7 @@
 
     const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
     const isAdminTester = {% if request.user.is_staff %}true{% else %}false{% endif %};
+    const serverUnlocks = {{ typing_unlocks_json|safe }};
     const progressKey = (name) => `${progressPrefix}_${name}`;
     const isAdminUnlockEnabled = () => isAdminTester && (
         localStorage.getItem(`${progressPrefix}_typing_admin_bypass`) === 'true' ||
@@ -573,7 +574,36 @@
     let wordUnlockKey = progressKey(`typing_word_unlocked_${currentLang}`);
 
     const PROGRESSION = ['home', 'top', 'bottom', 'number', 'shift', 'all'];
-    let unlockedLevels = isAdminUnlockEnabled() ? [...PROGRESSION] : JSON.parse(getStorage().getItem(storageKey) || '["home"]');
+    function getUnlockState(lang) {
+        if (isPermanent) {
+            return serverUnlocks[lang] || {key_levels: ['home'], word_unlocked: false, short_unlocked: false, long_unlocked: false};
+        }
+        let levels = ['home'];
+        try {
+            levels = JSON.parse(getStorage().getItem(progressKey(`typing_unlocked_levels_${lang}`)) || '["home"]');
+        } catch (error) {
+            levels = ['home'];
+        }
+        return {
+            key_levels: levels,
+            word_unlocked: getStorage().getItem(progressKey(`typing_word_unlocked_${lang}`)) === 'true',
+            short_unlocked: getStorage().getItem(progressKey(`typing_short_unlocked_${lang}`)) === 'true',
+            long_unlocked: getStorage().getItem(progressKey(`typing_long_unlocked_${lang}`)) === 'true',
+        };
+    }
+
+    function setUnlockState(lang, state) {
+        if (isPermanent) {
+            serverUnlocks[lang] = state;
+            return;
+        }
+        getStorage().setItem(progressKey(`typing_unlocked_levels_${lang}`), JSON.stringify(state.key_levels || ['home']));
+        if (state.word_unlocked) getStorage().setItem(progressKey(`typing_word_unlocked_${lang}`), 'true');
+        if (state.short_unlocked) getStorage().setItem(progressKey(`typing_short_unlocked_${lang}`), 'true');
+        if (state.long_unlocked) getStorage().setItem(progressKey(`typing_long_unlocked_${lang}`), 'true');
+    }
+
+    let unlockedLevels = isAdminUnlockEnabled() ? [...PROGRESSION] : [...getUnlockState(currentLang).key_levels];
 
     function updateLockStates() {
         document.querySelectorAll('.level-btn').forEach(btn => {
@@ -592,13 +622,18 @@
             const next = PROGRESSION[idx + 1];
             if (!unlockedLevels.includes(next)) {
                 unlockedLevels.push(next);
-                getStorage().setItem(storageKey, JSON.stringify(unlockedLevels));
+                const state = getUnlockState(currentLang);
+                state.key_levels = [...unlockedLevels];
+                setUnlockState(currentLang, state);
                 updateLockStates();
                 return next;
             }
             return 'already_unlocked';
         } else if (current === 'all') {
-            getStorage().setItem(wordUnlockKey, 'true');
+            const state = getUnlockState(currentLang);
+            state.word_unlocked = true;
+            state.key_levels = [...unlockedLevels];
+            setUnlockState(currentLang, state);
             return 'word_practice_ready';
         }
         return null;
@@ -692,7 +727,7 @@
         // 언어 변경 시 스토리지 키 및 상태 재동기화 (v15 개선)
         storageKey = progressKey(`typing_unlocked_levels_${currentLang}`);
         wordUnlockKey = progressKey(`typing_word_unlocked_${currentLang}`);
-        unlockedLevels = isAdminUnlockEnabled() ? [...PROGRESSION] : JSON.parse(getStorage().getItem(storageKey) || '["home"]');
+        unlockedLevels = isAdminUnlockEnabled() ? [...PROGRESSION] : [...getUnlockState(currentLang).key_levels];
 
         document.querySelectorAll('.lang-toggle .toggle-btn').forEach(btn => {
             if (btn.id === 'sound-btn') return;
@@ -728,7 +763,9 @@
         // 현재 레벨이 잠겨있는지 다시 한 번 체크 (URL 직접 접근 등 대비)
         if (!isAdminUnlockEnabled() && !unlockedLevels.includes(currentLevel)) {
             currentLevel = 'home';
-            getStorage().setItem(storageKey, JSON.stringify(unlockedLevels));
+            const state = getUnlockState(currentLang);
+            state.key_levels = [...unlockedLevels];
+            setUnlockState(currentLang, state);
             alert("🔒 아직 열리지 않은 단계입니다! 기본자리부터 시작하세요.");
             updateLockStates();
         }
@@ -983,7 +1020,7 @@
         if (isSuccess && accuracy >= 80) {
             const unlocked = unlockNextLevel(currentLevel);
             if (unlocked) {
-                if (unlocked === 'word_practice') unlockMsg = "<span style='color:#fbbf24; font-size:16px;'>🔓 단어 연습 모드가 해제되었습니다!</span>";
+                if (unlocked === 'word_practice_ready') unlockMsg = "<span style='color:#fbbf24; font-size:16px;'>🔓 단어 연습 모드가 해제되었습니다!</span>";
                 else unlockMsg = "<span style='color:#fbbf24; font-size:16px;'>🔓 새로운 단계가 열렸습니다!</span>";
             }
         } else if (isSuccess && accuracy < 80) {
@@ -1034,8 +1071,21 @@
         fetch('{% url "save_score" %}', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
-            body: JSON.stringify({type: 'key', lang: currentLang, score: wpm * 10, speed: wpm, accuracy: accuracy})
-        }).then(() => { location.href = `{% url "practice_keys" %}?lang=${currentLang}`; });
+            body: JSON.stringify({
+                type: 'key',
+                lang: currentLang,
+                score: wpm * 10,
+                speed: wpm,
+                accuracy: accuracy,
+                unlocks: getUnlockState(currentLang)
+            })
+        }).then(response => response.json())
+        .then(data => {
+            if (data && Array.isArray(data.new_badges) && data.new_badges.length) {
+                sessionStorage.setItem('typing_new_badges', JSON.stringify(data.new_badges));
+            }
+            location.href = `{% url "practice_keys" %}?lang=${currentLang}`;
+        });
     }
 
     function toggleSound() { soundEnabled = !soundEnabled; getStorage().setItem('typingSound', soundEnabled ? 'on' : 'off'); updateSoundIcon(); }

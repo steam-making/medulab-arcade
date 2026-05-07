@@ -564,8 +564,12 @@
                 speed: speed,
                 accuracy: accuracy
             })
-        }).then(() => {
-            location.href = '{% url "typing_home" %}';
+        }).then(response => response.json())
+        .then(data => {
+            if (data && Array.isArray(data.new_badges) && data.new_badges.length) {
+                sessionStorage.setItem('typing_new_badges', JSON.stringify(data.new_badges));
+            }
+            location.href = `{% url "practice_long_select" %}?lang=${inputLang}`;
         });
     }
 

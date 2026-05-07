@@ -14,14 +14,16 @@ from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
 from django.views.decorators.http import require_POST
 from django.views.decorators.clickjacking import xframe_options_sameorigin
+from django.db import DatabaseError
 from django.db.models import Count, Q
 from django.contrib.auth import login
 from django.contrib import messages
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification
-from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, UserProfileUpdateForm
+from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification
+from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, UserProfileUpdateForm
 
 
 def home(request):
@@ -1091,6 +1093,8 @@ def profile_view(request):
     # 받은 총 좋아요/즐겨찾기 수 계산
     total_likes_received = Like.objects.filter(project__author=user).count()
     total_bookmarks_received = Bookmark.objects.filter(project__author=user).count()
+    recent_badges = get_recent_user_badges(user, limit=8)
+    badge_catalog = get_active_badges_with_user_state(user)
     
     context = {
         'profile': profile,
@@ -1100,6 +1104,9 @@ def profile_view(request):
         'bookmarked_projects': bookmarked_projects,
         'total_likes': total_likes_received,
         'total_bookmarks': total_bookmarks_received,
+        'badge_count': get_user_badge_count(user),
+        'recent_badges': recent_badges,
+        'badge_catalog': badge_catalog,
     }
     return render(request, 'arcade/profile.html', context)
 
@@ -1248,6 +1255,111 @@ def member_delete(request, user_id):
     return redirect('member_list')
 
 
+# ────────────────────────────────────────────────
+# 배지 관리 (관리자 전용 CRUD)
+# ────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(staff_check)
+def badge_list(request):
+    """배지 목록 조회"""
+    search = request.GET.get('q', '')
+    category = request.GET.get('category', '')
+    criteria_type = request.GET.get('criteria_type', '')
+    is_active = request.GET.get('is_active', '')
+
+    badges = Badge.objects.select_related('related_program').order_by('sort_order', 'name')
+
+    if search:
+        badges = badges.filter(
+            Q(code__icontains=search) |
+            Q(name__icontains=search) |
+            Q(description__icontains=search) |
+            Q(criteria_type__icontains=search) |
+            Q(related_program__name__icontains=search)
+        )
+    if category:
+        badges = badges.filter(category=category)
+    if criteria_type:
+        badges = badges.filter(criteria_type=criteria_type)
+    if is_active in ('0', '1'):
+        badges = badges.filter(is_active=is_active == '1')
+
+    context = {
+        'badges': badges,
+        'search_query': search,
+        'current_category': category,
+        'current_criteria_type': criteria_type,
+        'current_is_active': is_active,
+        'categories': Badge.CATEGORY_CHOICES,
+        'criteria_types': Badge.objects.exclude(criteria_type='')
+        .order_by('criteria_type')
+        .values_list('criteria_type', flat=True)
+        .distinct(),
+        'title': '배지 관리',
+    }
+    return render(request, 'arcade/admin/badge_list.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def badge_create(request):
+    """신규 배지 등록"""
+    if request.method == 'POST':
+        form = BadgeForm(request.POST)
+        if form.is_valid():
+            badge = form.save()
+            messages.success(request, f'배지 "{badge.name}"이 생성되었습니다.')
+            return redirect('badge_list')
+    else:
+        form = BadgeForm()
+
+    context = {
+        'form': form,
+        'title': '신규 배지 등록',
+    }
+    return render(request, 'arcade/admin/badge_form.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def badge_edit(request, badge_id):
+    """배지 정보 수정"""
+    badge = get_object_or_404(Badge, pk=badge_id)
+
+    if request.method == 'POST':
+        form = BadgeForm(request.POST, instance=badge)
+        if form.is_valid():
+            badge = form.save()
+            messages.success(request, f'배지 "{badge.name}" 정보가 수정되었습니다.')
+            return redirect('badge_list')
+    else:
+        form = BadgeForm(instance=badge)
+
+    context = {
+        'form': form,
+        'badge': badge,
+        'title': '배지 정보 수정',
+    }
+    return render(request, 'arcade/admin/badge_form.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def badge_delete(request, badge_id):
+    """배지 삭제"""
+    badge = get_object_or_404(Badge, pk=badge_id)
+    name = badge.name
+    try:
+        badge.delete()
+    except DatabaseError:
+        messages.error(request, f'배지 "{name}"을 삭제할 수 없습니다.')
+    else:
+        messages.success(request, f'배지 "{name}"이 삭제되었습니다.')
+    return redirect('badge_list')
+
+
 def signup(request):
     """회원가입"""
     if request.method == 'POST':
@@ -1282,6 +1394,8 @@ def profile_view(request):
 
     total_likes_received = Like.objects.filter(project__author=user).count()
     total_bookmarks_received = Bookmark.objects.filter(project__author=user).count()
+    recent_badges = get_recent_user_badges(user, limit=8)
+    badge_catalog = get_active_badges_with_user_state(user)
 
     context = {
         'profile': profile,
@@ -1291,5 +1405,8 @@ def profile_view(request):
         'bookmarked_projects': bookmarked_projects,
         'total_likes': total_likes_received,
         'total_bookmarks': total_bookmarks_received,
+        'badge_count': get_user_badge_count(user),
+        'recent_badges': recent_badges,
+        'badge_catalog': badge_catalog,
     }
     return render(request, 'arcade/profile.html', context)

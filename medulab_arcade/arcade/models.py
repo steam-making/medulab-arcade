@@ -66,6 +66,60 @@ class UserProfile(models.Model):
         return self.nickname or self.real_name or self.user.username
 
 
+class Badge(models.Model):
+    CATEGORY_TYPING = 'typing'
+    CATEGORY_LEARNING = 'learning'
+    CATEGORY_MILESTONE = 'milestone'
+    CATEGORY_CHOICES = [
+        (CATEGORY_TYPING, '타자연습'),
+        (CATEGORY_LEARNING, '학습과정'),
+        (CATEGORY_MILESTONE, '성장기록'),
+    ]
+
+    code = models.CharField('배지 코드', max_length=120, unique=True)
+    name = models.CharField('배지명', max_length=100)
+    description = models.TextField('설명', blank=True)
+    icon = models.CharField('아이콘', max_length=10, default='🏅')
+    color = models.CharField('포인트 색상', max_length=7, default='#f5c451')
+    category = models.CharField('배지 분류', max_length=20, choices=CATEGORY_CHOICES, default=CATEGORY_MILESTONE)
+    criteria_type = models.CharField('획득 조건 유형', max_length=50, blank=True)
+    criteria_value = models.PositiveIntegerField('획득 조건 값', default=1)
+    related_program = models.ForeignKey(
+        'courses.LearningProgram',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='completion_badges',
+        verbose_name='연결 과정',
+    )
+    is_active = models.BooleanField('활성화 여부', default=True)
+    sort_order = models.PositiveIntegerField('정렬 순서', default=0)
+    created_at = models.DateTimeField('생성일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '배지'
+        verbose_name_plural = '배지'
+        ordering = ['sort_order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class UserBadge(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='earned_badges', verbose_name='사용자')
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name='awarded_users', verbose_name='배지')
+    awarded_at = models.DateTimeField('획득일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '사용자 배지'
+        verbose_name_plural = '사용자 배지'
+        ordering = ['-awarded_at']
+        unique_together = ('user', 'badge')
+
+    def __str__(self):
+        return f'{self.user.username} - {self.badge.name}'
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created and not hasattr(instance, '_skip_profile'):

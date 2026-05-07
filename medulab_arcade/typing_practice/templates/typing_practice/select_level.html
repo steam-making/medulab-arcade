@@ -174,6 +174,7 @@
         const isPermanent = {% if is_permanent %}true{% else %}false{% endif %};
         const isAdminTester = {% if request.user.is_staff %}true{% else %}false{% endif %};
         const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
+        const serverUnlocks = {{ typing_unlocks_json|safe }};
         const getStorage = () => isPermanent ? localStorage : sessionStorage;
         const progressKey = (name) => `${progressPrefix}_${name}`;
 
@@ -189,9 +190,17 @@
             // Legacy shared progress is ignored to keep unlock state user-specific.
         }
 
-        const unlockedLevels = isAdminUnlockEnabled()
-            ? ['home', 'top', 'bottom', 'number', 'shift', 'all']
-            : JSON.parse(getStorage().getItem(storageKey) || '["home"]');
+        function getUnlockedLevels() {
+            if (isAdminUnlockEnabled()) return ['home', 'top', 'bottom', 'number', 'shift', 'all'];
+            if (isPermanent) return (serverUnlocks[lang] && serverUnlocks[lang].key_levels) || ['home'];
+            try {
+                return JSON.parse(getStorage().getItem(storageKey) || '["home"]');
+            } catch (error) {
+                return ['home'];
+            }
+        }
+
+        const unlockedLevels = getUnlockedLevels();
         document.querySelectorAll('.select-card').forEach(card => {
             const level = card.getAttribute('data-level');
             if (!unlockedLevels.includes(level)) {

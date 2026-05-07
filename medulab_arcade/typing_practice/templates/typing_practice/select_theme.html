@@ -130,6 +130,8 @@
         const isAdminTester = {% if request.user.is_staff %}true{% else %}false{% endif %};
         const progressStorage = {% if request.user.is_authenticated %}localStorage{% else %}sessionStorage{% endif %};
         const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
+        const isPermanent = {% if is_permanent %}true{% else %}false{% endif %};
+        const serverUnlocks = {{ typing_unlocks_json|safe }};
         const progressKey = (name) => `${progressPrefix}_${name}`;
         const forceUnlock = isAdminTester && (
             localStorage.getItem(`${progressPrefix}_typing_admin_bypass`) === 'true' ||
@@ -137,14 +139,21 @@
         );
         let unlockedLevels = ['home'];
 
-        try {
-            unlockedLevels = JSON.parse(progressStorage.getItem(progressKey(`typing_unlocked_levels_${lang}`)) || '["home"]');
-        } catch (error) {
-            unlockedLevels = ['home'];
+        if (isPermanent) {
+            unlockedLevels = (serverUnlocks[lang] && serverUnlocks[lang].key_levels) || ['home'];
+        } else {
+            try {
+                unlockedLevels = JSON.parse(progressStorage.getItem(progressKey(`typing_unlocked_levels_${lang}`)) || '["home"]');
+            } catch (error) {
+                unlockedLevels = ['home'];
+            }
         }
 
+        const unlockState = isPermanent
+            ? (serverUnlocks[lang] || {short_unlocked: false})
+            : {short_unlocked: progressStorage.getItem(progressKey(`typing_short_unlocked_${lang}`)) === 'true'};
         const wordUnlocked = forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all'));
-        const shortUnlocked = forceUnlock || (wordUnlocked && progressStorage.getItem(progressKey(`typing_short_unlocked_${lang}`)) === 'true');
+        const shortUnlocked = forceUnlock || (wordUnlocked && unlockState.short_unlocked);
 
         if (contentType === 'word' && !wordUnlocked) {
             alert('자리 연습의 전체 자리 미션을 정확도 80% 이상으로 통과해야 단어 연습이 열립니다.');

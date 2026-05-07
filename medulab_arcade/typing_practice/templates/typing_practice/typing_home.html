@@ -36,6 +36,181 @@
         gap: 10px;
         margin: 24px 0 0;
     }
+
+    .badge-banner {
+        margin: 22px auto 0;
+        max-width: 920px;
+        padding: 18px 20px;
+        border-radius: 22px;
+        border: 1px solid var(--tp-border);
+        background: rgba(255, 255, 255, 0.04);
+        text-align: left;
+    }
+
+    .badge-banner-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .badge-banner-title {
+        color: #fff;
+        font-size: 16px;
+        font-weight: 900;
+    }
+
+    .badge-banner-copy {
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+
+    .badge-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .badge-pill {
+        min-width: 150px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.03);
+    }
+
+    .badge-pill-name {
+        color: #fff;
+        font-size: 13px;
+        font-weight: 800;
+        margin-bottom: 2px;
+    }
+
+    .badge-pill-desc {
+        color: var(--text-muted);
+        font-size: 11px;
+        line-height: 1.5;
+    }
+
+    .badge-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(8, 8, 15, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+    }
+    .badge-modal-overlay.is-active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .badge-modal {
+        position: relative;
+        width: min(420px, calc(100vw - 40px));
+        background: linear-gradient(180deg, rgba(20, 22, 32, 0.96), rgba(10, 12, 18, 0.98));
+        border: 1px solid rgba(245, 196, 81, 0.4);
+        border-radius: 28px;
+        padding: 40px 30px;
+        text-align: center;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 80px rgba(245, 196, 81, 0.15);
+        transform: scale(0.9) translateY(20px);
+        transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        overflow: hidden;
+    }
+    .badge-modal-overlay.is-active .badge-modal {
+        transform: scale(1) translateY(0);
+    }
+    .badge-modal-glow {
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle at 50% 50%, rgba(245, 196, 81, 0.15), transparent 60%);
+        pointer-events: none;
+        z-index: 0;
+        animation: rotateGlow 10s linear infinite;
+    }
+    @keyframes rotateGlow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .badge-modal-content {
+        position: relative;
+        z-index: 1;
+    }
+    .badge-modal-header {
+        color: #ffe7a5;
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        margin-bottom: 24px;
+        text-transform: uppercase;
+        text-shadow: 0 0 10px rgba(245, 196, 81, 0.5);
+    }
+    .badge-modal-icon {
+        font-size: 72px;
+        line-height: 1;
+        margin-bottom: 16px;
+        filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4));
+        animation: bounceIcon 2s ease-in-out infinite;
+    }
+    @keyframes bounceIcon {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    .badge-modal-name {
+        color: #fff;
+        font-size: 28px;
+        font-weight: 900;
+        margin-bottom: 12px;
+        letter-spacing: -0.02em;
+    }
+    .badge-modal-desc {
+        color: var(--text-muted);
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+    }
+    .badge-modal-extra {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 800;
+        margin-bottom: 32px;
+    }
+    .badge-modal-btn {
+        display: block;
+        width: 100%;
+        padding: 16px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #f5c451, #f97316);
+        color: #000;
+        font-size: 16px;
+        font-weight: 900;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 4px 15px rgba(245, 196, 81, 0.3);
+    }
+    .badge-modal-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(245, 196, 81, 0.4);
+    }
+    .badge-modal-btn:active {
+        transform: translateY(1px);
+    }
     .lang-tab {
         padding: 12px 20px;
         border-radius: 999px;
@@ -770,7 +945,40 @@
                 <button class="lang-tab" type="button" data-lang="ja">일본어</button>
                 <button class="lang-tab" type="button" data-lang="zh">중국어</button>
             </div>
+            <div class="badge-banner">
+                <div class="badge-banner-head">
+                    <div class="badge-banner-title">최근 획득 배지</div>
+                    <div class="badge-banner-copy">타자 성장을 배지로 바로 확인해요</div>
+                </div>
+                <div class="badge-strip">
+                    {% for user_badge in recent_badges %}
+                    <div class="badge-pill">
+                        <div class="badge-pill-name">{{ user_badge.badge.icon }} {{ user_badge.badge.name }}</div>
+                        <div class="badge-pill-desc">{{ user_badge.badge.description }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="badge-pill" style="width: 100%;">
+                        <div class="badge-pill-name">🏅 아직 배지가 없어요</div>
+                        <div class="badge-pill-desc">첫 기록을 저장하면 배지가 하나씩 쌓이기 시작합니다.</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </section>
+
+        <div id="badge-modal-overlay" class="badge-modal-overlay">
+            <div class="badge-modal">
+                <div class="badge-modal-glow"></div>
+                <div class="badge-modal-content">
+                    <div class="badge-modal-header">새로운 배지 획득!</div>
+                    <div id="badge-modal-icon" class="badge-modal-icon">🏅</div>
+                    <div id="badge-modal-name" class="badge-modal-name">배지 이름</div>
+                    <div id="badge-modal-desc" class="badge-modal-desc">배지 설명</div>
+                    <div id="badge-modal-extra" class="badge-modal-extra" style="display: none;"></div>
+                    <button type="button" id="badge-modal-close" class="badge-modal-btn">확인</button>
+                </div>
+            </div>
+        </div>
 
         <section class="ranking-shell">
             <div class="shell-head">
@@ -872,6 +1080,7 @@
         const isAdminTester = {% if request.user.is_staff %}true{% else %}false{% endif %};
         const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
         const adminUnlockKey = `${progressPrefix}_typing_admin_bypass`;
+        const serverUnlocks = {{ typing_unlocks_json|safe }};
         const rankingData = JSON.parse(document.getElementById('typing-ranking-data').textContent);
         let currentLang = getStorage().getItem(`${progressPrefix}_typing_home_lang`) || 'ko';
 
@@ -892,6 +1101,24 @@
 
         function progressKey(name) {
             return `${progressPrefix}_${name}`;
+        }
+
+        function getUnlockState(lang) {
+            if (isPermanent) {
+                return serverUnlocks[lang] || {key_levels: ['home'], word_unlocked: false, short_unlocked: false, long_unlocked: false};
+            }
+            let levels = ['home'];
+            try {
+                levels = JSON.parse(getStorage().getItem(progressKey(`typing_unlocked_levels_${lang}`)) || '["home"]');
+            } catch (error) {
+                levels = ['home'];
+            }
+            return {
+                key_levels: levels,
+                word_unlocked: getStorage().getItem(progressKey(`typing_word_unlocked_${lang}`)) === 'true',
+                short_unlocked: getStorage().getItem(progressKey(`typing_short_unlocked_${lang}`)) === 'true',
+                long_unlocked: getStorage().getItem(progressKey(`typing_long_unlocked_${lang}`)) === 'true',
+            };
         }
 
         function isAdminUnlockEnabled() {
@@ -1259,19 +1486,14 @@
         }
 
         function normalizePracticeLocks() {
-            const stor = getStorage();
             const forceUnlock = isAdminUnlockEnabled();
-            let unlockedLevels = ['home'];
-            try {
-                unlockedLevels = JSON.parse(stor.getItem(progressKey(`typing_unlocked_levels_${currentLang}`)) || '["home"]');
-            } catch (error) {
-                unlockedLevels = ['home'];
-            }
+            const unlockState = getUnlockState(currentLang);
+            const unlockedLevels = unlockState.key_levels || ['home'];
 
             const states = {
                 words: forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all')),
-                short: forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all') && stor.getItem(progressKey(`typing_short_unlocked_${currentLang}`)) === 'true'),
-                long: forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all') && stor.getItem(progressKey(`typing_short_unlocked_${currentLang}`)) === 'true' && stor.getItem(progressKey(`typing_long_unlocked_${currentLang}`)) === 'true'),
+                short: forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all') && unlockState.short_unlocked),
+                long: forceUnlock || (canUnlockAdvanced && unlockedLevels.includes('all') && unlockState.short_unlocked && unlockState.long_unlocked),
             };
 
             const cleanMessages = {
@@ -1395,6 +1617,41 @@
         });
 
         const adminToggle = document.getElementById('admin-lock-toggle');
+
+        function showBadgeToastFromStorage() {
+            const overlay = document.getElementById('badge-modal-overlay');
+            if (!overlay) return;
+            const raw = sessionStorage.getItem('typing_new_badges');
+            if (!raw) return;
+            sessionStorage.removeItem('typing_new_badges');
+            try {
+                const badges = JSON.parse(raw);
+                if (!Array.isArray(badges) || !badges.length) return;
+                const first = badges[0];
+                
+                document.getElementById('badge-modal-icon').textContent = first.icon || '🏅';
+                document.getElementById('badge-modal-name').textContent = first.name;
+                document.getElementById('badge-modal-desc').textContent = first.description || '';
+                
+                const extraEl = document.getElementById('badge-modal-extra');
+                if (badges.length > 1) {
+                    extraEl.textContent = `외 ${badges.length - 1}개의 배지를 더 획득했습니다!`;
+                    extraEl.style.display = 'inline-block';
+                } else {
+                    extraEl.style.display = 'none';
+                }
+                
+                // Trigger reflow for animation
+                void overlay.offsetWidth;
+                overlay.classList.add('is-active');
+                
+                document.getElementById('badge-modal-close').addEventListener('click', () => {
+                    overlay.classList.remove('is-active');
+                }, { once: true });
+            } catch (error) {
+                sessionStorage.removeItem('typing_new_badges');
+            }
+        }
         if (adminToggle) {
             adminToggle.addEventListener('click', () => {
                 const nextValue = !isAdminUnlockEnabled();
@@ -1436,6 +1693,7 @@
         normalizePracticeLocks();
         applyAdminBypassVisualState();
         safeRenderRankings();
+        showBadgeToastFromStorage();
     });
 </script>
 {% endblock %}

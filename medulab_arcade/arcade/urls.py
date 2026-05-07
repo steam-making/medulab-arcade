@@ -25,4 +25,10 @@ urlpatterns = [
     path('admin-services/members/add/', views.member_create, name='member_create'),
     path('admin-services/members/<int:user_id>/edit/', views.member_edit, name='member_edit'),
     path('admin-services/members/<int:user_id>/delete/', views.member_delete, name='member_delete'),
+
+    # 배지 관리 (관리자 전용)
+    path('admin-services/badges/', views.badge_list, name='badge_list'),
+    path('admin-services/badges/add/', views.badge_create, name='badge_create'),
+    path('admin-services/badges/<int:badge_id>/edit/', views.badge_edit, name='badge_edit'),
+    path('admin-services/badges/<int:badge_id>/delete/', views.badge_delete, name='badge_delete'),
 ]

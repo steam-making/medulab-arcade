@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.utils import timezone
+from arcade.badge_service import get_recent_user_badges, evaluate_typing_badges
 from .models import (
     AGE_GROUP_CHOICES,
     LANGUAGE_CHOICES,
@@ -14,6 +15,7 @@ from .models import (
     RANKING_PRACTICE_TYPE_CHOICES,
     TypingContent,
     TypingHallOfFame,
+    TypingUnlockProgress,
     TypingScore,
 )
 from deep_translator import GoogleTranslator
@@ -28,6 +30,7 @@ PRACTICE_LABELS = dict(RANKING_PRACTICE_TYPE_CHOICES)
 MASTER_LABELS = dict(MASTER_CATEGORY_CHOICES)
 RANKING_PRACTICE_TYPES = [code for code, _ in RANKING_PRACTICE_TYPE_CHOICES]
 LANGUAGE_CODES = [code for code, _ in LANGUAGE_CHOICES]
+KEY_LEVEL_SEQUENCE = ["home", "top", "bottom", "number", "shift", "all"]
 AGE_GROUP_DESCRIPTIONS = {
     "seed": "유아 5세~초등3학년",
     "growth": "초등4~6학년",
@@ -53,6 +56,73 @@ def get_typing_access_flags(user):
         'is_full_member': is_full_member,
         'show_ads': show_ads,
     }
+
+
+def default_unlock_state():
+    return {
+        "key_levels": ["home"],
+        "word_unlocked": False,
+        "short_unlocked": False,
+        "long_unlocked": False,
+    }
+
+
+def get_typing_unlock_states(user):
+    states = {language: default_unlock_state() for language in LANGUAGE_CODES}
+    if not user.is_authenticated:
+        return states
+
+    for progress in TypingUnlockProgress.objects.filter(user=user):
+        if progress.language not in states:
+            continue
+        states[progress.language] = {
+            "key_levels": progress.normalized_key_levels(),
+            "word_unlocked": progress.word_unlocked,
+            "short_unlocked": progress.short_unlocked,
+            "long_unlocked": progress.long_unlocked,
+        }
+    return states
+
+
+def get_typing_unlock_context(user):
+    return {
+        "typing_unlocks_json": json.dumps(get_typing_unlock_states(user)),
+    }
+
+
+def normalize_key_levels(levels):
+    if not isinstance(levels, list):
+        return ["home"]
+    normalized = [level for level in KEY_LEVEL_SEQUENCE if level in levels]
+    return normalized or ["home"]
+
+
+def merge_typing_unlock_progress(user, language, unlock_data):
+    if not user.is_authenticated or language not in LANGUAGE_CODES or not isinstance(unlock_data, dict):
+        return None
+
+    progress, _created = TypingUnlockProgress.objects.get_or_create(
+        user=user,
+        language=language,
+        defaults={"key_levels": ["home"]},
+    )
+    changed_fields = []
+
+    incoming_levels = normalize_key_levels(unlock_data.get("key_levels"))
+    current_levels = normalize_key_levels(progress.key_levels)
+    merged_levels = [level for level in KEY_LEVEL_SEQUENCE if level in set(current_levels + incoming_levels)]
+    if merged_levels != current_levels:
+        progress.key_levels = merged_levels
+        changed_fields.append("key_levels")
+
+    for field in ("word_unlocked", "short_unlocked", "long_unlocked"):
+        if unlock_data.get(field) is True and not getattr(progress, field):
+            setattr(progress, field, True)
+            changed_fields.append(field)
+
+    if changed_fields:
+        progress.save(update_fields=changed_fields + ["updated_at"])
+    return progress
 
 
 def get_current_quarter_info(now=None):
@@ -537,6 +607,7 @@ def typing_home(request):
     
     return render(request, 'typing_practice/typing_home.html', {
         'user_best': user_best,
+        'recent_badges': get_recent_user_badges(request.user, limit=6) if request.user.is_authenticated else [],
         'word_themes_ko': word_themes_ko,
         'word_themes_en': word_themes_en,
         'short_themes_ko': short_themes_ko,
@@ -548,6 +619,7 @@ def typing_home(request):
         'current_age_group_label': AGE_GROUP_LABELS[selected_age_group],
         'ranking_data': ranking_data,
         'ranking_data_json': ranking_data,
+        **get_typing_unlock_context(request.user),
     })
 
 def practice_keys(request):
@@ -559,6 +631,7 @@ def practice_keys(request):
     ctx = {
         'language': lang, 
         **access_flags,
+        **get_typing_unlock_context(request.user),
     }
     if not level:
         return render(request, 'typing_practice/select_level.html', ctx)
@@ -583,6 +656,7 @@ def practice_text(request, content_type):
             'language': lang,
             'themes': themes,
             **access_flags,
+            **get_typing_unlock_context(request.user),
         })
     
     theme = get_object_or_404(TypingContent, id=theme_id)
@@ -618,6 +692,7 @@ def practice_text(request, content_type):
         'theme_title': theme.title,
         'contents_json': json.dumps(processed_list),
         **access_flags,
+        **get_typing_unlock_context(request.user),
     })
 
 def practice_long(request, pk=None):
@@ -629,6 +704,7 @@ def practice_long(request, pk=None):
         return render(request, 'typing_practice/select_long.html', {
             'long_texts': long_texts,
             **access_flags,
+            **get_typing_unlock_context(request.user),
         })
         
     content = get_object_or_404(TypingContent, pk=pk)
@@ -655,6 +731,7 @@ def practice_long(request, pk=None):
         'content': content,
         'contents_json': json.dumps(processed_list),
         **access_flags,
+        **get_typing_unlock_context(request.user),
     })
 
 def save_score(request):
@@ -665,18 +742,20 @@ def save_score(request):
                 return JsonResponse({'status': 'not_saved', 'message': '비회원은 기록이 저장되지 않습니다.'})
 
             data = json.loads(request.body)
-            TypingScore.objects.create(
+            language = data.get('lang', 'ko')
+            typing_score = TypingScore.objects.create(
                 user=request.user,
                 practice_type=data.get('type', 'key'),
-                language=data.get('lang', 'ko'),
+                language=language,
                 score=data.get('score', 0),
                 speed=data.get('speed', 0),
                 accuracy=data.get('accuracy', 0.0)
             )
-            language = data.get('lang', 'ko')
+            merge_typing_unlock_progress(request.user, language, data.get('unlocks'))
+            new_badges = evaluate_typing_badges(request.user, typing_score)
             if language in LANGUAGE_CODES:
                 update_hall_of_fame_for_language(language)
-            return JsonResponse({'status': 'success'})
+            return JsonResponse({'status': 'success', 'new_badges': new_badges})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'invalid method'}, status=405)

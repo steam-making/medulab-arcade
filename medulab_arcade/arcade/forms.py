@@ -3,7 +3,15 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from .models import Project, Tag, UserProfile
+from .models import Badge, Project, Tag, UserProfile
+
+
+BADGE_CRITERIA_HELP = (
+    '지원 조건: typing_total_count(누적 타자 기록 수), typing_accuracy(정확도 이상), '
+    'typing_speed(타속 이상), typing_practice_first(유형별 첫 기록), '
+    'program_completion(연결 과정 이수), program_completion_count(서로 다른 과정 이수 수), '
+    'homework_completion_count(완료 숙제 수), mission_completion_count(완료 미션 수)'
+)
 
 
 class ProjectUploadForm(forms.ModelForm):
@@ -308,6 +316,43 @@ class AdminUserProfileForm(forms.ModelForm):
             'user_type': forms.Select(attrs={'class': 'form-input'}),
             'is_approved': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
         }
+
+
+class BadgeForm(forms.ModelForm):
+    class Meta:
+        model = Badge
+        fields = (
+            'code',
+            'name',
+            'description',
+            'icon',
+            'color',
+            'category',
+            'criteria_type',
+            'criteria_value',
+            'related_program',
+            'is_active',
+            'sort_order',
+        )
+        widgets = {
+            'code': forms.TextInput(attrs={'class': 'form-input'}),
+            'name': forms.TextInput(attrs={'class': 'form-input'}),
+            'description': forms.Textarea(attrs={'class': 'form-input', 'rows': 3}),
+            'icon': forms.TextInput(attrs={'class': 'form-input'}),
+            'color': forms.TextInput(attrs={'type': 'color', 'class': 'form-color'}),
+            'category': forms.Select(attrs={'class': 'form-input'}),
+            'criteria_type': forms.TextInput(attrs={'class': 'form-input'}),
+            'criteria_value': forms.NumberInput(attrs={'class': 'form-input', 'min': 0}),
+            'related_program': forms.Select(attrs={'class': 'form-input'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'sort_order': forms.NumberInput(attrs={'class': 'form-input', 'min': 0}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['criteria_type'].help_text = BADGE_CRITERIA_HELP
+        self.fields['criteria_value'].help_text = '조건 달성 기준값입니다. 예: 정확도 90, 타속 250, 이수 과정 3개.'
+        self.fields['related_program'].help_text = 'program_completion 조건일 때 연결할 과정을 선택합니다.'
 
 
 class EmailOrUsernameAuthenticationForm(AuthenticationForm):

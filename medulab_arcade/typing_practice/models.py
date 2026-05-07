@@ -58,6 +58,30 @@ class TypingScore(models.Model):
         )
 
 
+class TypingUnlockProgress(models.Model):
+    LANGUAGES = LANGUAGE_CHOICES
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="typing_unlock_progress")
+    language = models.CharField("언어", max_length=10, choices=LANGUAGES)
+    key_levels = models.JSONField("자리연습 해제 단계", default=list, blank=True)
+    word_unlocked = models.BooleanField("단어연습 해제", default=False)
+    short_unlocked = models.BooleanField("짧은글연습 해제", default=False)
+    long_unlocked = models.BooleanField("긴글연습 해제", default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("user", "language")
+        verbose_name = "타자연습 해제 진행도"
+        verbose_name_plural = "타자연습 해제 진행도"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_language_display()} unlock progress"
+
+    def normalized_key_levels(self):
+        levels = self.key_levels if isinstance(self.key_levels, list) else []
+        return levels or ["home"]
+
+
 class TypingHallOfFame(models.Model):
     language = models.CharField("??", max_length=10, choices=LANGUAGE_CHOICES, default="ko")
     practice_type = models.CharField(

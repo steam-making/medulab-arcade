@@ -1,0 +1,188 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}{{ title }} - 메듀랩 관리 서비스{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-wrap { max-width: 800px; margin: 40px auto; padding: 0 24px; animation: fadeSlideIn 0.4s ease; }
+    .page-header { margin-bottom: 32px; }
+    .page-title { font: 900 28px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .page-subtitle { color: var(--text-muted); font-size: 14px; margin-top: 8px; }
+
+    .form-card { background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border); padding: 32px; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
+    
+    .form-section-title { font-size: 13px; font-weight: 800; color: var(--accent-green); text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 16px; display: flex; align-items: center; gap: 8px; }
+    .form-section-title::after { content: ''; flex: 1; height: 1px; background: rgba(0,255,180,0.1); }
+    .form-section-title:first-child { margin-top: 0; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+    
+    .form-input, .form-select, .form-textarea { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; color: #fff; font-size: 14px; outline: none; transition: all 0.2s; font-family: 'Noto Sans KR', sans-serif; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent-green); box-shadow: 0 0 10px rgba(0,255,180,0.1); }
+    
+    .form-select { appearance: none; cursor: pointer; }
+    .form-textarea { resize: vertical; min-height: 100px; }
+    
+    .form-help { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+    .form-errors { color: #ff6b6b; font-size: 12px; margin-top: 6px; }
+
+    .checkbox-group { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px 16px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--border); transition: all 0.2s; }
+    .checkbox-group:hover { background: rgba(255,255,255,0.06); }
+    .form-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-green); }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .btn-group { display: flex; gap: 12px; margin-top: 40px; }
+    .btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; border: none; text-align: center; text-decoration: none; }
+    .btn-submit { background: var(--accent-green); color: var(--bg-primary); box-shadow: 0 4px 15px rgba(0,255,180,0.2); }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,255,180,0.3); }
+    .btn-cancel { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+    .btn-cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+    <div class="page-header">
+        <h1 class="page-title">{{ title }}</h1>
+        <p class="page-subtitle">
+            {% if badge %}
+            배지 <strong>{{ badge.name }}</strong>의 정보를 수정합니다.
+            {% else %}
+            새로운 배지를 시스템에 등록합니다.
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="form-card">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="form-section-title">기본 정보</div>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>배지 코드 *</label>
+                    {{ form.code }}
+                    <div class="form-help">영문 소문자와 언더스코어(_)만 사용 가능합니다. (예: typing_master)</div>
+                    {% if form.code.errors %}<div class="form-errors">{{ form.code.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label>배지 이름 *</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="form-errors">{{ form.name.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>설명</label>
+                {{ form.description }}
+                {% if form.description.errors %}<div class="form-errors">{{ form.description.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>아이콘</label>
+                    {{ form.icon }}
+                    <div class="form-help">이모지 또는 아이콘 텍스트를 입력하세요.</div>
+                    {% if form.icon.errors %}<div class="form-errors">{{ form.icon.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label>색상</label>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        {{ form.color }}
+                    </div>
+                    <div class="form-help">배지 배경에 사용될 색상입니다.</div>
+                    {% if form.color.errors %}<div class="form-errors">{{ form.color.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>카테고리</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<div class="form-errors">{{ form.category.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label>정렬 순서</label>
+                    {{ form.sort_order }}
+                    <div class="form-help">숫자가 작을수록 먼저 표시됩니다.</div>
+                    {% if form.sort_order.errors %}<div class="form-errors">{{ form.sort_order.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-section-title">획득 조건</div>
+
+            <div class="form-group">
+                <label>조건 유형</label>
+                {{ form.criteria_type }}
+                <div class="form-help">{{ form.criteria_type.help_text }}</div>
+                {% if form.criteria_type.errors %}<div class="form-errors">{{ form.criteria_type.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>기준값</label>
+                    {{ form.criteria_value }}
+                    <div class="form-help">{{ form.criteria_value.help_text }}</div>
+                    {% if form.criteria_value.errors %}<div class="form-errors">{{ form.criteria_value.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label>연결 과정</label>
+                    {{ form.related_program }}
+                    <div class="form-help">{{ form.related_program.help_text }}</div>
+                    {% if form.related_program.errors %}<div class="form-errors">{{ form.related_program.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-section-title">상태 설정</div>
+
+            <div class="form-group">
+                <label class="checkbox-group">
+                    {{ form.is_active }}
+                    <span>배지 활성화 (사용자에게 노출 및 획득 가능)</span>
+                </label>
+                {% if form.is_active.errors %}<div class="form-errors">{{ form.is_active.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="btn-group">
+                <a href="{% url 'badge_list' %}" class="btn btn-cancel">취소</a>
+                <button type="submit" class="btn btn-submit">저장하기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 폼 필드에 공통 클래스 추가
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="password"], input[type="email"]');
+        inputs.forEach(input => input.classList.add('form-input'));
+        
+        const selects = document.querySelectorAll('select');
+        selects.forEach(select => select.classList.add('form-select'));
+        
+        const textareas = document.querySelectorAll('textarea');
+        textareas.forEach(textarea => textarea.classList.add('form-textarea'));
+        
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => checkbox.classList.add('form-checkbox'));
+        
+        const colorInputs = document.querySelectorAll('input[type="color"]');
+        colorInputs.forEach(input => {
+            input.style.width = '60px';
+            input.style.height = '40px';
+            input.style.padding = '0';
+            input.style.border = 'none';
+            input.style.borderRadius = '8px';
+            input.style.cursor = 'pointer';
+            input.style.background = 'transparent';
+        });
+    });
+</script>
+{% endblock %}

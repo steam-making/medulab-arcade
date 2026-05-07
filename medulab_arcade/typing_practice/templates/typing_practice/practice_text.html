@@ -569,6 +569,7 @@
     const showAds = {% if show_ads %}true{% else %}false{% endif %};
     const getStorage = () => isPermanent ? localStorage : sessionStorage;
     const progressPrefix = '{% if request.user.is_authenticated %}typing_user_{{ request.user.id }}{% else %}typing_guest{% endif %}';
+    const serverUnlocks = {{ typing_unlocks_json|safe }};
     const progressKey = (name) => `${progressPrefix}_${name}`;
 
     const contents = {{ contents_json|safe }};
@@ -595,6 +596,35 @@
     let ttsRates = JSON.parse(getStorage().getItem('ttsRates') || '{"ko":"1.0", "en":"0.3", "ja":"1.0", "zh":"1.0"}');
     const inputField = document.getElementById('typing-input');
     const targetTextContainer = document.getElementById('target-text'); // 이름 중복 방지
+
+    function getUnlockState(lang) {
+        if (isPermanent) {
+            return serverUnlocks[lang] || {key_levels: ['home'], word_unlocked: false, short_unlocked: false, long_unlocked: false};
+        }
+        let levels = ['home'];
+        try {
+            levels = JSON.parse(getStorage().getItem(progressKey(`typing_unlocked_levels_${lang}`)) || '["home"]');
+        } catch (error) {
+            levels = ['home'];
+        }
+        return {
+            key_levels: levels,
+            word_unlocked: getStorage().getItem(progressKey(`typing_word_unlocked_${lang}`)) === 'true',
+            short_unlocked: getStorage().getItem(progressKey(`typing_short_unlocked_${lang}`)) === 'true',
+            long_unlocked: getStorage().getItem(progressKey(`typing_long_unlocked_${lang}`)) === 'true',
+        };
+    }
+
+    function setUnlockState(lang, state) {
+        if (isPermanent) {
+            serverUnlocks[lang] = state;
+            return;
+        }
+        getStorage().setItem(progressKey(`typing_unlocked_levels_${lang}`), JSON.stringify(state.key_levels || ['home']));
+        if (state.word_unlocked) getStorage().setItem(progressKey(`typing_word_unlocked_${lang}`), 'true');
+        if (state.short_unlocked) getStorage().setItem(progressKey(`typing_short_unlocked_${lang}`), 'true');
+        if (state.long_unlocked) getStorage().setItem(progressKey(`typing_long_unlocked_${lang}`), 'true');
+    }
 
     function updateTTSRate(rate) {
         ttsRates[inputLang] = rate;
@@ -1227,15 +1257,17 @@
 
         let unlockMsg = '';
         if (contentType === 'word' && speed >= 200) {
-            const shortStorageKey = progressKey(`typing_short_unlocked_${inputLang}`);
-            if (getStorage().getItem(shortStorageKey) !== 'true') {
-                getStorage().setItem(shortStorageKey, 'true');
+            const state = getUnlockState(inputLang);
+            if (!state.short_unlocked) {
+                state.short_unlocked = true;
+                setUnlockState(inputLang, state);
                 unlockMsg = "<br><span style='color:#fbbf24; font-size:16px;'>🔓 짧은글 연습 모드가 해제되었습니다!</span>";
             }
         } else if (contentType === 'short' && speed >= 400) {
-            const longStorageKey = progressKey(`typing_long_unlocked_${inputLang}`);
-            if (getStorage().getItem(longStorageKey) !== 'true') {
-                getStorage().setItem(longStorageKey, 'true');
+            const state = getUnlockState(inputLang);
+            if (!state.long_unlocked) {
+                state.long_unlocked = true;
+                setUnlockState(inputLang, state);
                 unlockMsg = "<br><span style='color:#fbbf24; font-size:16px;'>🔓 긴글 연습 모드가 해제되었습니다!</span>";
             }
         } else if (contentType === 'word' && speed < 200) {
@@ -1256,6 +1288,9 @@
         const speed = parseInt(document.getElementById('final-wpm').innerText);
         const accuracy = parseFloat(document.getElementById('final-accuracy').innerText);
         const score = parseInt(document.getElementById('final-score').innerText);
+        const exitUrl = contentType === 'word'
+            ? `{% url "practice_words" %}?lang=${inputLang}`
+            : `{% url "practice_short" %}?lang=${inputLang}`;
 
         fetch('{% url "save_score" %}', {
             method: 'POST',
@@ -1268,10 +1303,15 @@
                 lang: inputLang,
                 score: score,
                 speed: speed,
-                accuracy: accuracy
+                accuracy: accuracy,
+                unlocks: getUnlockState(inputLang)
             })
-        }).then(() => {
-            location.href = `{% url "typing_home" %}?lang=${inputLang}`;
+        }).then(response => response.json())
+        .then(data => {
+            if (data && Array.isArray(data.new_badges) && data.new_badges.length) {
+                sessionStorage.setItem('typing_new_badges', JSON.stringify(data.new_badges));
+            }
+            location.href = exitUrl;
         });
     }
 

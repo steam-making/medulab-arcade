@@ -19,6 +19,7 @@
 
     .profile-card,
     .tabs-wrapper,
+    .badge-panel,
     .edit-profile-section,
     .stat-box {
         background: rgba(255, 255, 255, 0.04);
@@ -121,6 +122,116 @@
 
     .tabs-wrapper {
         overflow: hidden;
+    }
+
+    .badge-panel {
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .badge-panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .badge-panel-head h3 {
+        margin: 0;
+        font-size: 18px;
+        color: #fff;
+    }
+
+    .badge-panel-head span {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .badge-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+    }
+
+    .badge-card {
+        padding: 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .badge-card.locked {
+        opacity: 0.6;
+        filter: grayscale(100%);
+    }
+
+    .badge-card.earned {
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .badge-card.earned:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .badge-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .badge-card.locked .badge-icon {
+        background: rgba(255, 255, 255, 0.04);
+        box-shadow: none !important;
+        border: none !important;
+        color: #888 !important;
+    }
+
+    .badge-status-label {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 4px 8px;
+        border-radius: 8px;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-card.earned .badge-status-label {
+        background: rgba(0, 255, 180, 0.15);
+        color: var(--accent-green);
+    }
+
+    .badge-card.locked .badge-status-label {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-muted);
+    }
+
+    .badge-name {
+        color: #fff;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+
+    .badge-desc,
+    .badge-date {
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--text-muted);
     }
 
     .tabs-header {
@@ -299,7 +410,41 @@
                         <span class="stat-num">{{ total_bookmarks }}</span>
                         <span class="stat-label">받은 즐겨찾기</span>
                     </div>
+                    <div class="stat-box">
+                        <span class="stat-num">{{ badge_count }}</span>
+                        <span class="stat-label">획득 배지</span>
+                    </div>
                 </div>
+
+                <section class="badge-panel">
+                    <div class="badge-panel-head">
+                        <h3>배지 컬렉션</h3>
+                        <span>모든 배지를 모아 마스터가 되어보세요!</span>
+                    </div>
+                    <div class="badge-grid">
+                        {% for item in badge_catalog %}
+                        <article class="badge-card {% if item.is_earned %}earned{% else %}locked{% endif %}">
+                            <div class="badge-status-label">
+                                {% if item.is_earned %}획득{% else %}미획득{% endif %}
+                            </div>
+                            <div class="badge-icon" style="{% if item.is_earned %}box-shadow: 0 0 15px {{ item.color }}40; border: 1px solid {{ item.color }}80;{% endif %} color: {{ item.color }};">
+                                {{ item.icon }}
+                            </div>
+                            <div class="badge-name" style="{% if item.is_earned %}color: {{ item.color }}; text-shadow: 0 0 10px {{ item.color }}40;{% endif %}">{{ item.name }}</div>
+                            <div class="badge-desc">{{ item.description }}</div>
+                            <div class="badge-date">
+                                {% if item.is_earned %}
+                                    {{ item.awarded_at|date:"Y.m.d" }} 획득
+                                {% else %}
+                                    🔒 잠김
+                                {% endif %}
+                            </div>
+                        </article>
+                        {% empty %}
+                        <div class="empty" style="width: 100%; grid-column: 1/-1;">등록된 배지가 없습니다.</div>
+                        {% endfor %}
+                    </div>
+                </section>
 
                 <div class="tabs-wrapper">
                     <div class="tabs-header">

@@ -11,6 +11,9 @@ from .models import (
 )
 
 
+ANSWER_ZIP_MAX_UPLOAD_BYTES = 200 * 1024 * 1024
+
+
 class MultiFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
 
@@ -18,7 +21,7 @@ class MultiFileInput(forms.ClearableFileInput):
 class CourseForm(forms.ModelForm):
     class Meta:
         model = LearningProgram
-        fields = ["name", "description", "image", "program_type", "is_active"]
+        fields = ["name", "description", "image", "picture_zip", "answer_zip", "program_type", "is_active"]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-input", "placeholder": "과정명을 입력하세요"}),
             "description": forms.Textarea(
@@ -79,6 +82,21 @@ class ItemForm(forms.ModelForm):
             ),
             "due_date": forms.DateTimeInput(attrs={"class": "form-input", "type": "datetime-local"}),
         }
+
+
+class AnswerZipImportForm(forms.Form):
+    answer_zip = forms.FileField(
+        label="answer.zip",
+        widget=forms.ClearableFileInput(attrs={"class": "form-input", "accept": ".zip"}),
+    )
+
+    def clean_answer_zip(self):
+        uploaded = self.cleaned_data["answer_zip"]
+        if not (uploaded.name or "").lower().endswith(".zip"):
+            raise forms.ValidationError("ZIP 파일만 업로드할 수 있습니다.")
+        if uploaded.size > ANSWER_ZIP_MAX_UPLOAD_BYTES:
+            raise forms.ValidationError("answer.zip 파일은 200MB 이하만 업로드할 수 있습니다.")
+        return uploaded
 
 
 class HomeworkForm(forms.ModelForm):

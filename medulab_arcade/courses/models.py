@@ -18,6 +18,8 @@ class LearningProgram(models.Model):
     name = models.CharField("과정명", max_length=100)
     description = models.TextField("과정 설명", blank=True)
     image = models.ImageField("대표 이미지", upload_to="learning_programs/", blank=True, null=True)
+    picture_zip = models.FileField("picture.zip", upload_to="learning_programs/picture_zips/", blank=True, null=True)
+    answer_zip = models.FileField("answer.zip", upload_to="learning_programs/answer_zips/", blank=True, null=True)
     program_type = models.ForeignKey(
         ProgramType,
         on_delete=models.SET_NULL,
@@ -34,6 +36,35 @@ class LearningProgram(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class AnswerZipImportBatch(models.Model):
+    STATUS_PREVIEW = "preview"
+    STATUS_APPLIED = "applied"
+    STATUS_FAILED = "failed"
+    STATUS_CHOICES = [
+        (STATUS_PREVIEW, "미리보기"),
+        (STATUS_APPLIED, "적용 완료"),
+        (STATUS_FAILED, "실패"),
+    ]
+
+    program = models.ForeignKey(LearningProgram, on_delete=models.CASCADE, related_name="answer_zip_import_batches")
+    zip_file = models.FileField("answer.zip", upload_to="learning_programs/answer_zip_imports/%Y/%m/", blank=True, null=True)
+    import_rule = models.CharField("가져오기 규칙", max_length=50, default="top_level_folder_chapter")
+    status = models.CharField("상태", max_length=20, choices=STATUS_CHOICES, default=STATUS_PREVIEW)
+    preview_data = models.JSONField("미리보기 데이터", default=dict, blank=True)
+    message = models.TextField("처리 메시지", blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, related_name="answer_zip_import_batches", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    applied_at = models.DateTimeField("적용일", blank=True, null=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "정답 ZIP 가져오기 배치"
+        verbose_name_plural = "정답 ZIP 가져오기 배치"
+
+    def __str__(self):
+        return f"{self.program.name} - {self.status}"
 
 class Chapter(models.Model):
     program = models.ForeignKey(LearningProgram, on_delete=models.CASCADE, related_name="chapters")

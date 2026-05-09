@@ -548,6 +548,88 @@ def parse_objective_options(raw_text):
 
     return options
 
+
+EXCEL_IMPORT_HEADER_ALIASES = {
+    "chapter_number": {"장번호"},
+    "chapter_title": {"장제목"},
+    "chapter_description": {"장설명"},
+    "item_number": {"항목순서"},
+    "item_key": {"아이템키(ex01)", "아이템키"},
+    "item_title": {"아이템제목"},
+    "item_type": {"유형(example/problem)", "유형"},
+    "explain_html": {"설명HTML"},
+    "hint": {"힌트"},
+    "answer_code": {"정답코드"},
+    "example_input": {"예시입력"},
+    "expected_output": {"예상출력"},
+}
+
+
+def normalize_excel_header(header_value):
+    return str(header_value or "").strip()
+
+
+def build_excel_header_map(header_row):
+    normalized_headers = [normalize_excel_header(value) for value in header_row]
+    header_map = {}
+    for field_name, aliases in EXCEL_IMPORT_HEADER_ALIASES.items():
+        for index, header in enumerate(normalized_headers):
+            if header in aliases:
+                header_map[field_name] = index
+                break
+    return header_map
+
+
+def get_excel_cell(row, header_map, field_name, default=None):
+    index = header_map.get(field_name)
+    if index is None or index >= len(row):
+        return default
+    value = row[index]
+    return default if value is None else value
+
+
+def parse_course_excel_row(row, header_map):
+    chapter_number = get_excel_cell(row, header_map, "chapter_number")
+    chapter_title = get_excel_cell(row, header_map, "chapter_title", "")
+    chapter_description = get_excel_cell(row, header_map, "chapter_description", "")
+    item_number = get_excel_cell(row, header_map, "item_number", 1)
+    item_key = get_excel_cell(row, header_map, "item_key", "")
+    item_title = get_excel_cell(row, header_map, "item_title", "")
+    item_type = get_excel_cell(row, header_map, "item_type", "example")
+    explain_html = get_excel_cell(row, header_map, "explain_html", "")
+    hint = get_excel_cell(row, header_map, "hint", "")
+    answer_code = get_excel_cell(row, header_map, "answer_code", "")
+    example_input = get_excel_cell(row, header_map, "example_input", "")
+    expected_output = get_excel_cell(row, header_map, "expected_output", "")
+
+    if chapter_number in (None, "") or not item_key or not item_title:
+        return None
+
+    try:
+        chapter_number = int(chapter_number)
+    except (TypeError, ValueError):
+        raise ValueError(f"장번호가 올바르지 않습니다: {chapter_number}")
+
+    try:
+        item_number = int(item_number or 1)
+    except (TypeError, ValueError):
+        item_number = 1
+
+    return {
+        "chapter_number": chapter_number,
+        "chapter_title": str(chapter_title).strip(),
+        "chapter_description": str(chapter_description or "").strip(),
+        "item_number": item_number,
+        "item_key": str(item_key).strip(),
+        "item_title": str(item_title).strip(),
+        "item_type": str(item_type or "example").strip() or "example",
+        "explain_html": str(explain_html or ""),
+        "hint": str(hint or ""),
+        "answer_code": str(answer_code or ""),
+        "example_input": str(example_input or ""),
+        "expected_output": str(expected_output or ""),
+    }
+
 # --- (1) 관리자용 학습 프로그램 목록 ---
 @login_required
 @user_passes_test(is_admin)
@@ -663,14 +745,14 @@ def download_course_template(request):
     ws.title = "CourseTemplate"
     
     headers = [
-        '장번호', '장제목', '장설명', 
-        '아이템키(ex01)', '아이템제목', '유형(example/problem)', 
-        '설명HTML', '힌트', '정답코드', '예상출력'
+        '장번호', '장제목', '장설명',
+        '항목순서', '아이템키', '아이템제목', '유형',
+        '설명HTML', '힌트', '정답코드', '예시입력', '예상출력'
     ]
     ws.append(headers)
     
     # 샘플 데이터 한 줄
-    ws.append([1, '파이썬 기초', '기본 문법을 배웁니다', 'ex01', 'Hello World', 'example', '<p>화면에 출력해보세요</p>', 'print 사용', 'print("Hello")', 'Hello'])
+    ws.append([1, '파이썬 기초', '기본 문법을 배웁니다', 1, 'ex01', 'Hello World', 'example', '<p>화면에 출력해보세요</p>', 'print 사용', 'print("Hello")', '', 'Hello'])
     
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=medulab_course_template.xlsx'
@@ -1115,27 +1197,48 @@ def chapter_manage(request, program_id):
             
             for sheet in wb.sheetnames:
                 ws = wb[sheet]
+                header_values = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
+                if not header_values:
+                    continue
+
+                header_map = build_excel_header_map(header_values)
+                required_headers = {"chapter_number", "chapter_title", "chapter_description", "item_key", "item_title", "item_type", "explain_html", "hint", "answer_code", "expected_output"}
+                missing_headers = sorted(required_headers - set(header_map.keys()))
+                if missing_headers:
+                    raise ValueError(f"엑셀 헤더가 올바르지 않습니다. 누락: {', '.join(missing_headers)}")
+
                 for row in ws.iter_rows(min_row=2, values_only=True):
-                    if not row[0]: continue  # 빈 행 스킵
-                    
-                    ch_num, ch_title, ch_desc, item_key, item_title, item_type, \
-                    item_html, item_hint, item_ans, item_exp = (list(row) + [None]*10)[:10]
-                    
+                    parsed_row = parse_course_excel_row(row, header_map)
+                    if not parsed_row:
+                        continue
+
                     chapter, _ = Chapter.objects.get_or_create(
                         program=program, 
-                        number=ch_num,
-                        defaults={"title": ch_title, "content": ch_desc}
+                        number=parsed_row["chapter_number"],
+                        defaults={"title": parsed_row["chapter_title"], "content": parsed_row["chapter_description"]}
                     )
+
+                    chapter_updates = []
+                    if chapter.title != parsed_row["chapter_title"]:
+                        chapter.title = parsed_row["chapter_title"]
+                        chapter_updates.append("title")
+                    if (chapter.content or "") != parsed_row["chapter_description"]:
+                        chapter.content = parsed_row["chapter_description"]
+                        chapter_updates.append("content")
+                    if chapter_updates:
+                        chapter.save(update_fields=chapter_updates)
                     
                     Item.objects.create(
                         chapter=chapter,
-                        key=item_key,
-                        title=item_title,
-                        item_type=item_type or 'example',
-                        explain_html=item_html,
-                        hint=item_hint,
-                        answer_code=item_ans,
-                        expected_output=item_exp
+                        number=parsed_row["item_number"],
+                        key=parsed_row["item_key"],
+                        title=parsed_row["item_title"],
+                        item_type=parsed_row["item_type"] or 'example',
+                        explain_html=parsed_row["explain_html"],
+                        hint=parsed_row["hint"],
+                        answer_code=parsed_row["answer_code"],
+                        example_input=parsed_row["example_input"],
+                        expected_output=parsed_row["expected_output"]
                     )
             messages.success(request, "엑셀 데이터를 성공적으로 불러왔습니다.")
         except Exception as e:

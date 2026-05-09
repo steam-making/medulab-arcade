@@ -48,7 +48,7 @@
         <form method="POST">
             {% csrf_token %}
             <button type="submit" class="btn-delete-confirm">네, 확실히 삭제합니다</button>
-            <a href="{% url 'learning_program_list' %}" class="cancel-link">아니요, 취소하겠습니다</a>
+                <a href="{% url 'student_course_list' %}" class="cancel-link">아니요, 취소하겠습니다</a>
         </form>
     </div>
 </main>

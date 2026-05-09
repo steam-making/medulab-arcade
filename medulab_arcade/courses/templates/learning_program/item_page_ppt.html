@@ -15,6 +15,139 @@
         margin: 40px 0;
         border: 2px dashed var(--border);
     }
+
+    .ppt-exam-panel {
+        margin: 32px 0;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.09);
+        border-radius: 20px;
+        padding: 24px;
+    }
+
+    .ppt-exam-panel h2 {
+        color: #fff;
+        font-size: 22px;
+        margin: 0 0 10px;
+    }
+
+    .ppt-exam-panel p,
+    .ppt-exam-panel li,
+    .ppt-exam-panel label,
+    .ppt-exam-panel strong {
+        color: var(--text-secondary);
+    }
+
+    .ppt-exam-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+    }
+
+    .ppt-btn {
+        border: 0;
+        border-radius: 14px;
+        padding: 14px 18px;
+        cursor: pointer;
+        font-weight: 800;
+        text-decoration: none;
+        transition: .2s ease;
+    }
+
+    .ppt-btn.primary {
+        background: linear-gradient(135deg, #2563eb, #8b5cf6);
+        color: #fff;
+    }
+
+    .ppt-btn.secondary {
+        background: rgba(255,255,255,0.06);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .ppt-btn:hover { transform: translateY(-1px); }
+
+    .ppt-timer-card {
+        margin-top: 22px;
+        padding: 20px;
+        border-radius: 18px;
+        background: rgba(15, 23, 42, 0.75);
+        border: 1px solid rgba(59,130,246,0.2);
+    }
+
+    .ppt-timer-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .ppt-timer-value {
+        font-size: 34px;
+        color: #fff;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+    }
+
+    .ppt-timer-range {
+        width: 100%;
+        accent-color: #60a5fa;
+    }
+
+    .ppt-upload-box {
+        margin-top: 20px;
+        padding: 18px;
+        border-radius: 16px;
+        border: 1px dashed rgba(255,255,255,0.15);
+    }
+
+    .ppt-upload-box input[type="file"] {
+        width: 100%;
+        margin: 12px 0;
+        color: #fff;
+    }
+
+    .ppt-status,
+    .ppt-result {
+        margin-top: 16px;
+        padding: 16px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.04);
+        color: #fff;
+    }
+
+    .ppt-result-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+    }
+
+    .ppt-result-stat {
+        padding: 14px;
+        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.75);
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .ppt-result-stat .label {
+        display: block;
+        color: var(--text-muted);
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    .ppt-result-stat .value {
+        color: #fff;
+        font-size: 22px;
+        font-weight: 900;
+    }
+
+    .ppt-guide-list {
+        margin: 14px 0 0;
+        padding-left: 18px;
+    }
 </style>
 {% endblock %}
 
@@ -36,10 +169,68 @@
             <div class="ppt-viewer-placeholder">
                 <div style="text-align: center;">
                     <div style="font-size: 40px; margin-bottom: 12px;">📊</div>
-                    <div>프레젠테이션 학습 아이콘 (PPT 뷰어 준비 중)</div>
+                    <div>{% if is_ppt_exam %}실전 PowerPoint 시험{% else %}프레젠테이션 학습 아이콘 (PPT 뷰어 준비 중){% endif %}</div>
                 </div>
             </div>
             {{ item.explain_html|safe }}
+
+            {% if is_ppt_exam %}
+            <section class="ppt-exam-panel"
+                     data-item-id="{{ item.id }}"
+                     data-start-url="{% url 'start_ppt_exam' item.id %}"
+                     data-submit-url="{% url 'submit_ppt_exam' item.id %}"
+                     data-duration="{{ ppt_exam_duration_seconds }}"
+                     data-deadline="{{ ppt_exam_deadline_iso }}">
+                <h2>출제예상/기출 실전 시험</h2>
+                <p>PowerPoint를 직접 열어 작업한 뒤, 1시간 안에 완성 파일을 업로드하면 자동으로 구조 점수를 채점합니다.</p>
+
+                <ul class="ppt-guide-list">
+                    <li>먼저 <strong>PowerPoint 열기</strong>를 누른 뒤, 실제로 열렸으면 <strong>열었습니다</strong>를 눌러 시험을 시작하세요.</li>
+                    <li>시험 시작 후 <strong>1시간 카운트다운</strong>이 진행됩니다.</li>
+                    <li>완성한 <strong>.pptx 파일만 업로드</strong>할 수 있습니다.</li>
+                    <li>채점이 끝나면 <strong>업로드 파일은 즉시 삭제</strong>됩니다.</li>
+                </ul>
+
+                <div class="ppt-exam-actions">
+                    <button type="button" class="ppt-btn primary" id="ppt-open-btn">PowerPoint 열기</button>
+                    <button type="button" class="ppt-btn secondary" id="ppt-confirm-btn">열었습니다 · 시험 시작</button>
+                </div>
+
+                <div class="ppt-timer-card" id="ppt-timer-card" {% if not ppt_exam_active %}style="display:none;"{% endif %}>
+                    <div class="ppt-timer-header">
+                        <div>
+                            <strong style="display:block; color:#fff;">남은 시간</strong>
+                            <span style="color:var(--text-muted); font-size:13px;">1시간 제한 · 슬라이더가 줄어들면 시간이 흐른 것입니다.</span>
+                        </div>
+                        <div class="ppt-timer-value" id="ppt-timer-value">60:00</div>
+                    </div>
+                    <input id="ppt-timer-range" class="ppt-timer-range" type="range" min="0" max="{{ ppt_exam_duration_seconds }}" value="{{ ppt_exam_remaining_seconds|default:0 }}" disabled>
+
+                    <div class="ppt-upload-box">
+                        <label for="pptx-file-input"><strong>완성한 PowerPoint 파일 업로드</strong></label>
+                        <input id="pptx-file-input" type="file" accept=".pptx">
+                        <button type="button" class="ppt-btn primary" id="ppt-submit-btn">채점 요청</button>
+                    </div>
+                </div>
+
+                <div class="ppt-status" id="ppt-status" style="display:none;"></div>
+
+                <div class="ppt-result" id="ppt-result" {% if not ppt_exam_feedback %}style="display:none;"{% endif %}>
+                    <strong style="font-size:18px; display:block; margin-bottom:8px;">최근 채점 결과</strong>
+                    <div style="color: {% if ppt_exam_completed %}#4ade80{% else %}#fbbf24{% endif %}; font-weight:800; margin-bottom:12px;">
+                        점수 {{ ppt_exam_score }}점 · {% if ppt_exam_completed %}통과{% else %}보완 필요{% endif %}
+                    </div>
+                    {% if ppt_exam_feedback %}
+                    <div class="ppt-result-grid">
+                        <div class="ppt-result-stat"><span class="label">슬라이드 수</span><span class="value">{{ ppt_exam_feedback.slide_count }}</span></div>
+                        <div class="ppt-result-stat"><span class="label">텍스트 포함 슬라이드</span><span class="value">{{ ppt_exam_feedback.text_slide_count }}</span></div>
+                        <div class="ppt-result-stat"><span class="label">텍스트 길이</span><span class="value">{{ ppt_exam_feedback.text_length }}</span></div>
+                        <div class="ppt-result-stat"><span class="label">사용 시간(초)</span><span class="value">{{ ppt_exam_feedback.elapsed_seconds }}</span></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+            {% endif %}
         </div>
 
         <div class="item-footer">
@@ -57,4 +248,149 @@
         </div>
     </div>
 </main>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+{% if is_ppt_exam %}
+<script>
+(() => {
+    const panel = document.querySelector('.ppt-exam-panel');
+    if (!panel) return;
+
+    const openBtn = document.getElementById('ppt-open-btn');
+    const confirmBtn = document.getElementById('ppt-confirm-btn');
+    const submitBtn = document.getElementById('ppt-submit-btn');
+    const timerCard = document.getElementById('ppt-timer-card');
+    const timerValue = document.getElementById('ppt-timer-value');
+    const timerRange = document.getElementById('ppt-timer-range');
+    const statusBox = document.getElementById('ppt-status');
+    const resultBox = document.getElementById('ppt-result');
+    const fileInput = document.getElementById('pptx-file-input');
+
+    const duration = Number(panel.dataset.duration || 3600);
+    const startUrl = panel.dataset.startUrl;
+    const submitUrl = panel.dataset.submitUrl;
+    let deadlineIso = panel.dataset.deadline || '';
+    let intervalId = null;
+
+    const getCsrfToken = () => {
+        const token = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (token) return token.value;
+        const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+        return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+    };
+
+    const setStatus = (message, isError = false) => {
+        statusBox.style.display = 'block';
+        statusBox.style.background = isError ? 'rgba(127, 29, 29, 0.55)' : 'rgba(30, 64, 175, 0.32)';
+        statusBox.style.border = isError ? '1px solid rgba(248,113,113,0.35)' : '1px solid rgba(96,165,250,0.25)';
+        statusBox.textContent = message;
+    };
+
+    const formatTime = (seconds) => {
+        const safe = Math.max(0, seconds);
+        const minutes = Math.floor(safe / 60);
+        const remainSeconds = safe % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(remainSeconds).padStart(2, '0')}`;
+    };
+
+    const renderResult = (payload) => {
+        const feedback = payload.feedback || {};
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = `
+            <strong style="font-size:18px; display:block; margin-bottom:8px;">채점 결과</strong>
+            <div style="color:${payload.completed ? '#4ade80' : '#fbbf24'}; font-weight:800; margin-bottom:12px;">점수 ${payload.score}점 · ${payload.completed ? '통과' : '보완 필요'}</div>
+            <div class="ppt-result-grid">
+                <div class="ppt-result-stat"><span class="label">슬라이드 수</span><span class="value">${feedback.slide_count ?? '-'}</span></div>
+                <div class="ppt-result-stat"><span class="label">텍스트 포함 슬라이드</span><span class="value">${feedback.text_slide_count ?? '-'}</span></div>
+                <div class="ppt-result-stat"><span class="label">텍스트 길이</span><span class="value">${feedback.text_length ?? '-'}</span></div>
+                <div class="ppt-result-stat"><span class="label">사용 시간(초)</span><span class="value">${feedback.elapsed_seconds ?? '-'}</span></div>
+            </div>
+        `;
+    };
+
+    const updateTimer = () => {
+        if (!deadlineIso) return;
+        const deadline = new Date(deadlineIso);
+        const now = new Date();
+        const remaining = Math.max(0, Math.floor((deadline - now) / 1000));
+        timerValue.textContent = formatTime(remaining);
+        timerRange.max = String(duration);
+        timerRange.value = String(remaining);
+
+        if (remaining <= 0) {
+            clearInterval(intervalId);
+            intervalId = null;
+            setStatus('시험 시간이 종료되었습니다. 다시 시작 후 제출해 주세요.', true);
+            submitBtn.disabled = true;
+        }
+    };
+
+    const startTimerLoop = () => {
+        timerCard.style.display = 'block';
+        submitBtn.disabled = false;
+        updateTimer();
+        if (intervalId) clearInterval(intervalId);
+        intervalId = setInterval(updateTimer, 1000);
+    };
+
+    openBtn?.addEventListener('click', () => {
+        setStatus('PowerPoint를 직접 실행한 뒤, 열렸으면 "열었습니다 · 시험 시작" 버튼을 눌러 주세요.');
+    });
+
+    confirmBtn?.addEventListener('click', async () => {
+        try {
+            const response = await fetch(startUrl, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrfToken() },
+            });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || '시험 시작에 실패했습니다.');
+            deadlineIso = payload.deadline_at;
+            panel.dataset.deadline = deadlineIso;
+            setStatus('시험이 시작되었습니다. 1시간 안에 작업 후 PPTX 파일을 업로드해 주세요.');
+            startTimerLoop();
+        } catch (error) {
+            setStatus(error.message, true);
+        }
+    });
+
+    submitBtn?.addEventListener('click', async () => {
+        const file = fileInput?.files?.[0];
+        if (!file) {
+            setStatus('업로드할 PPTX 파일을 선택해 주세요.', true);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('pptx_file', file);
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch(submitUrl, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrfToken() },
+                body: formData,
+            });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || '채점 요청에 실패했습니다.');
+            clearInterval(intervalId);
+            intervalId = null;
+            timerCard.style.display = 'none';
+            setStatus(payload.message || '채점이 완료되었습니다.');
+            renderResult(payload);
+            fileInput.value = '';
+        } catch (error) {
+            submitBtn.disabled = false;
+            setStatus(error.message, true);
+        }
+    });
+
+    if (deadlineIso) {
+        startTimerLoop();
+    }
+})();
+</script>
+{% endif %}
 {% endblock %}

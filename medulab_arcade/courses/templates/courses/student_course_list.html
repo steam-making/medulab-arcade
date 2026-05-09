@@ -39,6 +39,18 @@
         line-height: 1.6;
     }
 
+    .hero-admin-actions {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .hero-admin-actions .nav-link {
+        text-decoration: none;
+    }
+
     .course-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -46,6 +58,53 @@
         max-width: 1200px;
         margin: 0 auto;
         padding: 0 20px;
+    }
+
+    .filter-section {
+        max-width: 1200px;
+        margin: 0 auto 28px;
+        padding: 0 20px;
+    }
+
+    .filter-title {
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--text-muted);
+        margin-bottom: 14px;
+        letter-spacing: 0.04em;
+    }
+
+    .filter-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .filter-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 18px;
+        border-radius: 999px;
+        border: 1px solid var(--course-border);
+        background: rgba(255, 255, 255, 0.04);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.25s ease;
+    }
+
+    .filter-button:hover {
+        transform: translateY(-2px);
+        border-color: rgba(59, 130, 246, 0.45);
+        box-shadow: 0 10px 24px rgba(59, 130, 246, 0.14);
+    }
+
+    .filter-button.active {
+        background: linear-gradient(135deg, var(--neon-blue), #8b5cf6);
+        border-color: transparent;
+        box-shadow: 0 12px 28px rgba(59, 130, 246, 0.28);
     }
 
     .course-card {
@@ -190,6 +249,17 @@
     }
     .admin-link:hover { opacity: 1; color: var(--neon-blue); }
 
+    .admin-actions-group {
+        margin-top: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .admin-link.delete-link {
+        color: #fca5a5;
+    }
+
     .empty-state {
         grid-column: 1 / -1;
         text-align: center;
@@ -206,7 +276,25 @@
     <div class="hero-section">
         <h1 class="fade-in">LEARNING CENTER</h1>
         <p class="fade-in">나의 잠재력을 깨우는 최고의 코딩 교육 커리큘럼을 경험해보세요.</p>
+        {% if user.is_staff %}
+        <div class="hero-admin-actions fade-in">
+            <a href="{% url 'learning_program_create' %}" class="nav-link accent">+ 교육프로그램 추가</a>
+            <a href="{% url 'program_type_list' %}" class="nav-link">📂 유형 관리</a>
+        </div>
+        {% endif %}
     </div>
+
+    {% if program_types %}
+    <section class="filter-section">
+        <div class="filter-title">교육프로그램 필터</div>
+        <div class="filter-buttons">
+            <a href="{% url 'student_course_list' %}" class="filter-button {% if not selected_program_type %}active{% endif %}">전체</a>
+            {% for program_type in program_types %}
+                <a href="{% url 'student_course_list' %}?program_type={{ program_type.id }}" class="filter-button {% if selected_program_type == program_type.id|stringformat:'s' %}active{% endif %}">{{ program_type.name }}</a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 
     <div class="course-grid">
         {% for p in programs %}
@@ -241,12 +329,20 @@
                     {% endif %}
                     
                     {% if user.is_staff %}
-                        <a href="{% url 'chapter_manage' p.id %}" class="admin-link">
-                            ⚙️ Manage Structure
-                        </a>
-                        <a href="{% url 'export_program_to_excel' p.id %}" class="admin-link">
-                            📥 데이터 엑셀 다운로드
-                        </a>
+                        <div class="admin-actions-group">
+                            <a href="{% url 'course_home' p.id %}" class="admin-link">
+                                ⚙️ 프로그램 관리 페이지로 이동
+                            </a>
+                            <a href="{% url 'learning_program_edit' p.id %}" class="admin-link">
+                                설정/첨부파일 수정
+                            </a>
+                            <a href="{% url 'export_program_to_excel' p.id %}" class="admin-link">
+                                📥 데이터 엑셀 다운로드
+                            </a>
+                            <a href="{% url 'learning_program_delete' p.id %}" class="admin-link delete-link">
+                                삭제
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>

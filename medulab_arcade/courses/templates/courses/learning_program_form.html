@@ -109,13 +109,29 @@
             </div>
 
             <div class="form-group">
+                <label>학생 제공용 실습 파일 (picture.zip)</label>
+                {% if program and program.picture_zip %}
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">현재 파일: <a href="{{ program.picture_zip.url }}" target="_blank" style="color: var(--accent-blue);">{{ program.picture_zip.name }}</a></div>
+                {% endif %}
+                <input type="file" name="picture_zip" class="form-input" style="margin-top: 10px;" accept=".zip">
+            </div>
+
+            <div class="form-group">
+                <label>정답 파일 (answer.zip)</label>
+                {% if program and program.answer_zip %}
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">현재 파일: <a href="{{ program.answer_zip.url }}" target="_blank" style="color: var(--accent-blue);">{{ program.answer_zip.name }}</a></div>
+                {% endif %}
+                <input type="file" name="answer_zip" class="form-input" style="margin-top: 10px;" accept=".zip">
+            </div>
+
+            <div class="form-group">
                 <label class="checkbox-group">
                     {{ form.is_active }} 과정 활성화 (학생들에게 노출됨)
                 </label>
             </div>
 
             <button type="submit" class="submit-btn">설정 저장하기</button>
-            <a href="{% url 'learning_program_list' %}" class="cancel-link">취소하고 돌아가기</a>
+            <a href="{% url 'student_course_list' %}" class="cancel-link">취소하고 돌아가기</a>
         </form>
     </div>
 </main>

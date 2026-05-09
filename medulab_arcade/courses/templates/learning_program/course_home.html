@@ -64,6 +64,26 @@
         border-radius: inherit;
     }
 
+    .picture-zip-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--neon-blue);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.2s;
+        width: 100%;
+    }
+    .picture-zip-btn:hover {
+        background: rgba(59, 130, 246, 0.25);
+        transform: translateY(-2px);
+    }
+
     .hero-body { flex: 1; }
     .hero-label {
         display: inline-block;
@@ -94,6 +114,38 @@
         flex-wrap: wrap;
         gap: 14px;
         margin-top: 24px;
+    }
+
+    .hero-admin-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    .hero-admin-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #fff;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 700;
+        transition: all 0.2s ease;
+    }
+
+    .hero-admin-link:hover {
+        transform: translateY(-2px);
+        background: rgba(255,255,255,0.1);
+    }
+
+    .hero-admin-link.delete-link {
+        color: #fecaca;
+        border-color: rgba(248,113,113,0.22);
     }
 
     .achievement-card {
@@ -318,17 +370,32 @@
 {% block content %}
 <main class="main">
     <div class="course-hero fade-in">
-        <div class="hero-img-box">
-            {% if program.image %}
-                <img src="{{ program.image.url }}" alt="">
-            {% else %}
-                🚀
+        <div style="display: flex; flex-direction: column; gap: 12px; flex-shrink: 0;">
+            <div class="hero-img-box">
+                {% if program.image %}
+                    <img src="{{ program.image.url }}" alt="">
+                {% else %}
+                    🚀
+                {% endif %}
+            </div>
+            {% if program.picture_zip %}
+            <a href="{{ program.picture_zip.url }}" class="picture-zip-btn" download>
+                📦 실습 파일 다운로드
+            </a>
             {% endif %}
         </div>
         <div class="hero-body">
             <span class="hero-label">CURRICULUM DASHBOARD</span>
             <h1 class="hero-title">{{ program.name }}</h1>
             <p class="hero-desc">{{ program.description }}</p>
+            {% if user.is_staff %}
+            <div class="hero-admin-links">
+                <a href="{% url 'student_course_list' %}" class="hero-admin-link">← 교육프로그램 목록</a>
+                <a href="{% url 'learning_program_edit' program.id %}" class="hero-admin-link">설정/첨부파일 수정</a>
+                <a href="{% url 'chapter_manage' program.id %}" class="hero-admin-link">콘텐츠/데이터 관리</a>
+                <a href="{% url 'learning_program_delete' program.id %}" class="hero-admin-link delete-link">프로그램 삭제</a>
+            </div>
+            {% endif %}
             <div class="hero-badge-row">
                 <div class="achievement-card {% if program_badge_awarded %}is-earned{% else %}is-locked{% endif %}">
                     <div class="achievement-status-label">

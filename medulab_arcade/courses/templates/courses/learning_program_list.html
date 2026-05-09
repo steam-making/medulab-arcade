@@ -94,8 +94,8 @@
                     </td>
                     <td>{{ p.created_at|date:"Y-m-d" }}</td>
                     <td class="action-links">
-                        <a href="{% url 'chapter_manage' p.id %}">⚙️ 데이터 주입</a>
-                        <a href="{% url 'learning_program_edit' p.id %}">수정</a>
+                        <a href="{% url 'chapter_manage' p.id %}">⚙️ 콘텐츠/데이터 관리</a>
+                        <a href="{% url 'learning_program_edit' p.id %}">설정/첨부파일 수정</a>
                         <a href="{% url 'learning_program_delete' p.id %}" style="color: #ff6b6b;">삭제</a>
                     </td>
                 </tr>

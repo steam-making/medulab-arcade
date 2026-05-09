@@ -1,6 +1,13 @@
 import io
+import json
+import os
 import sys
 import re
+import hashlib
+import tempfile
+import zipfile
+from datetime import timedelta
+from xml.etree import ElementTree as ET
 import openpyxl
 from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
@@ -8,6 +15,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse, Http404
 from django.utils import timezone
+from django.db import transaction
 from arcade.badge_service import (
     evaluate_homework_badges,
     evaluate_mission_badges,
@@ -17,6 +25,7 @@ from arcade.badge_service import (
     get_recent_user_badges,
 )
 from .models import (
+    AnswerZipImportBatch,
     LearningProgram,
     Chapter,
     Item,
@@ -28,6 +37,7 @@ from .models import (
     HomeworkSubmission,
 )
 from .forms import (
+    AnswerZipImportForm,
     CourseForm,
     ProgramTypeForm,
     ItemForm,
@@ -36,6 +46,380 @@ from .forms import (
     HomeworkSubmissionReviewForm,
 )
 from django.db.models import Count, Q
+
+PPT_EXAM_DURATION_SECONDS = 60 * 60
+PPT_SLIDE_XML_NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
+ANSWER_ZIP_ITEM_KEY_PREFIX = "answer_zip"
+ANSWER_ZIP_MAX_FILES = 500
+ANSWER_ZIP_MAX_TOTAL_BYTES = 200 * 1024 * 1024
+ANSWER_ZIP_MAX_TOTAL_TEXT_BYTES = 5 * 1024 * 1024
+ANSWER_ZIP_MAX_TEXT_FILE_BYTES = 512 * 1024
+ANSWER_ZIP_MAX_PPTX_FILE_BYTES = 25 * 1024 * 1024
+ANSWER_ZIP_MAX_UPLOAD_BYTES = 200 * 1024 * 1024
+ANSWER_ZIP_TEXT_EXTENSIONS = {".txt", ".py", ".md", ".html", ".htm", ".json", ".csv", ".xml", ".yaml", ".yml", ".js", ".css"}
+
+
+class AnswerZipImportError(ValueError):
+    pass
+
+
+def natural_sort_key(value):
+    return [int(part) if part.isdigit() else part.lower() for part in re.split(r"(\d+)", value or "")]
+
+
+def normalize_answer_zip_path(raw_name):
+    name = (raw_name or "").strip()
+    if not name or name.endswith("/"):
+        return None
+    if "\\" in name or name.startswith("/") or re.match(r"^[A-Za-z]:", name):
+        raise AnswerZipImportError(f"안전하지 않은 ZIP 경로입니다: {raw_name}")
+
+    parts = [part for part in name.split("/") if part]
+    if len(parts) < 2:
+        raise AnswerZipImportError(f"A-rule 위반: 최상위 파일은 허용하지 않습니다 ({raw_name}).")
+    if any(part in {".", ".."} for part in parts):
+        raise AnswerZipImportError(f"상위 경로 참조는 허용하지 않습니다: {raw_name}")
+    if parts[0] == "__MACOSX" or parts[-1].startswith("._"):
+        return None
+    return parts
+
+
+def decode_answer_zip_filename(info):
+    filename = info.filename or ""
+    if info.flag_bits & 0x800:
+        return filename
+
+    try:
+        repaired = filename.encode("cp437").decode("cp949")
+        if repaired:
+            return repaired
+    except UnicodeError:
+        pass
+
+    return filename
+
+
+def slug_for_key(value):
+    slug = re.sub(r"[^0-9A-Za-z가-힣]+", "_", value or "").strip("_").lower()
+    return slug or "item"
+
+
+def make_answer_zip_item_key(chapter_title, item_path):
+    base = f"{ANSWER_ZIP_ITEM_KEY_PREFIX}_{slug_for_key(chapter_title)}_{slug_for_key(item_path)}"
+    if len(base) <= 100:
+        return base
+    digest = hashlib.sha1(base.encode("utf-8")).hexdigest()[:8]
+    return base[:91].rstrip("_") + f"_{digest}"
+
+
+def title_from_zip_path(relative_path):
+    basename = relative_path.split("/")[-1]
+    title = re.sub(r"\.[^.]+$", "", basename)
+    title = re.sub(r"^[\d\s._-]+", "", title).strip()
+    return title or basename
+
+
+def is_text_like_answer_file(relative_path):
+    _, extension = os.path.splitext(relative_path or "")
+    return extension.lower() in ANSWER_ZIP_TEXT_EXTENSIONS
+
+
+def is_pptx_answer_file(relative_path):
+    _, extension = os.path.splitext(relative_path or "")
+    return extension.lower() == ".pptx"
+
+
+def parse_answer_zip(uploaded_file):
+    uploaded_file.seek(0)
+    chapters_by_title = {}
+    total_bytes = 0
+    total_text_bytes = 0
+    file_count = 0
+
+    try:
+        with zipfile.ZipFile(uploaded_file) as archive:
+            infos = archive.infolist()
+            if not infos:
+                raise AnswerZipImportError("비어 있는 ZIP 파일입니다.")
+
+            for info in infos:
+                decoded_name = decode_answer_zip_filename(info)
+                parts = normalize_answer_zip_path(decoded_name)
+                if parts is None:
+                    continue
+
+                relative_path = "/".join(parts[1:])
+                is_text_file = is_text_like_answer_file(relative_path)
+                is_pptx_file = is_pptx_answer_file(relative_path)
+
+                if is_text_file and info.file_size > ANSWER_ZIP_MAX_TEXT_FILE_BYTES:
+                    raise AnswerZipImportError(f"텍스트 파일이 너무 큽니다: {info.filename}")
+                if is_pptx_file and info.file_size > ANSWER_ZIP_MAX_PPTX_FILE_BYTES:
+                    raise AnswerZipImportError(f"PPTX 파일이 너무 큽니다: {info.filename}")
+                if not is_text_file and not is_pptx_file and info.file_size > ANSWER_ZIP_MAX_TEXT_FILE_BYTES:
+                    raise AnswerZipImportError(f"지원하지 않는 큰 바이너리 파일입니다: {info.filename}")
+
+                total_bytes += info.file_size
+                if total_bytes > ANSWER_ZIP_MAX_TOTAL_BYTES:
+                    raise AnswerZipImportError("ZIP 내부 전체 파일 용량이 너무 큽니다.")
+                file_count += 1
+                if file_count > ANSWER_ZIP_MAX_FILES:
+                    raise AnswerZipImportError("ZIP 내부 파일 수가 너무 많습니다.")
+
+                is_text_file = is_text_like_answer_file(relative_path)
+                answer_code = ""
+                file_kind = "binary"
+
+                if is_text_file:
+                    raw_content = archive.read(info)
+                    try:
+                        answer_code = raw_content.decode("utf-8-sig").strip()
+                        file_kind = "text"
+                        total_text_bytes += info.file_size
+                        if total_text_bytes > ANSWER_ZIP_MAX_TOTAL_TEXT_BYTES:
+                            raise AnswerZipImportError("ZIP 내부 텍스트 총량이 너무 큽니다.")
+                    except UnicodeDecodeError:
+                        file_kind = "binary"
+
+                chapter_title = parts[0].strip()
+                chapter = chapters_by_title.setdefault(chapter_title, {
+                    "title": chapter_title,
+                    "items": [],
+                })
+                chapter["items"].append({
+                    "title": title_from_zip_path(relative_path),
+                    "key": make_answer_zip_item_key(chapter_title, relative_path),
+                    "source_path": decoded_name,
+                    "relative_path": relative_path,
+                    "answer_code": answer_code,
+                    "file_kind": file_kind,
+                    "size": info.file_size,
+                })
+    except zipfile.BadZipFile as exc:
+        raise AnswerZipImportError("올바른 ZIP 파일이 아닙니다.") from exc
+
+    chapters = sorted(chapters_by_title.values(), key=lambda chapter: natural_sort_key(chapter["title"]))
+    for chapter_index, chapter in enumerate(chapters, start=1):
+        chapter["number"] = chapter_index
+        chapter["items"].sort(key=lambda item: natural_sort_key(item["relative_path"]))
+        for item_index, item in enumerate(chapter["items"], start=1):
+            item["number"] = item_index
+
+    if not chapters:
+        raise AnswerZipImportError("A-rule에 맞는 챕터 폴더와 텍스트 파일을 찾지 못했습니다.")
+
+    return {
+        "chapters": chapters,
+        "chapter_count": len(chapters),
+        "item_count": sum(len(chapter["items"]) for chapter in chapters),
+    }
+
+
+def apply_answer_zip_preview(program, preview_data):
+    with transaction.atomic():  # type: ignore[reportGeneralTypeIssues]
+        created_chapters = 0
+        updated_items = 0
+        created_items = 0
+
+        existing_chapters = {chapter.title: chapter for chapter in program.chapters.all()}
+        next_chapter_number = (program.chapters.order_by("-number").values_list("number", flat=True).first() or 0) + 1
+
+        for chapter_data in preview_data.get("chapters", []):
+            chapter_title = chapter_data["title"]
+            chapter = existing_chapters.get(chapter_title)
+            if chapter is None:
+                chapter = Chapter.objects.create(
+                    program=program,
+                    number=next_chapter_number,
+                    title=chapter_title,
+                    content="answer.zip에서 생성된 챕터입니다.",
+                )
+                existing_chapters[chapter_title] = chapter
+                next_chapter_number += 1
+                created_chapters += 1
+
+            next_item_number = (chapter.items.order_by("-number").values_list("number", flat=True).first() or 0) + 1
+            existing_items = {item.key: item for item in chapter.items.filter(key__startswith=f"{ANSWER_ZIP_ITEM_KEY_PREFIX}_")}
+
+            for item_data in chapter_data.get("items", []):
+                item = existing_items.get(item_data["key"])
+                item_defaults = {
+                    "title": item_data["title"],
+                    "item_type": "problem" if item_data.get("file_kind") == "text" else "project",
+                    "explain_html": (
+                        f"<p>answer.zip 원본 경로: <code>{item_data['source_path']}</code></p>"
+                        f"<p>파일 유형: {'텍스트' if item_data.get('file_kind') == 'text' else '바이너리/PPTX 등'}</p>"
+                    ),
+                    "hint": (
+                        "answer.zip에서 가져온 텍스트 정답 자료입니다."
+                        if item_data.get("file_kind") == "text"
+                        else "answer.zip에서 가져온 바이너리 정답 자료입니다. 원본 파일 경로를 확인해 주세요."
+                    ),
+                    "answer_code": item_data["answer_code"],
+                    "example_input": "",
+                    "expected_output": "",
+                }
+                if item is None:
+                    Item.objects.create(
+                        chapter=chapter,
+                        number=next_item_number,
+                        key=item_data["key"],
+                        **item_defaults,
+                    )
+                    next_item_number += 1
+                    created_items += 1
+                else:
+                    changed_fields = []
+                    for field, value in item_defaults.items():
+                        if getattr(item, field) != value:
+                            setattr(item, field, value)
+                            changed_fields.append(field)
+                    if changed_fields:
+                        item.save(update_fields=changed_fields)
+                        updated_items += 1
+
+        return {
+            "created_chapters": created_chapters,
+            "created_items": created_items,
+            "updated_items": updated_items,
+        }
+
+
+
+def is_ppt_exam_item(item):
+    key = (item.key or "").lower()
+    title = item.title or ""
+    chapter_title = item.chapter.title or ""
+    return key.startswith("itq_ppt_expected_") or key.startswith("itq_ppt_past_") or "모의고사" in title or "기출문제" in title or "모의고사" in chapter_title or "기출문제" in chapter_title
+
+
+def get_ppt_exam_session_key(item_id):
+    return f"ppt_exam_start_{item_id}"
+
+
+def get_ppt_exam_deadline(request, item_id):
+    started_at_iso = request.session.get(get_ppt_exam_session_key(item_id))
+    if not started_at_iso:
+        return None
+
+    try:
+        started_at = timezone.datetime.fromisoformat(started_at_iso)
+    except ValueError:
+        request.session.pop(get_ppt_exam_session_key(item_id), None)
+        return None
+
+    if timezone.is_naive(started_at):
+        started_at = timezone.make_aware(started_at, timezone.get_current_timezone())
+    return started_at + timedelta(seconds=PPT_EXAM_DURATION_SECONDS)
+
+
+def build_ppt_exam_feedback(score, slide_count, text_slide_count, text_length, elapsed_seconds, rubric):
+    return {
+        "score": score,
+        "slide_count": slide_count,
+        "text_slide_count": text_slide_count,
+        "text_length": text_length,
+        "elapsed_seconds": elapsed_seconds,
+        "target_slide_count": rubric["target_slide_count"],
+        "minimum_slide_count": rubric["minimum_slide_count"],
+        "minimum_text_length": rubric["minimum_text_length"],
+        "minimum_text_slides": rubric["minimum_text_slides"],
+    }
+
+
+def get_default_ppt_exam_rubric(item):
+    if (item.key or "").startswith("itq_ppt_past_"):
+        return {
+            "target_slide_count": 10,
+            "minimum_slide_count": 8,
+            "minimum_text_length": 180,
+            "minimum_text_slides": 6,
+        }
+    return {
+        "target_slide_count": 12,
+        "minimum_slide_count": 10,
+        "minimum_text_length": 220,
+        "minimum_text_slides": 8,
+    }
+
+
+def get_ppt_exam_rubric(item):
+    raw = (item.expected_output or "").strip()
+    if raw:
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                default = get_default_ppt_exam_rubric(item)
+                return {
+                    "target_slide_count": int(parsed.get("target_slide_count", default["target_slide_count"])),
+                    "minimum_slide_count": int(parsed.get("minimum_slide_count", default["minimum_slide_count"])),
+                    "minimum_text_length": int(parsed.get("minimum_text_length", default["minimum_text_length"])),
+                    "minimum_text_slides": int(parsed.get("minimum_text_slides", default["minimum_text_slides"])),
+                }
+        except (TypeError, ValueError, json.JSONDecodeError):
+            pass
+    return get_default_ppt_exam_rubric(item)
+
+
+def extract_pptx_metrics(file_path):
+    with zipfile.ZipFile(file_path) as pptx_zip:
+        names = pptx_zip.namelist()
+        def slide_sort_key(path):
+            match = re.search(r"slide(\d+)\.xml$", path)
+            return int(match.group(1)) if match else 0
+
+        slide_paths = sorted(
+            [name for name in names if name.startswith("ppt/slides/slide") and name.endswith(".xml")],
+            key=slide_sort_key,
+        )
+        if not slide_paths:
+            raise ValueError("슬라이드가 없는 PPTX 파일입니다.")
+
+        slide_texts = []
+        for slide_path in slide_paths:
+            xml_bytes = pptx_zip.read(slide_path)
+            root = ET.fromstring(xml_bytes)
+            texts = [node.text.strip() for node in root.findall('.//a:t', PPT_SLIDE_XML_NS) if node.text and node.text.strip()]
+            slide_texts.append(" ".join(texts).strip())
+
+    joined_text = "\n".join(text for text in slide_texts if text)
+    return {
+        "slide_count": len(slide_paths),
+        "text_slide_count": sum(1 for text in slide_texts if text),
+        "text_length": len(joined_text),
+    }
+
+
+def grade_ppt_exam_submission(item, file_path, elapsed_seconds):
+    rubric = get_ppt_exam_rubric(item)
+    metrics = extract_pptx_metrics(file_path)
+    score = 30
+
+    slide_count = metrics["slide_count"]
+    text_slide_count = metrics["text_slide_count"]
+    text_length = metrics["text_length"]
+
+    if slide_count >= rubric["minimum_slide_count"]:
+        score += 25
+    else:
+        score += round(25 * max(slide_count, 0) / max(rubric["minimum_slide_count"], 1))
+
+    if text_slide_count >= rubric["minimum_text_slides"]:
+        score += 20
+    else:
+        score += round(20 * max(text_slide_count, 0) / max(rubric["minimum_text_slides"], 1))
+
+    if text_length >= rubric["minimum_text_length"]:
+        score += 15
+    else:
+        score += round(15 * max(text_length, 0) / max(rubric["minimum_text_length"], 1))
+
+    distance = abs(slide_count - rubric["target_slide_count"])
+    score += max(0, 10 - min(distance, 10))
+
+    completed = score >= 70
+    feedback = build_ppt_exam_feedback(score, slide_count, text_slide_count, text_length, elapsed_seconds, rubric)
+    return score, completed, feedback
 
 # --- 권한 체크 유틸리티 ---
 def is_admin(user):
@@ -182,7 +566,7 @@ def learning_program_create(request):
         if form.is_valid():
             form.save()
             messages.success(request, "새 과정이 성공적으로 등록되었습니다.")
-            return redirect("learning_program_list")
+            return redirect("student_course_list")
     else:
         form = CourseForm()
     
@@ -201,7 +585,7 @@ def learning_program_edit(request, program_id):
         if form.is_valid():
             form.save()
             messages.success(request, f"'{program.name}' 과정이 수정되었습니다.")
-            return redirect("learning_program_list")
+            return redirect("student_course_list")
     else:
         form = CourseForm(instance=program)
     
@@ -220,7 +604,7 @@ def learning_program_delete(request, program_id):
         name = program.name
         program.delete()
         messages.success(request, f"'{name}' 과정이 삭제되었습니다.")
-        return redirect("learning_program_list")
+        return redirect("student_course_list")
     return render(request, "courses/learning_program_confirm_delete.html", {"program": program})
 
 # --- (1-4) 유형 관리 목록 ---
@@ -338,8 +722,19 @@ def export_program_to_excel(request, program_id):
 @login_required
 @require_full_member
 def student_course_list(request):
+    selected_program_type = request.GET.get("program_type", "").strip()
+
     # 모든 활성 프로그램
-    all_programs = LearningProgram.objects.filter(is_active=True).order_by("id")
+    all_programs = LearningProgram.objects.filter(is_active=True).select_related("program_type")
+
+    available_program_types = ProgramType.objects.filter(
+        learning_programs__is_active=True
+    ).distinct().order_by("order", "name")
+
+    if selected_program_type.isdigit():
+        all_programs = all_programs.filter(program_type_id=int(selected_program_type))
+
+    all_programs = all_programs.order_by("id")
     
     # 내가 수강 중인 프로그램 ID 목록
     enrolled_ids = LearningEnrollment.objects.filter(user=request.user)\
@@ -348,6 +743,8 @@ def student_course_list(request):
     return render(request, "courses/student_course_list.html", {
         "programs": all_programs,
         "enrolled_ids": enrolled_ids,
+        "program_types": available_program_types,
+        "selected_program_type": selected_program_type,
     })
 
 # --- (3) 수강 신청 ---
@@ -442,14 +839,31 @@ def item_page(request, item_id):
     template_name = "learning_program/item_page.html"
     p_name = program.name.lower()
     p_type_name = program.program_type.name.lower() if program.program_type else ""
+    is_ppt_exam = is_ppt_exam_item(item)
     
-    if "python" in p_name or "파이썬" in p_name or "python" in p_type_name or "파이썬" in p_type_name:
+    if is_ppt_exam:
+        template_name = "learning_program/item_page_ppt.html"
+    elif "python" in p_name or "파이썬" in p_name or "python" in p_type_name or "파이썬" in p_type_name:
         template_name = "learning_program/item_page_python.html"
     elif item.answer_code or item.expected_output:
         # 데이터가 있으면 실습 문항으로 간주하여 파이썬 페이지 노출
         template_name = "learning_program/item_page_python.html"
     elif "ppt" in p_name or "파워포인트" in p_name or "ppt" in p_type_name or "파워포인트" in p_type_name:
         template_name = "learning_program/item_page_ppt.html"
+
+    deadline_at = get_ppt_exam_deadline(request, item.id) if is_ppt_exam else None
+    now = timezone.now() if is_ppt_exam else None
+    remaining_seconds = 0
+    exam_active = False
+    feedback_data = None
+    if deadline_at and now:
+        remaining_seconds = max(0, int((deadline_at - now).total_seconds()))
+        exam_active = remaining_seconds > 0
+    if is_ppt_exam and progress.last_output:
+        try:
+            feedback_data = json.loads(progress.last_output)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            feedback_data = None
 
     return render(request, template_name, {
         "item": item,
@@ -460,7 +874,99 @@ def item_page(request, item_id):
         "objective_options": objective_options,
         "objective_selected": progress.code.strip(),
         "is_objective": item.item_type == "objective",
+        "is_ppt_exam": is_ppt_exam,
+        "ppt_exam_duration_seconds": PPT_EXAM_DURATION_SECONDS,
+        "ppt_exam_deadline_iso": deadline_at.isoformat() if deadline_at and exam_active else "",
+        "ppt_exam_remaining_seconds": remaining_seconds,
+        "ppt_exam_active": exam_active,
+        "ppt_exam_score": progress.score,
+        "ppt_exam_completed": progress.completed,
+        "ppt_exam_feedback": feedback_data,
     })
+
+
+@login_required
+def start_ppt_exam(request, item_id):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=400)
+
+    item = get_object_or_404(Item, id=item_id)
+    if not is_ppt_exam_item(item):
+        return JsonResponse({"error": "PPT 실전 시험 항목이 아닙니다."}, status=400)
+
+    started_at = timezone.now()
+    deadline_at = started_at + timedelta(seconds=PPT_EXAM_DURATION_SECONDS)
+    request.session[get_ppt_exam_session_key(item.id)] = started_at.isoformat()
+    request.session.modified = True
+    return JsonResponse({
+        "started": True,
+        "duration_seconds": PPT_EXAM_DURATION_SECONDS,
+        "deadline_at": deadline_at.isoformat(),
+    })
+
+
+@login_required
+def submit_ppt_exam(request, item_id):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=400)
+
+    item = get_object_or_404(Item, id=item_id)
+    if not is_ppt_exam_item(item):
+        return JsonResponse({"error": "PPT 실전 시험 항목이 아닙니다."}, status=400)
+
+    deadline_at = get_ppt_exam_deadline(request, item.id)
+    if not deadline_at:
+        return JsonResponse({"error": "시험이 시작되지 않았습니다. 먼저 PowerPoint를 열고 시험 시작을 확인해 주세요."}, status=400)
+
+    remaining_seconds = int((deadline_at - timezone.now()).total_seconds())
+    if remaining_seconds <= 0:
+        request.session.pop(get_ppt_exam_session_key(item.id), None)
+        return JsonResponse({"error": "시험 시간이 종료되었습니다. 다시 시작 후 제출해 주세요."}, status=400)
+
+    uploaded_file = request.FILES.get("pptx_file")
+    if not uploaded_file:
+        return JsonResponse({"error": "업로드할 PPTX 파일을 선택해 주세요."}, status=400)
+
+    filename = (uploaded_file.name or "").lower()
+    if not filename.endswith(".pptx"):
+        return JsonResponse({"error": "PPTX 파일만 업로드할 수 있습니다."}, status=400)
+
+    temp_path = ""
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pptx") as temp_file:
+            for chunk in uploaded_file.chunks():
+                temp_file.write(chunk)
+            temp_path = temp_file.name
+
+        elapsed_seconds = PPT_EXAM_DURATION_SECONDS - max(remaining_seconds, 0)
+        score, completed, feedback = grade_ppt_exam_submission(item, temp_path, elapsed_seconds)
+        progress, _ = UserProgress.objects.get_or_create(user=request.user, item=item)
+        progress.code = "PPTX_SUBMITTED"
+        progress.score = score
+        progress.completed = completed
+        progress.last_output = json.dumps(feedback, ensure_ascii=False)
+        progress.save()
+
+        new_badges = []
+        if completed:
+            new_badges.extend(evaluate_mission_badges(request.user))
+            new_badges.extend(evaluate_program_badges(request.user, item.chapter.program))
+
+        request.session.pop(get_ppt_exam_session_key(item.id), None)
+        return JsonResponse({
+            "score": score,
+            "completed": completed,
+            "feedback": feedback,
+            "new_badges": new_badges,
+            "message": "채점이 완료되었습니다. 업로드된 파일은 자동 삭제되었습니다.",
+        })
+    except zipfile.BadZipFile:
+        return JsonResponse({"error": "올바른 PPTX 파일이 아닙니다. 다시 확인해 주세요."}, status=400)
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
 
 # --- (7) 코드 채점 API ---
 @login_required
@@ -541,8 +1047,66 @@ def grade_code(request):
 @user_passes_test(is_admin)
 def chapter_manage(request, program_id):
     program = get_object_or_404(LearningProgram, id=program_id)
+    answer_zip_form = AnswerZipImportForm()
+    answer_zip_batch = AnswerZipImportBatch.objects.filter(
+        program=program,
+        status=AnswerZipImportBatch.STATUS_PREVIEW,
+    ).first()
+    answer_zip_preview = answer_zip_batch.preview_data if answer_zip_batch else None
     
-    if request.method == "POST" and request.FILES.get("excel_file"):
+    if request.method == "POST" and request.POST.get("import_action") == "preview_answer_zip":
+        answer_zip_form = AnswerZipImportForm(request.POST, request.FILES)
+        if answer_zip_form.is_valid():
+            try:
+                answer_zip_preview = parse_answer_zip(answer_zip_form.cleaned_data["answer_zip"])
+                answer_zip_batch = AnswerZipImportBatch.objects.create(
+                    program=program,
+                    zip_file=answer_zip_form.cleaned_data["answer_zip"],
+                    preview_data=answer_zip_preview,
+                    message=(
+                        f"챕터 {answer_zip_preview['chapter_count']}개, "
+                        f"아이템 {answer_zip_preview['item_count']}개 미리보기"
+                    ),
+                    created_by=request.user,
+                )
+                messages.success(
+                    request,
+                    f"answer.zip 미리보기 준비 완료: 챕터 {answer_zip_preview['chapter_count']}개, 아이템 {answer_zip_preview['item_count']}개",
+                )
+            except AnswerZipImportError as exc:
+                answer_zip_preview = None
+                messages.error(request, str(exc))
+        else:
+            messages.error(request, "answer.zip 파일을 다시 확인해 주세요.")
+    elif request.method == "POST" and request.POST.get("import_action") == "apply_answer_zip":
+        if not answer_zip_batch or not answer_zip_preview:
+            messages.error(request, "적용할 answer.zip 미리보기 데이터가 없습니다. 먼저 ZIP을 업로드해 주세요.")
+        else:
+            result = apply_answer_zip_preview(program, answer_zip_preview)
+            answer_zip_batch.status = AnswerZipImportBatch.STATUS_APPLIED
+            answer_zip_batch.applied_at = timezone.now()
+            answer_zip_batch.message = (
+                f"챕터 {result['created_chapters']}개 생성, "
+                f"아이템 {result['created_items']}개 생성, {result['updated_items']}개 업데이트"
+            )
+            answer_zip_batch.save(update_fields=["status", "applied_at", "message"])
+            answer_zip_preview = None
+            answer_zip_batch = None
+            messages.success(
+                request,
+                "answer.zip 적용 완료: "
+                f"챕터 {result['created_chapters']}개 생성, "
+                f"아이템 {result['created_items']}개 생성, {result['updated_items']}개 업데이트",
+            )
+    elif request.method == "POST" and request.POST.get("import_action") == "clear_answer_zip_preview":
+        if answer_zip_batch:
+            answer_zip_batch.status = AnswerZipImportBatch.STATUS_FAILED
+            answer_zip_batch.message = "관리자가 미리보기를 취소했습니다."
+            answer_zip_batch.save(update_fields=["status", "message"])
+        answer_zip_preview = None
+        answer_zip_batch = None
+        messages.info(request, "answer.zip 미리보기를 취소했습니다.")
+    elif request.method == "POST" and request.FILES.get("excel_file"):
         file = request.FILES["excel_file"]
         try:
             wb = openpyxl.load_workbook(file)
@@ -578,7 +1142,38 @@ def chapter_manage(request, program_id):
             messages.error(request, f"엑셀 처리 중 오류 발생: {str(e)}")
             
     chapters = Chapter.objects.filter(program=program)
-    return render(request, "courses/chapter_manage.html", {"program": program, "chapters": chapters})
+    return render(request, "courses/chapter_manage.html", {
+        "program": program,
+        "chapters": chapters,
+        "answer_zip_form": answer_zip_form,
+        "answer_zip_batch": answer_zip_batch,
+        "answer_zip_preview": answer_zip_preview,
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def answer_zip_apply(request, program_id, batch_id):
+    program = get_object_or_404(LearningProgram, id=program_id)
+    batch = get_object_or_404(
+        AnswerZipImportBatch,
+        id=batch_id,
+        program=program,
+        status=AnswerZipImportBatch.STATUS_PREVIEW,
+    )
+    if request.method != "POST":
+        return redirect("chapter_manage", program_id=program.id)
+
+    result = apply_answer_zip_preview(program, batch.preview_data)
+    batch.status = AnswerZipImportBatch.STATUS_APPLIED
+    batch.applied_at = timezone.now()
+    batch.message = (
+        f"챕터 {result['created_chapters']}개 생성, "
+        f"아이템 {result['created_items']}개 생성, {result['updated_items']}개 업데이트"
+    )
+    batch.save(update_fields=["status", "applied_at", "message"])
+    messages.success(request, f"answer.zip 적용 완료: {batch.message}")
+    return redirect("chapter_manage", program_id=program.id)
 
 # --- (9) 아이템 등록 ---
 @login_required

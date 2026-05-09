@@ -16,6 +16,8 @@ urlpatterns = [
 
     # 관리자용 - 데이터 관리
     path('program/<int:program_id>/manage/', views.chapter_manage, name='chapter_manage'),
+    path('program/<int:program_id>/answer-zip/', views.chapter_manage, name='answer_zip_import'),
+    path('program/<int:program_id>/answer-zip/<int:batch_id>/apply/', views.answer_zip_apply, name='answer_zip_apply'),
     path('download-template/', views.download_course_template, name='download_course_template'),
     path('program/<int:program_id>/export/', views.export_program_to_excel, name='export_program_to_excel'),
     
@@ -45,6 +47,8 @@ urlpatterns = [
 
     # API
     path('api/grade/', views.grade_code, name='grade_code'),
+    path('api/item/<int:item_id>/ppt-exam/start/', views.start_ppt_exam, name='start_ppt_exam'),
+    path('api/item/<int:item_id>/ppt-exam/submit/', views.submit_ppt_exam, name='submit_ppt_exam'),
     path('api/program/<int:program_id>/structure/', views.api_program_structure, name='api_program_structure'),
     path('api/users/search/', views.api_search_users, name='api_search_users'),
 ]

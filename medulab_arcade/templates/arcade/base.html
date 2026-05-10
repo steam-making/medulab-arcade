@@ -566,7 +566,7 @@
             }
         }
 
-        .nav-dropdown:hover .dropdown-content {
+        .nav-dropdown.is-open .dropdown-content {
             display: block;
         }
 
@@ -634,16 +634,16 @@
             <div class="nav-links">
                 {% if user.is_authenticated %}
                 {% if user.is_staff %}
+                <a href="{% url 'profile' %}" class="nav-link accent-text">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }} · 마이페이지</a>
                 <div class="nav-dropdown">
                     <button class="nav-link dropdown-toggle"
                         style="color: #60a5fa; border: none; background: none; cursor: pointer;">
                         🛠️ 관리 서비스 <span style="font-size: 10px; margin-left: 4px;">▼</span>
                     </button>
                     <div class="dropdown-content">
-                        <a href="{% url 'profile' %}" class="accent-text">👤 마이페이지</a>
                         <a href="{% url 'upload' %}">📤 업로드</a>
                         <a href="{% url 'my_projects' %}">🎨 작품 관리</a>
-                                <a href="{% url 'student_course_list' %}">⚙️ 교육프로그램 관리</a>
+                                <a href="{% url 'student_course_list' %}">⚙️ 과정 관리</a>
                         <a href="{% url 'homework_admin_list' %}">📝 과제 관리</a>
                         <a href="{% url 'member_list' %}">⚙️ 회원 관리</a>
                         <a href="{% url 'badge_list' %}">🏅 배지 관리</a>
@@ -651,7 +651,7 @@
                     </div>
                 </div>
                 {% else %}
-                <a href="{% url 'profile' %}" class="nav-link">👤 마이페이지</a>
+                <a href="{% url 'profile' %}" class="nav-link">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }} · 마이페이지</a>
                 <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
                 {% endif %}
                 <a href="{% url 'logout' %}" class="nav-link">로그아웃</a>
@@ -750,6 +750,34 @@
                 document.addEventListener('DOMContentLoaded', initCardSlides);
             } else {
                 initCardSlides();
+            }
+        })();
+    </script>
+    <script>
+        /* ── 관리서비스 클릭 토글 ── */
+        (function () {
+            function initAdminDropdownToggle() {
+                const dropdown = document.querySelector('.nav-dropdown');
+                const toggle = dropdown ? dropdown.querySelector('.dropdown-toggle') : null;
+                if (!dropdown || !toggle) return;
+
+                toggle.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    dropdown.classList.toggle('is-open');
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!dropdown.contains(event.target)) {
+                        dropdown.classList.remove('is-open');
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initAdminDropdownToggle);
+            } else {
+                initAdminDropdownToggle();
             }
         })();
     </script>

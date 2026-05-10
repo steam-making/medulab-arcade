@@ -39,12 +39,25 @@
     /* iframe 영역 */
     .game-frame-wrap {
         position: relative;
-        width: 100%; aspect-ratio: 16/9;
+        width: 100%; min-height: 640px;
         background: {{ project.color }};
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        overflow: auto;
+    }
+    .game-frame-stage {
+        position: relative;
+        width: 100%;
+        min-height: 100%;
     }
     .game-frame-wrap iframe {
-        position: absolute; inset: 0;
-        width: 100%; height: 100%; border: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        border: none;
+        transform-origin: top left;
+        background: transparent;
     }
     .fullscreen-btn {
         position: absolute; bottom: 12px; right: 12px;
@@ -190,7 +203,7 @@
     @media (max-width: 768px) {
         .play-wrapper { padding: 0 12px; margin: 16px auto; }
         .info-toolbar { flex-direction: column-reverse; align-items: stretch; }
-        .game-frame-wrap { aspect-ratio: 4/3; }
+        .game-frame-wrap { min-height: 420px; }
     }
 </style>
 {% endblock %}
@@ -225,7 +238,9 @@
                     <div class="download-help">원드라이브, Google Drive 등 외부 링크로 이동합니다.</div>
                 </div>
             {% elif project.play_url %}
-                <iframe src="{{ project.play_url }}" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+                <div class="game-frame-stage" id="gameStage">
+                    <iframe id="projectFrame" src="{{ project.play_url }}" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+                </div>
             {% else %}
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
                 <span style="font-size:72px;">{{ project.thumbnail_emoji }}</span>
@@ -288,6 +303,60 @@ function toggleFullscreen() {
         document.exitFullscreen();
     }
 }
+
+function fitProjectFrame() {
+    const wrap = document.getElementById('gameWrap');
+    const stage = document.getElementById('gameStage');
+    const frame = document.getElementById('projectFrame');
+    if (!wrap || !stage || !frame) return;
+
+    let contentWidth = 1280;
+    let contentHeight = 720;
+
+    try {
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        const body = doc.body;
+        const html = doc.documentElement;
+        contentWidth = Math.max(
+            body ? body.scrollWidth : 0,
+            html ? html.scrollWidth : 0,
+            body ? body.offsetWidth : 0,
+            html ? html.offsetWidth : 0,
+            1280
+        );
+        contentHeight = Math.max(
+            body ? body.scrollHeight : 0,
+            html ? html.scrollHeight : 0,
+            body ? body.offsetHeight : 0,
+            html ? html.offsetHeight : 0,
+            720
+        );
+    } catch (error) {
+        contentWidth = 1280;
+        contentHeight = 720;
+    }
+
+    const availableWidth = Math.max(wrap.clientWidth, 320);
+    const scale = Math.min(1, availableWidth / contentWidth);
+    const scaledWidth = Math.round(contentWidth * scale);
+    const scaledHeight = Math.round(contentHeight * scale);
+
+    frame.style.width = `${contentWidth}px`;
+    frame.style.height = `${contentHeight}px`;
+    frame.style.transform = `scale(${scale})`;
+    stage.style.width = `${scaledWidth}px`;
+    stage.style.height = `${scaledHeight}px`;
+    wrap.style.minHeight = `${scaledHeight}px`;
+}
+
+window.addEventListener('resize', fitProjectFrame);
+window.addEventListener('load', fitProjectFrame);
+document.addEventListener('DOMContentLoaded', function () {
+    const frame = document.getElementById('projectFrame');
+    if (frame) {
+        frame.addEventListener('load', fitProjectFrame);
+    }
+});
 
 function toggleAction(type, projectId) {
     const url = type === 'like'

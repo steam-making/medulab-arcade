@@ -9,7 +9,26 @@
         <h1><span>HOME</span> PLAY</h1>
         <div class="homeplay-bar"></div>
         <p>배정된 숙제를 확인하고 차근차근 해결해보세요.</p>
+        {% if user.is_staff or user.is_superuser %}
+        <div class="admin-toolbar">
+            <a href="{% url 'homework_create' %}" class="admin-toolbar-btn accent">+ 새 과제등록</a>
+        </div>
+        {% endif %}
     </header>
+
+    {% if user.is_staff or user.is_superuser %}
+    {% if member_choices %}
+    <section class="member-filter-section">
+        <div class="member-filter-title">메듀랩 회원 필터</div>
+        <div class="member-filter-buttons">
+            <a href="{% url 'student_homework_list' %}" class="member-filter-btn {% if not selected_member_id %}active{% endif %}">전체</a>
+            {% for member in member_choices %}
+            <a href="{% url 'student_homework_list' %}?member={{ member.id }}" class="member-filter-btn {% if selected_member_id == member.id|stringformat:'s' %}active{% endif %}">{{ member.label }}{% if member.has_pending %}<span class="member-filter-badge">N</span>{% endif %}</a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    {% endif %}
 
     {% if not assignments %}
     <section class="empty-state">
@@ -74,30 +93,35 @@
                         <span class="panel-status">{{ assignment.admin_submissions|length }}건</span>
                     </div>
 
-                    {% if assignment.admin_submissions %}
+                    {% if assignment.admin_member_rows %}
                     <div class="admin-submission-list">
-                        {% for submission in assignment.admin_submissions %}
+                        {% for row in assignment.admin_member_rows %}
+                        {% with submission=row.submission student=row.student %}
                         <div class="admin-submission-card">
                             <div class="admin-submission-summary">
                                 <div>
-                                    <strong>{{ submission.student.get_full_name|default:submission.student.username }}</strong>
-                                    <span class="admin-status-chip {% if submission.status == 'completed' %}is-done{% elif submission.status == 'revision' %}is-revision{% else %}is-submitted{% endif %}">
-                                        {{ submission.get_status_display }}
+                                    <strong>{{ student.get_full_name|default:student.username }}</strong>
+                                    <span class="admin-status-chip {% if submission and submission.status == 'completed' %}is-done{% elif submission and submission.status == 'revision' %}is-revision{% elif submission %}is-submitted{% else %}is-pending{% endif %}">
+                                        {% if submission %}
+                                            {{ submission.get_status_display }}
+                                        {% else %}
+                                            미제출
+                                        {% endif %}
                                     </span>
                                 </div>
-                                <p>최근 제출: {{ submission.updated_at|date:"Y-m-d H:i" }}</p>
-                                {% if submission.file and submission.status != 'completed' %}
+                                <p>{% if submission %}최근 제출: {{ submission.updated_at|date:"Y-m-d H:i" }}{% else %}최근 제출: 아직 없음{% endif %}</p>
+                                {% if submission and submission.file and submission.status != 'completed' %}
                                 <a href="{{ submission.file.url }}" target="_blank" class="submitted-link">제출 파일 보기</a>
                                 {% endif %}
-                                {% if submission.note %}
+                                {% if submission and submission.note %}
                                 <p class="submission-note"><strong>학생 메모</strong> {{ submission.note }}</p>
                                 {% endif %}
-                                {% if submission.teacher_comment %}
+                                {% if submission and submission.teacher_comment %}
                                 <p class="submission-note feedback"><strong>관리자 메모</strong> {{ submission.teacher_comment }}</p>
                                 {% endif %}
                             </div>
 
-                            {% if submission.status != 'completed' %}
+                            {% if submission and submission.status != 'completed' %}
                             <form method="POST" action="{% url 'homework_submission_action' submission.id %}" class="admin-action-form">
                                 {% csrf_token %}
                                 <textarea name="teacher_comment" rows="3" placeholder="수정 요청 내용이나 완료 메모를 적어주세요">{{ submission.teacher_comment }}</textarea>
@@ -106,10 +130,19 @@
                                     <button type="submit" name="action" value="completed" class="primary-action-btn">완료</button>
                                 </div>
                             </form>
+                            {% elif not submission %}
+                            <form method="POST" action="{% url 'homework_assignment_complete' assignment.id student.id %}" class="admin-action-form">
+                                {% csrf_token %}
+                                <textarea name="teacher_comment" rows="3" placeholder="제출 없이 완료 처리 사유나 메모를 적어주세요"></textarea>
+                                <div class="admin-action-buttons">
+                                    <button type="submit" name="action" value="completed" class="primary-action-btn">완료</button>
+                                </div>
+                            </form>
                             {% else %}
                             <div class="final-badge">최종 완료 처리됨</div>
                             {% endif %}
                         </div>
+                        {% endwith %}
                         {% endfor %}
                     </div>
                     {% else %}
@@ -184,6 +217,15 @@
     .homeplay-header h1 span { color: #60a5fa; }
     .homeplay-bar { width: 60px; height: 4px; margin: 0 auto 18px; border-radius: 999px; background: #60a5fa; }
     .homeplay-header p { margin: 0; color: var(--text-muted); font-size: 1.0625rem; }
+    .admin-toolbar { display: flex; justify-content: flex-end; margin-top: 22px; }
+    .admin-toolbar-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 12px; text-decoration: none; font-weight: 800; background: rgba(255,255,255,0.06); color: #fff; border: 1px solid rgba(255,255,255,0.08); }
+    .admin-toolbar-btn.accent { background: linear-gradient(135deg, #3b82f6, #6366f1); border-color: rgba(96,165,250,0.22); }
+    .member-filter-section { margin-bottom: 28px; }
+    .member-filter-title { color: var(--text-muted); font-size: 14px; font-weight: 800; margin-bottom: 12px; }
+    .member-filter-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+    .member-filter-btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; }
+    .member-filter-btn.active { background: linear-gradient(135deg, #3b82f6, #6366f1); border-color: transparent; }
+    .member-filter-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; margin-left: 8px; padding: 0 5px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 11px; font-weight: 900; }
     .empty-state, .homework-card { border-radius: 28px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22); }
     .empty-state { padding: 110px 24px; text-align: center; }
     .empty-icon { font-size: 64px; margin-bottom: 20px; }
@@ -231,6 +273,7 @@
     .admin-status-chip.is-submitted { background: rgba(59,130,246,0.16); color: #93c5fd; }
     .admin-status-chip.is-revision { background: rgba(251,146,60,0.16); color: #fdba74; }
     .admin-status-chip.is-done { background: rgba(74,222,128,0.16); color: #86efac; }
+    .admin-status-chip.is-pending { background: rgba(255,255,255,0.12); color: #d1d5db; }
     .feedback { color: #fde68a !important; }
     .final-badge { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(74, 222, 128, 0.24); background: rgba(74, 222, 128, 0.12); color: #86efac; font-weight: 800; }
     .card-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.06); flex-wrap: wrap; }

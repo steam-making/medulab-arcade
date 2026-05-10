@@ -290,7 +290,11 @@
         <div class="filter-buttons">
             <a href="{% url 'student_course_list' %}" class="filter-button {% if not selected_program_type %}active{% endif %}">전체</a>
             {% for program_type in program_types %}
-                <a href="{% url 'student_course_list' %}?program_type={{ program_type.id }}" class="filter-button {% if selected_program_type == program_type.id|stringformat:'s' %}active{% endif %}">{{ program_type.name }}</a>
+                {% if program_type.name == "코딩" %}
+                    <a href="{% url 'student_course_list' %}?program_type=python-coding" class="filter-button {% if selected_program_type == 'python-coding' %}active{% endif %}">파이썬코딩</a>
+                {% else %}
+                    <a href="{% url 'student_course_list' %}?program_type={{ program_type.id }}" class="filter-button {% if selected_program_type == program_type.id|stringformat:'s' %}active{% endif %}">{{ program_type.name }}</a>
+                {% endif %}
             {% endfor %}
         </div>
     </section>

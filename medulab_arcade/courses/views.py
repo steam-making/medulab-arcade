@@ -4,6 +4,7 @@ import os
 import sys
 import re
 import hashlib
+from collections import Counter
 import tempfile
 import zipfile
 from datetime import timedelta
@@ -12,6 +13,7 @@ import openpyxl
 from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse, Http404
 from django.utils import timezone
@@ -549,6 +551,13 @@ def parse_objective_options(raw_text):
     return options
 
 
+def get_member_filter_name(user):
+    profile = getattr(user, 'profile', None)
+    if profile:
+        return (profile.nickname or profile.real_name or user.get_full_name() or user.username).strip()
+    return (user.get_full_name() or user.username).strip()
+
+
 EXCEL_IMPORT_HEADER_ALIASES = {
     "chapter_number": {"장번호"},
     "chapter_title": {"장제목"},
@@ -813,7 +822,18 @@ def student_course_list(request):
         learning_programs__is_active=True
     ).distinct().order_by("order", "name")
 
-    if selected_program_type.isdigit():
+    coding_type = available_program_types.filter(name="코딩").first()
+    python_coding_filter = coding_type is not None
+
+    if selected_program_type == "python-coding":
+        all_programs = all_programs.filter(
+            Q(program_type=coding_type)
+            | (
+                (Q(program_type__name__icontains="대회") | Q(program_type__name__icontains="자격증"))
+                & (Q(name__icontains="python") | Q(name__icontains="파이썬") | Q(description__icontains="python") | Q(description__icontains="파이썬"))
+            )
+        )
+    elif selected_program_type.isdigit():
         all_programs = all_programs.filter(program_type_id=int(selected_program_type))
 
     all_programs = all_programs.order_by("id")
@@ -827,6 +847,7 @@ def student_course_list(request):
         "enrolled_ids": enrolled_ids,
         "program_types": available_program_types,
         "selected_program_type": selected_program_type,
+        "show_python_coding_filter": python_coding_filter,
     })
 
 # --- (3) 수강 신청 ---
@@ -1339,12 +1360,39 @@ def item_delete(request, item_id):
 @login_required
 @require_full_member
 def student_homework_list(request):
+    selected_member_id = (request.GET.get('member') or '').strip()
+
     if request.user.is_staff or request.user.is_superuser:
         assignments = HomeworkAssignment.objects.filter(
             is_active=True
         ).select_related('program').prefetch_related(
             'linked_items', 'assigned_users', 'attachments', 'submissions__student'
-        ).distinct().order_by('due_date', '-created_at')
+        ).distinct().order_by('-created_at', '-due_date')
+
+        raw_member_choices = list(User.objects.filter(
+            assigned_homeworks__isnull=False
+        ).distinct().order_by('username'))
+
+        base_name_counts = Counter(get_member_filter_name(member) for member in raw_member_choices)
+        member_choices = []
+        for member in raw_member_choices:
+            base_name = get_member_filter_name(member)
+            has_duplicate_name = base_name_counts[base_name] > 1
+            pending_exists = HomeworkAssignment.objects.filter(
+                is_active=True,
+                assigned_users=member,
+            ).exclude(
+                submissions__student=member,
+                submissions__status=HomeworkSubmission.STATUS_COMPLETED,
+            ).exists()
+            member_choices.append({
+                'id': member.id,
+                'label': member.username if has_duplicate_name else base_name,
+                'has_pending': pending_exists,
+            })
+
+        if selected_member_id.isdigit():
+            assignments = assignments.filter(assigned_users__id=int(selected_member_id)).distinct()
     else:
         enrolled_ids = LearningEnrollment.objects.filter(user=request.user).values_list("program_id", flat=True)
         assignments = HomeworkAssignment.objects.filter(
@@ -1353,7 +1401,8 @@ def student_homework_list(request):
             is_active=True
         ).select_related('program').prefetch_related(
             'linked_items', 'assigned_users', 'attachments'
-        ).distinct().order_by('due_date', '-created_at')
+        ).distinct().order_by('-created_at', '-due_date')
+        member_choices = []
 
     submissions_by_assignment = {}
     if not (request.user.is_staff or request.user.is_superuser):
@@ -1387,6 +1436,15 @@ def student_homework_list(request):
         if request.user.is_staff or request.user.is_superuser:
             submissions = list(assignment.submissions.all().order_by('-updated_at'))
             assignment.admin_submissions = submissions
+            assigned_users = list(assignment.assigned_users.all().order_by('username'))
+            submission_map = {submission.student_id: submission for submission in submissions}
+            assignment.admin_member_rows = [
+                {
+                    'student': assigned_user,
+                    'submission': submission_map.get(assigned_user.id),
+                }
+                for assigned_user in assigned_users
+            ]
             assignment.submission = None
             assignment.submission_form = None
             assignment.submission_status_label = ''
@@ -1415,6 +1473,8 @@ def student_homework_list(request):
 
     return render(request, 'courses/student_homework_list.html', {
         'assignments': assignments,
+        'member_choices': member_choices,
+        'selected_member_id': selected_member_id,
     })
 
 
@@ -1476,6 +1536,38 @@ def homework_submission_action(request, submission_id):
     else:
         messages.warning(request, '처리할 작업을 다시 선택해 주세요.')
 
+    return redirect('student_homework_list')
+
+
+@login_required
+@user_passes_test(is_admin)
+def homework_assignment_complete(request, assignment_id, student_id):
+    assignment = get_object_or_404(HomeworkAssignment.objects.prefetch_related('assigned_users'), id=assignment_id)
+    student = get_object_or_404(User, id=student_id)
+
+    if request.method != 'POST':
+        return redirect('student_homework_list')
+
+    if not assignment.assigned_users.filter(id=student.id).exists():
+        messages.warning(request, '해당 학생은 이 과제의 배정 대상이 아닙니다.')
+        return redirect('student_homework_list')
+
+    teacher_comment = (request.POST.get('teacher_comment') or '').strip()
+    submission, _ = HomeworkSubmission.objects.get_or_create(
+        assignment=assignment,
+        student=student,
+        defaults={
+            'note': '',
+        },
+    )
+    if submission.file:
+        submission.file.delete(save=False)
+    submission.status = HomeworkSubmission.STATUS_COMPLETED
+    submission.teacher_comment = teacher_comment
+    submission.reviewed_at = timezone.now()
+    submission.save(update_fields=['status', 'teacher_comment', 'reviewed_at', 'updated_at'])
+    evaluate_homework_badges(student)
+    messages.success(request, f'{student.username} 학생 숙제를 제출 파일 없이 완료 처리했습니다.')
     return redirect('student_homework_list')
 
 

@@ -51,6 +51,7 @@
     .add-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,255,180,0.3); }
 
     .approval-pending { color: #ffc107; font-weight: 700; font-size: 12px; }
+    .approval-inline { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 </style>
 {% endblock %}
 
@@ -113,7 +114,16 @@
                         {% if u.profile.is_approved %}
                         <span style="font-size: 12px; color: var(--accent-green);">● 승인됨</span>
                         {% elif u.profile.needs_approval %}
-                        <span class="approval-pending">⏳ 승인 대기</span>
+                        <span class="approval-inline">
+                            <span class="approval-pending">⏳ 승인 대기</span>
+                            {% if u.profile.user_type == 'medulab_member' %}
+                            <form action="{% url 'member_approve' u.id %}" method="POST" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn-icon btn-approve" title="승인">승인</button>
+                            </form>
+                            {% endif %}
+                        </span>
                         {% else %}
                         <span style="font-size: 12px; color: var(--text-muted);">○ 미승인</span>
                         {% endif %}
@@ -124,13 +134,6 @@
                     <td>
                         <div class="action-btns">
                             <a href="{% url 'member_edit' u.id %}" class="btn-icon btn-edit" title="수정">✏️</a>
-                            {% if u.profile.user_type == 'medulab_member' and u.profile.needs_approval %}
-                            <form action="{% url 'member_approve' u.id %}" method="POST" style="display:inline;">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <button type="submit" class="btn-icon btn-approve" title="승인">승인</button>
-                            </form>
-                            {% endif %}
                             {% if u != user %}
                             <form action="{% url 'member_delete' u.id %}" method="POST" onsubmit="return confirm('정말로 이 회원을 삭제할까요? 모든 데이터가 삭제됩니다.');" style="display:inline;">
                                 {% csrf_token %}

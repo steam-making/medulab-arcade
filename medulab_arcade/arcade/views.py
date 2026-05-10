@@ -12,6 +12,7 @@ from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.db import DatabaseError
@@ -86,6 +87,30 @@ def play(request, slug):
         'project': project,
         'user_liked': user_liked,
         'user_bookmarked': user_bookmarked,
+    }
+    response = render(request, 'arcade/play.html', context)
+    return xframe_options_sameorigin(lambda req: response)(request)
+
+
+@login_required
+def project_preview(request, project_id):
+    """관리자/작성자용 작품 미리보기 페이지"""
+    project = get_object_or_404(Project, pk=project_id)
+    if not (request.user.is_staff or request.user == project.author):
+        messages.error(request, '작품 미리보기 권한이 없습니다.')
+        return redirect('my_projects')
+
+    user_liked = False
+    user_bookmarked = False
+    if request.user.is_authenticated:
+        user_liked = Like.objects.filter(user=request.user, project=project).exists()
+        user_bookmarked = Bookmark.objects.filter(user=request.user, project=project).exists()
+
+    context = {
+        'project': project,
+        'user_liked': user_liked,
+        'user_bookmarked': user_bookmarked,
+        'is_preview_mode': True,
     }
     response = render(request, 'arcade/play.html', context)
     return xframe_options_sameorigin(lambda req: response)(request)
@@ -1174,12 +1199,22 @@ def member_list(request):
         )
     if user_type:
         users = users.filter(profile__user_type=user_type)
+
+    type_filters = [
+        {
+            'code': code,
+            'label': label,
+            'active': user_type == code,
+        }
+        for code, label in UserProfile.USER_TYPE_CHOICES
+    ]
         
     context = {
         'users': users,
         'search_query': search,
         'current_type': user_type,
         'user_types': UserProfile.USER_TYPE_CHOICES,
+        'type_filters': type_filters,
     }
     return render(request, 'arcade/admin/member_list.html', context)
 
@@ -1239,6 +1274,20 @@ def member_edit(request, user_id):
         'title': '회원 정보 수정',
     }
     return render(request, 'arcade/admin/member_form.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def member_approve(request, user_id):
+    target_user = get_object_or_404(User, pk=user_id)
+    profile, _ = UserProfile.objects.get_or_create(user=target_user)
+    profile.is_approved = True
+    profile.approved_at = timezone.now()
+    profile.save(update_fields=['is_approved', 'approved_at'])
+    messages.success(request, f'회원 "{target_user.username}" 을 승인했습니다.')
+    redirect_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('member_list')
+    return redirect(redirect_url)
 
 @login_required
 @user_passes_test(staff_check)

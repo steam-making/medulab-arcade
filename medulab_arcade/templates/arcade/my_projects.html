@@ -67,7 +67,9 @@
         {% endif %}
         <div class="info">
             <h3>
-                {% if project.status == 'approved' %}
+                {% if is_teacher %}
+                <a href="{% url 'project_preview' project.id %}" style="color:#fff;text-decoration:none;">{{ project.title }}</a>
+                {% elif project.status == 'approved' %}
                 <a href="{% url 'play' project.slug %}" style="color:#fff;text-decoration:none;">{{ project.title }}</a>
                 {% else %}
                 {{ project.title }}

@@ -74,6 +74,29 @@
     }
     .part-content { color: #ccd6f6; line-height: 1.8; font-size: 15px; }
     .part-content h2, .part-content h3 { color: #fff; margin: 0 0 12px; font-size: 18px; }
+    .learning-section-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .learning-section-card {
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .learning-section-title {
+        margin-bottom: 8px;
+        font-size: 12px;
+        font-weight: 800;
+        color: #7dd3fc;
+        letter-spacing: 0.04em;
+    }
+    .learning-section-body {
+        color: #e5e7eb;
+        line-height: 1.75;
+        white-space: pre-wrap;
+    }
     .part-content pre {
         margin: 14px 0 0;
         padding: 14px 16px;
@@ -271,7 +294,18 @@
             <div class="section-part">
                 <div class="part-label">📖 학습 내용</div>
                 <div class="part-content">
+                    {% if learning_sections %}
+                    <div class="learning-section-list">
+                        {% for section in learning_sections %}
+                        <div class="learning-section-card">
+                            <div class="learning-section-title">{{ section.label }}</div>
+                            <div class="learning-section-body">{{ section.body }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
                     {{ item.explain_html|safe }}
+                    {% endif %}
                 </div>
             </div>
 

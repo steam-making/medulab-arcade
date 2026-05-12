@@ -4,6 +4,7 @@ import os
 import sys
 import re
 import hashlib
+from html import unescape
 from collections import Counter
 import tempfile
 import zipfile
@@ -551,6 +552,45 @@ def parse_objective_options(raw_text):
     return options
 
 
+LEARNING_SECTION_LABELS = {
+    "programming implementation": "문제 설명",
+    "input description": "입력 형식",
+    "output description": "출력 형식",
+    "scoring criteria": "채점 포인트",
+    "guide note": "원문 예시",
+    "example note": "예시 설명",
+    "rule note": "규칙 정리",
+}
+
+
+def build_learning_sections(explain_html):
+    if not explain_html:
+        return []
+
+    sections = []
+    paragraph_texts = re.findall(r"<p>(.*?)</p>", explain_html, flags=re.IGNORECASE | re.DOTALL)
+
+    for raw_text in paragraph_texts:
+        text = re.sub(r"<[^>]+>", "", raw_text)
+        text = unescape(text).strip()
+        if not text:
+            continue
+
+        matched = False
+        for prefix, label in LEARNING_SECTION_LABELS.items():
+            marker = f"{prefix}:"
+            if text.lower().startswith(marker):
+                body = text[len(marker):].strip()
+                sections.append({"label": label, "body": body})
+                matched = True
+                break
+
+        if not matched:
+            sections.append({"label": "학습 내용", "body": text})
+
+    return sections
+
+
 def get_member_filter_name(user):
     profile = getattr(user, 'profile', None)
     if profile:
@@ -937,6 +977,7 @@ def item_page(request, item_id):
     # 유저 진행 상황 (기존 코드 등 로드)
     progress, _ = UserProgress.objects.get_or_create(user=request.user, item=item)
     objective_options = parse_objective_options(item.example_input) if item.item_type == "objective" else []
+    learning_sections = build_learning_sections(item.explain_html)
 
     # 템플릿 결정 (과정 이름이나 유형에 따라 분기 가능)
     template_name = "learning_program/item_page.html"
@@ -975,6 +1016,7 @@ def item_page(request, item_id):
         "program": program,
         "user_progress": progress,
         "objective_options": objective_options,
+        "learning_sections": learning_sections,
         "objective_selected": progress.code.strip(),
         "is_objective": item.item_type == "objective",
         "is_ppt_exam": is_ppt_exam,

@@ -24,6 +24,9 @@
     .form-select { appearance: none; cursor: pointer; }
     select option { background: #1e293b; color: #fff; }
     .form-textarea { resize: vertical; min-height: 80px; }
+    .form-file { width: 100%; padding: 10px 0; color: var(--text-secondary); font-size: 14px; }
+    .form-file::file-selector-button { padding: 8px 16px; border-radius: 10px; background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: #fff; font-weight: 700; cursor: pointer; margin-right: 12px; transition: all 0.2s; }
+    .form-file::file-selector-button:hover { background: rgba(255,255,255,0.15); }
 
     .form-help { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
     .form-errors { color: #ff6b6b; font-size: 12px; margin-top: 6px; }
@@ -57,7 +60,7 @@
     </div>
 
     <div class="form-card">
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
 
             <div class="form-section-title">기본 정보</div>
@@ -73,6 +76,19 @@
                 {{ form.description }}
                 <div class="form-help">일정에 대한 부가 설명을 입력합니다. (선택사항)</div>
                 {% if form.description.errors %}<div class="form-errors">{{ form.description.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>이미지 (포스터)</label>
+                {% if event and event.image %}
+                <div style="margin-bottom: 12px;">
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}" style="max-width: 200px; border-radius: 12px; border: 1px solid var(--border);">
+                    <div style="margin-top: 6px; font-size: 12px; color: var(--text-muted);">현재 등록된 이미지</div>
+                </div>
+                {% endif %}
+                {{ form.image }}
+                <div class="form-help">대회 포스터나 관련 이미지를 첨부할 수 있습니다. (선택사항)</div>
+                {% if form.image.errors %}<div class="form-errors">{{ form.image.errors.0 }}</div>{% endif %}
             </div>
 
             <div class="grid-2">
@@ -121,6 +137,8 @@
     document.addEventListener('DOMContentLoaded', function() {
         const inputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]');
         inputs.forEach(input => input.classList.add('form-input'));
+        const fileInputs = document.querySelectorAll('input[type="file"]');
+        fileInputs.forEach(input => input.classList.add('form-file'));
         const selects = document.querySelectorAll('select');
         selects.forEach(select => select.classList.add('form-select'));
         const textareas = document.querySelectorAll('textarea');

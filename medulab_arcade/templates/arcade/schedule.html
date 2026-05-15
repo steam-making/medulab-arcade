@@ -50,6 +50,19 @@
     .empty-panel { padding: 24px; border-radius: 18px; color: rgba(255,255,255,0.48); background: rgba(255,255,255,0.035); text-align: center; font-weight: 700; }
     @media (max-width: 1100px) { .schedule-hero, .schedule-layout { grid-template-columns: 1fr; } }
     @media (max-width: 680px) { .schedule-shell { padding: 44px 16px 80px; } .schedule-hero-card, .schedule-pulse-card, .calendar-panel, .side-panel { border-radius: 22px; } .fc .fc-toolbar { display: grid; gap: 12px; justify-items: start; } }
+
+    /* ---- 이벤트 상세 모달 ---- */
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 24px; animation: fadeIn 0.2s ease; }
+    .modal-overlay.is-open { display: flex; }
+    .modal-card { background: linear-gradient(145deg, rgba(30,30,50,0.98), rgba(15,15,30,0.98)); border: 1px solid rgba(255,255,255,0.12); border-radius: 28px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 40px 120px rgba(0,0,0,0.7); animation: fadeSlideIn 0.25s ease; padding: 0; position: relative; }
+    .modal-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; transition: all 0.2s; }
+    .modal-close:hover { background: rgba(255,255,255,0.15); }
+    .modal-poster { width: 100%; max-height: 280px; object-fit: cover; border-radius: 28px 28px 0 0; display: block; }
+    .modal-body { padding: 28px 32px 32px; }
+    .modal-type { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; margin-bottom: 12px; }
+    .modal-title { font: 900 24px 'Noto Sans KR', sans-serif; color: #fff; margin-bottom: 10px; line-height: 1.3; }
+    .modal-date { color: var(--text-secondary); font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+    .modal-desc { color: rgba(255,255,255,0.7); font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
 </style>
 {% endblock %}
 
@@ -64,7 +77,7 @@
         <aside class="schedule-pulse-card" aria-label="일정 색상 안내">
             <div><div class="pulse-number">{{ upcoming_competitions|length }}</div><div class="pulse-label">다가오는 대회 일정</div></div>
             <div class="legend-grid">
-                <div class="legend-item"><span class="legend-dot" style="color:#ff5d6c;background:#ff5d6c;"></span>휴원/공휴일</div>
+                <div class="legend-item"><span class="legend-dot" style="color:#ff5d6c;background:#ff5d6c;"></span>휴원</div>
                 <div class="legend-item"><span class="legend-dot" style="color:#3b82f6;background:#3b82f6;"></span>학사 일정</div>
                 <div class="legend-item"><span class="legend-dot" style="color:#f5c451;background:#f5c451;"></span>대회</div>
                 <div class="legend-item"><span class="legend-dot" style="color:#00ffb4;background:#00ffb4;"></span>특강/세미나</div>
@@ -83,6 +96,21 @@
         </div>
     </section>
 </div>
+
+<!-- 이벤트 상세 모달 -->
+<div class="modal-overlay" id="event-modal">
+    <div class="modal-card">
+        <button class="modal-close" onclick="document.getElementById('event-modal').classList.remove('is-open')">✕</button>
+        <img class="modal-poster" id="modal-poster" src="" alt="" style="display:none;">
+        <div class="modal-body">
+            <div class="modal-type" id="modal-type"></div>
+            <h2 class="modal-title" id="modal-title"></h2>
+            <div class="modal-date" id="modal-date"></div>
+            <div class="modal-desc" id="modal-desc"></div>
+        </div>
+    </div>
+</div>
+
 {{ calendar_events_json|json_script:"schedule-events-data" }}
 {% endblock %}
 
@@ -101,13 +129,58 @@
             events: JSON.parse(eventsEl.textContent),
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
             buttonText: { today: '오늘', month: '월간', list: '목록' },
+            eventClick: function (info) {
+                if (info.event.extendedProps.eventType === 'holiday') return;
+                showEventModal(info.event);
+            },
             eventDidMount: function (info) {
                 const description = info.event.extendedProps.description;
                 const label = info.event.extendedProps.eventTypeLabel;
-                info.el.title = description ? `${label} - ${description}` : label;
+                if (description || label) {
+                    info.el.title = label + (description ? ' - ' + description : '');
+                }
+                // 휴원 이벤트는 클릭 불가 스타일
+                if (info.event.extendedProps.eventType === 'holiday') {
+                    info.el.style.cursor = 'default';
+                }
             }
         });
         calendar.render();
+    });
+
+    function showEventModal(event) {
+        var props = event.extendedProps;
+        document.getElementById('modal-title').textContent = event.title;
+        document.getElementById('modal-date').textContent = props.startDate + (props.startDate !== props.endDate ? ' ~ ' + props.endDate : '');
+        document.getElementById('modal-desc').textContent = props.description || '상세 설명이 없습니다.';
+
+        var typeEl = document.getElementById('modal-type');
+        typeEl.textContent = props.eventTypeLabel;
+
+        // 배지 색상
+        var colors = { holiday: '#ff5d6c', academic: '#3b82f6', competition: '#f5c451', seminar: '#00ffb4' };
+        var color = colors[props.eventType] || '#00b4ff';
+        typeEl.style.background = color + '22';
+        typeEl.style.color = color;
+        typeEl.style.border = '1px solid ' + color + '44';
+
+        // 포스터
+        var posterEl = document.getElementById('modal-poster');
+        if (props.imageUrl) {
+            posterEl.src = props.imageUrl;
+            posterEl.style.display = 'block';
+        } else {
+            posterEl.style.display = 'none';
+        }
+
+        document.getElementById('event-modal').classList.add('is-open');
+    }
+
+    // 모달 배경 클릭 시 닫기
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('event-modal').addEventListener('click', function (e) {
+            if (e.target === this) this.classList.remove('is-open');
+        });
     });
 </script>
 {% endblock %}

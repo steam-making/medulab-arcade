@@ -81,6 +81,7 @@
             <thead>
                 <tr>
                     <th>일정명</th>
+                    <th>포스터</th>
                     <th>기간</th>
                     <th>유형</th>
                     <th>노출</th>
@@ -94,6 +95,13 @@
                         <span class="event-title">{{ event.title }}</span>
                         {% if event.description %}
                         <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">{{ event.description|truncatechars:50 }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if event.image %}
+                        <img src="{{ event.image.url }}" alt="{{ event.title }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border);">
+                        {% else %}
+                        <span style="color: var(--text-muted); font-size: 12px;">-</span>
                         {% endif %}
                     </td>
                     <td>
@@ -125,7 +133,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" style="text-align:center; padding: 60px; color: var(--text-muted);">
+                    <td colspan="6" style="text-align:center; padding: 60px; color: var(--text-muted);">
                         등록된 일정이 없습니다.
                     </td>
                 </tr>

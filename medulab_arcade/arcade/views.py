@@ -89,7 +89,7 @@ def schedule_view(request):
 
     for event in events:
         color = SCHEDULE_EVENT_COLORS.get(event.event_type, '#00b4ff')
-        calendar_events.append({
+        cal_event = {
             'id': event.id,
             'title': event.title,
             'start': event.start_date.isoformat(),
@@ -98,11 +98,15 @@ def schedule_view(request):
             'borderColor': color,
             'textColor': '#08080f' if event.event_type in {ScheduleEvent.EVENT_TYPE_COMPETITION, ScheduleEvent.EVENT_TYPE_SEMINAR} else '#ffffff',
             'extendedProps': {
-                'description': event.description,
+                'description': event.description or '',
                 'eventType': event.event_type,
                 'eventTypeLabel': event.get_event_type_display(),
+                'startDate': event.start_date.isoformat(),
+                'endDate': event.end_date.isoformat(),
+                'imageUrl': event.image.url if event.image else '',
             },
-        })
+        }
+        calendar_events.append(cal_event)
 
     context = {
         'calendar_events_json': calendar_events,

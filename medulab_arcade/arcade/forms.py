@@ -515,7 +515,7 @@ class UserProfileUpdateForm(forms.ModelForm):
 class ScheduleEventForm(forms.ModelForm):
     class Meta:
         model = ScheduleEvent
-        fields = ['title', 'description', 'start_date', 'end_date', 'event_type', 'is_active']
+        fields = ['title', 'description', 'start_date', 'end_date', 'event_type', 'image', 'is_active']
         widgets = {
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'end_date': forms.DateInput(attrs={'type': 'date'}),
@@ -527,8 +527,10 @@ class ScheduleEventForm(forms.ModelForm):
             'start_date': '시작일',
             'end_date': '종료일',
             'event_type': '일정 유형',
+            'image': '이미지 (포스터)',
             'is_active': '노출 여부',
         }
         help_texts = {
             'is_active': '체크하면 학원 일정 페이지에 노출됩니다.',
+            'image': '대회 포스터나 관련 이미지를 첨부할 수 있습니다. (선택사항)',
         }

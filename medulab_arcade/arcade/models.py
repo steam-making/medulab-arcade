@@ -378,8 +378,8 @@ class ScheduleEvent(models.Model):
     EVENT_TYPE_COMPETITION = 'competition'
     EVENT_TYPE_SEMINAR = 'seminar'
     EVENT_TYPE_CHOICES = [
-        (EVENT_TYPE_HOLIDAY, '휴원/공휴일'),
-        (EVENT_TYPE_ACADEMIC, '학사 일정'),
+        (EVENT_TYPE_HOLIDAY, '휴원'),
+        (EVENT_TYPE_ACADEMIC, '정규수업'),
         (EVENT_TYPE_COMPETITION, '대회'),
         (EVENT_TYPE_SEMINAR, '특강/세미나'),
     ]
@@ -389,6 +389,7 @@ class ScheduleEvent(models.Model):
     start_date = models.DateField('시작일')
     end_date = models.DateField('종료일')
     event_type = models.CharField('일정 유형', max_length=20, choices=EVENT_TYPE_CHOICES, default=EVENT_TYPE_ACADEMIC)
+    image = models.ImageField('이미지 (포스터)', upload_to='schedule/posters/', blank=True, null=True)
     is_active = models.BooleanField('노출 여부', default=True)
 
     class Meta:

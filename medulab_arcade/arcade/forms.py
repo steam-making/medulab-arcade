@@ -3,7 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from .models import Badge, Project, Tag, UserProfile
+from .models import Badge, Project, ScheduleEvent, Tag, UserProfile
 
 
 BADGE_CRITERIA_HELP = (
@@ -493,6 +493,42 @@ class UserProfileUpdateForm(forms.ModelForm):
             profile.approved_at = None
 
         if commit:
-            user.save(update_fields=['email'])
-            profile.save()
-        return profile
+            user.email = self.cleaned_data['email']
+            profile.real_name = self.cleaned_data['real_name']
+            profile.birth_date = self.cleaned_data['birth_date']
+            profile.phone_number = self.cleaned_data['phone_number']
+            profile.user_type = new_user_type
+            profile.nickname = self.cleaned_data['nickname']
+
+            if new_user_type in UserProfile.AUTO_APPROVE_TYPES:
+                profile.is_approved = True
+            elif previous_user_type != new_user_type:
+                profile.is_approved = False
+                profile.approved_at = None
+
+            if commit:
+                user.save(update_fields=['email'])
+                profile.save()
+            return profile
+
+
+class ScheduleEventForm(forms.ModelForm):
+    class Meta:
+        model = ScheduleEvent
+        fields = ['title', 'description', 'start_date', 'end_date', 'event_type', 'is_active']
+        widgets = {
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+        labels = {
+            'title': '일정명',
+            'description': '상세 설명',
+            'start_date': '시작일',
+            'end_date': '종료일',
+            'event_type': '일정 유형',
+            'is_active': '노출 여부',
+        }
+        help_texts = {
+            'is_active': '체크하면 학원 일정 페이지에 노출됩니다.',
+        }

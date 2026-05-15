@@ -25,7 +25,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
 from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleEvent
-from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, UserProfileUpdateForm
+from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, UserProfileUpdateForm
 
 
 SCHEDULE_EVENT_COLORS = {
@@ -1350,6 +1350,93 @@ def member_delete(request, user_id):
 
 @login_required
 @user_passes_test(staff_check)
+@login_required
+@user_passes_test(staff_check)
+def schedule_admin_list(request):
+    """일정 관리 목록"""
+    events = ScheduleEvent.objects.select_related().order_by('start_date', 'end_date', 'title')
+
+    # 필터링
+    event_type = request.GET.get('event_type', '')
+    is_active = request.GET.get('is_active', '')
+    search = request.GET.get('q', '')
+
+    if event_type:
+        events = events.filter(event_type=event_type)
+    if is_active in ('0', '1'):
+        events = events.filter(is_active=is_active == '1')
+    if search:
+        events = events.filter(Q(title__icontains=search) | Q(description__icontains=search))
+
+    context = {
+        'events': events,
+        'search_query': search,
+        'current_event_type': event_type,
+        'current_is_active': is_active,
+        'event_types': ScheduleEvent.EVENT_TYPE_CHOICES,
+        'title': '일정 관리',
+    }
+    return render(request, 'arcade/admin/schedule_list.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def schedule_admin_create(request):
+    """신규 일정 등록"""
+    if request.method == 'POST':
+        form = ScheduleEventForm(request.POST)
+        if form.is_valid():
+            event = form.save()
+            messages.success(request, f'일정 "{event.title}"이 등록되었습니다.')
+            return redirect('schedule_admin_list')
+    else:
+        form = ScheduleEventForm()
+
+    context = {
+        'form': form,
+        'title': '신규 일정 등록',
+    }
+    return render(request, 'arcade/admin/schedule_form.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def schedule_admin_edit(request, event_id):
+    """일정 수정"""
+    event = get_object_or_404(ScheduleEvent, pk=event_id)
+
+    if request.method == 'POST':
+        form = ScheduleEventForm(request.POST, instance=event)
+        if form.is_valid():
+            event = form.save()
+            messages.success(request, f'일정 "{event.title}"이 수정되었습니다.')
+            return redirect('schedule_admin_list')
+    else:
+        form = ScheduleEventForm(instance=event)
+
+    context = {
+        'form': form,
+        'event': event,
+        'title': '일정 수정',
+    }
+    return render(request, 'arcade/admin/schedule_form.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def schedule_admin_delete(request, event_id):
+    """일정 삭제"""
+    event = get_object_or_404(ScheduleEvent, pk=event_id)
+    title = event.title
+    try:
+        event.delete()
+        messages.success(request, f'일정 "{title}"이 삭제되었습니다.')
+    except DatabaseError:
+        messages.error(request, f'일정 "{title}"을 삭제할 수 없습니다.')
+    return redirect('schedule_admin_list')
+
+
 def badge_list(request):
     """배지 목록 조회"""
     search = request.GET.get('q', '')

@@ -29,6 +29,12 @@ urlpatterns = [
     path('admin-services/members/<int:user_id>/edit/', views.member_edit, name='member_edit'),
     path('admin-services/members/<int:user_id>/delete/', views.member_delete, name='member_delete'),
 
+    # 일정 관리 (관리자 전용)
+    path('admin-services/schedules/', views.schedule_admin_list, name='schedule_admin_list'),
+    path('admin-services/schedules/add/', views.schedule_admin_create, name='schedule_admin_create'),
+    path('admin-services/schedules/<int:event_id>/edit/', views.schedule_admin_edit, name='schedule_admin_edit'),
+    path('admin-services/schedules/<int:event_id>/delete/', views.schedule_admin_delete, name='schedule_admin_delete'),
+
     # 배지 관리 (관리자 전용)
     path('admin-services/badges/', views.badge_list, name='badge_list'),
     path('admin-services/badges/add/', views.badge_create, name='badge_create'),

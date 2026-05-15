@@ -11,3 +11,6 @@ pypinyin>=0.50.0
 
 # Database (optional, in case you use MySQL on server)
 # mysqlclient
+
+# Schedule / Holiday
+holidays>=0.96

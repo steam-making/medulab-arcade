@@ -5,6 +5,7 @@ import re
 import os
 import uuid
 import base64
+from datetime import timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -23,8 +24,16 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleEvent
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, UserProfileUpdateForm
+
+
+SCHEDULE_EVENT_COLORS = {
+    ScheduleEvent.EVENT_TYPE_HOLIDAY: '#ff5d6c',
+    ScheduleEvent.EVENT_TYPE_ACADEMIC: '#3b82f6',
+    ScheduleEvent.EVENT_TYPE_COMPETITION: '#f5c451',
+    ScheduleEvent.EVENT_TYPE_SEMINAR: '#00ffb4',
+}
 
 
 def home(request):
@@ -68,6 +77,37 @@ def home(request):
         'total_projects': total_projects,
     }
     return render(request, 'arcade/home.html', context)
+
+
+def schedule_view(request):
+    events = ScheduleEvent.objects.filter(is_active=True).order_by('start_date', 'end_date', 'title')
+    today = timezone.localdate()
+    upcoming_events = events.filter(start_date__gte=today)
+    calendar_events = []
+
+    for event in events:
+        color = SCHEDULE_EVENT_COLORS.get(event.event_type, '#00b4ff')
+        calendar_events.append({
+            'id': event.id,
+            'title': event.title,
+            'start': event.start_date.isoformat(),
+            'end': (event.end_date + timedelta(days=1)).isoformat(),
+            'backgroundColor': color,
+            'borderColor': color,
+            'textColor': '#08080f' if event.event_type in {ScheduleEvent.EVENT_TYPE_COMPETITION, ScheduleEvent.EVENT_TYPE_SEMINAR} else '#ffffff',
+            'extendedProps': {
+                'description': event.description,
+                'eventType': event.event_type,
+                'eventTypeLabel': event.get_event_type_display(),
+            },
+        })
+
+    context = {
+        'calendar_events_json': calendar_events,
+        'upcoming_competitions': upcoming_events.filter(event_type=ScheduleEvent.EVENT_TYPE_COMPETITION)[:4],
+        'seminar_events': upcoming_events.filter(event_type__in=[ScheduleEvent.EVENT_TYPE_ACADEMIC, ScheduleEvent.EVENT_TYPE_SEMINAR])[:6],
+    }
+    return render(request, 'arcade/schedule.html', context)
 
 
 def play(request, slug):

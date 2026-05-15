@@ -372,6 +372,34 @@ class Project(models.Model):
         super().delete(*args, **kwargs)
 
 
+class ScheduleEvent(models.Model):
+    EVENT_TYPE_HOLIDAY = 'holiday'
+    EVENT_TYPE_ACADEMIC = 'academic'
+    EVENT_TYPE_COMPETITION = 'competition'
+    EVENT_TYPE_SEMINAR = 'seminar'
+    EVENT_TYPE_CHOICES = [
+        (EVENT_TYPE_HOLIDAY, '휴원/공휴일'),
+        (EVENT_TYPE_ACADEMIC, '학사 일정'),
+        (EVENT_TYPE_COMPETITION, '대회'),
+        (EVENT_TYPE_SEMINAR, '특강/세미나'),
+    ]
+
+    title = models.CharField('일정명', max_length=120)
+    description = models.TextField('상세 설명', blank=True)
+    start_date = models.DateField('시작일')
+    end_date = models.DateField('종료일')
+    event_type = models.CharField('일정 유형', max_length=20, choices=EVENT_TYPE_CHOICES, default=EVENT_TYPE_ACADEMIC)
+    is_active = models.BooleanField('노출 여부', default=True)
+
+    class Meta:
+        verbose_name = '학원 일정'
+        verbose_name_plural = '학원 일정'
+        ordering = ['start_date', 'end_date', 'title']
+
+    def __str__(self):
+        return f'{self.title} ({self.start_date:%Y.%m.%d})'
+
+
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='likes')

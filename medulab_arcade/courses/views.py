@@ -9,6 +9,7 @@ from collections import Counter
 import tempfile
 import zipfile
 from datetime import timedelta
+from types import SimpleNamespace
 from xml.etree import ElementTree as ET
 import openpyxl
 from functools import wraps
@@ -850,8 +851,6 @@ def export_program_to_excel(request, program_id):
     return response
 
 # --- (2) 학생용 나의 코스 목록 ---
-@login_required
-@require_full_member
 def student_course_list(request):
     selected_program_type = request.GET.get("program_type", "").strip()
 
@@ -879,8 +878,14 @@ def student_course_list(request):
     all_programs = all_programs.order_by("id")
     
     # 내가 수강 중인 프로그램 ID 목록
-    enrolled_ids = LearningEnrollment.objects.filter(user=request.user)\
-                                           .values_list("program_id", flat=True)
+    if request.user.is_authenticated:
+        enrolled_ids = LearningEnrollment.objects.filter(user=request.user)\
+                                               .values_list("program_id", flat=True)
+        profile = getattr(request.user, 'profile', None)
+        can_apply = bool(profile and profile.is_full_member)
+    else:
+        enrolled_ids = []
+        can_apply = False
     
     return render(request, "courses/student_course_list.html", {
         "programs": all_programs,
@@ -888,6 +893,7 @@ def student_course_list(request):
         "program_types": available_program_types,
         "selected_program_type": selected_program_type,
         "show_python_coding_filter": python_coding_filter,
+        "can_apply": can_apply,
     })
 
 # --- (3) 수강 신청 ---
@@ -906,14 +912,18 @@ def student_course_apply(request, program_id):
     return redirect("course_home", program_id=program.id)
 
 # --- (4) 코스 홈 (챕터 구성) ---
-@login_required
-@require_full_member
 def course_home(request, program_id):
     program = get_object_or_404(LearningProgram, id=program_id)
     chapters = Chapter.objects.filter(program=program).order_by("number")
     program_badge = get_program_completion_badge(program)
-    program_badge_awarded = request.user.earned_badges.filter(badge=program_badge).exists()
-    badge_catalog = get_active_badges_with_user_state(request.user)
+    if request.user.is_authenticated:
+        program_badge_awarded = request.user.earned_badges.filter(badge=program_badge).exists()
+        badge_catalog = get_active_badges_with_user_state(request.user)
+        recent_badges = get_recent_user_badges(request.user, limit=4)
+    else:
+        program_badge_awarded = False
+        badge_catalog = []
+        recent_badges = []
     course_badges_with_status = [
         badge for badge in badge_catalog
         if badge['category'] in {program_badge.category, 'milestone'}
@@ -926,11 +936,14 @@ def course_home(request, program_id):
     # 챕터별 진도율 계산하여 챕터 객체에 주입
     for ch in chapters:
         total_items = Item.objects.filter(chapter=ch).count()
-        completed_items = UserProgress.objects.filter(
-            user=request.user, 
-            item__chapter=ch, 
-            completed=True
-        ).count()
+        if request.user.is_authenticated:
+            completed_items = UserProgress.objects.filter(
+                user=request.user, 
+                item__chapter=ch, 
+                completed=True
+            ).count()
+        else:
+            completed_items = 0
         ch.progress = round((completed_items / total_items * 100)) if total_items > 0 else 0
         
     return render(request, "learning_program/course_home.html", {
@@ -938,18 +951,20 @@ def course_home(request, program_id):
         "chapters": chapters,
         "program_badge": program_badge,
         "program_badge_awarded": program_badge_awarded,
-        "recent_badges": get_recent_user_badges(request.user, limit=4),
+        "recent_badges": recent_badges,
         "course_badges_with_status": course_badges_with_status,
     })
 
 # --- (5) 챕터 상세 (항목 목록) ---
-@login_required
 def chapter_detail(request, chapter_id):
     chapter = get_object_or_404(Chapter, id=chapter_id)
     items = Item.objects.filter(chapter=chapter).order_by("number")
     
     # 완료 정보 로드하여 item 객체에 주입
-    progress_map = {p.item_id: p.completed for p in UserProgress.objects.filter(user=request.user, item__in=items)}
+    if request.user.is_authenticated:
+        progress_map = {p.item_id: p.completed for p in UserProgress.objects.filter(user=request.user, item__in=items)}
+    else:
+        progress_map = {}
     for item in items:
         item.is_completed = progress_map.get(item.id, False)
         
@@ -960,7 +975,6 @@ def chapter_detail(request, chapter_id):
     })
 
 # --- (6) 학습 아이템 페이지 ---
-@login_required
 def item_page(request, item_id):
     item = get_object_or_404(Item, id=item_id)
     program = item.chapter.program
@@ -975,7 +989,10 @@ def item_page(request, item_id):
         prev_item = next_item = None
 
     # 유저 진행 상황 (기존 코드 등 로드)
-    progress, _ = UserProgress.objects.get_or_create(user=request.user, item=item)
+    if request.user.is_authenticated:
+        progress, _ = UserProgress.objects.get_or_create(user=request.user, item=item)
+    else:
+        progress = SimpleNamespace(code="", last_output="", score=0, completed=False)
     objective_options = parse_objective_options(item.example_input) if item.item_type == "objective" else []
     learning_sections = build_learning_sections(item.explain_html)
 
@@ -1003,7 +1020,7 @@ def item_page(request, item_id):
     if deadline_at and now:
         remaining_seconds = max(0, int((deadline_at - now).total_seconds()))
         exam_active = remaining_seconds > 0
-    if is_ppt_exam and progress.last_output:
+    if is_ppt_exam and getattr(progress, 'last_output', ''):
         try:
             feedback_data = json.loads(progress.last_output)
         except (TypeError, ValueError, json.JSONDecodeError):

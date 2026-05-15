@@ -1,0 +1,107 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}학원 일정 - 메듀랩 Arcade{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+<style>
+    .schedule-shell { max-width: 1400px; margin: 0 auto; padding: 72px 24px 110px; position: relative; overflow: hidden; }
+    .schedule-shell::before, .schedule-shell::after { content: ""; position: absolute; border-radius: 999px; filter: blur(70px); opacity: 0.25; pointer-events: none; }
+    .schedule-shell::before { width: 360px; height: 360px; top: 70px; left: -120px; background: #00ffb4; }
+    .schedule-shell::after { width: 420px; height: 420px; right: -160px; bottom: 120px; background: #3b82f6; }
+    .schedule-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.55fr); gap: 28px; align-items: stretch; margin-bottom: 30px; animation: fadeSlideIn 0.55s ease both; }
+    .schedule-hero-card, .schedule-pulse-card, .calendar-panel, .side-panel { background: linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025)); border: 1px solid rgba(255,255,255,0.11); border-radius: 30px; box-shadow: 0 24px 80px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08); backdrop-filter: blur(18px); }
+    .schedule-hero-card { padding: clamp(30px, 5vw, 54px); position: relative; overflow: hidden; }
+    .schedule-hero-card::after { content: ""; position: absolute; inset: auto 38px 34px auto; width: 190px; height: 190px; background: radial-gradient(circle, rgba(0,255,180,0.22), transparent 68%); border: 1px solid rgba(0,255,180,0.18); border-radius: 50%; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; margin-bottom: 20px; border-radius: 999px; color: #00ffb4; background: rgba(0,255,180,0.09); border: 1px solid rgba(0,255,180,0.22); font-size: 12px; font-weight: 900; letter-spacing: 0.08em; }
+    .schedule-hero h1 { font: 900 clamp(38px, 7vw, 82px) 'Orbitron', 'Noto Sans KR', sans-serif; line-height: 0.95; letter-spacing: -0.05em; margin-bottom: 22px; color: #fff; }
+    .schedule-hero h1 span { display: block; color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,0.62); text-shadow: 0 0 32px rgba(0,180,255,0.16); }
+    .schedule-hero p { max-width: 640px; color: rgba(255,255,255,0.68); font-size: 16px; line-height: 1.8; position: relative; z-index: 1; }
+    .schedule-pulse-card { padding: 28px; display: flex; flex-direction: column; justify-content: space-between; min-height: 280px; position: relative; overflow: hidden; }
+    .schedule-pulse-card::before { content: ""; position: absolute; inset: 18px; border: 1px dashed rgba(255,255,255,0.13); border-radius: 24px; }
+    .pulse-number { font: 900 68px 'Orbitron', sans-serif; color: #00ffb4; text-shadow: 0 0 34px rgba(0,255,180,0.28); position: relative; z-index: 1; }
+    .pulse-label { color: rgba(255,255,255,0.56); font-weight: 800; position: relative; z-index: 1; }
+    .legend-grid { position: relative; z-index: 1; display: grid; gap: 10px; margin-top: 24px; }
+    .legend-item { display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.76); font-size: 13px; font-weight: 700; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 18px currentColor; }
+    .schedule-layout { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+    .calendar-panel { padding: clamp(18px, 3vw, 30px); min-width: 0; animation: fadeSlideIn 0.55s ease 0.1s both; }
+    #schedule-calendar { color: #fff; }
+    .fc { --fc-page-bg-color: transparent; --fc-neutral-bg-color: rgba(255,255,255,0.035); --fc-border-color: rgba(255,255,255,0.08); --fc-today-bg-color: rgba(0,255,180,0.08); --fc-list-event-hover-bg-color: rgba(255,255,255,0.06); font-family: 'Noto Sans KR', sans-serif; }
+    .fc .fc-toolbar-title { font: 900 clamp(22px, 3vw, 34px) 'Orbitron', 'Noto Sans KR', sans-serif; letter-spacing: -0.03em; }
+    .fc .fc-button-primary { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; color: #fff; font-weight: 800; box-shadow: none; transition: all 0.2s ease; }
+    .fc .fc-button-primary:hover, .fc .fc-button-primary:focus { background: rgba(0,255,180,0.15); border-color: rgba(0,255,180,0.38); color: #00ffb4; box-shadow: 0 0 0 3px rgba(0,255,180,0.08); }
+    .fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number { color: rgba(255,255,255,0.76); text-decoration: none; font-weight: 800; }
+    .fc-event { border-radius: 10px; padding: 2px 5px; font-weight: 900; box-shadow: 0 8px 22px rgba(0,0,0,0.28); }
+    .side-stack { display: grid; gap: 18px; animation: fadeSlideIn 0.55s ease 0.18s both; }
+    .side-panel { padding: 24px; }
+    .panel-kicker { color: #00b4ff; font-size: 12px; font-weight: 900; letter-spacing: 0.12em; margin-bottom: 8px; }
+    .side-panel h2 { color: #fff; font-size: 22px; margin-bottom: 18px; letter-spacing: -0.04em; }
+    .event-list { display: grid; gap: 12px; }
+    .event-card { position: relative; padding: 16px 16px 16px 18px; border-radius: 18px; background: rgba(8,8,15,0.62); border: 1px solid rgba(255,255,255,0.08); overflow: hidden; }
+    .event-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--event-color, #00b4ff); box-shadow: 0 0 18px var(--event-color, #00b4ff); }
+    .event-date { color: var(--event-color, #00b4ff); font-size: 12px; font-weight: 900; margin-bottom: 6px; }
+    .event-title { color: #fff; font-size: 15px; font-weight: 900; margin-bottom: 6px; }
+    .event-desc { color: rgba(255,255,255,0.54); font-size: 13px; line-height: 1.55; }
+    .empty-panel { padding: 24px; border-radius: 18px; color: rgba(255,255,255,0.48); background: rgba(255,255,255,0.035); text-align: center; font-weight: 700; }
+    @media (max-width: 1100px) { .schedule-hero, .schedule-layout { grid-template-columns: 1fr; } }
+    @media (max-width: 680px) { .schedule-shell { padding: 44px 16px 80px; } .schedule-hero-card, .schedule-pulse-card, .calendar-panel, .side-panel { border-radius: 22px; } .fc .fc-toolbar { display: grid; gap: 12px; justify-items: start; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="schedule-shell">
+    <section class="schedule-hero">
+        <div class="schedule-hero-card">
+            <div class="eyebrow">MEDULAB ACADEMY TIMELINE</div>
+            <h1>학원 일정 <span>CONTROL ROOM</span></h1>
+            <p>휴원일, 학사 운영, 대회, 특강과 세미나를 한 화면에서 확인하세요. 메듀랩의 배움 리듬을 놓치지 않도록 중요한 일정은 색상으로 빠르게 구분됩니다.</p>
+        </div>
+        <aside class="schedule-pulse-card" aria-label="일정 색상 안내">
+            <div><div class="pulse-number">{{ upcoming_competitions|length }}</div><div class="pulse-label">다가오는 대회 일정</div></div>
+            <div class="legend-grid">
+                <div class="legend-item"><span class="legend-dot" style="color:#ff5d6c;background:#ff5d6c;"></span>휴원/공휴일</div>
+                <div class="legend-item"><span class="legend-dot" style="color:#3b82f6;background:#3b82f6;"></span>학사 일정</div>
+                <div class="legend-item"><span class="legend-dot" style="color:#f5c451;background:#f5c451;"></span>대회</div>
+                <div class="legend-item"><span class="legend-dot" style="color:#00ffb4;background:#00ffb4;"></span>특강/세미나</div>
+            </div>
+        </aside>
+    </section>
+    <section class="schedule-layout">
+        <div class="calendar-panel"><div id="schedule-calendar"></div></div>
+        <div class="side-stack">
+            <aside class="side-panel"><div class="panel-kicker">UPCOMING COMPETITIONS</div><h2>다가오는 대회</h2><div class="event-list">
+                {% for event in upcoming_competitions %}<article class="event-card" style="--event-color:#f5c451;"><div class="event-date">{{ event.start_date|date:"Y.m.d" }}{% if event.start_date != event.end_date %} - {{ event.end_date|date:"Y.m.d" }}{% endif %}</div><div class="event-title">{{ event.title }}</div>{% if event.description %}<p class="event-desc">{{ event.description|truncatechars:92 }}</p>{% endif %}</article>{% empty %}<div class="empty-panel">등록된 대회 일정이 없습니다.</div>{% endfor %}
+            </div></aside>
+            <aside class="side-panel"><div class="panel-kicker">TIMETABLE / SEMINARS</div><h2>시간표 / 특강 안내</h2><div class="event-list">
+                {% for event in seminar_events %}<article class="event-card" style="--event-color:{% if event.event_type == 'academic' %}#3b82f6{% else %}#00ffb4{% endif %};"><div class="event-date">{{ event.start_date|date:"Y.m.d" }}{% if event.start_date != event.end_date %} - {{ event.end_date|date:"Y.m.d" }}{% endif %} &middot; {{ event.get_event_type_display }}</div><div class="event-title">{{ event.title }}</div>{% if event.description %}<p class="event-desc">{{ event.description|truncatechars:92 }}</p>{% endif %}</article>{% empty %}<div class="empty-panel">등록된 시간표 또는 특강 일정이 없습니다.</div>{% endfor %}
+            </div></aside>
+        </div>
+    </section>
+</div>
+{{ calendar_events_json|json_script:"schedule-events-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/ko.global.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const calendarEl = document.getElementById('schedule-calendar');
+        const eventsEl = document.getElementById('schedule-events-data');
+        if (!calendarEl || !eventsEl || !window.FullCalendar) return;
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            locale: 'ko', initialView: 'dayGridMonth', height: 'auto', fixedWeekCount: false, dayMaxEventRows: 3,
+            events: JSON.parse(eventsEl.textContent),
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
+            buttonText: { today: '오늘', month: '월간', list: '목록' },
+            eventDidMount: function (info) {
+                const description = info.event.extendedProps.description;
+                const label = info.event.extendedProps.eventTypeLabel;
+                info.el.title = description ? `${label} - ${description}` : label;
+            }
+        });
+        calendar.render();
+    });
+</script>
+{% endblock %}

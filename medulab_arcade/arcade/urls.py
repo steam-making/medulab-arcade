@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.home, name='home'),
     re_path(r'^play/(?P<slug>[-\w]+)/$', views.play, name='play'),
     path('upload/', views.upload, name='upload'),
+    path('schedule/', views.schedule_view, name='schedule'),
     path('my-projects/', views.my_projects, name='my_projects'),
     path('project/<int:project_id>/preview/', views.project_preview, name='project_preview'),
     path('project/<int:project_id>/delete/', views.delete_project, name='delete_project'),

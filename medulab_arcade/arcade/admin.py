@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.utils import timezone
-from .models import Badge, Bookmark, Category, Like, Project, UserBadge, UserProfile
+from .models import Badge, Bookmark, Category, Like, Project, ScheduleEvent, UserBadge, UserProfile
 
 
 BADGE_CRITERIA_HELP = (
@@ -57,6 +57,15 @@ class ProjectAdmin(admin.ModelAdmin):
     def reject_projects(self, request, queryset):
         queryset.update(status='rejected')
         self.message_user(request, f'{queryset.count()}개 작품이 반려되었습니다.')
+
+
+@admin.register(ScheduleEvent)
+class ScheduleEventAdmin(admin.ModelAdmin):
+    list_display = ('title', 'event_type', 'start_date', 'end_date', 'is_active')
+    list_filter = ('event_type', 'is_active', 'start_date')
+    list_editable = ('is_active',)
+    search_fields = ('title', 'description')
+    ordering = ('start_date', 'end_date', 'title')
 
 
 @admin.register(Like)

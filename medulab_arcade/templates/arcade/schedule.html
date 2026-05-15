@@ -33,6 +33,10 @@
     .fc .fc-button-primary:hover, .fc .fc-button-primary:focus { background: rgba(0,255,180,0.15); border-color: rgba(0,255,180,0.38); color: #00ffb4; box-shadow: 0 0 0 3px rgba(0,255,180,0.08); }
     .fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number { color: rgba(255,255,255,0.76); text-decoration: none; font-weight: 800; }
     .fc-event { border-radius: 10px; padding: 2px 5px; font-weight: 900; box-shadow: 0 8px 22px rgba(0,0,0,0.28); }
+    .fc-daygrid-event { white-space: normal !important; }
+    .fc-daygrid-event .fc-event-title { white-space: normal !important; word-break: keep-all !important; overflow: visible !important; line-height: 1.35; }
+    .fc-daygrid-more-link { font-size: 12px; font-weight: 800; color: var(--accent-blue); }
+    .fc-daygrid-day-frame { height: auto !important; min-height: auto !important; }
     .side-stack { display: grid; gap: 18px; animation: fadeSlideIn 0.55s ease 0.18s both; }
     .side-panel { padding: 24px; }
     .panel-kicker { color: #00b4ff; font-size: 12px; font-weight: 900; letter-spacing: 0.12em; margin-bottom: 8px; }
@@ -91,7 +95,9 @@
         const eventsEl = document.getElementById('schedule-events-data');
         if (!calendarEl || !eventsEl || !window.FullCalendar) return;
         const calendar = new FullCalendar.Calendar(calendarEl, {
-            locale: 'ko', initialView: 'dayGridMonth', height: 'auto', fixedWeekCount: false, dayMaxEventRows: 3,
+            locale: 'ko', initialView: 'dayGridMonth', height: 'auto', fixedWeekCount: false, dayMaxEventRows: true,
+            moreLinkText: function(n) { return `+${n}개 더보기`; },
+            moreLinkClick: 'day',
             events: JSON.parse(eventsEl.textContent),
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
             buttonText: { today: '오늘', month: '월간', list: '목록' },

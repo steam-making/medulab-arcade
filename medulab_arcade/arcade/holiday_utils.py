@@ -61,7 +61,7 @@ def seed_holidays_for_year(year, dry_run=False):
 
     for holiday_date, english_name in sorted(kr_holidays.items()):
         korean_name = HOLIDAY_NAME_MAP.get(english_name, english_name)
-        title = f"[공휴일] {korean_name}"
+        title = korean_name
 
         exists = ScheduleEvent.objects.filter(
             title=title,

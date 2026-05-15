@@ -26,6 +26,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
 from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleEvent
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, UserProfileUpdateForm
+from .holiday_utils import ensure_holidays
 
 
 SCHEDULE_EVENT_COLORS = {
@@ -80,6 +81,7 @@ def home(request):
 
 
 def schedule_view(request):
+    ensure_holidays()
     events = ScheduleEvent.objects.filter(is_active=True).order_by('start_date', 'end_date', 'title')
     today = timezone.localdate()
     upcoming_events = events.filter(start_date__gte=today)

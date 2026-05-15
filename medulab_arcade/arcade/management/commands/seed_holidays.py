@@ -1,41 +1,11 @@
 import logging
 from datetime import date
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
-from arcade.models import ScheduleEvent
+from arcade.holiday_utils import seed_holidays_for_year
 
 logger = logging.getLogger(__name__)
-
-HOLIDAY_EVENT_TYPE = ScheduleEvent.EVENT_TYPE_HOLIDAY
-
-# 한국 공휴일 이름 매핑 (영문→한글)
-HOLIDAY_NAME_MAP = {
-    "New Year's Day": "새해 첫날",
-    "The day preceding Korean New Year": "설날 연휴",
-    "Korean New Year": "설날",
-    "The second day of Korean New Year": "설날 연휴",
-    "Alternative holiday for Korean New Year": "설날 대체공휴일",
-    "Independence Movement Day": "삼일절",
-    "Alternative holiday for Independence Movement Day": "삼일절 대체공휴일",
-    "Children's Day": "어린이날",
-    "Buddha's Birthday": "부처님오신날",
-    "Alternative holiday for Buddha's Birthday": "부처님오신날 대체공휴일",
-    "Local Election Day": "지방선거일",
-    "Memorial Day": "현충일",
-    "Constitution Day": "제헌절",
-    "Liberation Day": "광복절",
-    "Alternative holiday for Liberation Day": "광복절 대체공휴일",
-    "The day preceding Chuseok": "추석 연휴",
-    "Chuseok": "추석",
-    "The second day of Chuseok": "추석 연휴",
-    "National Foundation Day": "개천절",
-    "Alternative holiday for National Foundation Day": "개천절 대체공휴일",
-    "Hangul Day": "한글날",
-    "Alternative holiday for Hangul Day": "한글날 대체공휴일",
-    "Christmas Day": "크리스마스",
-    "Alternative holiday for Christmas Day": "크리스마스 대체공휴일",
-}
 
 
 class Command(BaseCommand):
@@ -55,11 +25,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        try:
-            import holidays
-        except ImportError:
-            raise CommandError("holidays 패키지가 필요합니다. pip install holidays")
-
         target_year = options["year"]
         dry_run = options["dry_run"]
 
@@ -69,39 +34,10 @@ class Command(BaseCommand):
         total_skipped = 0
 
         for year in years:
-            kr_holidays = holidays.KR(years=year)
             self.stdout.write(f"\n--- {year}년 공휴일 처리 중 ---")
-
-            for holiday_date, english_name in sorted(kr_holidays.items()):
-                korean_name = HOLIDAY_NAME_MAP.get(english_name, english_name)
-                title = f"[공휴일] {korean_name}"
-
-                # 이미 존재하는지 확인
-                exists = ScheduleEvent.objects.filter(
-                    title=title,
-                    start_date=holiday_date,
-                    event_type=HOLIDAY_EVENT_TYPE,
-                ).exists()
-
-                if exists:
-                    total_skipped += 1
-                    continue
-
-                if not dry_run:
-                    ScheduleEvent.objects.create(
-                        title=title,
-                        description=f"{year}년 {korean_name} ({english_name})",
-                        start_date=holiday_date,
-                        end_date=holiday_date,
-                        event_type=HOLIDAY_EVENT_TYPE,
-                        is_active=True,
-                    )
-
-                total_created += 1
-                self.stdout.write(
-                    f"  {'[PREVIEW]' if dry_run else '[CREATED]'} "
-                    f"{holiday_date.isoformat()} - {title}"
-                )
+            created, skipped = seed_holidays_for_year(year, dry_run=dry_run)
+            total_created += created
+            total_skipped += skipped
 
         action = "dry-run" if dry_run else "complete"
         self.stdout.write(

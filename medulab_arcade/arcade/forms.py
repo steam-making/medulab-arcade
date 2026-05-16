@@ -515,22 +515,69 @@ class UserProfileUpdateForm(forms.ModelForm):
 class ScheduleEventForm(forms.ModelForm):
     class Meta:
         model = ScheduleEvent
-        fields = ['title', 'description', 'start_date', 'end_date', 'event_type', 'image', 'is_active']
+        fields = ['title', 'description', 'event_type', 'start_date', 'end_date', 'days_of_week', 'start_time', 'end_time', 'external_url', 'image', 'is_active']
         widgets = {
-            'start_date': forms.DateInput(attrs={'type': 'date'}),
-            'end_date': forms.DateInput(attrs={'type': 'date'}),
-            'description': forms.Textarea(attrs={'rows': 3}),
+            'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+            'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+            'start_time': forms.TimeInput(attrs={'type': 'time'}, format='%H:%M'),
+            'end_time': forms.TimeInput(attrs={'type': 'time'}, format='%H:%M'),
+            'description': forms.Textarea(attrs={'rows': 6}),
+            'event_type': forms.RadioSelect(attrs={'class': 'event-type-radio'}),
         }
         labels = {
             'title': '일정명',
             'description': '상세 설명',
-            'start_date': '시작일',
-            'end_date': '종료일',
+            'start_date': '시작일시',
+            'end_date': '종료일시',
+            'start_time': '시작 시간',
+            'end_time': '종료 시간',
             'event_type': '일정 유형',
+            'external_url': '링크 URL',
             'image': '이미지 (포스터)',
             'is_active': '노출 여부',
         }
+
+    days_of_week = forms.MultipleChoiceField(
+        choices=[
+            ('1', '월'), ('2', '화'), ('3', '수'), ('4', '목'), ('5', '금'), ('6', '토'), ('0', '일')
+        ],
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'days-checkbox'}),
+        label='반복 요일',
+        required=False,
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        event_type = cleaned_data.get('event_type')
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        days_of_week = cleaned_data.get('days_of_week')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+
+        if event_type == ScheduleEvent.EVENT_TYPE_ACADEMIC:
+            if not days_of_week or not start_time or not end_time:
+                raise forms.ValidationError("정규수업은 반복 요일, 시작 시간, 종료 시간을 모두 입력해야 합니다.")
+            # 리스트를 콤마로 연결된 문자열로 변환
+            cleaned_data['days_of_week'] = ','.join(days_of_week)
+            # ACADEMIC일 때 날짜는 무시하거나 None 처리
+            cleaned_data['start_date'] = None
+            cleaned_data['end_date'] = None
+        else:
+            if not start_date or not end_date:
+                raise forms.ValidationError(f"{dict(ScheduleEvent.EVENT_TYPE_CHOICES).get(event_type)} 유형은 시작일시와 종료일시를 모두 입력해야 합니다.")
+            cleaned_data['days_of_week'] = ''
+            cleaned_data['start_time'] = None
+            cleaned_data['end_time'] = None
+
+        return cleaned_data
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.days_of_week:
+            self.initial['days_of_week'] = self.instance.days_of_week.split(',')
         help_texts = {
             'is_active': '체크하면 학원 일정 페이지에 노출됩니다.',
+            'external_url': '대회 페이지나 관련 자료가 있는 링크를 입력하세요. (선택사항)',
             'image': '대회 포스터나 관련 이미지를 첨부할 수 있습니다. (선택사항)',
         }

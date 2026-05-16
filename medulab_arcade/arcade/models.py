@@ -377,28 +377,57 @@ class ScheduleEvent(models.Model):
     EVENT_TYPE_ACADEMIC = 'academic'
     EVENT_TYPE_COMPETITION = 'competition'
     EVENT_TYPE_SEMINAR = 'seminar'
+    EVENT_TYPE_CERTIFICATION = 'certification'
     EVENT_TYPE_CHOICES = [
         (EVENT_TYPE_HOLIDAY, '휴원'),
         (EVENT_TYPE_ACADEMIC, '정규수업'),
-        (EVENT_TYPE_COMPETITION, '대회'),
         (EVENT_TYPE_SEMINAR, '특강/세미나'),
+        (EVENT_TYPE_COMPETITION, '대회'),
+        (EVENT_TYPE_CERTIFICATION, '자격시험'),
     ]
 
     title = models.CharField('일정명', max_length=120)
     description = models.TextField('상세 설명', blank=True)
-    start_date = models.DateField('시작일')
-    end_date = models.DateField('종료일')
+    
+    # 일반 일정용 (대회, 특강 등)
+    start_date = models.DateTimeField('시작일시', null=True, blank=True)
+    end_date = models.DateTimeField('종료일시', null=True, blank=True)
+    
+    # 정규수업 등 반복 일정용
+    days_of_week = models.CharField('반복 요일', max_length=50, blank=True, help_text='0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토 (콤마로 구분)')
+    start_time = models.TimeField('시작 시간', null=True, blank=True)
+    end_time = models.TimeField('종료 시간', null=True, blank=True)
+
     event_type = models.CharField('일정 유형', max_length=20, choices=EVENT_TYPE_CHOICES, default=EVENT_TYPE_ACADEMIC)
+    external_url = models.URLField('링크 URL', max_length=500, blank=True, help_text='대회페이지나 관련 자료 링크')
     image = models.ImageField('이미지 (포스터)', upload_to='schedule/posters/', blank=True, null=True)
     is_active = models.BooleanField('노출 여부', default=True)
 
     class Meta:
         verbose_name = '학원 일정'
         verbose_name_plural = '학원 일정'
-        ordering = ['start_date', 'end_date', 'title']
+        ordering = ['start_date', 'start_time', 'title']
 
     def __str__(self):
-        return f'{self.title} ({self.start_date:%Y.%m.%d})'
+        if self.start_date:
+            return f'{self.title} ({self.start_date:%Y.%m.%d %H:%M})'
+        elif self.start_time:
+            return f'{self.title} (반복: {self.start_time:%H:%M})'
+        return self.title
+
+
+class ScheduleAttachment(models.Model):
+    event = models.ForeignKey(ScheduleEvent, on_delete=models.CASCADE, related_name='attachments', verbose_name='일정')
+    file = models.FileField('첨부 파일', upload_to='schedule/attachments/')
+    uploaded_at = models.DateTimeField('등록일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '첨부 파일'
+        verbose_name_plural = '첨부 파일'
+        ordering = ['uploaded_at']
+
+    def __str__(self):
+        return self.file.name.split('/')[-1]
 
 
 class Like(models.Model):

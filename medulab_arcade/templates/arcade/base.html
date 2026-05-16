@@ -108,7 +108,12 @@
             align-items: center;
             justify-content: space-between;
             gap: 16px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none; /* Firefox */
+        }
+        .nav-inner::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
         }
 
         .logo-group {
@@ -608,62 +613,66 @@
                 </div>
             </a>
 
-            <!-- 검색 및 주요 링크 그룹 -->
-            <div style="display: flex; align-items: center; gap: 12px; flex: 0 1 auto;">
-                <form class="search-box" style="flex: 0 1 320px;" method="GET" action="{% url 'home' %}">
-                    <span class="icon">🔍</span>
-                    <input type="text" name="q" placeholder="작품 검색..." value="{{ search_query|default:'' }}"
-                        autocomplete="off">
-                </form>
+            <!-- 우측 메뉴 영역 (검색 + 공용 메뉴 + 유저 메뉴) -->
+            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: nowrap; justify-content: flex-end; flex: 1;">
+                
+                <!-- 검색 및 주요 링크 그룹 -->
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; justify-content: flex-end;">
+                    <form class="search-box" style="flex: 0 1 200px; min-width: 140px;" method="GET" action="{% url 'home' %}">
+                        <span class="icon">🔍</span>
+                        <input type="text" name="q" placeholder="작품 검색..." value="{{ search_query|default:'' }}"
+                            autocomplete="off" style="padding: 8px 16px 8px 36px;">
+                    </form>
 
-                <a href="{% url 'typing_home' %}" class="nav-link"
-                    style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); white-space: nowrap;">
-                    ⌨️ 타자연습
-                </a>
+                    <a href="{% url 'typing_home' %}" class="nav-link"
+                        style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); white-space: nowrap;">
+                        ⌨️ 타자연습
+                    </a>
 
-                <a href="{% url 'student_course_list' %}" class="nav-link"
-                    style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); white-space: nowrap;">
-                    🏫 교육프로그램
-                </a>
-                <a href="{% url 'schedule' %}" class="nav-link"
-                    style="background: rgba(20, 184, 166, 0.15); color: #14b8a6; border: 1px solid rgba(20, 184, 166, 0.3); white-space: nowrap;">
-                    📅 학원일정
-                </a>
-                <a href="{% url 'student_homework_list' %}" class="nav-link restriction-check"
-                    style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); white-space: nowrap;">
-                    🏠 홈플레이
-                </a>
-            </div>
-
-            <div class="nav-links">
-                {% if user.is_authenticated %}
-                {% if user.is_staff %}
-                <a href="{% url 'profile' %}" class="nav-link accent-text">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }} · 마이페이지</a>
-                <div class="nav-dropdown">
-                    <button class="nav-link dropdown-toggle"
-                        style="color: #60a5fa; border: none; background: none; cursor: pointer;">
-                        🛠️ 관리 서비스 <span style="font-size: 10px; margin-left: 4px;">▼</span>
-                    </button>
-                    <div class="dropdown-content">
-                        <a href="{% url 'upload' %}">📤 업로드</a>
-                        <a href="{% url 'my_projects' %}">🎨 작품 관리</a>
-                                <a href="{% url 'student_course_list' %}">⚙️ 과정 관리</a>
-                        <a href="{% url 'homework_admin_list' %}">📝 과제 관리</a>
-                        <a href="{% url 'member_list' %}">⚙️ 회원 관리</a>
-                        <a href="{% url 'badge_list' %}">🏅 배지 관리</a>
-                        <a href="{% url 'schedule_admin_list' %}">📅 일정 관리</a>
-                        <a href="{% url 'typing_content_manage' %}">⌨️ 타자 콘텐츠 관리</a>
-                    </div>
+                    <a href="{% url 'student_course_list' %}" class="nav-link"
+                        style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); white-space: nowrap;">
+                        🏫 교육프로그램
+                    </a>
+                    <a href="{% url 'schedule' %}" class="nav-link"
+                        style="background: rgba(20, 184, 166, 0.15); color: #14b8a6; border: 1px solid rgba(20, 184, 166, 0.3); white-space: nowrap;">
+                        📅 학원일정
+                    </a>
+                    <a href="{% url 'student_homework_list' %}" class="nav-link restriction-check"
+                        style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); white-space: nowrap;">
+                        🏠 홈플레이
+                    </a>
                 </div>
-                {% else %}
-                <a href="{% url 'profile' %}" class="nav-link">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }} · 마이페이지</a>
-                <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
-                {% endif %}
-                <a href="{% url 'logout' %}" class="nav-link">로그아웃</a>
-                {% else %}
-                <a href="{% url 'login' %}" class="nav-link">로그인</a>
-                <a href="{% url 'signup' %}" class="nav-link accent">회원가입</a>
-                {% endif %}
+
+                <div class="nav-links" style="flex-wrap: nowrap; flex-shrink: 0;">
+                    {% if user.is_authenticated %}
+                    {% if user.is_staff %}
+                    <a href="{% url 'profile' %}" class="nav-link accent-text">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }} · 마이페이지</a>
+                    <div class="nav-dropdown">
+                        <button class="nav-link dropdown-toggle"
+                            style="color: #60a5fa; border: none; background: rgba(255,255,255,0.06); cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            🛠️ 관리 서비스 <span style="font-size: 10px;">▼</span>
+                        </button>
+                        <div class="dropdown-content" style="right: 0; left: auto;">
+                            <a href="{% url 'upload' %}">📤 업로드</a>
+                            <a href="{% url 'my_projects' %}">🎨 작품 관리</a>
+                            <a href="{% url 'student_course_list' %}">⚙️ 과정 관리</a>
+                            <a href="{% url 'homework_admin_list' %}">📝 과제 관리</a>
+                            <a href="{% url 'member_list' %}">⚙️ 회원 관리</a>
+                            <a href="{% url 'badge_list' %}">🏅 배지 관리</a>
+                            <a href="{% url 'schedule_admin_list' %}">📅 일정 관리</a>
+                            <a href="{% url 'typing_content_manage' %}">⌨️ 타자 콘텐츠 관리</a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <a href="{% url 'profile' %}" class="nav-link">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }} · 마이페이지</a>
+                    <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
+                    {% endif %}
+                    <a href="{% url 'logout' %}" class="nav-link">로그아웃</a>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="nav-link">로그인</a>
+                    <a href="{% url 'signup' %}" class="nav-link accent">회원가입</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>

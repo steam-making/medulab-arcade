@@ -24,7 +24,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleEvent
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, UserProfileUpdateForm
 from .holiday_utils import ensure_holidays
 
@@ -34,6 +34,7 @@ SCHEDULE_EVENT_COLORS = {
     ScheduleEvent.EVENT_TYPE_ACADEMIC: '#3b82f6',
     ScheduleEvent.EVENT_TYPE_COMPETITION: '#f5c451',
     ScheduleEvent.EVENT_TYPE_SEMINAR: '#00ffb4',
+    ScheduleEvent.EVENT_TYPE_CERTIFICATION: '#a855f7',
 }
 
 
@@ -82,18 +83,19 @@ def home(request):
 
 def schedule_view(request):
     ensure_holidays()
-    events = ScheduleEvent.objects.filter(is_active=True).order_by('start_date', 'end_date', 'title')
+    events = ScheduleEvent.objects.filter(is_active=True).order_by('start_date', 'start_time', 'title')
     today = timezone.localdate()
     upcoming_events = events.filter(start_date__gte=today)
+    academic_events = events.filter(event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC)
+    
     calendar_events = []
 
     for event in events:
         color = SCHEDULE_EVENT_COLORS.get(event.event_type, '#00b4ff')
+        attachments = list(event.attachments.all())
         cal_event = {
             'id': event.id,
             'title': event.title,
-            'start': event.start_date.isoformat(),
-            'end': (event.end_date + timedelta(days=1)).isoformat(),
             'backgroundColor': color,
             'borderColor': color,
             'textColor': '#08080f' if event.event_type in {ScheduleEvent.EVENT_TYPE_COMPETITION, ScheduleEvent.EVENT_TYPE_SEMINAR} else '#ffffff',
@@ -101,17 +103,53 @@ def schedule_view(request):
                 'description': event.description or '',
                 'eventType': event.event_type,
                 'eventTypeLabel': event.get_event_type_display(),
-                'startDate': event.start_date.isoformat(),
-                'endDate': event.end_date.isoformat(),
                 'imageUrl': event.image.url if event.image else '',
+                'externalUrl': event.external_url or '',
+                'attachments': [{'name': a.file.name.split('/')[-1], 'url': a.file.url} for a in attachments],
             },
         }
+
+        if event.event_type == ScheduleEvent.EVENT_TYPE_ACADEMIC and event.days_of_week:
+            # 반복 일정 설정 (FullCalendar)
+            days = [int(d) for d in event.days_of_week.split(',')]
+            cal_event['daysOfWeek'] = days
+            if event.start_time:
+                cal_event['startTime'] = event.start_time.strftime('%H:%M:%S')
+            if event.end_time:
+                cal_event['endTime'] = event.end_time.strftime('%H:%M:%S')
+            
+            day_names = ['일', '월', '화', '수', '목', '금', '토']
+            days_str = ', '.join([day_names[d] for d in days])
+            time_str = ''
+            if event.start_time and event.end_time:
+                time_str = f" {event.start_time.strftime('%H:%M')} ~ {event.end_time.strftime('%H:%M')}"
+            
+            cal_event['extendedProps']['startDate'] = f"매주 {days_str}요일{time_str}"
+            cal_event['extendedProps']['endDate'] = ""
+        else:
+            if event.start_date:
+                cal_event['start'] = event.start_date.isoformat()
+                cal_event['extendedProps']['startDate'] = event.start_date.strftime('%Y.%m.%d %H:%M')
+            if event.end_date:
+                cal_event['end'] = event.end_date.isoformat()
+                cal_event['extendedProps']['endDate'] = event.end_date.strftime('%Y.%m.%d %H:%M')
+            else:
+                cal_event['extendedProps']['endDate'] = ""
+
         calendar_events.append(cal_event)
 
+        if getattr(event, 'days_of_week', None):
+            day_names = ['일', '월', '화', '수', '목', '금', '토']
+            days = [int(d) for d in event.days_of_week.split(',')]
+            days_str = ', '.join([day_names[d] for d in days])
+            event.parsed_days_str = days_str
+        
     context = {
         'calendar_events_json': calendar_events,
         'upcoming_competitions': upcoming_events.filter(event_type=ScheduleEvent.EVENT_TYPE_COMPETITION)[:4],
-        'seminar_events': upcoming_events.filter(event_type__in=[ScheduleEvent.EVENT_TYPE_ACADEMIC, ScheduleEvent.EVENT_TYPE_SEMINAR])[:6],
+        'upcoming_certifications': upcoming_events.filter(event_type=ScheduleEvent.EVENT_TYPE_CERTIFICATION)[:4],
+        'academic_events': academic_events[:6],
+        'seminar_events': upcoming_events.filter(event_type=ScheduleEvent.EVENT_TYPE_SEMINAR)[:6],
     }
     return render(request, 'arcade/schedule.html', context)
 
@@ -1387,12 +1425,21 @@ def schedule_admin_list(request):
 
 @login_required
 @user_passes_test(staff_check)
+def _handle_attachment_uploads(request, event):
+    """첨부 파일 업로드 처리"""
+    files = request.FILES.getlist('attachments')
+    for f in files:
+        if f and f.name:
+            ScheduleAttachment.objects.create(event=event, file=f)
+
+
 def schedule_admin_create(request):
     """신규 일정 등록"""
     if request.method == 'POST':
-        form = ScheduleEventForm(request.POST)
+        form = ScheduleEventForm(request.POST, request.FILES)
         if form.is_valid():
             event = form.save()
+            _handle_attachment_uploads(request, event)
             messages.success(request, f'일정 "{event.title}"이 등록되었습니다.')
             return redirect('schedule_admin_list')
     else:
@@ -1412,9 +1459,10 @@ def schedule_admin_edit(request, event_id):
     event = get_object_or_404(ScheduleEvent, pk=event_id)
 
     if request.method == 'POST':
-        form = ScheduleEventForm(request.POST, instance=event)
+        form = ScheduleEventForm(request.POST, request.FILES, instance=event)
         if form.is_valid():
             event = form.save()
+            _handle_attachment_uploads(request, event)
             messages.success(request, f'일정 "{event.title}"이 수정되었습니다.')
             return redirect('schedule_admin_list')
     else:

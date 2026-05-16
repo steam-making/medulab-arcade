@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.utils import timezone
-from .models import Badge, Bookmark, Category, Like, Project, ScheduleEvent, UserBadge, UserProfile
+from .models import Badge, Bookmark, Category, Like, Project, ScheduleAttachment, ScheduleEvent, UserBadge, UserProfile
 
 
 BADGE_CRITERIA_HELP = (
@@ -66,6 +66,12 @@ class ScheduleEventAdmin(admin.ModelAdmin):
     list_editable = ('is_active',)
     search_fields = ('title', 'description')
     ordering = ('start_date', 'end_date', 'title')
+
+
+@admin.register(ScheduleAttachment)
+class ScheduleAttachmentAdmin(admin.ModelAdmin):
+    list_display = ('event', 'file', 'uploaded_at')
+    list_filter = ('event',)
 
 
 @admin.register(Like)

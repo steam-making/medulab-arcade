@@ -23,7 +23,8 @@
 
     .form-select { appearance: none; cursor: pointer; }
     select option { background: #1e293b; color: #fff; }
-    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-textarea { resize: vertical; min-height: 120px; overflow-y: auto; }
+    .form-input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
     .form-file { width: 100%; padding: 10px 0; color: var(--text-secondary); font-size: 14px; }
     .form-file::file-selector-button { padding: 8px 16px; border-radius: 10px; background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: #fff; font-weight: 700; cursor: pointer; margin-right: 12px; transition: all 0.2s; }
     .form-file::file-selector-button:hover { background: rgba(255,255,255,0.15); }
@@ -43,6 +44,42 @@
     .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,255,180,0.3); }
     .btn-cancel { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
     .btn-cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+    /* Event type radio button styling */
+    .event-type-radio-group > div, .event-type-radio-group ul { display: flex; flex-wrap: nowrap; gap: 8px; width: 100%; padding: 0; margin: 0; list-style: none; }
+    .event-type-radio-group > div > div, .event-type-radio-group li { flex: 1; }
+    .event-type-radio-group label { 
+        display: flex; align-items: center; justify-content: center; width: 100%; 
+        padding: 12px 10px; background: rgba(255,255,255,0.06); 
+        border: 1px solid var(--border); border-radius: 12px; 
+        color: var(--text-secondary); font-size: 13px; font-weight: 700; 
+        cursor: pointer; transition: all 0.2s; text-align: center; margin: 0;
+        word-break: keep-all; white-space: nowrap;
+    }
+    .event-type-radio-group input[type="radio"] { display: none; }
+    .event-type-radio-group input[type="radio"]:checked + label,
+    .event-type-radio-group label:has(input[type="radio"]:checked) { 
+        background: var(--accent-green); color: var(--bg-primary); 
+        border-color: var(--accent-green); box-shadow: 0 4px 15px rgba(0,255,180,0.2); 
+    }
+    /* Days checkbox styling */
+    .days-checkbox-group > div, .days-checkbox-group ul { display: flex; flex-wrap: nowrap; gap: 8px; width: 100%; padding: 0; margin: 0; list-style: none; }
+    .days-checkbox-group > div > div, .days-checkbox-group li { flex: 1; }
+    .days-checkbox-group label { 
+        display: flex; align-items: center; justify-content: center; width: 100%; 
+        padding: 10px 0; background: rgba(255,255,255,0.06); 
+        border: 1px solid var(--border); border-radius: 10px; 
+        color: var(--text-secondary); font-size: 14px; font-weight: 700; 
+        cursor: pointer; transition: all 0.2s; text-align: center; margin: 0;
+    }
+    .days-checkbox-group input[type="checkbox"] { display: none; }
+    .days-checkbox-group input[type="checkbox"]:checked + label,
+    .days-checkbox-group label:has(input[type="checkbox"]:checked) { 
+        background: var(--accent-blue); color: var(--bg-primary); 
+        border-color: var(--accent-blue); box-shadow: 0 4px 15px rgba(59,130,246,0.2); 
+    }
+    
+    .form-input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 </style>
 {% endblock %}
 
@@ -63,6 +100,25 @@
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
 
+            <div class="form-section-title">일정 설정</div>
+
+            <div class="form-group">
+                <label>일정 유형 *</label>
+                <div class="event-type-radio-group">
+                    {{ form.event_type }}
+                </div>
+                <div class="form-help">유형에 따라 학원 일정 페이지에서 다른 색상으로 표시됩니다.</div>
+                {% if form.event_type.errors %}<div class="form-errors">{{ form.event_type.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-group">
+                    {{ form.is_active }}
+                    <span>노출 활성화 (학원 일정 페이지에 표시)</span>
+                </label>
+                {% if form.is_active.errors %}<div class="form-errors">{{ form.is_active.errors.0 }}</div>{% endif %}
+            </div>
+
             <div class="form-section-title">기본 정보</div>
 
             <div class="form-group">
@@ -78,6 +134,53 @@
                 {% if form.description.errors %}<div class="form-errors">{{ form.description.errors.0 }}</div>{% endif %}
             </div>
 
+            <div class="grid-2" id="normal-date-fields">
+                <div class="form-group">
+                    <label>시작일시 *</label>
+                    {{ form.start_date }}
+                    {% if form.start_date.errors %}<div class="form-errors">{{ form.start_date.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label>종료일시 *</label>
+                    {{ form.end_date }}
+                    <div class="form-help">종료 일시까지 입력하세요. 하루짜리 일정은 시작일시와 동일하게 입력합니다.</div>
+                    {% if form.end_date.errors %}<div class="form-errors">{{ form.end_date.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div id="recurring-time-fields" style="display: none;">
+                <div class="form-group">
+                    <label>반복 요일 *</label>
+                    <div class="days-checkbox-group">
+                        {{ form.days_of_week }}
+                    </div>
+                    {% if form.days_of_week.errors %}<div class="form-errors">{{ form.days_of_week.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>시작 시간 *</label>
+                        {{ form.start_time }}
+                        {% if form.start_time.errors %}<div class="form-errors">{{ form.start_time.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label>종료 시간 *</label>
+                        {{ form.end_time }}
+                        {% if form.end_time.errors %}<div class="form-errors">{{ form.end_time.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>링크 URL</label>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:18px;">🔗</span>
+                    {{ form.external_url }}
+                </div>
+                <div class="form-help">대회 페이지나 관련 자료 링크를 입력하세요. (선택사항)</div>
+                {% if form.external_url.errors %}<div class="form-errors">{{ form.external_url.errors.0 }}</div>{% endif %}
+            </div>
+
             <div class="form-group">
                 <label>이미지 (포스터)</label>
                 {% if event and event.image %}
@@ -91,38 +194,34 @@
                 {% if form.image.errors %}<div class="form-errors">{{ form.image.errors.0 }}</div>{% endif %}
             </div>
 
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>시작일 *</label>
-                    {{ form.start_date }}
-                    {% if form.start_date.errors %}<div class="form-errors">{{ form.start_date.errors.0 }}</div>{% endif %}
-                </div>
+            <div class="form-section-title">첨부 파일</div>
 
-                <div class="form-group">
-                    <label>종료일 *</label>
-                    {{ form.end_date }}
-                    <div class="form-help">하루짜리 일정은 시작일과 동일하게 입력하세요.</div>
-                    {% if form.end_date.errors %}<div class="form-errors">{{ form.end_date.errors.0 }}</div>{% endif %}
+            <div class="form-group" id="attachment-section">
+                <label>첨부 파일</label>
+                {% if event %}
+                {% with attachments=event.attachments.all %}
+                {% if attachments %}
+                <div style="margin-bottom:12px;display:grid;gap:8px;" id="existing-attachments">
+                    {% for att in attachments %}
+                    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:10px;border:1px solid var(--border);font-size:13px;">
+                        <span style="font-size:16px;">📎</span>
+                        <a href="{{ att.file.url }}" target="_blank" style="color:var(--accent-blue);text-decoration:none;flex:1;">{{ att.file.name|cut:"schedule/attachments/" }}</a>
+                        <span style="color:var(--text-muted);font-size:11px;">{{ att.uploaded_at|date:"Y.m.d" }}</span>
+                    </div>
+                    {% endfor %}
                 </div>
-            </div>
+                {% endif %}
+                {% endwith %}
+                {% endif %}
 
-            <div class="form-section-title">일정 설정</div>
-
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>일정 유형 *</label>
-                    {{ form.event_type }}
-                    <div class="form-help">유형에 따라 학원 일정 페이지에서 다른 색상으로 표시됩니다.</div>
-                    {% if form.event_type.errors %}<div class="form-errors">{{ form.event_type.errors.0 }}</div>{% endif %}
+                <div id="attachment-list">
+                    <div class="attachment-row" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                        <input type="file" name="attachments" class="form-file" style="flex:1;" accept="*/*">
+                        <button type="button" class="btn-remove-attachment" style="background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:18px;padding:4px 8px;" title="삭제">✕</button>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label class="checkbox-group">
-                        {{ form.is_active }}
-                        <span>노출 활성화 (학원 일정 페이지에 표시)</span>
-                    </label>
-                    {% if form.is_active.errors %}<div class="form-errors">{{ form.is_active.errors.0 }}</div>{% endif %}
-                </div>
+                <button type="button" id="add-attachment-btn" style="padding:8px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px dashed var(--border);color:var(--accent-blue);cursor:pointer;font-size:13px;font-weight:700;transition:all 0.2s;">+ 첨부 파일 추가</button>
+                <div class="form-help">일정과 관련된 파일을 첨부할 수 있습니다. (선택사항)</div>
             </div>
 
             <div class="btn-group">
@@ -135,7 +234,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const inputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]');
+        const inputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="url"], input[type="datetime-local"], input[type="time"]');
         inputs.forEach(input => input.classList.add('form-input'));
         const fileInputs = document.querySelectorAll('input[type="file"]');
         fileInputs.forEach(input => input.classList.add('form-file'));
@@ -143,8 +242,60 @@
         selects.forEach(select => select.classList.add('form-select'));
         const textareas = document.querySelectorAll('textarea');
         textareas.forEach(textarea => textarea.classList.add('form-textarea'));
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(.days-checkbox)');
         checkboxes.forEach(checkbox => checkbox.classList.add('form-checkbox'));
+
+        // Event type toggle logic
+        const typeRadios = document.querySelectorAll('input[name="event_type"]');
+        const normalFields = document.getElementById('normal-date-fields');
+        const recurringFields = document.getElementById('recurring-time-fields');
+
+        function toggleFields() {
+            let selectedType = 'academic'; // Default
+            typeRadios.forEach(radio => {
+                if (radio.checked) selectedType = radio.value;
+            });
+
+            if (selectedType === 'academic') {
+                normalFields.style.display = 'none';
+                recurringFields.style.display = 'block';
+            } else {
+                normalFields.style.display = 'grid';
+                recurringFields.style.display = 'none';
+            }
+        }
+
+        typeRadios.forEach(radio => {
+            radio.addEventListener('change', toggleFields);
+        });
+        
+        toggleFields(); // Initial run
+
+        // Dynamic "add more" for attachments
+        const addBtn = document.getElementById('add-attachment-btn');
+        const list = document.getElementById('attachment-list');
+        if (addBtn && list) {
+            addBtn.addEventListener('click', function() {
+                const row = document.createElement('div');
+                row.className = 'attachment-row';
+                row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:8px;';
+                row.innerHTML = '<input type="file" name="attachments" class="form-file" style="flex:1;" accept="*/*">' +
+                    '<button type="button" class="btn-remove-attachment" style="background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:18px;padding:4px 8px;" title="삭제">✕</button>';
+                list.appendChild(row);
+                row.querySelector('.btn-remove-attachment').addEventListener('click', function() {
+                    row.remove();
+                });
+            });
+            // Enable remove on initial row
+            list.querySelectorAll('.btn-remove-attachment').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const rows = list.querySelectorAll('.attachment-row');
+                    if (rows.length > 1) {
+                        btn.closest('.attachment-row').remove();
+                    }
+                });
+            });
+        }
     });
 </script>
 {% endblock %}

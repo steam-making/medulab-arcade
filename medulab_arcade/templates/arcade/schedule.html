@@ -32,9 +32,14 @@
     .fc .fc-button-primary { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; color: #fff; font-weight: 800; box-shadow: none; transition: all 0.2s ease; }
     .fc .fc-button-primary:hover, .fc .fc-button-primary:focus { background: rgba(0,255,180,0.15); border-color: rgba(0,255,180,0.38); color: #00ffb4; box-shadow: 0 0 0 3px rgba(0,255,180,0.08); }
     .fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number { color: rgba(255,255,255,0.76); text-decoration: none; font-weight: 800; }
-    .fc-event { border-radius: 10px; padding: 2px 5px; font-weight: 900; box-shadow: 0 8px 22px rgba(0,0,0,0.28); }
-    .fc-daygrid-event { white-space: normal !important; }
-    .fc-daygrid-event .fc-event-title { white-space: normal !important; word-break: keep-all !important; overflow: visible !important; line-height: 1.35; }
+    .fc-event { border-radius: 6px; padding: 2px; font-weight: 900; background: transparent !important; border: none !important; box-shadow: none !important; }
+    .fc-daygrid-event { white-space: normal !important; margin-bottom: 4px; }
+    .custom-event { display: flex; flex-direction: column; gap: 4px; padding: 4px 6px; border-radius: 8px; transition: background 0.2s; }
+    .custom-event:hover { background: rgba(255,255,255,0.05); }
+    .custom-event-top { display: flex; align-items: center; gap: 6px; }
+    .custom-event-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+    .custom-event-time { font-size: 11px; font-weight: 800; color: #fff; }
+    .custom-event-title { font-size: 12px; font-weight: 900; color: #fff; line-height: 1.35; word-break: keep-all; padding-left: 14px; }
     .fc-daygrid-more-link { font-size: 12px; font-weight: 800; color: var(--accent-blue); }
     .fc-daygrid-day-frame { height: auto !important; min-height: auto !important; }
     .side-stack { display: grid; gap: 18px; animation: fadeSlideIn 0.55s ease 0.18s both; }
@@ -57,7 +62,7 @@
     .modal-card { background: linear-gradient(145deg, rgba(30,30,50,0.98), rgba(15,15,30,0.98)); border: 1px solid rgba(255,255,255,0.12); border-radius: 28px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 40px 120px rgba(0,0,0,0.7); animation: fadeSlideIn 0.25s ease; padding: 0; position: relative; }
     .modal-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; transition: all 0.2s; }
     .modal-close:hover { background: rgba(255,255,255,0.15); }
-    .modal-poster { width: 100%; max-height: 280px; object-fit: cover; border-radius: 28px 28px 0 0; display: block; }
+    .modal-poster { max-width: 200px; height: auto; border-radius: 12px; display: block; }
     .modal-body { padding: 28px 32px 32px; }
     .modal-type { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; margin-bottom: 12px; }
     .modal-title { font: 900 24px 'Noto Sans KR', sans-serif; color: #fff; margin-bottom: 10px; line-height: 1.3; }
@@ -75,11 +80,15 @@
             <p>휴원일, 학사 운영, 대회, 특강과 세미나를 한 화면에서 확인하세요. 메듀랩의 배움 리듬을 놓치지 않도록 중요한 일정은 색상으로 빠르게 구분됩니다.</p>
         </div>
         <aside class="schedule-pulse-card" aria-label="일정 색상 안내">
-            <div><div class="pulse-number">{{ upcoming_competitions|length }}</div><div class="pulse-label">다가오는 대회 일정</div></div>
+            <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                <div><div class="pulse-number">{{ upcoming_competitions|length }}</div><div class="pulse-label">다가오는 대회 일정</div></div>
+                <div><div class="pulse-number" style="color: #a855f7; text-shadow: 0 0 34px rgba(168,85,247,0.28);">{{ upcoming_certifications|length }}</div><div class="pulse-label">다가오는 자격시험</div></div>
+            </div>
             <div class="legend-grid">
                 <div class="legend-item"><span class="legend-dot" style="color:#ff5d6c;background:#ff5d6c;"></span>휴원</div>
                 <div class="legend-item"><span class="legend-dot" style="color:#3b82f6;background:#3b82f6;"></span>학사 일정</div>
                 <div class="legend-item"><span class="legend-dot" style="color:#f5c451;background:#f5c451;"></span>대회</div>
+                <div class="legend-item"><span class="legend-dot" style="color:#a855f7;background:#a855f7;"></span>자격시험</div>
                 <div class="legend-item"><span class="legend-dot" style="color:#00ffb4;background:#00ffb4;"></span>특강/세미나</div>
             </div>
         </aside>
@@ -87,11 +96,29 @@
     <section class="schedule-layout">
         <div class="calendar-panel"><div id="schedule-calendar"></div></div>
         <div class="side-stack">
+            {% if user.is_staff %}
+            <a href="{% url 'schedule_admin_create' %}" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;background:var(--accent-green);color:var(--bg-primary);border-radius:18px;font-weight:800;font-size:15px;text-decoration:none;transition:all 0.2s;box-shadow:0 8px 25px rgba(0,255,180,0.2);">
+                <span style="font-size:18px;">✨</span> 새 일정 등록
+            </a>
+            {% endif %}
+            <aside class="side-panel"><div class="panel-kicker">REGULAR CLASSES</div><h2>정규수업 안내</h2><div class="event-list">
+                {% for event in academic_events %}<article class="event-card" style="--event-color:#3b82f6;"><div class="event-date">
+                    {% if event.days_of_week %}
+                        매주 {{ event.parsed_days_str }}요일
+                        {% if event.start_time and event.end_time %} {{ event.start_time|time:"H:i" }} ~ {{ event.end_time|time:"H:i" }}{% endif %}
+                    {% else %}
+                        {{ event.start_date|date:"Y.m.d" }}
+                    {% endif %}
+                </div><div class="event-title">{{ event.title }}</div>{% if event.description %}<p class="event-desc">{{ event.description|truncatechars:92 }}</p>{% endif %}</article>{% empty %}<div class="empty-panel">등록된 정규수업 일정이 없습니다.</div>{% endfor %}
+            </div></aside>
+            <aside class="side-panel"><div class="panel-kicker">SEMINARS</div><h2>특강/세미나 안내</h2><div class="event-list">
+                {% for event in seminar_events %}<article class="event-card" style="--event-color:#00ffb4;"><div class="event-date">{{ event.start_date|date:"Y.m.d" }}{% if event.start_date != event.end_date %} - {{ event.end_date|date:"Y.m.d" }}{% endif %}</div><div class="event-title">{{ event.title }}</div>{% if event.description %}<p class="event-desc">{{ event.description|truncatechars:92 }}</p>{% endif %}</article>{% empty %}<div class="empty-panel">등록된 특강/세미나 일정이 없습니다.</div>{% endfor %}
+            </div></aside>
             <aside class="side-panel"><div class="panel-kicker">UPCOMING COMPETITIONS</div><h2>다가오는 대회</h2><div class="event-list">
                 {% for event in upcoming_competitions %}<article class="event-card" style="--event-color:#f5c451;"><div class="event-date">{{ event.start_date|date:"Y.m.d" }}{% if event.start_date != event.end_date %} - {{ event.end_date|date:"Y.m.d" }}{% endif %}</div><div class="event-title">{{ event.title }}</div>{% if event.description %}<p class="event-desc">{{ event.description|truncatechars:92 }}</p>{% endif %}</article>{% empty %}<div class="empty-panel">등록된 대회 일정이 없습니다.</div>{% endfor %}
             </div></aside>
-            <aside class="side-panel"><div class="panel-kicker">TIMETABLE / SEMINARS</div><h2>시간표 / 특강 안내</h2><div class="event-list">
-                {% for event in seminar_events %}<article class="event-card" style="--event-color:{% if event.event_type == 'academic' %}#3b82f6{% else %}#00ffb4{% endif %};"><div class="event-date">{{ event.start_date|date:"Y.m.d" }}{% if event.start_date != event.end_date %} - {{ event.end_date|date:"Y.m.d" }}{% endif %} &middot; {{ event.get_event_type_display }}</div><div class="event-title">{{ event.title }}</div>{% if event.description %}<p class="event-desc">{{ event.description|truncatechars:92 }}</p>{% endif %}</article>{% empty %}<div class="empty-panel">등록된 시간표 또는 특강 일정이 없습니다.</div>{% endfor %}
+            <aside class="side-panel"><div class="panel-kicker">CERTIFICATIONS</div><h2>다가오는 자격시험</h2><div class="event-list">
+                {% for event in upcoming_certifications %}<article class="event-card" style="--event-color:#a855f7;"><div class="event-date">{{ event.start_date|date:"Y.m.d" }}{% if event.start_date != event.end_date %} - {{ event.end_date|date:"Y.m.d" }}{% endif %}</div><div class="event-title">{{ event.title }}</div>{% if event.description %}<p class="event-desc">{{ event.description|truncatechars:92 }}</p>{% endif %}</article>{% empty %}<div class="empty-panel">등록된 자격시험 일정이 없습니다.</div>{% endfor %}
             </div></aside>
         </div>
     </section>
@@ -101,12 +128,37 @@
 <div class="modal-overlay" id="event-modal">
     <div class="modal-card">
         <button class="modal-close" onclick="document.getElementById('event-modal').classList.remove('is-open')">✕</button>
-        <img class="modal-poster" id="modal-poster" src="" alt="" style="display:none;">
         <div class="modal-body">
             <div class="modal-type" id="modal-type"></div>
             <h2 class="modal-title" id="modal-title"></h2>
             <div class="modal-date" id="modal-date"></div>
             <div class="modal-desc" id="modal-desc"></div>
+            <div id="modal-external-link" style="margin-top:16px;display:none;">
+                <a target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:12px;background:rgba(0,180,255,0.1);border:1px solid rgba(0,180,255,0.2);color:var(--accent-blue);text-decoration:none;font-weight:700;font-size:14px;transition:all 0.2s;">
+                    <span>🔗</span> 관련 링크 바로가기
+                </a>
+            </div>
+            <div id="modal-image-container" style="margin-top:16px;display:none;">
+                <div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;">🖼️ 관련 이미지 (클릭하여 새 창으로 보기)</div>
+                <img class="modal-poster" id="modal-poster" src="" alt="일정 이미지" style="cursor:pointer;border:1px solid rgba(255,255,255,0.1);transition:transform 0.2s;" onclick="window.open(this.src, '_blank')">
+            </div>
+            <div id="modal-attachments" style="margin-top:16px;display:none;">
+                <div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:8px;">📎 첨부 파일</div>
+                <div id="modal-attachment-list" style="display:grid;gap:6px;"></div>
+            </div>
+            {% if user.is_staff %}
+            <div id="modal-admin-actions" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px;">
+                <a id="modal-edit-btn" href="#" style="flex:1; padding:10px; background:rgba(0,255,180,0.1); color:var(--accent-green); border:1px solid rgba(0,255,180,0.2); border-radius:10px; text-align:center; font-weight:700; text-decoration:none; font-size:14px; transition:all 0.2s;">
+                    ✏️ 수정
+                </a>
+                <form id="modal-delete-form" method="POST" action="" style="flex:1; display:flex;">
+                    {% csrf_token %}
+                    <button type="submit" style="width:100%; padding:10px; background:rgba(255,93,108,0.1); color:#ff5d6c; border:1px solid rgba(255,93,108,0.2); border-radius:10px; font-weight:700; font-size:14px; cursor:pointer; transition:all 0.2s;" onclick="return confirm('정말 이 일정을 삭제하시겠습니까?');">
+                        🗑️ 삭제
+                    </button>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -127,20 +179,56 @@
             moreLinkText: function(n) { return `+${n}개 더보기`; },
             moreLinkClick: 'day',
             events: JSON.parse(eventsEl.textContent),
+            eventTimeFormat: { hour: 'numeric', minute: '2-digit', meridiem: 'short' },
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
             buttonText: { today: '오늘', month: '월간', list: '목록' },
+            eventContent: function(arg) {
+                var props = arg.event.extendedProps;
+                var dotColor = arg.event.backgroundColor;
+                var timeText = arg.timeText;
+                
+                // 종일 일정이 아닌 경우 시작 시간을 가져옵니다.
+                if (!arg.event.allDay && !timeText) {
+                    var startDate = arg.event.start;
+                    var hours = startDate.getHours();
+                    var minutes = startDate.getMinutes();
+                    var ampm = hours >= 12 ? '오후' : '오전';
+                    hours = hours % 12;
+                    hours = hours ? hours : 12;
+                    var minStr = minutes > 0 ? ' ' + minutes + '분' : '';
+                    timeText = ampm + ' ' + hours + '시' + minStr;
+                } else if (timeText) {
+                    timeText = timeText.replace('AM', '오전').replace('PM', '오후');
+                }
+
+                var html = `
+                    <div class="custom-event">
+                        <div class="custom-event-top">
+                            <div class="custom-event-dot" style="color: ${dotColor}; background-color: ${dotColor};"></div>
+                            ${timeText ? `<div class="custom-event-time">${timeText}</div>` : ''}
+                        </div>
+                        <div class="custom-event-title">${arg.event.title}</div>
+                    </div>
+                `;
+                return { html: html };
+            },
             eventClick: function (info) {
                 if (info.event.extendedProps.eventType === 'holiday') return;
                 showEventModal(info.event);
             },
             eventDidMount: function (info) {
-                const description = info.event.extendedProps.description;
-                const label = info.event.extendedProps.eventTypeLabel;
-                if (description || label) {
-                    info.el.title = label + (description ? ' - ' + description : '');
-                }
+                const props = info.event.extendedProps;
+                const label = props.eventTypeLabel;
+                const startDate = props.startDate;
+                const endDate = props.endDate;
+                const dateStr = startDate + (startDate !== endDate ? ' ~ ' + endDate : '');
+                const desc = props.description;
+                var tooltip = dateStr;
+                if (label) tooltip = '[' + label + '] ' + tooltip;
+                if (desc) tooltip += ' - ' + desc;
+                info.el.title = tooltip;
                 // 휴원 이벤트는 클릭 불가 스타일
-                if (info.event.extendedProps.eventType === 'holiday') {
+                if (props.eventType === 'holiday') {
                     info.el.style.cursor = 'default';
                 }
             }
@@ -158,7 +246,7 @@
         typeEl.textContent = props.eventTypeLabel;
 
         // 배지 색상
-        var colors = { holiday: '#ff5d6c', academic: '#3b82f6', competition: '#f5c451', seminar: '#00ffb4' };
+        var colors = { holiday: '#ff5d6c', academic: '#3b82f6', competition: '#f5c451', seminar: '#00ffb4', certification: '#a855f7' };
         var color = colors[props.eventType] || '#00b4ff';
         typeEl.style.background = color + '22';
         typeEl.style.color = color;
@@ -166,11 +254,48 @@
 
         // 포스터
         var posterEl = document.getElementById('modal-poster');
+        var imgContainer = document.getElementById('modal-image-container');
         if (props.imageUrl) {
             posterEl.src = props.imageUrl;
-            posterEl.style.display = 'block';
+            imgContainer.style.display = 'block';
         } else {
-            posterEl.style.display = 'none';
+            imgContainer.style.display = 'none';
+        }
+
+        // 외부 링크
+        var linkEl = document.getElementById('modal-external-link');
+        if (props.externalUrl) {
+            linkEl.querySelector('a').href = props.externalUrl;
+            linkEl.style.display = 'block';
+        } else {
+            linkEl.style.display = 'none';
+        }
+
+        // 첨부 파일
+        var attachSection = document.getElementById('modal-attachments');
+        var attachList = document.getElementById('modal-attachment-list');
+        if (props.attachments && props.attachments.length > 0) {
+            attachList.innerHTML = '';
+            props.attachments.forEach(function(att) {
+                var item = document.createElement('a');
+                item.href = att.url;
+                item.target = '_blank';
+                item.rel = 'noopener';
+                item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--accent-blue);text-decoration:none;font-size:13px;font-weight:600;transition:all 0.2s;';
+                item.innerHTML = '<span>📎</span> ' + att.name;
+                attachList.appendChild(item);
+            });
+            attachSection.style.display = 'block';
+        } else {
+            attachSection.style.display = 'none';
+        }
+
+        // 관리자용 수정/삭제 버튼 URL 설정
+        var editBtn = document.getElementById('modal-edit-btn');
+        var deleteForm = document.getElementById('modal-delete-form');
+        if (editBtn && deleteForm) {
+            editBtn.href = '/admin-services/schedules/' + event.id + '/edit/';
+            deleteForm.action = '/admin-services/schedules/' + event.id + '/delete/';
         }
 
         document.getElementById('event-modal').classList.add('is-open');

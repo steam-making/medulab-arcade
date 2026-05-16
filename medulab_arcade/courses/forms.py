@@ -7,6 +7,7 @@ from .models import (
     HomeworkSubmission,
     Item,
     LearningProgram,
+    OlympiadAnswerSubmission,
     ProgramType,
 )
 
@@ -160,6 +161,30 @@ class HomeworkSubmissionForm(forms.ModelForm):
                     "class": "form-input",
                     "rows": 3,
                     "placeholder": "제출 파일 설명이나 메모를 적어주세요",
+                }
+            ),
+        }
+
+
+class OlympiadAnswerSubmissionForm(forms.ModelForm):
+    class Meta:
+        model = OlympiadAnswerSubmission
+        fields = ["answer_image", "edited_text"]
+        labels = {
+            "answer_image": "손글씨 답안 사진",
+            "edited_text": "답안 내용",
+        }
+        help_texts = {
+            "answer_image": "작성한 답안을 사진으로 찍어 업로드하세요.",
+            "edited_text": "사진에서 읽힌 내용이 다르면 직접 수정하거나 보충해 주세요.",
+        }
+        widgets = {
+            "answer_image": forms.ClearableFileInput(attrs={"class": "form-input", "accept": "image/*"}),
+            "edited_text": forms.Textarea(
+                attrs={
+                    "class": "form-input",
+                    "rows": 5,
+                    "placeholder": "답안을 글로 적거나 사진의 내용을 보완해 주세요",
                 }
             ),
         }

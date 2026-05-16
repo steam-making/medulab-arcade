@@ -85,6 +85,7 @@ class Item(models.Model):
         ('problem', '실습문제'),
         ('project', '프로젝트'),
         ('homework', '과제'),
+        ('olympiad', '사고력 올림피아드'),
     ]
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name="items")
     number = models.PositiveIntegerField("항목 순서", default=1)
@@ -103,6 +104,51 @@ class Item(models.Model):
 
     def __str__(self):
         return f"{self.chapter.number}장-{self.number}: {self.title}"
+
+
+class OlympiadAnswerExample(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="olympiad_examples")
+    image = models.ImageField("예시 답안 이미지", upload_to="olympiad/examples/%Y/%m/")
+    caption = models.CharField("설명", max_length=200, blank=True)
+    order = models.PositiveIntegerField("정렬 순서", default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name = "올림피아드 예시 답안"
+        verbose_name_plural = "올림피아드 예시 답안"
+
+    def __str__(self):
+        return f"{self.item} - 예시 답안 {self.order}"
+
+
+class OlympiadAnswerSubmission(models.Model):
+    STATUS_SUBMITTED = "submitted"
+    STATUS_REVIEWED = "reviewed"
+    STATUS_CHOICES = [
+        (STATUS_SUBMITTED, "제출 완료"),
+        (STATUS_REVIEWED, "검토 완료"),
+    ]
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="olympiad_submissions")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="olympiad_submissions")
+    answer_image = models.ImageField("답안 이미지", upload_to="olympiad/submissions/%Y/%m/")
+    ocr_text = models.TextField("OCR 텍스트", blank=True)
+    edited_text = models.TextField("수정한 답안", blank=True)
+    feedback = models.TextField("피드백", blank=True)
+    status = models.CharField("제출 상태", max_length=20, choices=STATUS_CHOICES, default=STATUS_SUBMITTED)
+    submitted_at = models.DateTimeField("제출일", auto_now_add=True)
+    reviewed_at = models.DateTimeField("검토일", blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        unique_together = ("item", "student")
+        verbose_name = "올림피아드 답안 제출"
+        verbose_name_plural = "올림피아드 답안 제출"
+
+    def __str__(self):
+        return f"{self.item} - {self.student}"
 
 class LearningEnrollment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="learning_enrollments")

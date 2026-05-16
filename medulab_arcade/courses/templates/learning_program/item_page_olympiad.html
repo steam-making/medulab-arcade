@@ -1,0 +1,420 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}{{ item.title }} - MEDULAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .olympiad-shell {
+        max-width: 1120px;
+        margin: 36px auto 56px;
+        padding: 0 24px;
+        animation: fadeSlideIn 0.35s ease;
+    }
+    .olympiad-hero {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(0, 255, 180, 0.18);
+        border-radius: 28px;
+        background:
+            radial-gradient(circle at top left, rgba(0, 255, 180, 0.16), transparent 34%),
+            radial-gradient(circle at bottom right, rgba(0, 180, 255, 0.14), transparent 38%),
+            var(--bg-card);
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.34);
+    }
+    .olympiad-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+        background-size: 34px 34px;
+        mask-image: linear-gradient(to bottom, black, transparent 75%);
+        pointer-events: none;
+    }
+    .olympiad-header {
+        position: relative;
+        padding: 34px 38px 28px;
+        border-bottom: 1px solid var(--border);
+    }
+    .olympiad-topline {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 22px;
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+    .olympiad-topline a { color: var(--text-muted); text-decoration: none; }
+    .olympiad-topline a:hover { color: var(--accent-green); }
+    .olympiad-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 12px;
+        border: 1px solid rgba(0, 255, 180, 0.22);
+        border-radius: 999px;
+        background: rgba(0, 255, 180, 0.08);
+        color: var(--accent-green);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+    }
+    .olympiad-title {
+        margin: 18px 0 10px;
+        color: #fff;
+        font-size: clamp(28px, 4vw, 44px);
+        line-height: 1.15;
+        letter-spacing: -0.04em;
+    }
+    .olympiad-subtitle {
+        max-width: 760px;
+        color: var(--text-secondary);
+        line-height: 1.75;
+        margin: 0;
+    }
+    .olympiad-grid {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+        gap: 24px;
+        padding: 28px;
+    }
+    .olympiad-panel {
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        background: rgba(255,255,255,0.035);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .problem-panel { padding: 32px; }
+    .panel-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 800;
+    }
+    .problem-content {
+        color: var(--text-secondary);
+        font-size: 16px;
+        line-height: 1.9;
+    }
+    .problem-content h1,
+    .problem-content h2,
+    .problem-content h3 { color: #fff; margin: 28px 0 14px; }
+    .problem-content p { margin: 0 0 18px; }
+    .problem-content img {
+        max-width: 100%;
+        border-radius: 16px;
+        margin: 18px 0;
+        border: 1px solid var(--border);
+    }
+    .coach-stack { display: flex; flex-direction: column; gap: 18px; }
+    .coach-panel { padding: 22px; }
+    .hint-toggle,
+    .submit-btn {
+        width: 100%;
+        border: 0;
+        border-radius: 14px;
+        padding: 13px 16px;
+        font-weight: 900;
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+    .hint-toggle {
+        background: rgba(0, 180, 255, 0.13);
+        color: #7dd3fc;
+        border: 1px solid rgba(0, 180, 255, 0.28);
+    }
+    .hint-toggle:hover,
+    .submit-btn:hover { transform: translateY(-2px); }
+    .hint-box {
+        display: none;
+        margin-top: 14px;
+        padding: 16px;
+        border-radius: 14px;
+        background: rgba(0, 180, 255, 0.07);
+        color: var(--text-secondary);
+        line-height: 1.75;
+        font-size: 14px;
+        border: 1px dashed rgba(0, 180, 255, 0.28);
+    }
+    .hint-box.is-open { display: block; }
+    .training-steps {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text-secondary);
+        line-height: 1.8;
+        font-size: 14px;
+    }
+    .upload-form { display: flex; flex-direction: column; gap: 14px; }
+    .upload-form label {
+        display: block;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+    .upload-form input[type="file"],
+    .upload-form textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: rgba(0,0,0,0.22);
+        color: #fff;
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+    .upload-form textarea { min-height: 126px; resize: vertical; line-height: 1.65; }
+    .form-help { color: var(--text-muted); font-size: 12px; line-height: 1.55; margin-top: 6px; }
+    .submit-btn {
+        background: var(--accent-green);
+        color: var(--bg-primary);
+        box-shadow: 0 10px 26px rgba(0, 255, 180, 0.18);
+    }
+    .submitted-card {
+        padding: 22px;
+        border-color: rgba(0, 255, 180, 0.18);
+        background: rgba(0, 255, 180, 0.045);
+    }
+    .submitted-image,
+    .example-image {
+        width: 100%;
+        display: block;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: rgba(0,0,0,0.18);
+    }
+    .meta-text { color: var(--text-muted); font-size: 12px; margin-top: 10px; }
+    .answer-text-box,
+    .feedback-box {
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 14px;
+        background: rgba(0,0,0,0.22);
+        color: var(--text-secondary);
+        white-space: pre-wrap;
+        line-height: 1.7;
+        font-size: 13px;
+    }
+    .feedback-box { border: 1px solid rgba(251, 191, 36, 0.25); color: #fde68a; }
+    .examples-section {
+        margin-top: 24px;
+        padding: 26px;
+        border: 1px solid rgba(168, 85, 247, 0.22);
+        border-radius: 22px;
+        background: rgba(168, 85, 247, 0.045);
+    }
+    .example-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+        margin-top: 16px;
+    }
+    .example-card {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 12px;
+        background: rgba(0,0,0,0.2);
+    }
+    .locked-note {
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.7;
+        padding: 16px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.035);
+        border: 1px dashed var(--border);
+    }
+    .olympiad-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 24px 28px 28px;
+        border-top: 1px solid var(--border);
+    }
+    .btn-nav {
+        padding: 12px 20px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 800;
+        font-size: 14px;
+        border: 1px solid var(--border);
+        color: #fff;
+        background: rgba(255,255,255,0.035);
+    }
+    .btn-nav.primary { background: var(--accent-green); color: var(--bg-primary); border-color: transparent; }
+    .staff-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    @media (max-width: 900px) {
+        .olympiad-grid { grid-template-columns: 1fr; padding: 18px; }
+        .olympiad-header { padding: 28px 24px; }
+        .problem-panel { padding: 24px; }
+        .olympiad-footer { flex-wrap: wrap; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="olympiad-shell">
+    <section class="olympiad-hero">
+        <header class="olympiad-header">
+            <div class="olympiad-topline">
+                <a href="{% url 'chapter_detail' item.chapter.id %}">← 목록으로 돌아가기</a>
+                <span>{{ item.chapter.title }}</span>
+            </div>
+            <div class="olympiad-badge">✍️ {{ item.get_item_type_display }}</div>
+            <h1 class="olympiad-title">{{ item.title }}</h1>
+            <p class="olympiad-subtitle">
+                실제 대회처럼 종이에 답안을 작성한 뒤 사진으로 제출하세요. 제출 후에는 예시 답안을 보며 내 답안을 비교하고 보완할 수 있습니다.
+            </p>
+        </header>
+
+        <div class="olympiad-grid">
+            <article class="olympiad-panel problem-panel">
+                <div class="panel-label">
+                    <span>📄 기출문제 원문</span>
+                    {% if user_progress.completed %}<span style="color: var(--accent-green); font-size:12px;">● 제출 완료</span>{% endif %}
+                </div>
+                <div class="problem-content">
+                    {{ item.explain_html|safe }}
+                </div>
+
+                {% if olympiad_examples %}
+                <section class="examples-section">
+                    <div class="panel-label" style="margin-bottom: 6px;">
+                        <span>🖼️ 제출 후 공개되는 참가자 답안 예시</span>
+                    </div>
+                    <p class="meta-text">정답을 외우기보다, 글·표·그림·순서도 배치를 비교하며 내 답안을 보완하세요.</p>
+                    <div class="example-grid">
+                        {% for example in olympiad_examples %}
+                        <div class="example-card">
+                            <a href="{{ example.image.url }}" target="_blank" rel="noopener">
+                                <img src="{{ example.image.url }}" alt="{{ example.caption|default:'올림피아드 예시 답안' }}" class="example-image">
+                            </a>
+                            {% if example.caption %}<div class="meta-text">{{ example.caption }}</div>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% elif not olympiad_submission and not user.is_staff %}
+                <section class="examples-section">
+                    <div class="panel-label" style="margin-bottom: 6px;">
+                        <span>🔒 참가자 답안 예시는 제출 후 공개</span>
+                    </div>
+                    <div class="locked-note">먼저 자신의 답안을 끝까지 작성해 제출해 보세요. 제출 후 예시 답안과 비교하면 훨씬 효과적으로 보완할 수 있습니다.</div>
+                </section>
+                {% endif %}
+            </article>
+
+            <aside class="coach-stack">
+                <section class="olympiad-panel coach-panel">
+                    <div class="panel-label"><span>💡 답안 작성 힌트</span></div>
+                    <button type="button" class="hint-toggle" onclick="toggleOlympiadHint()">힌트 보기 / 숨기기</button>
+                    <div id="olympiad-hint" class="hint-box">
+                        {% if item.hint %}
+                            {{ item.hint|linebreaksbr }}
+                        {% else %}
+                            문제 조건을 먼저 정리하고, 필요한 정보·기준·순서를 번호로 적어보세요. 표나 그림, 순서도를 함께 사용하면 채점자가 답안을 더 쉽게 이해할 수 있습니다. 마지막에는 왜 이 방법이 좋은지 이유를 써보세요.
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="olympiad-panel coach-panel">
+                    <div class="panel-label"><span>🏆 수상권 답안 체크리스트</span></div>
+                    <ol class="training-steps">
+                        <li>문제에서 요구한 조건을 모두 표시했나요?</li>
+                        <li>분류 기준·규칙·순서를 명확히 썼나요?</li>
+                        <li>표, 그림, 순서도, 번호 목록을 활용했나요?</li>
+                        <li>왜 좋은 방법인지 이유와 장점을 썼나요?</li>
+                        <li>안전성·공정성·편리성까지 생각했나요?</li>
+                    </ol>
+                </section>
+
+                {% if olympiad_submission %}
+                <section class="olympiad-panel submitted-card">
+                    <div class="panel-label"><span>✅ 제출한 수기 답안</span></div>
+                    {% if olympiad_submission.answer_image %}
+                    <a href="{{ olympiad_submission.answer_image.url }}" target="_blank" rel="noopener">
+                        <img src="{{ olympiad_submission.answer_image.url }}" alt="제출한 올림피아드 답안" class="submitted-image">
+                    </a>
+                    {% endif %}
+                    <div class="meta-text">최근 제출/수정: {{ olympiad_submission.updated_at|date:"Y.m.d H:i" }}</div>
+                    {% if olympiad_submission.edited_text %}
+                    <div class="answer-text-box">{{ olympiad_submission.edited_text }}</div>
+                    {% elif olympiad_submission.ocr_text %}
+                    <div class="answer-text-box">{{ olympiad_submission.ocr_text }}</div>
+                    {% endif %}
+                    {% if olympiad_submission.feedback %}
+                    <div class="feedback-box">{{ olympiad_submission.feedback }}</div>
+                    {% endif %}
+                </section>
+                {% endif %}
+
+                {% if user.is_authenticated and not user.is_staff %}
+                <section class="olympiad-panel coach-panel">
+                    <div class="panel-label"><span>📸 답안 사진 제출</span></div>
+                    <form method="POST" action="{% url 'submit_olympiad_answer' item.id %}" enctype="multipart/form-data" class="upload-form">
+                        {% csrf_token %}
+                        {% if olympiad_submission_form.non_field_errors %}
+                            <div class="feedback-box">{{ olympiad_submission_form.non_field_errors }}</div>
+                        {% endif %}
+                        <div>
+                            <label for="{{ olympiad_submission_form.answer_image.id_for_label }}">손글씨 답안 사진</label>
+                            {{ olympiad_submission_form.answer_image }}
+                            <div class="form-help">종이 전체가 밝고 선명하게 보이도록 촬영해 주세요. 다시 제출하면 기존 답안이 업데이트됩니다.</div>
+                            {% if olympiad_submission_form.answer_image.errors %}<div class="feedback-box">{{ olympiad_submission_form.answer_image.errors }}</div>{% endif %}
+                        </div>
+                        <div>
+                            <label for="{{ olympiad_submission_form.edited_text.id_for_label }}">OCR/수정 텍스트(선택)</label>
+                            {{ olympiad_submission_form.edited_text }}
+                            <div class="form-help">OCR 연동 전에는 선택 입력입니다. 답안 핵심 내용을 적어두면 선생님 피드백에 도움이 됩니다.</div>
+                            {% if olympiad_submission_form.edited_text.errors %}<div class="feedback-box">{{ olympiad_submission_form.edited_text.errors }}</div>{% endif %}
+                        </div>
+                        <button type="submit" class="submit-btn">답안 제출하고 예시답안 열기</button>
+                    </form>
+                </section>
+                {% elif user.is_staff %}
+                <section class="olympiad-panel coach-panel">
+                    <div class="panel-label"><span>👩‍🏫 관리자 안내</span></div>
+                    <p class="meta-text">관리자는 제출 없이 예시답안을 확인할 수 있습니다. 예시답안 이미지는 관리자 페이지의 Item 인라인에서 추가하세요.</p>
+                </section>
+                {% else %}
+                <section class="olympiad-panel coach-panel">
+                    <div class="panel-label"><span>로그인 필요</span></div>
+                    <p class="meta-text">답안 사진 제출과 예시답안 확인은 로그인 후 이용할 수 있습니다.</p>
+                </section>
+                {% endif %}
+            </aside>
+        </div>
+
+        <footer class="olympiad-footer">
+            <div class="staff-actions">
+                {% if user.is_staff %}
+                <a href="{% url 'item_edit' item.id %}" class="btn-nav" style="color:#3b82f6; border-color:rgba(59,130,246,0.35);">✏️ 수정</a>
+                <a href="{% url 'item_delete' item.id %}" class="btn-nav" style="color:#ef4444; border-color:rgba(239,68,68,0.35);">🗑️ 삭제</a>
+                {% endif %}
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-left:auto;">
+                {% if prev_item %}<a href="{% url 'item_page' prev_item.id %}" class="btn-nav">← 이전</a>{% endif %}
+                <a href="{% url 'chapter_detail' item.chapter.id %}" class="btn-nav">목록</a>
+                {% if next_item %}
+                    <a href="{% url 'item_page' next_item.id %}" class="btn-nav primary">다음 →</a>
+                {% else %}
+                    <a href="{% url 'chapter_detail' item.chapter.id %}" class="btn-nav primary">학습 완료</a>
+                {% endif %}
+            </div>
+        </footer>
+    </section>
+</main>
+
+<script>
+    function toggleOlympiadHint() {
+        var hint = document.getElementById('olympiad-hint');
+        if (!hint) return;
+        hint.classList.toggle('is-open');
+    }
+</script>
+{% endblock %}

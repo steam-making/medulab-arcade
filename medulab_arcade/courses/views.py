@@ -39,6 +39,7 @@ from .models import (
     HomeworkAssignment,
     HomeworkAttachment,
     HomeworkSubmission,
+    OlympiadAnswerSubmission,
 )
 from .forms import (
     AnswerZipImportForm,
@@ -49,6 +50,7 @@ from .forms import (
     HomeworkForm,
     HomeworkSubmissionForm,
     HomeworkSubmissionReviewForm,
+    OlympiadAnswerSubmissionForm,
 )
 from django.db.models import Count, Q
 
@@ -996,6 +998,17 @@ def item_page(request, item_id):
         progress = SimpleNamespace(code="", last_output="", score=0, completed=False)
     objective_options = parse_objective_options(item.example_input) if item.item_type == "objective" else []
     learning_sections = build_learning_sections(item.explain_html)
+    is_olympiad = item.item_type == "olympiad"
+    olympiad_submission = None
+    olympiad_submission_form = None
+    olympiad_examples = []
+
+    if is_olympiad and request.user.is_authenticated and not (request.user.is_staff or request.user.is_superuser):
+        olympiad_submission = OlympiadAnswerSubmission.objects.filter(item=item, student=request.user).first()
+        olympiad_submission_form = OlympiadAnswerSubmissionForm(instance=olympiad_submission)
+
+    if is_olympiad and (olympiad_submission or (request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser))):
+        olympiad_examples = item.olympiad_examples.all()
 
     # 템플릿 결정 (과정 이름이나 유형에 따라 분기 가능)
     template_name = "learning_program/item_page.html"
@@ -1003,7 +1016,9 @@ def item_page(request, item_id):
     p_type_name = program.program_type.name.lower() if program.program_type else ""
     is_ppt_exam = is_ppt_exam_item(item)
     
-    if is_ppt_exam:
+    if is_olympiad:
+        template_name = "learning_program/item_page_olympiad.html"
+    elif is_ppt_exam:
         template_name = "learning_program/item_page_ppt.html"
     elif "python" in p_name or "파이썬" in p_name or "python" in p_type_name or "파이썬" in p_type_name:
         template_name = "learning_program/item_page_python.html"
@@ -1045,7 +1060,49 @@ def item_page(request, item_id):
         "ppt_exam_score": progress.score,
         "ppt_exam_completed": progress.completed,
         "ppt_exam_feedback": feedback_data,
+        "is_olympiad": is_olympiad,
+        "olympiad_submission": olympiad_submission,
+        "olympiad_submission_form": olympiad_submission_form,
+        "olympiad_examples": olympiad_examples,
     })
+
+
+@login_required
+@require_full_member
+def submit_olympiad_answer(request, item_id):
+    item = get_object_or_404(Item, id=item_id, item_type="olympiad")
+    program = item.chapter.program
+
+    if request.method != "POST":
+        return redirect("item_page", item_id=item.id)
+
+    if request.user.is_staff or request.user.is_superuser:
+        messages.warning(request, "관리자는 올림피아드 답안을 직접 제출할 수 없습니다.")
+        return redirect("item_page", item_id=item.id)
+
+    if not LearningEnrollment.objects.filter(user=request.user, program=program).exists():
+        messages.warning(request, "수강 중인 과정의 올림피아드 답안만 제출할 수 있습니다.")
+        return redirect("course_home", program_id=program.id)
+
+    submission = OlympiadAnswerSubmission.objects.filter(item=item, student=request.user).first()
+    form = OlympiadAnswerSubmissionForm(request.POST, request.FILES, instance=submission)
+    if form.is_valid():
+        olympiad_submission = form.save(commit=False)
+        olympiad_submission.item = item
+        olympiad_submission.student = request.user
+        olympiad_submission.status = OlympiadAnswerSubmission.STATUS_SUBMITTED
+        olympiad_submission.save()
+
+        progress, _ = UserProgress.objects.get_or_create(user=request.user, item=item)
+        progress.code = "OLYMPIAD_SUBMITTED"
+        progress.completed = True
+        progress.last_output = "올림피아드 답안이 제출되었습니다."
+        progress.save(update_fields=["code", "completed", "last_output", "updated_at"])
+        messages.success(request, "올림피아드 답안이 제출되었습니다.")
+    else:
+        messages.error(request, "답안 제출 내용을 다시 확인해 주세요.")
+
+    return redirect("item_page", item_id=item.id)
 
 
 @login_required

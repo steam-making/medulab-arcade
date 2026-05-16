@@ -42,6 +42,7 @@ urlpatterns = [
     path('<int:program_id>/', views.course_home, name='course_home'),
     path('chapter/<int:chapter_id>/', views.chapter_detail, name='chapter_detail'),
     path('item/<int:item_id>/', views.item_page, name='item_page'),
+    path('item/<int:item_id>/olympiad/submit/', views.submit_olympiad_answer, name='submit_olympiad_answer'),
     
     # 숙제 관리 (추가)
     path('homework/manage/', views.homework_admin_list, name='homework_admin_list'),

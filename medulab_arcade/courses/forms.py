@@ -41,6 +41,16 @@ class ProgramTypeForm(forms.ModelForm):
         }
 
 
+class ChapterForm(forms.ModelForm):
+    class Meta:
+        model = Chapter
+        fields = ['number', 'title', 'content']
+        widgets = {
+            'number': forms.NumberInput(attrs={'class': 'form-input'}),
+            'title': forms.TextInput(attrs={'class': 'form-input'}),
+            'content': forms.Textarea(attrs={'rows': 3, 'class': 'form-textarea'}),
+        }
+
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item

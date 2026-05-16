@@ -1,0 +1,45 @@
+{% extends "arcade/base.html" %}
+{% block title %}챕터 삭제 - {{ chapter.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .manage-container { max-width: 600px; margin: 40px auto; }
+    .confirm-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 40px;
+        text-align: center;
+    }
+    .warning-icon { font-size: 64px; margin-bottom: 16px; display: block; }
+    .confirm-title { font-size: 24px; font-weight: 900; margin-bottom: 12px; }
+    .confirm-desc { color: var(--text-secondary); font-size: 14px; line-height: 1.7; margin-bottom: 32px; }
+    .btn-group { display: flex; gap: 12px; justify-content: center; }
+    .btn { padding: 14px 32px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; border: none; text-decoration: none; display: inline-block; }
+    .btn-danger { background: rgba(255,93,108,0.15); color: #ff5d6c; border: 1px solid rgba(255,93,108,0.3); }
+    .btn-danger:hover { background: rgba(255,93,108,0.25); }
+    .btn-cancel { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+    .btn-cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main manage-container">
+    <div class="confirm-card">
+        <span class="warning-icon">⚠️</span>
+        <h2 class="confirm-title">챕터 삭제</h2>
+        <p class="confirm-desc">
+            <strong>제 {{ chapter.number }}장. {{ chapter.title }}</strong> 챕터를 삭제합니다.<br>
+            이 챕터에 포함된 <strong>아이템 {{ chapter.items.count }}개</strong>도 모두 함께 삭제됩니다.<br>
+            이 작업은 되돌릴 수 없습니다.
+        </p>
+        <div class="btn-group">
+            <a href="{% url 'chapter_manage' chapter.program.id %}" class="btn btn-cancel">취소</a>
+            <form method="POST" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">삭제</button>
+            </form>
+        </div>
+    </div>
+</main>
+{% endblock %}

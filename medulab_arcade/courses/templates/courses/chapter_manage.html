@@ -69,6 +69,45 @@
     .preview-items li { margin-bottom: 8px; }
     .inline-actions { display: flex; gap: 12px; }
     .code-path { color: var(--text-muted); font-size: 12px; }
+
+    /* SortableJS */
+    .sortable-ghost { opacity: 0.3; background: rgba(0, 255, 180, 0.08) !important; }
+    .sortable-drag { opacity: 0.9; background: rgba(30, 30, 50, 0.95) !important; border: 1px solid rgba(0, 255, 180, 0.3) !important; border-radius: 8px; }
+    .chapter-drag-handle:hover, .item-drag-handle:hover { color: var(--accent-green) !important; }
+    .item-row:hover { background: rgba(255, 255, 255, 0.04); }
+    .item-row.moving { opacity: 0.4; }
+    .item-row.multi-drag { outline: 2px dashed var(--accent-green); outline-offset: -2px; opacity: 0.6; }
+    #chapter-list .chapter-summary-item { transition: border-color 0.2s; }
+    #chapter-list .chapter-summary-item:hover { border-color: rgba(255,255,255,0.12); }
+
+    /* Batch action bar sticky */
+    .batch-bar-sticky-wrapper {
+        position: sticky;
+        top: 70px;
+        z-index: 50;
+    }
+
+    /* Select dropdown dark styling */
+    #batch-target-chapter {
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: #1e293b;
+        border: 1px solid var(--border);
+        color: #fff;
+        font-size: 13px;
+        min-width: 200px;
+        cursor: pointer;
+        appearance: auto;
+    }
+    #batch-target-chapter option {
+        background: #1e293b;
+        color: #fff;
+        padding: 8px;
+    }
+    #batch-target-chapter option:hover,
+    #batch-target-chapter option:focus {
+        background: rgba(0,255,180,0.15);
+    }
 </style>
 {% endblock %}
 
@@ -157,21 +196,83 @@
     </div>
 
     <!-- 현재 구성 -->
+
+    <!-- 일괄 이동 액션바 (sticky, 상단 고정) -->
+    <div class="batch-bar-sticky-wrapper">
+        <div id="batch-action-bar" style="display:none; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid rgba(0,180,255,0.3); border-radius: 14px; padding: 14px 20px; margin-bottom: 16px; align-items: center; gap: 12px; flex-wrap: wrap; box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+            <span style="font-weight:700; font-size:14px; white-space:nowrap; color:#fff;"><span id="selected-count">0</span>개 아이템 선택</span>
+            <select id="batch-target-chapter">
+                <option value="">→ 이동할 챕터 선택</option>
+                {% for ch in chapters %}
+                <option value="{{ ch.id }}">제 {{ ch.number }}장. {{ ch.title }}</option>
+                {% endfor %}
+            </select>
+            <button onclick="batchMoveItems()" style="padding:8px 18px; border-radius:8px; background:var(--accent-green); color:var(--bg-primary); border:none; font-weight:700; font-size:13px; cursor:pointer;">선택 이동</button>
+            <button onclick="clearSelection()" style="padding:8px 14px; border-radius:8px; background:rgba(255,255,255,0.08); color:var(--text-secondary); border:1px solid var(--border); font-weight:700; font-size:13px; cursor:pointer;">선택 해제</button>
+        </div>
+    </div>
+
     <div class="card-dark">
-        <h3 style="margin-bottom: 24px;">현재 챕터 구 성 ({{ chapters.count }}개)</h3>
-        <ul class="chapter-summary">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+            <h3 style="margin: 0;">챕터 구성 (드래그하여 순서/이동)</h3>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <a href="{% url 'chapter_create' program.id %}" class="nav-link" style="font-size: 13px; background: rgba(0, 255, 180, 0.1); color: var(--accent-green); border: 1px solid rgba(0, 255, 180, 0.2);">
+                    ✚ 새 챕터 추가
+                </a>
+            </div>
+        </div>
+
+        <!-- 챕터 리스트 (Sortable) -->
+        <ul id="chapter-list" class="chapter-summary">
             {% for ch in chapters %}
-            <li class="chapter-summary-item">
-                <div>
-                    <strong>제 {{ ch.number }}장. {{ ch.title }}</strong>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-                        아이템 수: {{ ch.items.count }}개
+            <li class="chapter-summary-item" data-chapter-id="{{ ch.id }}" data-chapter-number="{{ ch.number }}">
+                <div style="display: flex; align-items: stretch; gap: 0; flex: 1; min-width: 0;">
+                    <!-- 드래그 핸들 -->
+                    <div class="chapter-drag-handle" style="display:flex; align-items:center; padding:0 8px 0 4px; cursor:grab; color:var(--text-muted); font-size:18px; user-select:none; touch-action:none;">⠿</div>
+                    
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong class="chapter-title-text">제 {{ ch.number }}장. {{ ch.title }}</strong>
+                                <span style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">아이템 {{ ch.items.count }}개</span>
+                            </div>
+                            <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
+                                <label style="font-size:12px; color:var(--text-muted); cursor:pointer;" title="이 챕터의 모든 아이템 선택">
+                                    <input type="checkbox" class="chapter-select-all" data-chapter-id="{{ ch.id }}" onchange="toggleChapterItems(this)"> 전체
+                                </label>
+                                <a href="{% url 'chapter_edit' ch.id %}" class="nav-link" style="font-size: 11px; padding: 4px 10px; background: rgba(0, 255, 180, 0.08); color: var(--accent-green);">✏️</a>
+                                <form method="POST" action="{% url 'chapter_delete' ch.id %}" style="display:inline;" onsubmit="return confirm('정말 \'제 {{ ch.number }}장. {{ ch.title }}\' 챕터를 삭제하시겠습니까? (아이템 {{ ch.items.count }}개도 삭제)');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="nav-link" style="font-size: 11px; padding: 4px 10px; background: rgba(255, 93, 108, 0.08); color: #ff5d6c; border: none; cursor: pointer;">🗑️</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- 아이템 리스트 (Sortable, group) -->
+                        {% if ch.items.all %}
+                        <ul class="item-list" data-chapter-id="{{ ch.id }}" style="margin-top: 12px; list-style: none; padding: 0; border-top: 1px solid rgba(255,255,255,0.05);">
+                            {% for item in ch.items.all %}
+                            <li class="item-row" data-item-id="{{ item.id }}" data-item-number="{{ item.number }}" draggable="false" style="display:flex; align-items:center; gap:8px; padding:6px 0 6px 8px; border-bottom:1px solid rgba(255,255,255,0.03); font-size:13px; transition:background 0.15s; cursor:grab;">
+                                <div class="item-drag-handle" style="color:var(--text-muted); font-size:14px; cursor:grab; user-select:none; touch-action:none;">⠿</div>
+                                <input type="checkbox" class="item-checkbox" value="{{ item.id }}" data-chapter-id="{{ ch.id }}" onchange="updateBatchBar()" style="cursor:pointer;">
+                                <span style="color:var(--text-muted); font-size:11px; min-width:24px;">#{{ item.number }}</span>
+                                <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ item.title }}</span>
+                                <span style="font-size:11px; color:var(--text-muted); flex-shrink:0;">[{{ item.get_item_type_display }}]</span>
+                                <div style="display:flex; gap:6px; flex-shrink:0;">
+                                    <a href="{% url 'item_page' item.id %}" style="color:var(--accent-blue); font-size:11px;">보기</a>
+                                    <a href="{% url 'item_edit' item.id %}" style="color:var(--accent-green); font-size:11px;">수정</a>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div style="padding: 12px 0 4px 12px; font-size: 12px; color: var(--text-muted);">아이템 없음</div>
+                        {% endif %}
                     </div>
                 </div>
-                <div style="font-size: 14px; color: var(--accent-green);">입력됨 ✓</div>
             </li>
             {% empty %}
-            <li class="empty" style="padding: 20px 0;">아직 데이터가 없습니다. 엑셀을 업로드해주세요.</li>
+            <li style="padding: 20px 0; text-align: center; color: var(--text-muted);">아직 데이터가 없습니다. 엑셀을 업로드하거나 새 챕터를 추가해주세요.</li>
             {% endfor %}
         </ul>
     </div>
@@ -179,14 +280,306 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script>
+    // File upload helpers
     function updateFileName(input) {
-        const name = input.files[0] ? input.files[0].name : "엑셀 파일을 선택하거나 여기로 드래그하세요";
+        var name = input.files[0] ? input.files[0].name : "엑셀 파일을 선택하거나 여기로 드래그하세요";
         document.getElementById('file-name').innerText = name;
     }
     function updateAnswerZipName(input) {
-        const name = input.files[0] ? input.files[0].name : "answer.zip 파일을 선택하세요";
+        var name = input.files[0] ? input.files[0].name : "answer.zip 파일을 선택하세요";
         document.getElementById('answer-zip-name').innerText = name;
+    }
+
+    var PROGRAM_ID = {{ program.id }};
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+    function getCSRFToken() {
+        var m = document.querySelector('[name=csrfmiddlewaretoken]');
+        return m ? m.value : csrfToken;
+    }
+
+    // ---- 초기화 ----
+    document.addEventListener('DOMContentLoaded', function() {
+        initChapterSortable();
+        initItemSortables();
+    });
+
+    // ---- 챕터 드래그앤드롭 ----
+    function initChapterSortable() {
+        var el = document.getElementById('chapter-list');
+        if (!el) return;
+        new Sortable(el, {
+            handle: '.chapter-drag-handle',
+            animation: 200,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onEnd: function() {
+                saveChapterOrder();
+            }
+        });
+    }
+
+    function saveChapterOrder() {
+        var list = document.getElementById('chapter-list');
+        var ids = [];
+        list.querySelectorAll('.chapter-summary-item').forEach(function(li) {
+            ids.push(li.dataset.chapterId);
+        });
+        fetch('/courses/api/program/' + PROGRAM_ID + '/chapters/reorder/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()},
+            body: JSON.stringify({chapter_ids: ids})
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.status === 'ok') {
+                // Update displayed chapter numbers
+                list.querySelectorAll('.chapter-summary-item').forEach(function(li, idx) {
+                    var titleEl = li.querySelector('.chapter-title-text');
+                    if (titleEl) {
+                        var num = idx + 1;
+                        li.dataset.chapterNumber = num;
+                        // Update the select-all label's data as well
+                        var selAll = li.querySelector('.chapter-select-all');
+                        // Title text: replace "제 X장." prefix
+                        titleEl.textContent = titleEl.textContent.replace(/^제 \d+장\./, '제 ' + num + '장.');
+                    }
+                });
+            }
+        });
+    }
+
+    // ---- 아이템 드래그앤드롭 (챕터 간 이동 포함, 다중 선택 드래그 지원) ----
+    function initItemSortables() {
+        var lists = document.querySelectorAll('.item-list');
+        lists.forEach(function(list) {
+            new Sortable(list, {
+                handle: '.item-drag-handle',
+                group: 'items',
+                animation: 200,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                onStart: function(evt) {
+                    // 체크된 아이템을 드래그하면 같은 챕터의 다른 체크된 아이템들도 함께 이동
+                    var cb = evt.item.querySelector('.item-checkbox');
+                    if (cb && cb.checked) {
+                        var batchIds = [];
+                        evt.from.querySelectorAll('.item-row .item-checkbox:checked').forEach(function(c) {
+                            if (c.value !== evt.item.dataset.itemId) {
+                                batchIds.push(c.value);
+                                c.closest('.item-row').classList.add('multi-drag');
+                            }
+                        });
+                        if (batchIds.length > 0) {
+                            evt.item._batchMoveIds = batchIds;
+                        }
+                    }
+                },
+                onEnd: function(evt) {
+                    var batchIds = evt.item._batchMoveIds || [];
+                    // 멀티 드래그 체크된 행들을 정리
+                    if (batchIds.length > 0) {
+                        document.querySelectorAll('.item-row.multi-drag').forEach(function(row) {
+                            row.classList.remove('multi-drag');
+                        });
+                    }
+
+                    // 아이템이 다른 챕터로 이동됨
+                    if (evt.from !== evt.to) {
+                        var itemId = evt.item.dataset.itemId;
+                        var newChapterId = evt.to.dataset.chapterId;
+
+                        if (batchIds.length > 0) {
+                            // 여러 체크된 아이템을 함께 이동
+                            batchIds.push(itemId);  // 드래그한 아이템 포함
+                            var sourceList = evt.from;
+                            var targetList = evt.to;
+
+                            fetch('/courses/api/items/batch-move/', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()},
+                                body: JSON.stringify({item_ids: batchIds, target_chapter_id: parseInt(newChapterId)})
+                            }).then(function(r) { return r.json(); }).then(function(d) {
+                                if (d.status === 'ok') {
+                                    // 나머지 체크된 아이템들도 DOM에서 이동
+                                    document.querySelectorAll('.item-row .item-checkbox:checked').forEach(function(cb) {
+                                        var row = cb.closest('.item-row');
+                                        if (row && row !== evt.item && sourceList.contains(row)) {
+                                            targetList.appendChild(row);
+                                        }
+                                    });
+                                    renumberItems(sourceList);
+                                    renumberItems(targetList);
+                                    updateChapterItemCounts();
+                                    clearSelection();
+                                } else {
+                                    alert('이동 실패: ' + (d.error || '알 수 없는 오류'));
+                                    location.reload();
+                                }
+                            });
+                        } else {
+                            // 단일 아이템 이동
+                            var oldChapterId = evt.from.dataset.chapterId;
+                            moveItemToChapter(itemId, newChapterId, function() {
+                                renumberItems(evt.from);
+                                renumberItems(evt.to);
+                                updateChapterItemCounts();
+                            });
+                        }
+                    } else {
+                        // 같은 챕터 내 재정렬
+                        var chapterId = evt.to.dataset.chapterId;
+                        saveItemOrder(chapterId, evt.to);
+                    }
+                    delete evt.item._batchMoveIds;
+                }
+            });
+        });
+    }
+
+    function moveItemToChapter(itemId, chapterId, callback) {
+        fetch('/courses/api/items/batch-move/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()},
+            body: JSON.stringify({item_ids: [itemId], target_chapter_id: parseInt(chapterId)})
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.status === 'ok' && callback) callback();
+        });
+    }
+
+    function saveItemOrder(chapterId, listEl) {
+        var ids = [];
+        listEl.querySelectorAll('.item-row').forEach(function(li) {
+            ids.push(li.dataset.itemId);
+        });
+        if (ids.length === 0) return;
+        fetch('/courses/api/program/' + PROGRAM_ID + '/items/reorder/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()},
+            body: JSON.stringify({chapter_id: parseInt(chapterId), item_ids: ids})
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.status === 'ok') {
+                renumberItems(listEl);
+            }
+        });
+    }
+
+    function renumberItems(listEl) {
+        if (!listEl) return;
+        listEl.querySelectorAll('.item-row').forEach(function(li, idx) {
+            var num = idx + 1;
+            li.dataset.itemNumber = num;
+            var numEl = li.querySelector('span:first-of-type');
+            // Find the #number span specifically
+            var spans = li.querySelectorAll('span');
+            spans.forEach(function(s) {
+                if (s.textContent.startsWith('#')) {
+                    s.textContent = '#' + num;
+                }
+            });
+        });
+    }
+
+    function updateChapterItemCounts() {
+        document.querySelectorAll('.item-list').forEach(function(list) {
+            var count = list.querySelectorAll('.item-row').length;
+            var chapterItem = list.closest('.chapter-summary-item');
+            if (chapterItem) {
+                var countSpan = chapterItem.querySelector('strong ~ span');
+                if (countSpan) {
+                    countSpan.textContent = '아이템 ' + count + '개';
+                }
+            }
+        });
+    }
+
+    // ---- 일괄 선택 / 이동 ----
+    function toggleChapterItems(checkbox) {
+        var chapterId = checkbox.dataset.chapterId;
+        var list = document.querySelector('.item-list[data-chapter-id="' + chapterId + '"]');
+        if (!list) return;
+        var checked = checkbox.checked;
+        list.querySelectorAll('.item-checkbox').forEach(function(cb) {
+            cb.checked = checked;
+        });
+        updateBatchBar();
+    }
+
+    function updateBatchBar() {
+        var checked = document.querySelectorAll('.item-checkbox:checked');
+        var bar = document.getElementById('batch-action-bar');
+        var countEl = document.getElementById('selected-count');
+        if (checked.length > 0) {
+            bar.style.display = 'flex';
+            countEl.textContent = checked.length;
+        } else {
+            bar.style.display = 'none';
+        }
+    }
+
+    function clearSelection() {
+        document.querySelectorAll('.item-checkbox').forEach(function(cb) {
+            cb.checked = false;
+        });
+        document.querySelectorAll('.chapter-select-all').forEach(function(cb) {
+            cb.checked = false;
+        });
+        updateBatchBar();
+    }
+
+    function batchMoveItems() {
+        var checked = document.querySelectorAll('.item-checkbox:checked');
+        if (checked.length === 0) return;
+        var targetSelect = document.getElementById('batch-target-chapter');
+        var targetChapterId = targetSelect.value;
+        if (!targetChapterId) {
+            alert('이동할 대상 챕터를 선택해주세요.');
+            return;
+        }
+
+        var itemIds = [];
+        var sourceChapterIds = new Set();
+        checked.forEach(function(cb) {
+            itemIds.push(cb.value);
+            sourceChapterIds.add(cb.dataset.chapterId);
+        });
+
+        if (!confirm(itemIds.length + '개 아이템을 선택한 챕터로 이동하시겠습니까?')) return;
+
+        fetch('/courses/api/items/batch-move/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()},
+            body: JSON.stringify({item_ids: itemIds, target_chapter_id: parseInt(targetChapterId)})
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (d.status === 'ok') {
+                // Move DOM elements
+                var targetList = document.querySelector('.item-list[data-chapter-id="' + targetChapterId + '"]');
+                if (targetList) {
+                    checked.forEach(function(cb) {
+                        var row = cb.closest('.item-row');
+                        if (row) {
+                            // Clone and add to target
+                            var clone = row.cloneNode(true);
+                            clone.querySelector('.item-checkbox').checked = false;
+                            targetList.appendChild(clone);
+                            // Remove from source
+                            row.remove();
+                        }
+                    });
+                    renumberItems(targetList);
+                }
+                // Renumber all affected source chapters
+                sourceChapterIds.forEach(function(cid) {
+                    var srcList = document.querySelector('.item-list[data-chapter-id="' + cid + '"]');
+                    if (srcList) renumberItems(srcList);
+                });
+                updateChapterItemCounts();
+                clearSelection();
+            } else {
+                alert('이동 실패: ' + (d.error || '알 수 없는 오류'));
+                location.reload();
+            }
+        });
     }
 </script>
 {% endblock %}

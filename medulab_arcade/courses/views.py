@@ -42,6 +42,7 @@ from .models import (
 )
 from .forms import (
     AnswerZipImportForm,
+    ChapterForm,
     CourseForm,
     ProgramTypeForm,
     ItemForm,
@@ -1324,7 +1325,7 @@ def chapter_manage(request, program_id):
         except Exception as e:
             messages.error(request, f"엑셀 처리 중 오류 발생: {str(e)}")
             
-    chapters = Chapter.objects.filter(program=program)
+    chapters = Chapter.objects.filter(program=program).prefetch_related('items')
     return render(request, "courses/chapter_manage.html", {
         "program": program,
         "chapters": chapters,
@@ -1357,6 +1358,83 @@ def answer_zip_apply(request, program_id, batch_id):
     batch.save(update_fields=["status", "applied_at", "message"])
     messages.success(request, f"answer.zip 적용 완료: {batch.message}")
     return redirect("chapter_manage", program_id=program.id)
+
+# --- 챕터 관리 ---
+@login_required
+@user_passes_test(is_admin)
+def chapter_create(request, program_id):
+    program = get_object_or_404(LearningProgram, id=program_id)
+    if request.method == "POST":
+        form = ChapterForm(request.POST)
+        if form.is_valid():
+            chapter = form.save(commit=False)
+            chapter.program = program
+            chapter.save()
+            messages.success(request, f"'{chapter.title}' 챕터가 등록되었습니다.")
+            return redirect("chapter_manage", program_id=program.id)
+    else:
+        last_num = Chapter.objects.filter(program=program).count() + 1
+        form = ChapterForm(initial={'number': last_num})
+    
+    return render(request, "courses/chapter_form.html", {
+        "form": form,
+        "title": f"[{program.name}] 새 챕터 추가",
+        "program": program
+    })
+
+@login_required
+@user_passes_test(is_admin)
+def chapter_edit(request, chapter_id):
+    chapter = get_object_or_404(Chapter, id=chapter_id)
+    if request.method == "POST":
+        form = ChapterForm(request.POST, instance=chapter)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"'{chapter.title}' 챕터가 수정되었습니다.")
+            return redirect("chapter_manage", program_id=chapter.program.id)
+    else:
+        form = ChapterForm(instance=chapter)
+    
+    return render(request, "courses/chapter_form.html", {
+        "form": form,
+        "title": "챕터 수정",
+        "chapter": chapter,
+        "program": chapter.program,
+    })
+
+@login_required
+@user_passes_test(is_admin)
+def chapter_delete(request, chapter_id):
+    chapter = get_object_or_404(Chapter, id=chapter_id)
+    program_id = chapter.program.id
+    if request.method == "POST":
+        title = chapter.title
+        chapter.delete()
+        messages.success(request, f"'{title}' 챕터가 삭제되었습니다.")
+        return redirect("chapter_manage", program_id=program_id)
+    return render(request, "courses/chapter_confirm_delete.html", {"chapter": chapter})
+
+# --- (8) 아이템 챕터 이동 ---
+@login_required
+@user_passes_test(is_admin)
+def item_move(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    program = item.chapter.program
+    if request.method == "POST":
+        target_chapter_id = request.POST.get("target_chapter")
+        if target_chapter_id:
+            target_chapter = get_object_or_404(Chapter, id=target_chapter_id, program=program)
+            old_chapter = item.chapter
+            item.chapter = target_chapter
+            item.save()
+            messages.success(request, f"'{item.title}' 아이템이 [{old_chapter.title}] → [{target_chapter.title}]으로 이동되었습니다.")
+        return redirect("chapter_manage", program_id=program.id)
+    chapters = Chapter.objects.filter(program=program).exclude(id=item.chapter.id)
+    return render(request, "courses/item_move.html", {
+        "item": item,
+        "chapters": chapters,
+        "program": program,
+    })
 
 # --- (9) 아이템 등록 ---
 @login_required
@@ -1759,3 +1837,63 @@ def api_search_users(request):
     users = users[:50]
     data = [{'id': u.id, 'username': u.username, 'name': u.get_full_name() or u.username} for u in users]
     return JsonResponse({'users': data})
+
+# --- (12) API: 챕터 순서 재배열 ---
+@login_required
+@user_passes_test(is_admin)
+def api_chapters_reorder(request, program_id):
+    """드래그앤드롭으로 변경된 챕터 순서 저장"""
+    if request.method != "POST":
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body)
+        chapter_ids = data.get('chapter_ids', [])
+        for index, cid in enumerate(chapter_ids):
+            Chapter.objects.filter(id=cid, program_id=program_id).update(number=index + 1)
+        return JsonResponse({'status': 'ok'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+# --- (13) API: 아이템 일괄 이동 ---
+@login_required
+@user_passes_test(is_admin)
+def api_items_batch_move(request):
+    """선택한 아이템들을 특정 챕터로 일괄 이동"""
+    if request.method != "POST":
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body)
+        item_ids = data.get('item_ids', [])
+        target_chapter_id = data.get('target_chapter_id')
+        if not item_ids or not target_chapter_id:
+            return JsonResponse({'error': 'item_ids and target_chapter_id required'}, status=400)
+        target_chapter = get_object_or_404(Chapter, id=target_chapter_id)
+        items = Item.objects.filter(id__in=item_ids)
+        count = items.count()
+        items.update(chapter=target_chapter)
+        # 번호 재정렬
+        all_items = Item.objects.filter(chapter=target_chapter).order_by('number')
+        for idx, item in enumerate(all_items):
+            Item.objects.filter(id=item.id).update(number=idx + 1)
+        return JsonResponse({'status': 'ok', 'moved': count})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+# --- (14) API: 아이템 순서 재배열 ---
+@login_required
+@user_passes_test(is_admin)
+def api_items_reorder(request, program_id=None):
+    """드래그앤드롭으로 변경된 아이템 순서 저장"""
+    if request.method != "POST":
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body)
+        chapter_id = data.get('chapter_id')
+        item_ids = data.get('item_ids', [])
+        if not chapter_id or not item_ids:
+            return JsonResponse({'error': 'chapter_id and item_ids required'}, status=400)
+        for index, iid in enumerate(item_ids):
+            Item.objects.filter(id=iid, chapter_id=chapter_id).update(number=index + 1)
+        return JsonResponse({'status': 'ok'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)

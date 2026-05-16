@@ -1,0 +1,60 @@
+{% extends "arcade/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .manage-container { max-width: 700px; margin: 40px auto; }
+    .form-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px;
+    }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+    .form-input, .form-textarea { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; color: #fff; font-size: 14px; outline: none; font-family: 'Noto Sans KR', sans-serif; }
+    .form-input:focus, .form-textarea:focus { border-color: var(--accent-green); box-shadow: 0 0 10px rgba(0,255,180,0.1); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .btn-group { display: flex; gap: 12px; margin-top: 24px; }
+    .btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; border: none; text-align: center; text-decoration: none; }
+    .btn-submit { background: var(--accent-green); color: var(--bg-primary); box-shadow: 0 4px 15px rgba(0,255,180,0.2); }
+    .btn-submit:hover { transform: translateY(-2px); }
+    .btn-cancel { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+    .btn-cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .page-title { font: 900 28px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main manage-container">
+    <div class="admin-header" style="margin-bottom: 24px;">
+        <h1 class="page-title">{{ title }}</h1>
+        <p style="color: var(--text-muted); margin-top: 8px;">
+            {% if program %}{{ program.name }}{% elif chapter %}{{ chapter.program.name }}{% endif %}
+        </p>
+    </div>
+    <div class="form-card">
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>챕터 번호</label>
+                {{ form.number }}
+                {% if form.number.errors %}<div style="color:#ff6b6b;font-size:12px;margin-top:4px;">{{ form.number.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+                <label>챕터 제목</label>
+                {{ form.title }}
+                {% if form.title.errors %}<div style="color:#ff6b6b;font-size:12px;margin-top:4px;">{{ form.title.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+                <label>설명 (선택)</label>
+                {{ form.content }}
+            </div>
+            <div class="btn-group">
+                <a href="{% url 'chapter_manage' program.id %}" class="btn btn-cancel">취소</a>
+                <button type="submit" class="btn btn-submit">저장</button>
+            </div>
+        </form>
+    </div>
+</main>
+{% endblock %}

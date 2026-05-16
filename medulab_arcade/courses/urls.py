@@ -20,6 +20,10 @@ urlpatterns = [
     path('program/<int:program_id>/answer-zip/<int:batch_id>/apply/', views.answer_zip_apply, name='answer_zip_apply'),
     path('download-template/', views.download_course_template, name='download_course_template'),
     path('program/<int:program_id>/export/', views.export_program_to_excel, name='export_program_to_excel'),
+    path('program/<int:program_id>/chapter/add/', views.chapter_create, name='chapter_create'),
+    path('chapter/<int:chapter_id>/edit/', views.chapter_edit, name='chapter_edit'),
+    path('chapter/<int:chapter_id>/delete/', views.chapter_delete, name='chapter_delete'),
+    path('item/<int:item_id>/move/', views.item_move, name='item_move'),
     
     # 아이템 개별 관리
     path('chapter/<int:chapter_id>/item/add/', views.item_create, name='item_create'),
@@ -52,4 +56,7 @@ urlpatterns = [
     path('api/item/<int:item_id>/ppt-exam/submit/', views.submit_ppt_exam, name='submit_ppt_exam'),
     path('api/program/<int:program_id>/structure/', views.api_program_structure, name='api_program_structure'),
     path('api/users/search/', views.api_search_users, name='api_search_users'),
+    path('api/program/<int:program_id>/chapters/reorder/', views.api_chapters_reorder, name='api_chapters_reorder'),
+    path('api/items/batch-move/', views.api_items_batch_move, name='api_items_batch_move'),
+    path('api/program/<int:program_id>/items/reorder/', views.api_items_reorder, name='api_items_reorder'),
 ]

@@ -14,17 +14,20 @@ from xml.etree import ElementTree as ET
 import openpyxl
 from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse, Http404
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import transaction
+from django.core.files.base import ContentFile
+from django.core.files.images import get_image_dimensions
 from arcade.badge_service import (
     evaluate_homework_badges,
     evaluate_mission_badges,
     evaluate_program_badges,
-    get_active_badges_with_user_state,
     get_program_completion_badge,
     get_recent_user_badges,
 )
@@ -40,6 +43,7 @@ from .models import (
     HomeworkAttachment,
     HomeworkSubmission,
     OlympiadAnswerSubmission,
+    OlympiadAnswerExample,
 )
 from .forms import (
     AnswerZipImportForm,
@@ -64,6 +68,10 @@ ANSWER_ZIP_MAX_TEXT_FILE_BYTES = 512 * 1024
 ANSWER_ZIP_MAX_PPTX_FILE_BYTES = 25 * 1024 * 1024
 ANSWER_ZIP_MAX_UPLOAD_BYTES = 200 * 1024 * 1024
 ANSWER_ZIP_TEXT_EXTENSIONS = {".txt", ".py", ".md", ".html", ".htm", ".json", ".csv", ".xml", ".yaml", ".yml", ".js", ".css"}
+ANSWER_ZIP_OLYMPIAD_RULE = "olympiad_answer_examples_by_chapter_item"
+ANSWER_ZIP_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
+OLYMPIAD_EXAMPLE_MAX_IMAGE_BYTES = 10 * 1024 * 1024
+OLYMPIAD_EXAMPLE_MAX_IMAGE_PIXELS = 40_000_000
 
 
 class AnswerZipImportError(ValueError):
@@ -134,6 +142,313 @@ def is_text_like_answer_file(relative_path):
 def is_pptx_answer_file(relative_path):
     _, extension = os.path.splitext(relative_path or "")
     return extension.lower() == ".pptx"
+
+
+def is_image_answer_file(relative_path):
+    _, extension = os.path.splitext(relative_path or "")
+    return extension.lower() in ANSWER_ZIP_IMAGE_EXTENSIONS
+
+
+def validate_olympiad_example_image(image):
+    if image.size > OLYMPIAD_EXAMPLE_MAX_IMAGE_BYTES:
+        return "예시답안 이미지는 10MB 이하만 등록할 수 있습니다."
+    if not is_image_answer_file(image.name):
+        return "예시답안 이미지는 jpg, jpeg, png, gif, webp, bmp 파일만 등록할 수 있습니다."
+
+    try:
+        image.seek(0)
+        width, height = get_image_dimensions(image)
+    except Exception:
+        return "올바른 이미지 파일만 등록할 수 있습니다."
+    finally:
+        image.seek(0)
+
+    if not width or not height:
+        return "올바른 이미지 파일만 등록할 수 있습니다."
+    if width * height > OLYMPIAD_EXAMPLE_MAX_IMAGE_PIXELS:
+        return "이미지 해상도가 너무 큽니다. 더 작은 이미지로 등록해 주세요."
+
+    return None
+
+
+def format_olympiad_image_size(size):
+    if not size:
+        return "파일 크기를 확인할 수 없습니다"
+    if size >= 1024 * 1024:
+        return f"{size / (1024 * 1024):.1f}MB"
+    if size >= 1024:
+        return f"{size / 1024:.1f}KB"
+    return f"{size}B"
+
+
+def get_olympiad_image_dimensions(image):
+    if not image:
+        return None
+    try:
+        image.seek(0)
+        width, height = get_image_dimensions(image)
+    except Exception:
+        return None
+    finally:
+        try:
+            image.seek(0)
+        except Exception:
+            pass
+    if not width or not height:
+        return None
+    return width, height
+
+
+def summarize_olympiad_hint(hint):
+    text = re.sub(r"<[^>]+>", " ", unescape(hint or ""))
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) <= 90:
+        return text
+    return text[:90].rstrip() + "..."
+
+
+def calculate_olympiad_ai_score(submission):
+    answer_text = (submission.edited_text or submission.ocr_text or "").strip()
+    image = submission.answer_image
+    image_size = int(getattr(image, "size", 0) or 0)
+    dimensions = get_olympiad_image_dimensions(image)
+
+    score = 60
+    if answer_text:
+        score += 10
+        if len(answer_text) >= 80:
+            score += 8
+        elif len(answer_text) >= 35:
+            score += 5
+    if dimensions:
+        width, height = dimensions
+        pixels = width * height
+        if pixels >= 800 * 600:
+            score += 8
+        elif pixels >= 500 * 300:
+            score += 5
+        if min(width, height) >= 280:
+            score += 4
+    if image_size >= 100 * 1024:
+        score += 5
+    if 0 < image_size <= 8 * 1024 * 1024:
+        score += 4
+    if not answer_text:
+        score = min(score, 82)
+    return max(45, min(score, 95))
+
+
+def parse_olympiad_feedback(feedback):
+    section_titles = {"AI 평가점수", "사진 확인", "답안 보완 포인트", "다음 제출 팁"}
+    sections = []
+    current = None
+
+    for raw_line in (feedback or "").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line in section_titles:
+            current = {"title": line, "items": [], "kind": "default", "score": None}
+            if line == "AI 평가점수":
+                current["kind"] = "score"
+            elif line == "답안 보완 포인트":
+                current["kind"] = "improvement"
+            elif line == "다음 제출 팁":
+                current["kind"] = "tip"
+            else:
+                current["kind"] = "photo"
+            sections.append(current)
+            continue
+        if current is None:
+            current = {"title": "제출 피드백", "items": [], "kind": "default", "score": None}
+            sections.append(current)
+        cleaned = line[2:].strip() if line.startswith("- ") else line
+        score_match = re.search(r"(\d{1,3})\s*/\s*100", cleaned)
+        if score_match:
+            current["score"] = max(0, min(int(score_match.group(1)), 100))
+            if current["kind"] == "score":
+                continue
+        current["items"].append(cleaned)
+
+    return sections
+
+
+def build_olympiad_submission_feedback(submission, item):
+    image = submission.answer_image
+    image_size = format_olympiad_image_size(getattr(image, "size", 0))
+    dimensions = get_olympiad_image_dimensions(image)
+    dimension_text = f"{dimensions[0]}x{dimensions[1]}px" if dimensions else "해상도 확인 불가"
+    answer_text = (submission.edited_text or submission.ocr_text or "").strip()
+    hint_summary = summarize_olympiad_hint(item.hint)
+    ai_score = calculate_olympiad_ai_score(submission)
+
+    feedback_lines = [
+        "AI 평가점수",
+        f"- {ai_score}/100점",
+        "- 사진 선명도, 답안 보충 텍스트, 문제 조건 확인 가능성을 기준으로 자동 산정했습니다.",
+        "",
+        "사진 확인",
+        f"- 업로드된 답안 사진은 {image_size}, {dimension_text}로 확인되었습니다.",
+        "- 글자 가장자리, 문제 번호, 풀이 순서가 한 장 안에서 선명하게 보이는지 다시 확인해 보세요.",
+        "",
+        "답안 보완 포인트",
+    ]
+    if answer_text:
+        feedback_lines.append("- 적어 준 답안 내용을 기준으로 조건, 풀이 과정, 결론이 모두 드러나는지 점검해 보세요.")
+    else:
+        feedback_lines.append("- 답안 사진만으로도 제출은 완료되었습니다. 다음에는 핵심 풀이를 글로 한 번 더 적으면 스스로 빠진 조건을 찾기 쉽습니다.")
+    if hint_summary:
+        feedback_lines.append(f"- 문제 힌트의 핵심인 '{hint_summary}'와 연결되는 설명을 답안에 포함했는지 확인해 보세요.")
+    feedback_lines.extend([
+        "- 답을 고른 이유와 계산/분류 기준을 번호나 표로 정리하면 채점자가 사고 과정을 따라가기 좋습니다.",
+        "",
+        "다음 제출 팁",
+        "- 그림자 없이 밝은 곳에서 종이를 화면 가득 맞추고, 업로드 전 흔들림과 잘림이 없는지 확인하세요.",
+        "- 수정할 내용이 보이면 사진을 다시 찍거나 답안 내용 칸에 빠진 문장을 보충해 주세요.",
+    ])
+    return "\n".join(feedback_lines)
+
+
+def extract_first_number(value):
+    match = re.search(r"\d+", value or "")
+    return int(match.group()) if match else None
+
+
+def build_olympiad_answer_template_zip(program):
+    buffer = io.BytesIO()
+    chapters = program.chapters.prefetch_related("items").order_by("number")
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(
+            "README.txt",
+            "각 챕터/문제 폴더 안에 예시답안 이미지 파일을 넣은 뒤 다시 업로드하세요.\n"
+            "예: 제1회 기출문제/문제 2/01.jpg\n"
+            "지원 형식: jpg, jpeg, png, gif, webp, bmp\n",
+        )
+        for chapter in chapters:
+            chapter_folder = f"{chapter.title}/"
+            archive.writestr(chapter_folder, "")
+            for item in chapter.items.filter(item_type="olympiad").order_by("number"):
+                problem_folder = f"{chapter.title}/{item.title}/"
+                archive.writestr(problem_folder, "")
+                archive.writestr(
+                    f"{problem_folder}README.txt",
+                    f"{chapter.title} - {item.title} 예시답안 이미지를 이 폴더에 넣으세요.\n"
+                    "파일명 예: 01.jpg, 02.png\n",
+                )
+    buffer.seek(0)
+    return buffer
+
+
+def parse_olympiad_answer_examples_zip(program, uploaded_file):
+    uploaded_file.seek(0)
+    matched_items = {}
+    unmatched_files = []
+    file_count = 0
+    total_bytes = 0
+
+    items_by_chapter_and_number = {
+        (item.chapter.number, item.number): item
+        for item in Item.objects.filter(chapter__program=program, item_type="olympiad").select_related("chapter")
+    }
+
+    try:
+        with zipfile.ZipFile(uploaded_file) as archive:
+            infos = archive.infolist()
+            if not infos:
+                raise AnswerZipImportError("비어 있는 ZIP 파일입니다.")
+
+            for info in infos:
+                decoded_name = decode_answer_zip_filename(info)
+                if decoded_name.endswith("/"):
+                    continue
+                if decoded_name in {"README.txt", ".DS_Store", "Thumbs.db"} or decoded_name.startswith("._"):
+                    continue
+                parts = normalize_answer_zip_path(decoded_name)
+                if parts is None:
+                    continue
+
+                filename = parts[-1]
+                if filename in {"README.txt", ".DS_Store", "Thumbs.db"} or filename.startswith("._"):
+                    continue
+                if not is_image_answer_file(filename):
+                    continue
+
+                file_count += 1
+                if file_count > ANSWER_ZIP_MAX_FILES:
+                    raise AnswerZipImportError("ZIP 내부 파일 수가 너무 많습니다.")
+                total_bytes += info.file_size
+                if total_bytes > ANSWER_ZIP_MAX_TOTAL_BYTES:
+                    raise AnswerZipImportError("ZIP 내부 전체 파일 용량이 너무 큽니다.")
+
+                chapter_number = extract_first_number(parts[0])
+                item_part = parts[1] if len(parts) >= 3 else os.path.splitext(parts[-1])[0]
+                item_number = extract_first_number(item_part)
+                item = items_by_chapter_and_number.get((chapter_number, item_number))
+                if item is None:
+                    unmatched_files.append({"source_path": decoded_name, "reason": "챕터/문제 번호를 찾을 수 없습니다."})
+                    continue
+
+                matched_items.setdefault(item.id, {
+                    "item_id": item.id,
+                    "chapter_title": item.chapter.title,
+                    "item_title": item.title,
+                    "files": [],
+                })["files"].append({
+                    "source_path": decoded_name,
+                    "zip_name": info.filename,
+                    "filename": filename,
+                    "size": info.file_size,
+                })
+    except zipfile.BadZipFile as exc:
+        raise AnswerZipImportError("올바른 ZIP 파일이 아닙니다.") from exc
+
+    for item_data in matched_items.values():
+        item_data["files"].sort(key=lambda file_data: natural_sort_key(file_data["filename"]))
+
+    if not matched_items and not unmatched_files:
+        raise AnswerZipImportError("예시답안 이미지 파일을 찾지 못했습니다.")
+
+    return {
+        "import_rule": ANSWER_ZIP_OLYMPIAD_RULE,
+        "items": sorted(matched_items.values(), key=lambda item_data: natural_sort_key(f"{item_data['chapter_title']} {item_data['item_title']}")),
+        "unmatched_files": unmatched_files,
+        "chapter_count": len({item_data["chapter_title"] for item_data in matched_items.values()}),
+        "item_count": len(matched_items),
+        "file_count": sum(len(item_data["files"]) for item_data in matched_items.values()),
+    }
+
+
+def apply_olympiad_answer_examples_zip(batch):
+    preview_data = batch.preview_data or {}
+    if not batch.zip_file:
+        raise AnswerZipImportError("적용할 answer.zip 파일이 없습니다.")
+
+    source_paths_by_item = {
+        item_data["item_id"]: [(file_data["source_path"], file_data.get("zip_name") or file_data["source_path"]) for file_data in item_data.get("files", [])]
+        for item_data in preview_data.get("items", [])
+    }
+
+    created_examples = 0
+    replaced_examples = 0
+    with transaction.atomic():  # type: ignore[reportGeneralTypeIssues]
+        with batch.zip_file.open("rb") as zip_file:
+            with zipfile.ZipFile(zip_file) as archive:
+                for item_id, source_paths in source_paths_by_item.items():
+                    item = Item.objects.get(id=item_id, chapter__program=batch.program, item_type="olympiad")
+                    replaced_examples += item.olympiad_examples.count()
+                    item.olympiad_examples.all().delete()
+                    for order, (source_path, zip_name) in enumerate(source_paths, start=1):
+                        content = archive.read(zip_name)
+                        filename = os.path.basename(source_path)
+                        example = OlympiadAnswerExample(item=item, caption=f"{item.title} 예시답안 {order}", order=order)
+                        example.image.save(filename, ContentFile(content), save=True)
+                        created_examples += 1
+
+    return {
+        "created_examples": created_examples,
+        "replaced_examples": replaced_examples,
+        "matched_items": len(source_paths_by_item),
+    }
 
 
 def parse_answer_zip(uploaded_file):
@@ -291,8 +606,6 @@ def apply_answer_zip_preview(program, preview_data):
             "updated_items": updated_items,
         }
 
-
-
 def is_ppt_exam_item(item):
     key = (item.key or "").lower()
     title = item.title or ""
@@ -431,6 +744,16 @@ def grade_ppt_exam_submission(item, file_path, elapsed_seconds):
 # --- 권한 체크 유틸리티 ---
 def is_admin(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
+
+
+@login_required
+@user_passes_test(is_admin)
+def download_answer_zip_template(request, program_id):
+    program = get_object_or_404(LearningProgram, id=program_id)
+    buffer = build_olympiad_answer_template_zip(program)
+    response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = f'attachment; filename="answer_template_program_{program.id}.zip"'
+    return response
 
 
 def require_full_member(view_func):
@@ -867,6 +1190,11 @@ def student_course_list(request):
     coding_type = available_program_types.filter(name="코딩").first()
     python_coding_filter = coding_type is not None
 
+    # "대회 대비"와 "대회 준비"를 동일 필터로 묶기 위해 대비 타입 ID 수집
+    contest_prep_ids = list(
+        ProgramType.objects.filter(name__in=["대회 대비", "대회 준비"]).values_list("id", flat=True)
+    )
+
     if selected_program_type == "python-coding":
         all_programs = all_programs.filter(
             Q(program_type=coding_type)
@@ -875,6 +1203,8 @@ def student_course_list(request):
                 & (Q(name__icontains="python") | Q(name__icontains="파이썬") | Q(description__icontains="python") | Q(description__icontains="파이썬"))
             )
         )
+    elif selected_program_type.isdigit() and int(selected_program_type) in contest_prep_ids:
+        all_programs = all_programs.filter(program_type_id__in=contest_prep_ids)
     elif selected_program_type.isdigit():
         all_programs = all_programs.filter(program_type_id=int(selected_program_type))
 
@@ -921,20 +1251,10 @@ def course_home(request, program_id):
     program_badge = get_program_completion_badge(program)
     if request.user.is_authenticated:
         program_badge_awarded = request.user.earned_badges.filter(badge=program_badge).exists()
-        badge_catalog = get_active_badges_with_user_state(request.user)
         recent_badges = get_recent_user_badges(request.user, limit=4)
     else:
         program_badge_awarded = False
-        badge_catalog = []
         recent_badges = []
-    course_badges_with_status = [
-        badge for badge in badge_catalog
-        if badge['category'] in {program_badge.category, 'milestone'}
-        and not (
-            badge['criteria_type'] == 'program_completion'
-            and badge['related_program_id'] == program.id
-        )
-    ]
     
     # 챕터별 진도율 계산하여 챕터 객체에 주입
     for ch in chapters:
@@ -955,7 +1275,6 @@ def course_home(request, program_id):
         "program_badge": program_badge,
         "program_badge_awarded": program_badge_awarded,
         "recent_badges": recent_badges,
-        "course_badges_with_status": course_badges_with_status,
     })
 
 # --- (5) 챕터 상세 (항목 목록) ---
@@ -1002,10 +1321,13 @@ def item_page(request, item_id):
     olympiad_submission = None
     olympiad_submission_form = None
     olympiad_examples = []
+    olympiad_feedback_sections = []
 
     if is_olympiad and request.user.is_authenticated and not (request.user.is_staff or request.user.is_superuser):
         olympiad_submission = OlympiadAnswerSubmission.objects.filter(item=item, student=request.user).first()
         olympiad_submission_form = OlympiadAnswerSubmissionForm(instance=olympiad_submission)
+        if olympiad_submission and olympiad_submission.feedback:
+            olympiad_feedback_sections = parse_olympiad_feedback(olympiad_submission.feedback)
 
     if is_olympiad and (olympiad_submission or (request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser))):
         olympiad_examples = item.olympiad_examples.all()
@@ -1064,6 +1386,7 @@ def item_page(request, item_id):
         "olympiad_submission": olympiad_submission,
         "olympiad_submission_form": olympiad_submission_form,
         "olympiad_examples": olympiad_examples,
+        "olympiad_feedback_sections": olympiad_feedback_sections,
     })
 
 
@@ -1091,6 +1414,16 @@ def submit_olympiad_answer(request, item_id):
         olympiad_submission.item = item
         olympiad_submission.student = request.user
         olympiad_submission.status = OlympiadAnswerSubmission.STATUS_SUBMITTED
+        try:
+            olympiad_submission.feedback = build_olympiad_submission_feedback(olympiad_submission, item)
+        except Exception:
+            olympiad_submission.feedback = (
+                "AI 평가점수\n"
+                "- 평가 보류\n"
+                "\n"
+                "답안 보완 포인트\n"
+                "- 답안 사진은 정상 제출되었습니다. 자동 보완 피드백을 만들지 못했지만, 예시답안과 문제 힌트를 보며 조건, 풀이 과정, 결론이 모두 들어갔는지 확인해 주세요."
+            )
         olympiad_submission.save()
 
         progress, _ = UserProgress.objects.get_or_create(user=request.user, item=item)
@@ -1278,20 +1611,31 @@ def chapter_manage(request, program_id):
         answer_zip_form = AnswerZipImportForm(request.POST, request.FILES)
         if answer_zip_form.is_valid():
             try:
-                answer_zip_preview = parse_answer_zip(answer_zip_form.cleaned_data["answer_zip"])
-                answer_zip_batch = AnswerZipImportBatch.objects.create(
-                    program=program,
-                    zip_file=answer_zip_form.cleaned_data["answer_zip"],
-                    preview_data=answer_zip_preview,
-                    message=(
+                uploaded_answer_zip = answer_zip_form.cleaned_data["answer_zip"]
+                if program.chapters.filter(items__item_type="olympiad").exists():
+                    answer_zip_preview = parse_olympiad_answer_examples_zip(program, uploaded_answer_zip)
+                    message = (
+                        f"예시답안 이미지 {answer_zip_preview['file_count']}개, "
+                        f"문제 {answer_zip_preview['item_count']}개 미리보기"
+                    )
+                else:
+                    answer_zip_preview = parse_answer_zip(uploaded_answer_zip)
+                    message = (
                         f"챕터 {answer_zip_preview['chapter_count']}개, "
                         f"아이템 {answer_zip_preview['item_count']}개 미리보기"
-                    ),
+                    )
+                uploaded_answer_zip.seek(0)
+                answer_zip_batch = AnswerZipImportBatch.objects.create(
+                    program=program,
+                    zip_file=uploaded_answer_zip,
+                    import_rule=answer_zip_preview.get("import_rule", "top_level_folder_chapter"),
+                    preview_data=answer_zip_preview,
+                    message=message,
                     created_by=request.user,
                 )
                 messages.success(
                     request,
-                    f"answer.zip 미리보기 준비 완료: 챕터 {answer_zip_preview['chapter_count']}개, 아이템 {answer_zip_preview['item_count']}개",
+                    f"answer.zip 미리보기 준비 완료: {message}",
                 )
             except AnswerZipImportError as exc:
                 answer_zip_preview = None
@@ -1302,22 +1646,30 @@ def chapter_manage(request, program_id):
         if not answer_zip_batch or not answer_zip_preview:
             messages.error(request, "적용할 answer.zip 미리보기 데이터가 없습니다. 먼저 ZIP을 업로드해 주세요.")
         else:
-            result = apply_answer_zip_preview(program, answer_zip_preview)
+            if answer_zip_batch.import_rule == ANSWER_ZIP_OLYMPIAD_RULE:
+                result = apply_olympiad_answer_examples_zip(answer_zip_batch)
+                answer_zip_batch.message = (
+                    f"예시답안 {result['created_examples']}개 생성, "
+                    f"기존 예시 {result['replaced_examples']}개 교체"
+                )
+                success_message = f"answer.zip 적용 완료: {answer_zip_batch.message}"
+            else:
+                result = apply_answer_zip_preview(program, answer_zip_preview)
+                answer_zip_batch.message = (
+                    f"챕터 {result['created_chapters']}개 생성, "
+                    f"아이템 {result['created_items']}개 생성, {result['updated_items']}개 업데이트"
+                )
+                success_message = (
+                    "answer.zip 적용 완료: "
+                    f"챕터 {result['created_chapters']}개 생성, "
+                    f"아이템 {result['created_items']}개 생성, {result['updated_items']}개 업데이트"
+                )
             answer_zip_batch.status = AnswerZipImportBatch.STATUS_APPLIED
             answer_zip_batch.applied_at = timezone.now()
-            answer_zip_batch.message = (
-                f"챕터 {result['created_chapters']}개 생성, "
-                f"아이템 {result['created_items']}개 생성, {result['updated_items']}개 업데이트"
-            )
             answer_zip_batch.save(update_fields=["status", "applied_at", "message"])
             answer_zip_preview = None
             answer_zip_batch = None
-            messages.success(
-                request,
-                "answer.zip 적용 완료: "
-                f"챕터 {result['created_chapters']}개 생성, "
-                f"아이템 {result['created_items']}개 생성, {result['updated_items']}개 업데이트",
-            )
+            messages.success(request, success_message)
     elif request.method == "POST" and request.POST.get("import_action") == "clear_answer_zip_preview":
         if answer_zip_batch:
             answer_zip_batch.status = AnswerZipImportBatch.STATUS_FAILED
@@ -1405,16 +1757,59 @@ def answer_zip_apply(request, program_id, batch_id):
     if request.method != "POST":
         return redirect("chapter_manage", program_id=program.id)
 
-    result = apply_answer_zip_preview(program, batch.preview_data)
+    if batch.import_rule == ANSWER_ZIP_OLYMPIAD_RULE:
+        result = apply_olympiad_answer_examples_zip(batch)
+        batch.message = (
+            f"예시답안 {result['created_examples']}개 생성, "
+            f"기존 예시 {result['replaced_examples']}개 교체"
+        )
+    else:
+        result = apply_answer_zip_preview(program, batch.preview_data)
+        batch.message = (
+            f"챕터 {result['created_chapters']}개 생성, "
+            f"아이템 {result['created_items']}개 생성, {result['updated_items']}개 업데이트"
+        )
     batch.status = AnswerZipImportBatch.STATUS_APPLIED
     batch.applied_at = timezone.now()
-    batch.message = (
-        f"챕터 {result['created_chapters']}개 생성, "
-        f"아이템 {result['created_items']}개 생성, {result['updated_items']}개 업데이트"
-    )
     batch.save(update_fields=["status", "applied_at", "message"])
     messages.success(request, f"answer.zip 적용 완료: {batch.message}")
     return redirect("chapter_manage", program_id=program.id)
+
+
+@login_required
+@user_passes_test(is_admin)
+def olympiad_example_add(request, item_id):
+    item = get_object_or_404(Item, id=item_id, item_type="olympiad")
+    
+    next_url = request.POST.get("next") or request.GET.get("next")
+    if next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}):
+        redirect_url = next_url
+    else:
+        redirect_url = reverse("chapter_manage", args=[item.chapter.program.id])
+
+    if request.method != "POST":
+        return redirect(redirect_url)
+
+    image = request.FILES.get("image")
+    if not image:
+        messages.error(request, "등록할 예시답안 이미지 파일을 선택해 주세요.")
+        return redirect(redirect_url)
+
+    image_error = validate_olympiad_example_image(image)
+    if image_error:
+        messages.error(request, image_error)
+        return redirect(redirect_url)
+
+    next_order = (item.olympiad_examples.order_by("-order").values_list("order", flat=True).first() or 0) + 1
+    OlympiadAnswerExample.objects.create(
+        item=item,
+        image=image,
+        caption=(request.POST.get("caption") or "").strip(),
+        order=next_order,
+    )
+    messages.success(request, f"'{item.title}' 예시답안 이미지가 등록되었습니다.")
+    return redirect(redirect_url)
+
 
 # --- 챕터 관리 ---
 @login_required

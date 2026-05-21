@@ -157,6 +157,7 @@
         margin-bottom: 8px;
     }
     .upload-form input[type="file"],
+    .upload-form input[type="text"],
     .upload-form textarea {
         width: 100%;
         box-sizing: border-box;
@@ -200,6 +201,68 @@
         font-size: 13px;
     }
     .feedback-box { border: 1px solid rgba(251, 191, 36, 0.25); color: #fde68a; }
+    .feedback-section-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 16px;
+    }
+    .feedback-section {
+        padding: 15px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(0,0,0,0.24);
+    }
+    .feedback-section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 900;
+    }
+    .feedback-section ul {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        line-height: 1.75;
+    }
+    .feedback-score {
+        border-color: rgba(0, 255, 180, 0.34);
+        background: linear-gradient(135deg, rgba(0,255,180,0.13), rgba(0,180,255,0.07));
+    }
+    .feedback-score-number {
+        margin-bottom: 10px;
+        color: var(--accent-green);
+        font-size: 28px;
+        font-weight: 1000;
+        letter-spacing: -0.04em;
+        text-shadow: 0 0 18px rgba(0,255,180,0.28);
+    }
+    .feedback-score-bar {
+        height: 9px;
+        margin-bottom: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.09);
+    }
+    .feedback-score-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--accent-green), #7dd3fc);
+        box-shadow: 0 0 16px rgba(0,255,180,0.36);
+    }
+    .feedback-improvement {
+        border-color: rgba(251, 191, 36, 0.48);
+        background: linear-gradient(135deg, rgba(251,191,36,0.17), rgba(245,158,11,0.07));
+        box-shadow: 0 0 0 1px rgba(251,191,36,0.08), 0 14px 34px rgba(245,158,11,0.08);
+    }
+    .feedback-improvement .feedback-section-title { color: #fde68a; }
+    .feedback-improvement ul { color: #fef3c7; font-weight: 750; }
+    .feedback-photo { border-color: rgba(125, 211, 252, 0.28); background: rgba(14,165,233,0.08); }
+    .feedback-tip { border-color: rgba(168, 85, 247, 0.28); background: rgba(168,85,247,0.08); }
     .examples-section {
         margin-top: 24px;
         padding: 26px;
@@ -347,7 +410,27 @@
                     {% elif olympiad_submission.ocr_text %}
                     <div class="answer-text-box">{{ olympiad_submission.ocr_text }}</div>
                     {% endif %}
-                    {% if olympiad_submission.feedback %}
+                    {% if olympiad_feedback_sections %}
+                    <div class="feedback-section-stack" aria-label="AI 답안 피드백">
+                        {% for section in olympiad_feedback_sections %}
+                        <div class="feedback-section {% if section.kind == 'score' %}feedback-score{% elif section.kind == 'improvement' %}feedback-improvement{% elif section.kind == 'photo' %}feedback-photo{% elif section.kind == 'tip' %}feedback-tip{% endif %}">
+                            <div class="feedback-section-title">
+                                {% if section.kind == 'score' %}🎯{% elif section.kind == 'improvement' %}🔥{% elif section.kind == 'photo' %}📷{% elif section.kind == 'tip' %}✨{% else %}💬{% endif %}
+                                <span>{{ section.title }}</span>
+                            </div>
+                            {% if section.kind == 'score' and section.score != None %}
+                            <div class="feedback-score-number">{{ section.score }}/100점</div>
+                            <div class="feedback-score-bar"><div class="feedback-score-fill" style="width: {{ section.score }}%;"></div></div>
+                            {% endif %}
+                            <ul>
+                                {% for line in section.items %}
+                                <li>{{ line }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% elif olympiad_submission.feedback %}
                     <div class="feedback-box">{{ olympiad_submission.feedback }}</div>
                     {% endif %}
                 </section>
@@ -379,7 +462,23 @@
                 {% elif user.is_staff %}
                 <section class="olympiad-panel coach-panel">
                     <div class="panel-label"><span>👩‍🏫 관리자 안내</span></div>
-                    <p class="meta-text">관리자는 제출 없이 예시답안을 확인할 수 있습니다. 예시답안 이미지는 관리자 페이지의 Item 인라인에서 추가하세요.</p>
+                    <p class="meta-text">관리자는 제출 없이 예시답안을 확인할 수 있습니다.</p>
+                    <button type="button" class="hint-toggle" onclick="toggleExampleUpload()" style="margin-top: 14px;">+ 예시답안 직접 추가</button>
+                    <div id="example-upload-box" class="hint-box">
+                        <form method="POST" action="{% url 'olympiad_example_add' item.id %}" enctype="multipart/form-data" class="upload-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <div>
+                                <label for="example_image">예시답안 이미지</label>
+                                <input type="file" name="image" id="example_image" accept="image/*" required>
+                            </div>
+                            <div>
+                                <label for="example_caption">설명 (선택)</label>
+                                <input type="text" name="caption" id="example_caption">
+                            </div>
+                            <button type="submit" class="submit-btn">예시답안 등록</button>
+                        </form>
+                    </div>
                 </section>
                 {% else %}
                 <section class="olympiad-panel coach-panel">
@@ -415,6 +514,11 @@
         var hint = document.getElementById('olympiad-hint');
         if (!hint) return;
         hint.classList.toggle('is-open');
+    }
+    function toggleExampleUpload() {
+        var box = document.getElementById('example-upload-box');
+        if (!box) return;
+        box.classList.toggle('is-open');
     }
 </script>
 {% endblock %}

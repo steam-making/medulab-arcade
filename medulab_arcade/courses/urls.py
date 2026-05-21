@@ -16,6 +16,7 @@ urlpatterns = [
 
     # 관리자용 - 데이터 관리
     path('program/<int:program_id>/manage/', views.chapter_manage, name='chapter_manage'),
+    path('program/<int:program_id>/answer-template.zip/', views.download_answer_zip_template, name='download_answer_zip_template'),
     path('program/<int:program_id>/answer-zip/', views.chapter_manage, name='answer_zip_import'),
     path('program/<int:program_id>/answer-zip/<int:batch_id>/apply/', views.answer_zip_apply, name='answer_zip_apply'),
     path('download-template/', views.download_course_template, name='download_course_template'),
@@ -28,6 +29,7 @@ urlpatterns = [
     # 아이템 개별 관리
     path('chapter/<int:chapter_id>/item/add/', views.item_create, name='item_create'),
     path('item/<int:item_id>/edit/', views.item_edit, name='item_edit'),
+    path('item/<int:item_id>/olympiad-example/add/', views.olympiad_example_add, name='olympiad_example_add'),
     path('item/<int:item_id>/delete/', views.item_delete, name='item_delete'),
     
     # 학생용

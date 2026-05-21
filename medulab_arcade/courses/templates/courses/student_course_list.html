@@ -292,6 +292,8 @@
             {% for program_type in program_types %}
                 {% if program_type.name == "코딩" %}
                     <a href="{% url 'student_course_list' %}?program_type=python-coding" class="filter-button {% if selected_program_type == 'python-coding' %}active{% endif %}">파이썬코딩</a>
+                {% elif program_type.name == "대회 대비" %}
+                    {# "대회 대비"는 "대회 준비"로 통합 — 별도 버튼 미표시 #}
                 {% else %}
                     <a href="{% url 'student_course_list' %}?program_type={{ program_type.id }}" class="filter-button {% if selected_program_type == program_type.id|stringformat:'s' %}active{% endif %}">{{ program_type.name }}</a>
                 {% endif %}

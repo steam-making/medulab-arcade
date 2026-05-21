@@ -142,9 +142,13 @@
 
     <!-- answer.zip 업로드 -->
     <div class="card-dark">
-        <h3 style="margin: 0 0 16px;">answer.zip 미리보기 / 적용</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap;">
+            <h3 style="margin: 0;">answer.zip 미리보기 / 적용</h3>
+            <a href="{% url 'download_answer_zip_template' program.id %}" class="nav-link" style="font-size: 12px; background: rgba(0, 255, 180, 0.1); color: var(--accent-green);">📥 answer.zip 양식 다운로드</a>
+        </div>
         <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;">
-            ZIP의 최상위 폴더를 챕터로 해석합니다. 내부 파일은 정답 코드 아이템으로 미리보기 후 적용할 수 있습니다.<br>
+            올림피아드 과정은 다운로드한 ZIP의 <strong>챕터/문제 폴더</strong>에 예시답안 이미지를 넣고 다시 업로드하면 해당 문제의 예시답안으로 등록됩니다.<br>
+            일반 과정은 ZIP의 최상위 폴더를 챕터로 해석하고 내부 파일을 정답 코드 아이템으로 미리보기 후 적용합니다.<br>
             <strong>비파괴 방식:</strong> 기존 수동 챕터와 아이템은 삭제하지 않으며, answer.zip으로 생성한 동일 키 아이템만 업데이트합니다.
         </p>
 
@@ -164,6 +168,32 @@
 
         {% if answer_zip_preview %}
         <div style="margin-top: 28px;">
+            {% if answer_zip_preview.import_rule == "olympiad_answer_examples_by_chapter_item" %}
+            <h4 style="margin-bottom: 8px;">미리보기: 문제 {{ answer_zip_preview.item_count }}개 / 이미지 {{ answer_zip_preview.file_count }}개</h4>
+            {% for item in answer_zip_preview.items %}
+            <section class="preview-chapter">
+                <strong>{{ item.chapter_title }} · {{ item.item_title }}</strong>
+                <ul class="preview-items">
+                    {% for file in item.files %}
+                    <li>
+                        {{ forloop.counter }}. {{ file.filename }}
+                        <div class="code-path">{{ file.source_path }} · {{ file.size }} bytes</div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% endfor %}
+            {% if answer_zip_preview.unmatched_files %}
+            <section class="preview-chapter" style="border-color: rgba(255, 93, 108, 0.35);">
+                <strong style="color:#ff8a95;">매칭되지 않은 파일</strong>
+                <ul class="preview-items">
+                    {% for file in answer_zip_preview.unmatched_files %}
+                    <li>{{ file.source_path }} · {{ file.reason }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% endif %}
+            {% else %}
             <h4 style="margin-bottom: 8px;">미리보기: 챕터 {{ answer_zip_preview.chapter_count }}개 / 아이템 {{ answer_zip_preview.item_count }}개</h4>
             {% for chapter in answer_zip_preview.chapters %}
             <section class="preview-chapter">
@@ -178,6 +208,7 @@
                 </ul>
             </section>
             {% endfor %}
+            {% endif %}
 
             <div class="inline-actions">
                 <form method="POST" action="{% if answer_zip_batch %}{% url 'answer_zip_apply' program.id answer_zip_batch.id %}{% endif %}">
@@ -252,16 +283,43 @@
                         {% if ch.items.all %}
                         <ul class="item-list" data-chapter-id="{{ ch.id }}" style="margin-top: 12px; list-style: none; padding: 0; border-top: 1px solid rgba(255,255,255,0.05);">
                             {% for item in ch.items.all %}
-                            <li class="item-row" data-item-id="{{ item.id }}" data-item-number="{{ item.number }}" draggable="false" style="display:flex; align-items:center; gap:8px; padding:6px 0 6px 8px; border-bottom:1px solid rgba(255,255,255,0.03); font-size:13px; transition:background 0.15s; cursor:grab;">
-                                <div class="item-drag-handle" style="color:var(--text-muted); font-size:14px; cursor:grab; user-select:none; touch-action:none;">⠿</div>
-                                <input type="checkbox" class="item-checkbox" value="{{ item.id }}" data-chapter-id="{{ ch.id }}" onchange="updateBatchBar()" style="cursor:pointer;">
-                                <span style="color:var(--text-muted); font-size:11px; min-width:24px;">#{{ item.number }}</span>
-                                <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ item.title }}</span>
-                                <span style="font-size:11px; color:var(--text-muted); flex-shrink:0;">[{{ item.get_item_type_display }}]</span>
-                                <div style="display:flex; gap:6px; flex-shrink:0;">
-                                    <a href="{% url 'item_page' item.id %}" style="color:var(--accent-blue); font-size:11px;">보기</a>
-                                    <a href="{% url 'item_edit' item.id %}" style="color:var(--accent-green); font-size:11px;">수정</a>
+                            <li class="item-row" data-item-id="{{ item.id }}" data-item-number="{{ item.number }}" draggable="false" style="display:flex; flex-direction:column; gap:6px; padding:6px 0 6px 8px; border-bottom:1px solid rgba(255,255,255,0.03); font-size:13px; transition:background 0.15s; cursor:grab;">
+                                <div style="display:flex; align-items:center; gap:8px; width:100%;">
+                                    <div class="item-drag-handle" style="color:var(--text-muted); font-size:14px; cursor:grab; user-select:none; touch-action:none;">⠿</div>
+                                    <input type="checkbox" class="item-checkbox" value="{{ item.id }}" data-chapter-id="{{ ch.id }}" onchange="updateBatchBar()" style="cursor:pointer;">
+                                    <span style="color:var(--text-muted); font-size:11px; min-width:24px;">#{{ item.number }}</span>
+                                    <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ item.title }}</span>
+                                    <span style="font-size:11px; color:var(--text-muted); flex-shrink:0;">[{{ item.get_item_type_display }}]</span>
+                                    {% if item.item_type == 'olympiad' %}
+                                    <span style="font-size:11px; color:var(--text-muted); flex-shrink:0;">예시 {{ item.olympiad_examples.count }}개</span>
+                                    {% endif %}
+                                    <div style="display:flex; gap:6px; flex-shrink:0; align-items:center;">
+                                        <a href="{% url 'item_page' item.id %}" style="color:var(--accent-blue); font-size:11px;">보기</a>
+                                        <a href="{% url 'item_edit' item.id %}" style="color:var(--accent-green); font-size:11px;">수정</a>
+                                        {% if item.item_type == 'olympiad' %}
+                                        <button type="button" onclick="toggleOlympiadExampleForm({{ item.id }})" style="color:var(--accent-blue); font-size:11px; background:none; border:none; cursor:pointer; padding:0;">+예시답안</button>
+                                        {% endif %}
+                                    </div>
                                 </div>
+                                {% if item.item_type == 'olympiad' %}
+                                <div id="olympiad-example-form-{{ item.id }}" style="display:none; margin:4px 8px 6px 54px; padding:10px; border:1px solid var(--border); border-radius:8px; background:rgba(0,0,0,0.18); cursor:auto;">
+                                    {% if item.olympiad_examples.all %}
+                                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">
+                                        등록된 예시답안:
+                                        {% for example in item.olympiad_examples.all %}
+                                        <a href="{{ example.image.url }}" target="_blank" rel="noopener" style="color:var(--accent-green); margin-left:6px;">이미지{{ forloop.counter }}</a>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <form method="POST" action="{% url 'olympiad_example_add' item.id %}" enctype="multipart/form-data" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;" onclick="event.stopPropagation();">
+                                        {% csrf_token %}
+                                        <input type="file" name="image" accept="image/*" required style="font-size:11px; color:var(--text-secondary);">
+                                        <input type="text" name="caption" placeholder="설명(선택)" style="font-size:11px; padding:5px 8px; min-width:160px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:#fff; border-radius:6px;">
+                                        <button type="submit" style="font-size:11px; padding:5px 12px; background:var(--accent-blue); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:700;">이미지 등록</button>
+                                        <button type="button" onclick="toggleOlympiadExampleForm({{ item.id }})" style="font-size:11px; padding:5px 12px; background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:6px; cursor:pointer;">닫기</button>
+                                    </form>
+                                </div>
+                                {% endif %}
                             </li>
                             {% endfor %}
                         </ul>
@@ -290,6 +348,12 @@
     function updateAnswerZipName(input) {
         var name = input.files[0] ? input.files[0].name : "answer.zip 파일을 선택하세요";
         document.getElementById('answer-zip-name').innerText = name;
+    }
+
+    function toggleOlympiadExampleForm(itemId) {
+        var form = document.getElementById('olympiad-example-form-' + itemId);
+        if (!form) return;
+        form.style.display = form.style.display === 'none' || !form.style.display ? 'block' : 'none';
     }
 
     var PROGRAM_ID = {{ program.id }};

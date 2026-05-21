@@ -412,25 +412,6 @@
                         {% endif %}
                     </div>
                 </div>
-                <div class="achievement-card" style="flex: 1;">
-                    <div class="achievement-label">COURSE BADGES</div>
-                    <div class="recent-badge-list">
-                        {% for item in course_badges_with_status %}
-                        <div class="badge-pill {% if item.is_earned %}is-earned{% else %}is-locked{% endif %}">
-                            <div class="achievement-name" style="font-size: 14px; margin-bottom: 2px; {% if item.is_earned %}color: {{ item.color }}; text-shadow: 0 0 8px {{ item.color }}40;{% endif %}">{{ item.icon }} {{ item.name }}</div>
-                            <div class="recent-badge-date">
-                                {% if item.is_earned %}
-                                    {{ item.awarded_at|date:"m.d" }} 획득
-                                {% else %}
-                                    🔒 잠김
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% empty %}
-                        <div class="achievement-state">이 코스에 등록된 배지가 없습니다.</div>
-                        {% endfor %}
-                    </div>
-                </div>
             </div>
         </div>
     </div>

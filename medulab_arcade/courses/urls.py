@@ -45,6 +45,11 @@ urlpatterns = [
     path('chapter/<int:chapter_id>/', views.chapter_detail, name='chapter_detail'),
     path('item/<int:item_id>/', views.item_page, name='item_page'),
     path('item/<int:item_id>/olympiad/submit/', views.submit_olympiad_answer, name='submit_olympiad_answer'),
+    path('item/<int:item_id>/sub/<int:sq_number>/', views.sub_question_page, name='sub_question_page'),
+    path('olympiad/sub/<int:sub_question_id>/submit/', views.submit_sub_answer, name='submit_sub_answer'),
+    path('olympiad/sub/<int:sub_question_id>/qr-token/', views.ensure_sub_answer_token, name='ensure_sub_answer_token'),
+    path('olympiad/qr/<int:sub_answer_id>.png', views.olympiad_qr_code, name='olympiad_qr_code'),
+    path('olympiad/upload/<str:token>/', views.olympiad_qr_upload_page, name='olympiad_qr_upload_page'),
     
     # 숙제 관리 (추가)
     path('homework/manage/', views.homework_admin_list, name='homework_admin_list'),

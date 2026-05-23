@@ -4,6 +4,8 @@ import os
 import sys
 import re
 import hashlib
+import secrets
+import qrcode
 from html import unescape
 from collections import Counter
 import tempfile
@@ -44,6 +46,8 @@ from .models import (
     HomeworkSubmission,
     OlympiadAnswerSubmission,
     OlympiadAnswerExample,
+    OlympiadSubQuestion,
+    OlympiadSubAnswer,
 )
 from .forms import (
     AnswerZipImportForm,
@@ -1280,19 +1284,52 @@ def course_home(request, program_id):
 # --- (5) 챕터 상세 (항목 목록) ---
 def chapter_detail(request, chapter_id):
     chapter = get_object_or_404(Chapter, id=chapter_id)
-    items = Item.objects.filter(chapter=chapter).order_by("number")
-    
-    # 완료 정보 로드하여 item 객체에 주입
+    items = list(Item.objects.filter(chapter=chapter).order_by("number"))
+
     if request.user.is_authenticated:
         progress_map = {p.item_id: p.completed for p in UserProgress.objects.filter(user=request.user, item__in=items)}
     else:
         progress_map = {}
     for item in items:
         item.is_completed = progress_map.get(item.id, False)
-        
+
+    # olympiad 아이템은 하위문제별 카드로 확장
+    sub_answer_map = {}
+    olympiad_ids = [it.id for it in items if it.item_type == "olympiad"]
+    if olympiad_ids:
+        sqs_all = list(OlympiadSubQuestion.objects.filter(item_id__in=olympiad_ids).order_by("item__number", "number"))
+        if request.user.is_authenticated and sqs_all:
+            sq_ids = [sq.id for sq in sqs_all]
+            sub_answer_map = {
+                sa.sub_question_id: sa
+                for sa in OlympiadSubAnswer.objects.filter(sub_question_id__in=sq_ids, student=request.user)
+            }
+
+    # 카드 목록 구성 (olympiad → 하위문제 카드, 나머지 → 원래 아이템)
+    card_list = []
+    for item in items:
+        if item.item_type == "olympiad":
+            sqs = [sq for sq in sqs_all if sq.item_id == item.id] if olympiad_ids else []
+            if sqs:
+                for sq in sqs:
+                    my_ans = sub_answer_map.get(sq.id)
+                    card_list.append({
+                        "type": "sub_question",
+                        "item": item,
+                        "sq": sq,
+                        "is_completed": bool(my_ans and (my_ans.text_answer or my_ans.photo)),
+                        "item_id": item.id,
+                        "sq_number": sq.number,
+                    })
+            else:
+                card_list.append({"type": "item", "item": item, "is_completed": item.is_completed})
+        else:
+            card_list.append({"type": "item", "item": item, "is_completed": item.is_completed})
+
     return render(request, "learning_program/chapter_detail.html", {
         "chapter": chapter,
         "items": items,
+        "card_list": card_list,
         "program": chapter.program
     })
 
@@ -1331,6 +1368,23 @@ def item_page(request, item_id):
 
     if is_olympiad and (olympiad_submission or (request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser))):
         olympiad_examples = item.olympiad_examples.all()
+
+    # 하위 문제 및 학생 답안 로드 (dict 리스트로 전달 — 언더스코어 속성 불가)
+    sub_questions = []
+    if is_olympiad:
+        sqs = list(item.sub_questions.all())
+        my_answers = {}
+        if sqs and request.user.is_authenticated:
+            my_answers = {
+                sa.sub_question_id: sa
+                for sa in OlympiadSubAnswer.objects.filter(
+                    sub_question__item=item, student=request.user
+                )
+            }
+        sub_questions = [
+            {"sq": sq, "my_answer": my_answers.get(sq.id)}
+            for sq in sqs
+        ]
 
     # 템플릿 결정 (과정 이름이나 유형에 따라 분기 가능)
     template_name = "learning_program/item_page.html"
@@ -1387,6 +1441,7 @@ def item_page(request, item_id):
         "olympiad_submission_form": olympiad_submission_form,
         "olympiad_examples": olympiad_examples,
         "olympiad_feedback_sections": olympiad_feedback_sections,
+        "sub_questions": sub_questions,
     })
 
 
@@ -1436,6 +1491,168 @@ def submit_olympiad_answer(request, item_id):
         messages.error(request, "답안 제출 내용을 다시 확인해 주세요.")
 
     return redirect("item_page", item_id=item.id)
+
+
+def sub_question_page(request, item_id, sq_number):
+    """하위문제 전용 페이지 — 문제 하나만 표시, 이전/다음 네비게이션"""
+    item = get_object_or_404(Item, id=item_id, item_type="olympiad")
+    sq = get_object_or_404(OlympiadSubQuestion, item=item, number=sq_number)
+
+    all_sqs = list(item.sub_questions.order_by("number"))
+    idx = next((i for i, s in enumerate(all_sqs) if s.id == sq.id), 0)
+    prev_sq = all_sqs[idx - 1] if idx > 0 else None
+    next_sq = all_sqs[idx + 1] if idx < len(all_sqs) - 1 else None
+
+    my_answer = None
+    if request.user.is_authenticated and not (request.user.is_staff or request.user.is_superuser):
+        my_answer = OlympiadSubAnswer.objects.filter(sub_question=sq, student=request.user).first()
+        if my_answer and not my_answer.upload_token:
+            my_answer.upload_token = secrets.token_urlsafe(32)
+            my_answer.save(update_fields=["upload_token"])
+
+    # explain_html에서 하위문제 <p> 태그 제거 — 서문(공통 안내)만 남김
+    import re as _re
+    intro_html = _re.sub(
+        r'<p>\s*\d+-\d+\..*?</p>', '', item.explain_html or '', flags=_re.DOTALL
+    ).strip()
+
+    return render(request, "learning_program/sub_question_page.html", {
+        "item": item,
+        "sq": sq,
+        "prev_sq": prev_sq,
+        "next_sq": next_sq,
+        "all_sqs": all_sqs,
+        "sq_index": idx + 1,
+        "sq_total": len(all_sqs),
+        "my_answer": my_answer,
+        "intro_html": intro_html,
+        "program": item.chapter.program,
+    })
+
+
+@login_required
+@require_full_member
+def submit_sub_answer(request, sub_question_id):
+    """하위 문제 텍스트 서술형 + 사진 제출"""
+    sq = get_object_or_404(OlympiadSubQuestion, id=sub_question_id)
+    item = sq.item
+    program = item.chapter.program
+
+    if request.method != "POST":
+        return redirect("item_page", item_id=item.id)
+
+    if request.user.is_staff or request.user.is_superuser:
+        messages.warning(request, "관리자는 직접 답안을 제출할 수 없습니다.")
+        return redirect("item_page", item_id=item.id)
+
+    if not LearningEnrollment.objects.filter(user=request.user, program=program).exists():
+        messages.warning(request, "수강 중인 과정의 답안만 제출할 수 있습니다.")
+        return redirect("item_page", item_id=item.id)
+
+    answer, _ = OlympiadSubAnswer.objects.get_or_create(
+        sub_question=sq, student=request.user,
+        defaults={"upload_token": secrets.token_urlsafe(32)}
+    )
+    if not answer.upload_token:
+        answer.upload_token = secrets.token_urlsafe(32)
+
+    text = request.POST.get("text_answer", "").strip()
+    photo = request.FILES.get("photo")
+
+    answer.text_answer = text
+    if photo:
+        answer.photo = photo
+        answer.ai_score = None  # 사진 바뀌면 재분석
+        answer.ai_feedback = ""
+    answer.save()
+
+    # AI 분석 (API 키 있을 때만)
+    from .ai_service import run_ai_analysis
+    if getattr(settings, 'ANTHROPIC_API_KEY', ''):
+        try:
+            run_ai_analysis(answer)
+        except Exception:
+            pass  # AI 실패해도 저장은 완료
+
+    # 모든 하위문제에 답안이 있으면 아이템 완료로 표시
+    total_sq = item.sub_questions.count()
+    answered = OlympiadSubAnswer.objects.filter(
+        sub_question__item=item, student=request.user
+    ).exclude(text_answer="", photo="").count()
+    if total_sq > 0 and answered >= total_sq:
+        progress, _ = UserProgress.objects.get_or_create(user=request.user, item=item)
+        if not progress.completed:
+            progress.code = "OLYMPIAD_SUBMITTED"
+            progress.completed = True
+            progress.last_output = "하위 문제 답안 제출 완료"
+            progress.save(update_fields=["code", "completed", "last_output", "updated_at"])
+
+    messages.success(request, f"{item.number}-{sq.number} 답안이 저장되었습니다.")
+    return redirect("sub_question_page", item_id=item.id, sq_number=sq.number)
+
+
+def olympiad_qr_upload_page(request, token):
+    """QR 코드 스캔 후 접속하는 모바일 사진 업로드 페이지"""
+    answer = get_object_or_404(OlympiadSubAnswer, upload_token=token)
+    sq = answer.sub_question
+    item = sq.item
+
+    if request.method == "POST":
+        photo = request.FILES.get("photo")
+        if photo:
+            answer.photo = photo
+            answer.ai_score = None
+            answer.ai_feedback = ""
+            answer.save(update_fields=["photo", "ai_score", "ai_feedback", "updated_at"])
+            from .ai_service import run_ai_analysis
+            if getattr(settings, 'ANTHROPIC_API_KEY', ''):
+                try:
+                    run_ai_analysis(answer)
+                except Exception:
+                    pass
+            return render(request, "courses/olympiad_qr_upload_done.html", {"sq": sq, "item": item})
+        messages.error(request, "사진을 선택해 주세요.")
+
+    return render(request, "courses/olympiad_qr_upload.html", {"answer": answer, "sq": sq, "item": item})
+
+
+def olympiad_qr_code(request, sub_answer_id):
+    """하위 문제 답안의 QR 코드 이미지(PNG) 반환"""
+    if not request.user.is_authenticated:
+        from django.contrib.auth.views import redirect_to_login
+        return redirect_to_login(request.get_full_path())
+
+    answer = get_object_or_404(OlympiadSubAnswer, id=sub_answer_id, student=request.user)
+    if not answer.upload_token:
+        answer.upload_token = secrets.token_urlsafe(32)
+        answer.save(update_fields=["upload_token"])
+
+    upload_url = request.build_absolute_uri(
+        reverse("olympiad_qr_upload_page", kwargs={"token": answer.upload_token})
+    )
+    img = qrcode.make(upload_url)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return HttpResponse(buf.getvalue(), content_type="image/png")
+
+
+@login_required
+def ensure_sub_answer_token(request, sub_question_id):
+    """AJAX: 하위 문제 업로드 토큰 생성 후 QR 이미지 URL 반환"""
+    sq = get_object_or_404(OlympiadSubQuestion, id=sub_question_id)
+    if request.user.is_staff or request.user.is_superuser:
+        return JsonResponse({"error": "관리자는 사용 불가"}, status=403)
+
+    answer, _ = OlympiadSubAnswer.objects.get_or_create(
+        sub_question=sq, student=request.user,
+        defaults={"upload_token": secrets.token_urlsafe(32)}
+    )
+    if not answer.upload_token:
+        answer.upload_token = secrets.token_urlsafe(32)
+        answer.save(update_fields=["upload_token"])
+
+    qr_url = reverse("olympiad_qr_code", kwargs={"sub_answer_id": answer.id})
+    return JsonResponse({"qr_url": qr_url, "answer_id": answer.id})
 
 
 @login_required

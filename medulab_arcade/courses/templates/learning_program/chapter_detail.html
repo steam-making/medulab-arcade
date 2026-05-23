@@ -103,18 +103,28 @@
     </div>
 
     <div class="item-grid">
-        {% for item in items %}
-        <a href="{% url 'item_page' item.id %}" class="item-card">
-            <div class="item-badge {{ item.item_type }}">
-                {{ item.get_item_type_display }}
-            </div>
-            <div class="item-title">{{ item.title }}</div>
-            <div class="item-key">{{ item.key }}</div>
-            
-            <div class="status-icon {% if item.is_completed %}completed{% endif %}">
-                {% if item.is_completed %}✓{% else %}?{% endif %}
-            </div>
-        </a>
+        {% for card in card_list %}
+            {% if card.type == "sub_question" %}
+            <a href="{% url 'sub_question_page' card.item_id card.sq_number %}" class="item-card">
+                <div class="item-badge olympiad">사고력 올림피아드</div>
+                <div class="item-title">문제 {{ card.item.number }}-{{ card.sq.number }}</div>
+                <div class="item-key" style="margin-top:6px;line-height:1.5;">{{ card.sq.question_text|truncatechars:60 }}</div>
+                <div class="status-icon {% if card.is_completed %}completed{% endif %}">
+                    {% if card.is_completed %}✓{% else %}?{% endif %}
+                </div>
+            </a>
+            {% else %}
+            <a href="{% url 'item_page' card.item.id %}" class="item-card">
+                <div class="item-badge {{ card.item.item_type }}">
+                    {{ card.item.get_item_type_display }}
+                </div>
+                <div class="item-title">{{ card.item.title }}</div>
+                <div class="item-key">{{ card.item.key }}</div>
+                <div class="status-icon {% if card.is_completed %}completed{% endif %}">
+                    {% if card.is_completed %}✓{% else %}?{% endif %}
+                </div>
+            </a>
+            {% endif %}
         {% empty %}
         <div class="empty">섹션에 포함된 내용이 없습니다.</div>
         {% endfor %}

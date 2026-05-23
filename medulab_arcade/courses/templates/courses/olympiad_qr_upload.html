@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>답안 사진 업로드 - MEDULAB</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0d1a;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+  }
+  .card {
+    width: 100%;
+    max-width: 440px;
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(0,255,180,0.22);
+    border-radius: 24px;
+    padding: 32px 28px;
+  }
+  .logo { color: #00ffb4; font-weight: 900; font-size: 18px; margin-bottom: 6px; }
+  .title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .sub { color: #94a3b8; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+  .q-box {
+    background: rgba(0,255,180,0.06);
+    border: 1px solid rgba(0,255,180,0.18);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 22px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .q-label { color: #00ffb4; font-weight: 800; font-size: 12px; margin-bottom: 6px; }
+  label.file-label {
+    display: block;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  input[type="file"] {
+    display: block;
+    width: 100%;
+    border: 1.5px dashed rgba(0,255,180,0.35);
+    border-radius: 14px;
+    padding: 28px 16px;
+    background: rgba(0,255,180,0.04);
+    color: #94a3b8;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  .preview { width: 100%; border-radius: 14px; margin-bottom: 18px; display: none; }
+  .btn {
+    width: 100%;
+    padding: 15px;
+    border: 0;
+    border-radius: 14px;
+    background: #00ffb4;
+    color: #0d0d1a;
+    font-size: 16px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .btn:active { opacity: 0.85; }
+  .error { color: #f87171; font-size: 13px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">MEDULAB 올림피아드</div>
+  <div class="title">손글씨 답안 사진 업로드</div>
+  <div class="sub">종이에 작성한 답안을 사진으로 찍어 업로드하세요.</div>
+
+  <div class="q-box">
+    <div class="q-label">문제 {{ item.number }}-{{ sq.number }}</div>
+    {{ sq.question_text }}
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}<div class="error">{{ msg }}</div>{% endfor %}
+  {% endif %}
+
+  <form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label class="file-label" for="photo-input">📷 사진 선택 (카메라 촬영 또는 갤러리)</label>
+    <input type="file" id="photo-input" name="photo" accept="image/*" capture="environment" required onchange="previewImg(this)">
+    <img id="preview" class="preview" alt="미리보기">
+    <button type="submit" class="btn">업로드 완료</button>
+  </form>
+</div>
+<script>
+function previewImg(input) {
+  var img = document.getElementById('preview');
+  if (input.files && input.files[0]) {
+    img.src = URL.createObjectURL(input.files[0]);
+    img.style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>

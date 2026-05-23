@@ -150,6 +150,58 @@ class OlympiadAnswerSubmission(models.Model):
     def __str__(self):
         return f"{self.item} - {self.student}"
 
+class OlympiadSubQuestion(models.Model):
+    """올림피아드 아이템의 하위 문제 (1-1, 1-2 …)"""
+    THINKING_TYPES = [
+        ("정보이해사고력", "정보이해사고력"),
+        ("창의적문제해결사고력", "창의적문제해결사고력"),
+        ("지식기반사고력", "지식기반사고력"),
+        ("통합맥락적사고력", "통합맥락적사고력"),
+        ("협동적사고력", "협동적사고력"),
+        ("윤리적사고력", "윤리적사고력"),
+        ("표현력", "표현력"),
+    ]
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="sub_questions")
+    number = models.PositiveSmallIntegerField("하위 문제 번호")  # 1→1-1, 2→1-2 …
+    question_text = models.TextField("문제 내용")
+    thinking_type = models.CharField("사고력 유형", max_length=30, choices=THINKING_TYPES, blank=True)
+    hint = models.TextField("힌트", blank=True)
+    example_answer = models.TextField("예시 답안", blank=True)
+
+    class Meta:
+        ordering = ["number"]
+        unique_together = ("item", "number")
+        verbose_name = "올림피아드 하위 문제"
+        verbose_name_plural = "올림피아드 하위 문제"
+
+    def __str__(self):
+        return f"{self.item.title} - {self.item.number}-{self.number}"
+
+
+class OlympiadSubAnswer(models.Model):
+    """학생의 하위 문제별 답안 (텍스트 서술 + 사진)"""
+    sub_question = models.ForeignKey(OlympiadSubQuestion, on_delete=models.CASCADE, related_name="sub_answers")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="olympiad_sub_answers")
+    text_answer = models.TextField("서술형 답안", blank=True)
+    ocr_text = models.TextField("OCR 인식 텍스트", blank=True)
+    photo = models.ImageField("손글씨 사진", upload_to="olympiad/sub_answers/%Y/%m/", blank=True, null=True)
+    upload_token = models.CharField("QR 업로드 토큰", max_length=64, blank=True, db_index=True)
+    ai_score = models.SmallIntegerField("AI 평가점수", null=True, blank=True)
+    ai_feedback = models.TextField("AI 피드백", blank=True)
+    ai_analyzed_at = models.DateTimeField("AI 분석일", null=True, blank=True)
+    submitted_at = models.DateTimeField("최초 제출일", auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sub_question__number"]
+        unique_together = ("sub_question", "student")
+        verbose_name = "올림피아드 하위 문제 답안"
+        verbose_name_plural = "올림피아드 하위 문제 답안"
+
+    def __str__(self):
+        return f"{self.sub_question} - {self.student}"
+
+
 class LearningEnrollment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="learning_enrollments")
     program = models.ForeignKey(LearningProgram, on_delete=models.CASCADE, related_name="enrollments")

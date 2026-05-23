@@ -1,0 +1,513 @@
+{% extends "arcade/base.html" %}
+{% block title %}문제 {{ item.number }}-{{ sq.number }} - MEDULAB{% endblock %}
+
+{% block extra_css %}
+<style>
+.sq-shell {
+    max-width: 860px;
+    margin: 36px auto 64px;
+    padding: 0 20px;
+    animation: fadeSlideIn 0.3s ease;
+}
+/* 히어로 카드 */
+.sq-hero {
+    border: 1px solid rgba(0,180,255,0.22);
+    border-radius: 28px;
+    background:
+        radial-gradient(circle at top left, rgba(0,180,255,0.12), transparent 36%),
+        var(--bg-card);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.32);
+    overflow: hidden;
+}
+/* 상단 */
+.sq-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.sq-back { color: var(--text-muted); text-decoration: none; font-size: 13px; }
+.sq-back:hover { color: #fff; }
+.sq-progress-label { color: var(--text-muted); font-size: 13px; }
+.sq-progress-bar {
+    height: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 0 28px;
+}
+.sq-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--accent-green), #7dd3fc);
+}
+/* 문제 번호 뱃지 */
+.sq-num-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 24px 28px 0;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(0,180,255,0.1);
+    border: 1px solid rgba(0,180,255,0.28);
+    color: #7dd3fc;
+    font-size: 13px;
+    font-weight: 900;
+}
+/* 공통 안내 */
+.sq-intro {
+    margin: 16px 28px 0;
+    padding: 16px 20px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.8;
+}
+.sq-intro h2, .sq-intro h3 { color: #fff; margin: 14px 0 8px; }
+.sq-intro p { margin: 0 0 8px; }
+/* 문제 본문 */
+.sq-question-box {
+    margin: 20px 28px 0;
+    padding: 22px 24px;
+    border-radius: 20px;
+    background: rgba(0,180,255,0.06);
+    border: 1px solid rgba(0,180,255,0.22);
+}
+.sq-question-num {
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+}
+.sq-question-text {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.6;
+}
+/* 힌트/예시답안 */
+.toggle-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 28px 0; }
+.toggle-btn {
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,180,255,0.3);
+    background: rgba(0,180,255,0.09);
+    color: #7dd3fc;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+}
+.toggle-btn:hover { transform: translateY(-1px); background: rgba(0,180,255,0.16); }
+.toggle-btn.example-btn {
+    border-color: rgba(168,85,247,0.35);
+    background: rgba(168,85,247,0.09);
+    color: #c084fc;
+}
+.toggle-btn.example-btn:hover { background: rgba(168,85,247,0.18); }
+.collapsible {
+    display: none;
+    margin: 12px 28px 0;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: rgba(0,0,0,0.22);
+    border: 1px dashed rgba(0,180,255,0.25);
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+}
+.collapsible.example { border-color: rgba(168,85,247,0.28); }
+.collapsible.is-open { display: block; }
+/* 답안 폼 영역 */
+.sq-form-area { padding: 20px 28px 28px; }
+.form-label {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    display: block;
+}
+.answer-textarea {
+    width: 100%;
+    min-height: 120px;
+    background: rgba(0,0,0,0.28);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    color: #fff;
+    padding: 13px 15px;
+    font-size: 14px;
+    line-height: 1.7;
+    resize: vertical;
+    box-sizing: border-box;
+    margin-bottom: 18px;
+}
+.answer-textarea:focus { outline: none; border-color: rgba(0,180,255,0.45); }
+/* 사진 업로드 */
+.photo-section { margin-bottom: 20px; }
+.photo-row { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.photo-drop {
+    flex: 1;
+    min-width: 180px;
+    border: 1.5px dashed rgba(0,255,180,0.28);
+    border-radius: 14px;
+    padding: 18px;
+    background: rgba(0,255,180,0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.photo-drop input[type="file"] { color: var(--text-secondary); font-size: 13px; cursor: pointer; }
+.photo-preview { max-width: 100%; border-radius: 10px; display: none; margin-top: 8px; }
+/* 제출된 사진 */
+.submitted-photo { max-width: 240px; border-radius: 12px; border: 1px solid var(--border); display: block; margin-top: 8px; }
+.submitted-text {
+    padding: 13px 15px;
+    border-radius: 12px;
+    background: rgba(0,255,180,0.05);
+    border: 1px solid rgba(0,255,180,0.15);
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    margin-bottom: 14px;
+}
+.status-chip {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    background: rgba(0,255,180,0.12);
+    color: var(--accent-green);
+    border: 1px solid rgba(0,255,180,0.22);
+    margin-left: 8px;
+}
+/* QR */
+.qr-area { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.qr-btn {
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(0,255,180,0.3);
+    background: rgba(0,255,180,0.07);
+    color: var(--accent-green);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s;
+    white-space: nowrap;
+}
+.qr-btn:hover { transform: translateY(-1px); }
+.qr-box { display: none; text-align: center; }
+.qr-box img { width: 140px; height: 140px; border-radius: 12px; border: 1px solid var(--border); }
+.qr-caption { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+/* 저장 버튼 */
+.save-btn {
+    width: 100%;
+    padding: 14px;
+    border: 0;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent-green), #7dd3fc);
+    color: #0d0d1a;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,255,180,0.2);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.save-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,255,180,0.32); }
+/* 이전/다음 네비게이션 */
+.sq-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 28px 24px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+.btn-nav {
+    padding: 11px 20px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    color: #fff;
+    background: rgba(255,255,255,0.04);
+    transition: background 0.15s;
+}
+.btn-nav:hover { background: rgba(255,255,255,0.08); }
+.btn-nav.primary { background: var(--accent-green); color: #0d0d1a; border-color: transparent; }
+.btn-nav.primary:hover { filter: brightness(1.1); }
+.meta-text { color: var(--text-muted); font-size: 12px; }
+/* 하위문제 목록 사이드 인덱스 */
+.sq-index-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 12px 28px 0;
+}
+.sq-index-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.03);
+    transition: all 0.15s;
+}
+.sq-index-dot:hover { border-color: rgba(0,180,255,0.4); color: #7dd3fc; }
+.sq-index-dot.active { background: rgba(0,180,255,0.18); border-color: rgba(0,180,255,0.45); color: #7dd3fc; }
+.sq-index-dot.done { background: rgba(0,255,180,0.1); border-color: rgba(0,255,180,0.3); color: var(--accent-green); }
+/* AI 피드백 */
+.ai-feedback-wrap {
+    margin-top: 16px;
+    padding: 18px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,255,180,0.22);
+    background: rgba(0,255,180,0.05);
+}
+.ai-feedback-header { color: var(--accent-green); font-size: 13px; font-weight: 900; margin-bottom: 10px; }
+.ai-score-row { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.ai-score-num { color: var(--accent-green); font-size: 26px; font-weight: 900; min-width: 60px; }
+.ai-score-bar { flex: 1; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.ai-score-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent-green), #7dd3fc); }
+.ai-section { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.07); }
+.ai-section.improvements { border-color: rgba(251,191,36,0.25); background: rgba(251,191,36,0.06); }
+.ai-section-title { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+.ai-section.improvements .ai-section-title { color: #fde68a; }
+.ai-section-body { color: var(--text-secondary); font-size: 13px; line-height: 1.8; padding-left: 16px; }
+.ai-section-body li { margin-bottom: 4px; }
+.ai-analyzing-note { margin-top: 12px; color: var(--text-muted); font-size: 13px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px dashed var(--border); }
+@media (max-width: 640px) {
+    .sq-topbar, .sq-form-area, .sq-footer { padding-left: 18px; padding-right: 18px; }
+    .sq-num-badge, .sq-intro, .sq-question-box, .toggle-row, .collapsible, .sq-index-strip { margin-left: 18px; margin-right: 18px; }
+    .sq-question-text { font-size: 16px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="sq-shell">
+<section class="sq-hero">
+
+    {# 상단 바 #}
+    <div class="sq-topbar">
+        <a href="{% url 'chapter_detail' item.chapter.id %}" class="sq-back">← 목록으로 돌아가기</a>
+        <span class="sq-progress-label">{{ sq_index }} / {{ sq_total }} 번째 문제</span>
+    </div>
+    <div class="sq-progress-bar">
+        <div class="sq-progress-fill" style="width:{{ sq_index|floatformat:0 }}00%;width:calc({{ sq_index }} / {{ sq_total }} * 100%);"></div>
+    </div>
+
+    {# 하위문제 인덱스 (점프 네비) #}
+    <div class="sq-index-strip">
+        {% for s in all_sqs %}
+        <a href="{% url 'sub_question_page' item.id s.number %}"
+           class="sq-index-dot {% if s.id == sq.id %}active{% endif %}">
+            {{ item.number }}-{{ s.number }}
+        </a>
+        {% endfor %}
+    </div>
+
+    {# 문제 번호 뱃지 #}
+    <div class="sq-num-badge">✍️ 문제 {{ item.number }}-{{ sq.number }}</div>
+
+    {# 공통 문제 안내 (서문) #}
+    {% if intro_html %}
+    <div class="sq-intro">{{ intro_html|safe }}</div>
+    {% endif %}
+
+    {# 이번 하위문제 #}
+    <div class="sq-question-box">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+            <div class="sq-question-num" style="margin-bottom:0;">문제 {{ item.number }}-{{ sq.number }}</div>
+            {% if sq.thinking_type %}
+            <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.35);color:#c084fc;">{{ sq.thinking_type }}</span>
+            {% endif %}
+        </div>
+        <div class="sq-question-text">{{ sq.question_text }}</div>
+    </div>
+
+    {# 힌트 / 예시답안 토글 #}
+    <div class="toggle-row">
+        {% if sq.hint %}
+        <button type="button" class="toggle-btn" onclick="toggleEl('hint-box')">💡 힌트 보기</button>
+        {% endif %}
+        {% if sq.example_answer %}
+        <button type="button" class="toggle-btn example-btn" onclick="toggleEl('example-box')">⭐ 예시 답안 보기</button>
+        {% endif %}
+    </div>
+    {% if sq.hint %}
+    <div id="hint-box" class="collapsible">{{ sq.hint }}</div>
+    {% endif %}
+    {% if sq.example_answer %}
+    <div id="example-box" class="collapsible example">{{ sq.example_answer }}</div>
+    {% endif %}
+
+    {# 답안 폼 #}
+    <div class="sq-form-area">
+
+        {# 이미 제출된 내용 표시 #}
+        {% if my_answer %}
+            {% if my_answer.text_answer %}
+            <div class="form-label">내 서술형 답안 <span class="status-chip">✓ 저장됨</span></div>
+            <div class="submitted-text">{{ my_answer.text_answer }}</div>
+            {% endif %}
+            {% if my_answer.ocr_text and my_answer.ocr_text != my_answer.text_answer %}
+            <div class="form-label" style="margin-top:6px;">📷 OCR 인식 결과</div>
+            <div class="submitted-text" style="border-color:rgba(125,211,252,0.2);background:rgba(14,165,233,0.05);font-size:13px;">{{ my_answer.ocr_text }}</div>
+            {% endif %}
+            {% if my_answer.photo %}
+            <div class="form-label">제출한 손글씨 사진</div>
+            <a href="{{ my_answer.photo.url }}" target="_blank" rel="noopener">
+                <img src="{{ my_answer.photo.url }}" class="submitted-photo" alt="제출한 답안 사진">
+            </a>
+            <div class="meta-text" style="margin:6px 0 14px;">다시 제출하면 덮어씌워집니다.</div>
+            {% endif %}
+
+            {# AI 피드백 #}
+            {% if my_answer.ai_feedback %}
+            <div class="ai-feedback-wrap" id="ai-feedback-section">
+                {% with fb=my_answer.ai_feedback %}
+                <div class="ai-feedback-header">🤖 AI 평가 결과</div>
+                <div class="ai-score-row">
+                    <span class="ai-score-num">{{ my_answer.ai_score }}점</span>
+                    <div class="ai-score-bar"><div class="ai-score-fill" style="width:{{ my_answer.ai_score }}%;"></div></div>
+                </div>
+                <div id="ai-feedback-detail" style="display:none;">
+                    <div class="ai-section strengths"><div class="ai-section-title">✅ 잘한 점</div><div class="ai-section-body" id="ai-strengths"></div></div>
+                    <div class="ai-section improvements"><div class="ai-section-title">🔥 보완할 점</div><div class="ai-section-body" id="ai-improvements"></div></div>
+                    <div class="ai-section summary"><div class="ai-section-title">💬 총평</div><div class="ai-section-body" id="ai-summary"></div></div>
+                </div>
+                <button type="button" class="toggle-btn" style="margin-top:10px;width:100%;" onclick="toggleAIDetail()">상세 보기 / 숨기기</button>
+                <script>
+                (function(){
+                    try {
+                        var fb = {{ my_answer.ai_feedback|safe }};
+                        var s = fb.strengths || [];
+                        var im = fb.improvements || [];
+                        document.getElementById('ai-strengths').innerHTML = s.map(function(x){return '<li>'+x+'</li>';}).join('');
+                        document.getElementById('ai-improvements').innerHTML = im.map(function(x){return '<li>'+x+'</li>';}).join('');
+                        document.getElementById('ai-summary').textContent = fb.summary || '';
+                    } catch(e) {}
+                })();
+                function toggleAIDetail(){
+                    var d = document.getElementById('ai-feedback-detail');
+                    d.style.display = d.style.display === 'block' ? 'none' : 'block';
+                }
+                </script>
+                {% endwith %}
+            </div>
+            {% elif my_answer.text_answer or my_answer.photo %}
+            <div class="ai-analyzing-note">⏳ AI가 답안을 분석 중입니다…</div>
+            {% endif %}
+        {% endif %}
+
+        {% if user.is_authenticated and not user.is_staff %}
+        <form method="POST" action="{% url 'submit_sub_answer' sq.id %}" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <label class="form-label" for="text-answer">✏️ 서술형 답안 (컴퓨터 입력)</label>
+            <textarea id="text-answer" name="text_answer" class="answer-textarea"
+                placeholder="여기에 답을 작성하세요…">{% if my_answer %}{{ my_answer.text_answer }}{% endif %}</textarea>
+
+            <div class="photo-section">
+                <div class="form-label">📸 손글씨 사진 업로드</div>
+                <div class="photo-row">
+                    <div class="photo-drop">
+                        <input type="file" name="photo" accept="image/*" id="photo-file"
+                            onchange="previewPhoto(this)">
+                        <img id="photo-preview" class="photo-preview" alt="미리보기">
+                    </div>
+                    <div class="qr-area">
+                        <button type="button" class="qr-btn" onclick="showQR()">📱 QR로 폰에서 올리기</button>
+                        <div class="qr-box" id="qr-box">
+                            <img id="qr-img" src="" alt="QR코드">
+                            <div class="qr-caption">스마트폰 카메라로 스캔하세요</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="save-btn">저장하기 →</button>
+        </form>
+
+        {% elif user.is_staff %}
+        <p class="meta-text">관리자는 답안을 직접 제출하지 않습니다.</p>
+        {% else %}
+        <p><a href="{% url 'login' %}" style="color:var(--accent-green);font-weight:800;">로그인</a> 후 답안을 작성할 수 있습니다.</p>
+        {% endif %}
+    </div>
+
+    {# 이전 / 다음 네비게이션 #}
+    <footer class="sq-footer">
+        <div>
+            {% if prev_sq %}
+            <a href="{% url 'sub_question_page' item.id prev_sq.number %}" class="btn-nav">← 이전 문제</a>
+            {% else %}
+            <a href="{% url 'chapter_detail' item.chapter.id %}" class="btn-nav">← 목록</a>
+            {% endif %}
+        </div>
+        <div>
+            {% if next_sq %}
+            <a href="{% url 'sub_question_page' item.id next_sq.number %}" class="btn-nav primary">다음 문제 →</a>
+            {% else %}
+            <a href="{% url 'chapter_detail' item.chapter.id %}" class="btn-nav primary">완료 — 목록으로</a>
+            {% endif %}
+        </div>
+    </footer>
+
+</section>
+</main>
+
+<script>
+var SQ_ID = {{ sq.id }};
+
+function toggleEl(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('is-open');
+}
+
+function previewPhoto(input) {
+    var img = document.getElementById('photo-preview');
+    if (input.files && input.files[0]) {
+        img.src = URL.createObjectURL(input.files[0]);
+        img.style.display = 'block';
+    }
+}
+
+function showQR() {
+    var box = document.getElementById('qr-box');
+    var img = document.getElementById('qr-img');
+    if (!box || !img) return;
+
+    if (box.style.display === 'block') { box.style.display = 'none'; return; }
+    if (img.src && img.src !== window.location.href) { box.style.display = 'block'; return; }
+
+    fetch('/courses/olympiad/sub/' + SQ_ID + '/qr-token/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.qr_url) {
+                img.src = data.qr_url;
+                box.style.display = 'block';
+            }
+        })
+        .catch(function() { alert('QR 코드 생성에 실패했습니다.'); });
+}
+</script>
+{% endblock %}

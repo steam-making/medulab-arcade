@@ -4,6 +4,22 @@ Django>=4.2.0
 # Server
 gunicorn
 
+# Environment variables
+python-dotenv>=1.0.0
+
+# Image processing
+Pillow>=10.0.0
+
+# QR code generation
+qrcode>=7.0
+
+# Excel export
+openpyxl>=3.1.0
+
+# AI / OCR
+google-genai>=2.0.0
+anthropic>=0.50.0
+
 # Typing Practice Features
 deep-translator>=1.11.4
 pykakasi>=2.2.1

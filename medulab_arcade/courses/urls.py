@@ -30,6 +30,8 @@ urlpatterns = [
     path('chapter/<int:chapter_id>/item/add/', views.item_create, name='item_create'),
     path('item/<int:item_id>/edit/', views.item_edit, name='item_edit'),
     path('item/<int:item_id>/olympiad-example/add/', views.olympiad_example_add, name='olympiad_example_add'),
+    path('olympiad/sub/<int:sq_id>/example/add/', views.olympiad_sub_question_example_add, name='olympiad_sub_question_example_add'),
+    path('olympiad/sub/<int:sq_id>/edit/', views.olympiad_sub_question_edit, name='olympiad_sub_question_edit'),
     path('item/<int:item_id>/delete/', views.item_delete, name='item_delete'),
     
     # 학생용
@@ -47,7 +49,9 @@ urlpatterns = [
     path('item/<int:item_id>/olympiad/submit/', views.submit_olympiad_answer, name='submit_olympiad_answer'),
     path('item/<int:item_id>/sub/<int:sq_number>/', views.sub_question_page, name='sub_question_page'),
     path('olympiad/sub/<int:sub_question_id>/submit/', views.submit_sub_answer, name='submit_sub_answer'),
+    path('olympiad/sub/<int:sub_question_id>/ocr-preview/', views.ocr_preview_sub_answer, name='ocr_preview_sub_answer'),
     path('olympiad/sub/<int:sub_question_id>/qr-token/', views.ensure_sub_answer_token, name='ensure_sub_answer_token'),
+    path('olympiad/sub-answer/<int:sub_answer_id>/reanalyze/', views.reanalyze_sub_answer, name='reanalyze_sub_answer'),
     path('olympiad/qr/<int:sub_answer_id>.png', views.olympiad_qr_code, name='olympiad_qr_code'),
     path('olympiad/upload/<str:token>/', views.olympiad_qr_upload_page, name='olympiad_qr_upload_page'),
     

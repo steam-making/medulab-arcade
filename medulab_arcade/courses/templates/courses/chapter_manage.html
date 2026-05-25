@@ -172,7 +172,7 @@
             <h4 style="margin-bottom: 8px;">미리보기: 문제 {{ answer_zip_preview.item_count }}개 / 이미지 {{ answer_zip_preview.file_count }}개</h4>
             {% for item in answer_zip_preview.items %}
             <section class="preview-chapter">
-                <strong>{{ item.chapter_title }} · {{ item.item_title }}</strong>
+                <strong>{{ item.chapter_title }} · {{ item.item_title }}{% if item.sub_question_label %} · {{ item.sub_question_label }}{% endif %}</strong>
                 <ul class="preview-items">
                     {% for file in item.files %}
                     <li>
@@ -291,17 +291,57 @@
                                     <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ item.title }}</span>
                                     <span style="font-size:11px; color:var(--text-muted); flex-shrink:0;">[{{ item.get_item_type_display }}]</span>
                                     {% if item.item_type == 'olympiad' %}
+                                    {% with sqs=item.sub_questions.all %}
+                                    {% if sqs %}
+                                    <span style="font-size:11px; color:var(--text-muted); flex-shrink:0;">하위문제 {{ sqs|length }}개</span>
+                                    {% else %}
                                     <span style="font-size:11px; color:var(--text-muted); flex-shrink:0;">예시 {{ item.olympiad_examples.count }}개</span>
+                                    {% endif %}
+                                    {% endwith %}
                                     {% endif %}
                                     <div style="display:flex; gap:6px; flex-shrink:0; align-items:center;">
                                         <a href="{% url 'item_page' item.id %}" style="color:var(--accent-blue); font-size:11px;">보기</a>
                                         <a href="{% url 'item_edit' item.id %}" style="color:var(--accent-green); font-size:11px;">수정</a>
                                         {% if item.item_type == 'olympiad' %}
+                                        {% if not item.sub_questions.all %}
                                         <button type="button" onclick="toggleOlympiadExampleForm({{ item.id }})" style="color:var(--accent-blue); font-size:11px; background:none; border:none; cursor:pointer; padding:0;">+예시답안</button>
+                                        {% endif %}
                                         {% endif %}
                                     </div>
                                 </div>
                                 {% if item.item_type == 'olympiad' %}
+                                {% with sqs=item.sub_questions.all %}
+                                {% if sqs %}
+                                <!-- 하위문제 행 -->
+                                {% for sq in sqs %}
+                                <div style="margin:2px 8px 2px 54px; padding:6px 10px; border:1px solid rgba(255,255,255,0.07); border-radius:6px; background:rgba(0,0,0,0.12); font-size:12px; cursor:auto;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span style="color:var(--accent-blue); font-weight:700; min-width:32px;">{{ item.number }}-{{ sq.number }}</span>
+                                        <span style="flex:1; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ sq.question_text|truncatechars:60 }}</span>
+                                        <span style="font-size:11px; color:var(--text-muted); flex-shrink:0;">예시 {{ sq.participant_examples.count }}개</span>
+                                        <a href="{% url 'olympiad_sub_question_edit' sq.id %}" style="color:var(--accent-green); font-size:11px; flex-shrink:0; text-decoration:none;">수정</a>
+                                        <button type="button" onclick="toggleSqExampleForm({{ sq.id }})" style="color:var(--accent-blue); font-size:11px; background:none; border:none; cursor:pointer; padding:0; flex-shrink:0;">+예시답안</button>
+                                    </div>
+                                    <div id="sq-example-form-{{ sq.id }}" style="display:none; margin-top:8px;">
+                                        {% if sq.participant_examples.all %}
+                                        <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">
+                                            등록된 예시:
+                                            {% for ex in sq.participant_examples.all %}
+                                            <a href="{{ ex.image.url }}" target="_blank" rel="noopener" style="color:var(--accent-green); margin-left:6px;">이미지{{ forloop.counter }}</a>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <form method="POST" action="{% url 'olympiad_sub_question_example_add' sq.id %}" enctype="multipart/form-data" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;" onclick="event.stopPropagation();">
+                                            {% csrf_token %}
+                                            <input type="file" name="image" accept="image/*" required style="font-size:11px; color:var(--text-secondary);">
+                                            <input type="text" name="caption" placeholder="설명(선택)" style="font-size:11px; padding:5px 8px; min-width:140px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:#fff; border-radius:6px;">
+                                            <button type="submit" style="font-size:11px; padding:5px 12px; background:var(--accent-blue); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:700;">등록</button>
+                                            <button type="button" onclick="toggleSqExampleForm({{ sq.id }})" style="font-size:11px; padding:5px 10px; background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:6px; cursor:pointer;">닫기</button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% else %}
                                 <div id="olympiad-example-form-{{ item.id }}" style="display:none; margin:4px 8px 6px 54px; padding:10px; border:1px solid var(--border); border-radius:8px; background:rgba(0,0,0,0.18); cursor:auto;">
                                     {% if item.olympiad_examples.all %}
                                     <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">
@@ -319,6 +359,8 @@
                                         <button type="button" onclick="toggleOlympiadExampleForm({{ item.id }})" style="font-size:11px; padding:5px 12px; background:transparent; color:var(--text-muted); border:1px solid var(--border); border-radius:6px; cursor:pointer;">닫기</button>
                                     </form>
                                 </div>
+                                {% endif %}
+                                {% endwith %}
                                 {% endif %}
                             </li>
                             {% endfor %}
@@ -352,6 +394,12 @@
 
     function toggleOlympiadExampleForm(itemId) {
         var form = document.getElementById('olympiad-example-form-' + itemId);
+        if (!form) return;
+        form.style.display = form.style.display === 'none' || !form.style.display ? 'block' : 'none';
+    }
+
+    function toggleSqExampleForm(sqId) {
+        var form = document.getElementById('sq-example-form-' + sqId);
         if (!form) return;
         form.style.display = form.style.display === 'none' || !form.style.display ? 'block' : 'none';
     }

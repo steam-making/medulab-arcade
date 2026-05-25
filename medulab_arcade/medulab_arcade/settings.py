@@ -4,13 +4,16 @@ Django Settings
 """
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: 배포 시 반드시 변경하세요!
 SECRET_KEY = 'django-insecure-change-this-in-production-medulab-2026'
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
 # SECURITY WARNING: 배포 시 False로 변경하세요!
 DEBUG = True

@@ -105,25 +105,59 @@
     cursor: pointer;
     transition: transform 0.15s, background 0.15s;
 }
-.toggle-btn:hover { transform: translateY(-1px); background: rgba(0,180,255,0.16); }
+.toggle-btn:hover:not(.toggle-btn-disabled) { transform: translateY(-1px); background: rgba(0,180,255,0.16); }
+.toggle-btn-disabled { opacity: 0.35; cursor: not-allowed; }
 .toggle-btn.example-btn {
     border-color: rgba(168,85,247,0.35);
     background: rgba(168,85,247,0.09);
     color: #c084fc;
 }
-.toggle-btn.example-btn:hover { background: rgba(168,85,247,0.18); }
+.toggle-btn.example-btn:hover:not(.toggle-btn-disabled) { background: rgba(168,85,247,0.18); }
+.toggle-btn.answer-btn {
+    border-color: rgba(34,197,94,0.35);
+    background: rgba(34,197,94,0.09);
+    color: #86efac;
+}
+.toggle-btn.answer-btn:hover:not(.toggle-btn-disabled) { background: rgba(34,197,94,0.18); }
+.toggle-btn.participant-btn {
+    border-color: rgba(251,146,60,0.35);
+    background: rgba(251,146,60,0.09);
+    color: #fdba74;
+}
+.toggle-btn.participant-btn:hover:not(.toggle-btn-disabled) { background: rgba(251,146,60,0.18); }
+.collapsible.my-answer {
+    background: rgba(34,197,94,0.06);
+    border-left: 3px solid rgba(34,197,94,0.4);
+    color: #d1fae5;
+    white-space: pre-wrap;
+}
+.participant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+}
+.participant-card img {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    display: block;
+    transition: transform 0.15s;
+}
+.participant-card img:hover { transform: scale(1.03); }
 .collapsible {
     display: none;
-    margin: 12px 28px 0;
-    padding: 16px 18px;
+    margin: 8px 28px 0;
+    padding: 12px 14px;
     border-radius: 14px;
     background: rgba(0,0,0,0.22);
     border: 1px dashed rgba(0,180,255,0.25);
     color: var(--text-secondary);
     font-size: 14px;
-    line-height: 1.8;
+    line-height: 1.6;
     white-space: pre-wrap;
 }
+.collapsible#participant-box { white-space: normal; padding: 10px 14px; }
+.collapsible#participant-box p { margin: 0 0 8px; }
 .collapsible.example { border-color: rgba(168,85,247,0.28); }
 .collapsible.is-open { display: block; }
 /* 답안 폼 영역 */
@@ -137,7 +171,7 @@
 }
 .answer-textarea {
     width: 100%;
-    min-height: 120px;
+    min-height: 220px;
     background: rgba(0,0,0,0.28);
     border: 1px solid var(--border);
     border-radius: 14px;
@@ -222,7 +256,8 @@
     box-shadow: 0 6px 20px rgba(0,255,180,0.2);
     transition: transform 0.15s, box-shadow 0.15s;
 }
-.save-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,255,180,0.32); }
+.save-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,255,180,0.32); }
+.save-btn:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.35); cursor: not-allowed; box-shadow: none; }
 /* 이전/다음 네비게이션 */
 .sq-footer {
     display: flex;
@@ -293,6 +328,7 @@
 .ai-section-body { color: var(--text-secondary); font-size: 13px; line-height: 1.8; padding-left: 16px; }
 .ai-section-body li { margin-bottom: 4px; }
 .ai-analyzing-note { margin-top: 12px; color: var(--text-muted); font-size: 13px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px dashed var(--border); }
+@keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 640px) {
     .sq-topbar, .sq-form-area, .sq-footer { padding-left: 18px; padding-right: 18px; }
     .sq-num-badge, .sq-intro, .sq-question-box, .toggle-row, .collapsible, .sq-index-strip { margin-left: 18px; margin-right: 18px; }
@@ -307,7 +343,12 @@
 
     {# 상단 바 #}
     <div class="sq-topbar">
-        <a href="{% url 'chapter_detail' item.chapter.id %}" class="sq-back">← 목록으로 돌아가기</a>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <a href="{% url 'chapter_detail' item.chapter.id %}" class="sq-back">← 목록으로 돌아가기</a>
+            {% if request.user.is_staff %}
+            <a href="{% url 'olympiad_sub_question_edit' sq.id %}" style="font-size:12px;padding:4px 10px;border-radius:8px;background:rgba(0,255,180,0.12);border:1px solid rgba(0,255,180,0.3);color:var(--accent-green);text-decoration:none;font-weight:700;">✏ 수정</a>
+            {% endif %}
+        </div>
         <span class="sq-progress-label">{{ sq_index }} / {{ sq_total }} 번째 문제</span>
     </div>
     <div class="sq-progress-bar">
@@ -341,16 +382,22 @@
             {% endif %}
         </div>
         <div class="sq-question-text">{{ sq.question_text }}</div>
+        {% if sq.question_image %}
+        <div style="margin-top:16px; text-align:center;">
+            <img src="{{ sq.question_image.url }}" alt="문제 이미지"
+                style="max-width:100%; max-height:480px; object-fit:contain; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
+        </div>
+        {% endif %}
     </div>
 
-    {# 힌트 / 예시답안 토글 #}
+    {# 힌트 / 예시답안 / 참가자 답안 토글 #}
     <div class="toggle-row">
-        {% if sq.hint %}
-        <button type="button" class="toggle-btn" onclick="toggleEl('hint-box')">💡 힌트 보기</button>
-        {% endif %}
-        {% if sq.example_answer %}
-        <button type="button" class="toggle-btn example-btn" onclick="toggleEl('example-box')">⭐ 예시 답안 보기</button>
-        {% endif %}
+        <button type="button" class="toggle-btn {% if not sq.hint %}toggle-btn-disabled{% endif %}"
+            onclick="{% if sq.hint %}toggleEl('hint-box'){% endif %}">💡 힌트 보기</button>
+        <button type="button" class="toggle-btn example-btn {% if not sq.example_answer %}toggle-btn-disabled{% endif %}"
+            onclick="{% if sq.example_answer %}toggleEl('example-box'){% endif %}">⭐ 예시 답안 보기</button>
+        <button type="button" class="toggle-btn participant-btn {% if not olympiad_examples %}toggle-btn-disabled{% endif %}"
+            onclick="{% if olympiad_examples %}toggleEl('participant-box'){% endif %}">🖼️ 참가자 답안 보기</button>
     </div>
     {% if sq.hint %}
     <div id="hint-box" class="collapsible">{{ sq.hint }}</div>
@@ -358,6 +405,23 @@
     {% if sq.example_answer %}
     <div id="example-box" class="collapsible example">{{ sq.example_answer }}</div>
     {% endif %}
+    <div id="participant-box" class="collapsible">
+        {% if olympiad_examples %}
+        <p style="color:var(--text-muted);font-size:12px;margin:0 0 10px;">정답을 외우기보다 글·표·그림 배치를 비교하며 내 답안을 보완하세요.</p>
+        <div class="participant-grid">
+            {% for ex in olympiad_examples %}
+            <div class="participant-card">
+                <a href="{{ ex.image.url }}" target="_blank" rel="noopener">
+                    <img src="{{ ex.image.url }}" alt="{{ ex.caption|default:'참가자 답안' }}" style="max-height:220px;object-fit:contain;">
+                </a>
+                {% if ex.caption %}<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ ex.caption }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--text-muted);font-size:13px;margin:0;">아직 등록된 참가자 답안이 없습니다.</p>
+        {% endif %}
+    </div>
 
     {# 답안 폼 #}
     <div class="sq-form-area">
@@ -367,10 +431,6 @@
             {% if my_answer.text_answer %}
             <div class="form-label">내 서술형 답안 <span class="status-chip">✓ 저장됨</span></div>
             <div class="submitted-text">{{ my_answer.text_answer }}</div>
-            {% endif %}
-            {% if my_answer.ocr_text and my_answer.ocr_text != my_answer.text_answer %}
-            <div class="form-label" style="margin-top:6px;">📷 OCR 인식 결과</div>
-            <div class="submitted-text" style="border-color:rgba(125,211,252,0.2);background:rgba(14,165,233,0.05);font-size:13px;">{{ my_answer.ocr_text }}</div>
             {% endif %}
             {% if my_answer.photo %}
             <div class="form-label">제출한 손글씨 사진</div>
@@ -384,7 +444,12 @@
             {% if my_answer.ai_feedback %}
             <div class="ai-feedback-wrap" id="ai-feedback-section">
                 {% with fb=my_answer.ai_feedback %}
-                <div class="ai-feedback-header">🤖 AI 평가 결과</div>
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+                    <div class="ai-feedback-header" style="margin-bottom:0;">🤖 AI 평가 결과</div>
+                    <div style="font-size:11px; color:var(--text-muted); background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:5px 10px; line-height:1.6; max-width:260px; flex-shrink:0;">
+                        ⚠ AI 평가는 실력 향상을 위한 <strong style="color:#fbbf24;">참고용</strong>입니다.<br>정식 채점 결과와 다를 수 있습니다.
+                    </div>
+                </div>
                 <div class="ai-score-row">
                     <span class="ai-score-num">{{ my_answer.ai_score }}점</span>
                     <div class="ai-score-bar"><div class="ai-score-fill" style="width:{{ my_answer.ai_score }}%;"></div></div>
@@ -414,13 +479,34 @@
                 {% endwith %}
             </div>
             {% elif my_answer.text_answer or my_answer.photo %}
-            <div class="ai-analyzing-note">⏳ AI가 답안을 분석 중입니다…</div>
+                {% if has_api_key %}
+                <div class="ai-analyzing-note">
+                    ⏳ AI 분석이 아직 완료되지 않았습니다.
+                    <a href="{% url 'reanalyze_sub_answer' my_answer.id %}"
+                       style="color:var(--accent-green);font-weight:800;margin-left:8px;">
+                       🔄 지금 분석하기
+                    </a>
+                </div>
+                {% else %}
+                <div class="ai-analyzing-note">
+                    ℹ️ AI 분석을 사용하려면 서버에 <code>ANTHROPIC_API_KEY</code>를 설정하세요.
+                </div>
+                {% endif %}
             {% endif %}
         {% endif %}
 
         {% if user.is_authenticated and not user.is_staff %}
         <form method="POST" action="{% url 'submit_sub_answer' sq.id %}" enctype="multipart/form-data">
             {% csrf_token %}
+
+            <div style="margin-bottom:14px; padding:14px 18px; border-radius:14px; background:rgba(0,180,255,0.06); border:1px solid rgba(0,180,255,0.18); font-size:13px; color:var(--text-secondary); line-height:1.8;">
+                <div style="font-weight:800; color:#7dd3fc; margin-bottom:8px; font-size:13px;">📋 답안 제출 방법</div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <div><span style="color:var(--accent-green); font-weight:700;">① 컴퓨터 입력</span> — 아래 텍스트 상자에 직접 답안을 작성하세요.</div>
+                    <div><span style="color:#fb923c; font-weight:700;">② 손글씨 사진</span> — 종이에 작성한 답안을 사진으로 찍어 업로드하거나, QR코드로 스마트폰에서 바로 올릴 수 있습니다.</div>
+                    <div style="color:var(--text-muted); font-size:12px;">두 방법 중 하나만 사용해도 되고, 둘 다 제출해도 됩니다.</div>
+                </div>
+            </div>
 
             <label class="form-label" for="text-answer">✏️ 서술형 답안 (컴퓨터 입력)</label>
             <textarea id="text-answer" name="text_answer" class="answer-textarea"
@@ -444,7 +530,8 @@
                 </div>
             </div>
 
-            <button type="submit" class="save-btn">저장하기 →</button>
+            <input type="hidden" name="confirmed_ocr_text" id="confirmed-ocr-input">
+            <button type="submit" id="save-btn" class="save-btn" disabled>저장하기 →</button>
         </form>
 
         {% elif user.is_staff %}
@@ -463,6 +550,11 @@
             <a href="{% url 'chapter_detail' item.chapter.id %}" class="btn-nav">← 목록</a>
             {% endif %}
         </div>
+        {% if request.user.is_staff %}
+        <div>
+            <a href="{% url 'olympiad_sub_question_edit' sq.id %}" class="btn-nav" style="background:rgba(0,255,180,0.12);border-color:rgba(0,255,180,0.3);color:var(--accent-green);">✏ 수정</a>
+        </div>
+        {% endif %}
         <div>
             {% if next_sq %}
             <a href="{% url 'sub_question_page' item.id next_sq.number %}" class="btn-nav primary">다음 문제 →</a>
@@ -475,6 +567,67 @@
 </section>
 </main>
 
+<!-- OCR 확인 모달 -->
+<div id="ocr-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.72); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+    <div style="width:min(560px,94vw); background:#1a1a2e; border:1px solid rgba(0,180,255,0.3); border-radius:24px; padding:32px 28px; box-shadow:0 24px 64px rgba(0,0,0,0.6); position:relative;">
+
+        <!-- 단계 1: 업로드/OCR 진행 중 -->
+        <div id="ocr-step-progress">
+            <div style="font-size:16px; font-weight:900; color:#7dd3fc; margin-bottom:20px;">📤 답안 업로드 중</div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+                <div id="modal-spinner" style="width:20px;height:20px;border:2px solid rgba(125,211,252,0.2);border-top-color:#7dd3fc;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;"></div>
+                <span id="modal-status-text" style="font-size:13px;font-weight:700;color:var(--text-secondary);">사진 전송 중...</span>
+            </div>
+            <div style="height:10px; background:rgba(255,255,255,0.07); border-radius:999px; overflow:hidden;">
+                <div id="modal-bar" style="height:100%; width:0%; border-radius:inherit; background:linear-gradient(90deg,var(--accent-green),#7dd3fc); transition:width 0.25s ease;"></div>
+            </div>
+            <div id="modal-percent" style="text-align:right; font-size:12px; color:var(--text-muted); margin-top:6px;">0%</div>
+            <div id="modal-ocr-wait" style="display:none; margin-top:16px; font-size:13px; color:var(--text-muted); text-align:center;">
+                <div style="margin-bottom:6px;">🔍 손글씨 인식(OCR) 진행 중...</div>
+                <div style="font-size:11px;">잠시만 기다려 주세요.</div>
+            </div>
+        </div>
+
+        <!-- 단계 2: OCR 결과 확인 -->
+        <div id="ocr-step-confirm" style="display:none;">
+            <div style="font-size:16px; font-weight:900; color:var(--accent-green); margin-bottom:6px;">✅ 손글씨 인식 완료</div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">인식된 내용을 확인하고 필요하면 수정한 뒤 저장하세요.</div>
+            <label style="font-size:12px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">📝 인식 결과 (수정 가능)</label>
+            <textarea id="ocr-confirm-textarea" rows="8"
+                style="width:100%; padding:12px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(0,180,255,0.3); border-radius:12px; color:#fff; font-size:13px; font-family:'Noto Sans KR',sans-serif; resize:vertical; box-sizing:border-box; outline:none; line-height:1.7;"></textarea>
+            <div id="ocr-empty-warn" style="display:none; margin-top:8px; font-size:12px; color:#fb923c;">⚠ 인식된 내용이 없습니다. 사진이 선명한지 확인하거나, 위 텍스트 상자에 직접 입력해 저장할 수 있습니다.</div>
+            <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+                <button type="button" id="ocr-confirm-btn" onclick="confirmOcrAndSubmit()"
+                    style="flex:1; padding:12px; border-radius:12px; background:var(--accent-green); color:#0d0d1a; font-weight:900; font-size:14px; border:none; cursor:pointer;">
+                    확인 후 저장 →
+                </button>
+                <button type="button" onclick="closeOcrModal()"
+                    style="padding:12px 18px; border-radius:12px; background:rgba(255,255,255,0.07); color:var(--text-secondary); border:1px solid var(--border); font-size:13px; font-weight:700; cursor:pointer;">
+                    취소
+                </button>
+            </div>
+        </div>
+
+        <!-- 단계 3: 최종 저장 중 -->
+        <div id="ocr-step-saving" style="display:none; text-align:center;">
+            <div style="font-size:16px; font-weight:900; color:#7dd3fc; margin-bottom:16px;">💾 저장 중...</div>
+            <div style="width:40px;height:40px;border:3px solid rgba(125,211,252,0.2);border-top-color:#7dd3fc;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px;"></div>
+            <div style="font-size:13px; color:var(--text-muted);">AI 평가와 함께 저장하고 있습니다.</div>
+        </div>
+
+        <!-- 오류 -->
+        <div id="ocr-step-error" style="display:none;">
+            <div style="font-size:15px; font-weight:900; color:#ff6b6b; margin-bottom:10px;">⚠ 오류가 발생했습니다</div>
+            <div id="ocr-error-msg" style="font-size:13px; color:var(--text-muted); margin-bottom:16px;"></div>
+            <button type="button" onclick="closeOcrModal()"
+                style="padding:10px 20px; border-radius:10px; background:rgba(255,255,255,0.07); color:var(--text-secondary); border:1px solid var(--border); font-size:13px; cursor:pointer;">
+                닫기
+            </button>
+        </div>
+
+    </div>
+</div>
+
 <script>
 var SQ_ID = {{ sq.id }};
 
@@ -483,12 +636,135 @@ function toggleEl(id) {
     if (el) el.classList.toggle('is-open');
 }
 
+// 저장 버튼 활성화
+var _origText = document.getElementById('text-answer') ? document.getElementById('text-answer').value : '';
+function _checkDirty() {
+    var btn = document.getElementById('save-btn');
+    if (!btn) return;
+    var textarea = document.getElementById('text-answer');
+    var photoInput = document.getElementById('photo-file');
+    var textChanged = textarea && textarea.value !== _origText;
+    var photoChanged = photoInput && photoInput.files && photoInput.files.length > 0;
+    btn.disabled = !(textChanged || photoChanged);
+}
+var _answerForm = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    var textarea = document.getElementById('text-answer');
+    var photoInput = document.getElementById('photo-file');
+    if (textarea) textarea.addEventListener('input', _checkDirty);
+    if (photoInput) photoInput.addEventListener('change', _checkDirty);
+
+    _answerForm = document.querySelector('form[action*="submit"]');
+    if (!_answerForm) return;
+
+    _answerForm.addEventListener('submit', function(e) {
+        var hasPhoto = photoInput && photoInput.files && photoInput.files.length > 0;
+        if (!hasPhoto) return; // 사진 없으면 일반 submit (텍스트만)
+
+        e.preventDefault();
+        openOcrModal();
+    });
+});
+
+/* ── 모달 헬퍼 ── */
+function _showStep(name) {
+    ['progress','confirm','saving','error'].forEach(function(s) {
+        document.getElementById('ocr-step-' + s).style.display = (s === name ? 'block' : 'none');
+    });
+}
+
+function openOcrModal() {
+    var modal = document.getElementById('ocr-modal');
+    modal.style.display = 'flex';
+    _showStep('progress');
+    document.getElementById('modal-bar').style.width = '0%';
+    document.getElementById('modal-percent').textContent = '0%';
+    document.getElementById('modal-status-text').textContent = '사진 전송 중...';
+    document.getElementById('modal-ocr-wait').style.display = 'none';
+    document.getElementById('save-btn').disabled = true;
+
+    var photoInput = document.getElementById('photo-file');
+    var fd = new FormData();
+    fd.append('photo', photoInput.files[0]);
+    // CSRF
+    var csrf = _answerForm.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrf) fd.append('csrfmiddlewaretoken', csrf.value);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/courses/olympiad/sub/' + SQ_ID + '/ocr-preview/');
+
+    xhr.upload.onprogress = function(ev) {
+        if (!ev.lengthComputable) return;
+        var p = Math.round(ev.loaded / ev.total * 80);
+        document.getElementById('modal-bar').style.width = p + '%';
+        document.getElementById('modal-percent').textContent = p + '%';
+        if (p >= 80) {
+            document.getElementById('modal-status-text').textContent = '전송 완료, OCR 인식 중...';
+            document.getElementById('modal-ocr-wait').style.display = 'block';
+        }
+    };
+
+    xhr.onload = function() {
+        document.getElementById('modal-bar').style.width = '100%';
+        document.getElementById('modal-percent').textContent = '100%';
+        try {
+            var data = JSON.parse(xhr.responseText);
+            var ocrText = (data.ocr_text || '').trim();
+            document.getElementById('ocr-confirm-textarea').value = ocrText;
+            document.getElementById('ocr-empty-warn').style.display = ocrText ? 'none' : 'block';
+            _showStep('confirm');
+        } catch(e) {
+            document.getElementById('ocr-error-msg').textContent = '서버 응답을 처리하지 못했습니다.';
+            _showStep('error');
+        }
+    };
+
+    xhr.onerror = function() {
+        document.getElementById('ocr-error-msg').textContent = '네트워크 오류가 발생했습니다. 다시 시도해 주세요.';
+        _showStep('error');
+    };
+
+    xhr.send(fd);
+}
+
+function confirmOcrAndSubmit() {
+    var ocrText = document.getElementById('ocr-confirm-textarea').value.trim();
+    document.getElementById('confirmed-ocr-input').value = ocrText;
+    _showStep('saving');
+
+    // 실제 form을 XHR로 제출 (리다이렉트 추적)
+    var fd = new FormData(_answerForm);
+    fd.set('confirmed_ocr_text', ocrText);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', _answerForm.action);
+    xhr.onload = function() {
+        if (xhr.responseURL && xhr.responseURL !== window.location.href) {
+            window.location.href = xhr.responseURL;
+        } else {
+            window.location.reload();
+        }
+    };
+    xhr.onerror = function() {
+        document.getElementById('ocr-error-msg').textContent = '저장 중 오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해 주세요.';
+        _showStep('error');
+    };
+    xhr.send(fd);
+}
+
+function closeOcrModal() {
+    document.getElementById('ocr-modal').style.display = 'none';
+    document.getElementById('save-btn').disabled = false;
+}
+
 function previewPhoto(input) {
     var img = document.getElementById('photo-preview');
     if (input.files && input.files[0]) {
         img.src = URL.createObjectURL(input.files[0]);
         img.style.display = 'block';
     }
+    _checkDirty();
 }
 
 function showQR() {

@@ -108,6 +108,11 @@ class Item(models.Model):
 
 class OlympiadAnswerExample(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="olympiad_examples")
+    sub_question = models.ForeignKey(
+        "OlympiadSubQuestion", on_delete=models.CASCADE,
+        related_name="participant_examples",
+        null=True, blank=True,
+    )
     image = models.ImageField("예시 답안 이미지", upload_to="olympiad/examples/%Y/%m/")
     caption = models.CharField("설명", max_length=200, blank=True)
     order = models.PositiveIntegerField("정렬 순서", default=0)
@@ -164,6 +169,7 @@ class OlympiadSubQuestion(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="sub_questions")
     number = models.PositiveSmallIntegerField("하위 문제 번호")  # 1→1-1, 2→1-2 …
     question_text = models.TextField("문제 내용")
+    question_image = models.ImageField("문제 이미지", upload_to="sub_question_images/", null=True, blank=True)
     thinking_type = models.CharField("사고력 유형", max_length=30, choices=THINKING_TYPES, blank=True)
     hint = models.TextField("힌트", blank=True)
     example_answer = models.TextField("예시 답안", blank=True)

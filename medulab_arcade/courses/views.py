@@ -1,5 +1,6 @@
 import io
 import json
+import logging
 import os
 import sys
 import re
@@ -15,6 +16,9 @@ from types import SimpleNamespace
 from xml.etree import ElementTree as ET
 import openpyxl
 from functools import wraps
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -59,6 +63,7 @@ from .forms import (
     HomeworkSubmissionForm,
     HomeworkSubmissionReviewForm,
     OlympiadAnswerSubmissionForm,
+    OlympiadSubQuestionForm,
 )
 from django.db.models import Count, Q
 
@@ -320,32 +325,44 @@ def extract_first_number(value):
 
 def build_olympiad_answer_template_zip(program):
     buffer = io.BytesIO()
-    chapters = program.chapters.prefetch_related("items").order_by("number")
+    chapters = program.chapters.prefetch_related("items__sub_questions").order_by("number")
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr(
             "README.txt",
-            "각 챕터/문제 폴더 안에 예시답안 이미지 파일을 넣은 뒤 다시 업로드하세요.\n"
+            "하위문제가 있는 경우: 챕터/문제/하위문제 폴더 안에 이미지를 넣으세요.\n"
+            "예: 제1회 기출문제/문제 1/1-1/01.jpg\n"
+            "하위문제가 없는 경우: 챕터/문제 폴더 안에 직접 넣으세요.\n"
             "예: 제1회 기출문제/문제 2/01.jpg\n"
             "지원 형식: jpg, jpeg, png, gif, webp, bmp\n",
         )
         for chapter in chapters:
-            chapter_folder = f"{chapter.title}/"
-            archive.writestr(chapter_folder, "")
             for item in chapter.items.filter(item_type="olympiad").order_by("number"):
-                problem_folder = f"{chapter.title}/{item.title}/"
-                archive.writestr(problem_folder, "")
-                archive.writestr(
-                    f"{problem_folder}README.txt",
-                    f"{chapter.title} - {item.title} 예시답안 이미지를 이 폴더에 넣으세요.\n"
-                    "파일명 예: 01.jpg, 02.png\n",
-                )
+                sub_questions = list(item.sub_questions.order_by("number"))
+                if sub_questions:
+                    for sq in sub_questions:
+                        sq_label = f"{item.number}-{sq.number}"
+                        sq_folder = f"{chapter.title}/{item.title}/{sq_label}/"
+                        archive.writestr(sq_folder, "")
+                        archive.writestr(
+                            f"{sq_folder}README.txt",
+                            f"{chapter.title} - {item.title} - {sq_label} 참가자 예시답안 이미지를 이 폴더에 넣으세요.\n"
+                            "파일명 예: 01.jpg, 02.png\n",
+                        )
+                else:
+                    problem_folder = f"{chapter.title}/{item.title}/"
+                    archive.writestr(problem_folder, "")
+                    archive.writestr(
+                        f"{problem_folder}README.txt",
+                        f"{chapter.title} - {item.title} 참가자 예시답안 이미지를 이 폴더에 넣으세요.\n"
+                        "파일명 예: 01.jpg, 02.png\n",
+                    )
     buffer.seek(0)
     return buffer
 
 
 def parse_olympiad_answer_examples_zip(program, uploaded_file):
     uploaded_file.seek(0)
-    matched_items = {}
+    matched_groups = {}  # key: (item_id, sq_id_or_None)
     unmatched_files = []
     file_count = 0
     total_bytes = 0
@@ -353,6 +370,11 @@ def parse_olympiad_answer_examples_zip(program, uploaded_file):
     items_by_chapter_and_number = {
         (item.chapter.number, item.number): item
         for item in Item.objects.filter(chapter__program=program, item_type="olympiad").select_related("chapter")
+    }
+    # sub-questions indexed by (item_id, sub_number)
+    sq_by_item_and_number = {
+        (sq.item_id, sq.number): sq
+        for sq in OlympiadSubQuestion.objects.filter(item__chapter__program=program)
     }
 
     try:
@@ -392,12 +414,28 @@ def parse_olympiad_answer_examples_zip(program, uploaded_file):
                     unmatched_files.append({"source_path": decoded_name, "reason": "챕터/문제 번호를 찾을 수 없습니다."})
                     continue
 
-                matched_items.setdefault(item.id, {
-                    "item_id": item.id,
-                    "chapter_title": item.chapter.title,
-                    "item_title": item.title,
-                    "files": [],
-                })["files"].append({
+                # 하위문제 폴더 감지: parts 길이 4이상 → parts[2]가 "N-M" 형태
+                sq = None
+                sq_label = None
+                if len(parts) >= 4:
+                    sq_part = parts[2]
+                    sq_number = extract_first_number(sq_part.split("-")[-1]) if "-" in sq_part else extract_first_number(sq_part)
+                    if sq_number is not None:
+                        sq = sq_by_item_and_number.get((item.id, sq_number))
+                        if sq:
+                            sq_label = sq_part
+
+                group_key = (item.id, sq.id if sq else None)
+                if group_key not in matched_groups:
+                    matched_groups[group_key] = {
+                        "item_id": item.id,
+                        "sub_question_id": sq.id if sq else None,
+                        "chapter_title": item.chapter.title,
+                        "item_title": item.title,
+                        "sub_question_label": sq_label,
+                        "files": [],
+                    }
+                matched_groups[group_key]["files"].append({
                     "source_path": decoded_name,
                     "zip_name": info.filename,
                     "filename": filename,
@@ -406,19 +444,23 @@ def parse_olympiad_answer_examples_zip(program, uploaded_file):
     except zipfile.BadZipFile as exc:
         raise AnswerZipImportError("올바른 ZIP 파일이 아닙니다.") from exc
 
-    for item_data in matched_items.values():
-        item_data["files"].sort(key=lambda file_data: natural_sort_key(file_data["filename"]))
+    for group in matched_groups.values():
+        group["files"].sort(key=lambda f: natural_sort_key(f["filename"]))
 
-    if not matched_items and not unmatched_files:
+    if not matched_groups and not unmatched_files:
         raise AnswerZipImportError("예시답안 이미지 파일을 찾지 못했습니다.")
 
+    items_list = sorted(
+        matched_groups.values(),
+        key=lambda g: natural_sort_key(f"{g['chapter_title']} {g['item_title']} {g.get('sub_question_label') or ''}")
+    )
     return {
         "import_rule": ANSWER_ZIP_OLYMPIAD_RULE,
-        "items": sorted(matched_items.values(), key=lambda item_data: natural_sort_key(f"{item_data['chapter_title']} {item_data['item_title']}")),
+        "items": items_list,
         "unmatched_files": unmatched_files,
-        "chapter_count": len({item_data["chapter_title"] for item_data in matched_items.values()}),
-        "item_count": len(matched_items),
-        "file_count": sum(len(item_data["files"]) for item_data in matched_items.values()),
+        "chapter_count": len({g["chapter_title"] for g in matched_groups.values()}),
+        "item_count": len({g["item_id"] for g in matched_groups.values()}),
+        "file_count": sum(len(g["files"]) for g in matched_groups.values()),
     }
 
 
@@ -427,31 +469,43 @@ def apply_olympiad_answer_examples_zip(batch):
     if not batch.zip_file:
         raise AnswerZipImportError("적용할 answer.zip 파일이 없습니다.")
 
-    source_paths_by_item = {
-        item_data["item_id"]: [(file_data["source_path"], file_data.get("zip_name") or file_data["source_path"]) for file_data in item_data.get("files", [])]
-        for item_data in preview_data.get("items", [])
-    }
-
     created_examples = 0
     replaced_examples = 0
     with transaction.atomic():  # type: ignore[reportGeneralTypeIssues]
         with batch.zip_file.open("rb") as zip_file:
             with zipfile.ZipFile(zip_file) as archive:
-                for item_id, source_paths in source_paths_by_item.items():
+                for group in preview_data.get("items", []):
+                    item_id = group["item_id"]
+                    sq_id = group.get("sub_question_id")
+                    source_paths = [(f["source_path"], f.get("zip_name") or f["source_path"]) for f in group.get("files", [])]
+
                     item = Item.objects.get(id=item_id, chapter__program=batch.program, item_type="olympiad")
-                    replaced_examples += item.olympiad_examples.count()
-                    item.olympiad_examples.all().delete()
-                    for order, (source_path, zip_name) in enumerate(source_paths, start=1):
-                        content = archive.read(zip_name)
-                        filename = os.path.basename(source_path)
-                        example = OlympiadAnswerExample(item=item, caption=f"{item.title} 예시답안 {order}", order=order)
-                        example.image.save(filename, ContentFile(content), save=True)
-                        created_examples += 1
+
+                    if sq_id:
+                        sq = OlympiadSubQuestion.objects.get(id=sq_id, item=item)
+                        replaced_examples += sq.participant_examples.count()
+                        sq.participant_examples.all().delete()
+                        for order, (source_path, zip_name) in enumerate(source_paths, start=1):
+                            content = archive.read(zip_name)
+                            filename = os.path.basename(source_path)
+                            label = group.get("sub_question_label") or f"{item.number}-{sq.number}"
+                            ex = OlympiadAnswerExample(item=item, sub_question=sq, caption=f"{label} 예시답안 {order}", order=order)
+                            ex.image.save(filename, ContentFile(content), save=True)
+                            created_examples += 1
+                    else:
+                        replaced_examples += item.olympiad_examples.filter(sub_question__isnull=True).count()
+                        item.olympiad_examples.filter(sub_question__isnull=True).delete()
+                        for order, (source_path, zip_name) in enumerate(source_paths, start=1):
+                            content = archive.read(zip_name)
+                            filename = os.path.basename(source_path)
+                            ex = OlympiadAnswerExample(item=item, caption=f"{item.title} 예시답안 {order}", order=order)
+                            ex.image.save(filename, ContentFile(content), save=True)
+                            created_examples += 1
 
     return {
         "created_examples": created_examples,
         "replaced_examples": replaced_examples,
-        "matched_items": len(source_paths_by_item),
+        "matched_items": len(preview_data.get("items", [])),
     }
 
 
@@ -1516,6 +1570,14 @@ def sub_question_page(request, item_id, sq_number):
         r'<p>\s*\d+-\d+\..*?</p>', '', item.explain_html or '', flags=_re.DOTALL
     ).strip()
 
+    from .ai_service import has_any_ai
+    has_api_key = has_any_ai()
+
+    # 하위문제 전용 이미지 + 상위 아이템 공통 이미지(sub_question=None) 합산
+    sq_examples = list(sq.participant_examples.order_by("order"))
+    item_common_examples = list(item.olympiad_examples.filter(sub_question__isnull=True).order_by("order"))
+    olympiad_examples = sq_examples + item_common_examples
+
     return render(request, "learning_program/sub_question_page.html", {
         "item": item,
         "sq": sq,
@@ -1527,11 +1589,75 @@ def sub_question_page(request, item_id, sq_number):
         "my_answer": my_answer,
         "intro_html": intro_html,
         "program": item.chapter.program,
+        "has_api_key": has_api_key,
+        "olympiad_examples": olympiad_examples,
     })
 
 
 @login_required
 @require_full_member
+@login_required
+def ocr_preview_sub_answer(request, sub_question_id):
+    """사진 OCR만 수행하고 결과를 JSON으로 반환 (저장하지 않음)"""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    get_object_or_404(OlympiadSubQuestion, id=sub_question_id)
+    photo = request.FILES.get("photo")
+    if not photo:
+        return JsonResponse({"error": "no photo"}, status=400)
+    from .ai_service import _has_gemini, _has_anthropic, _get_gemini_client, _get_anthropic_client, has_any_ai
+    import base64
+    if not has_any_ai():
+        return JsonResponse({"ocr_text": "", "no_ai": True})
+
+    raw = photo.read()
+    name = photo.name or "image.jpg"
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else "jpeg"
+    mime_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                "gif": "image/gif", "webp": "image/webp"}
+    mime_type = mime_map.get(ext, "image/jpeg")
+
+    ocr_prompt = (
+        "이 이미지는 학생이 손으로 작성한 올림피아드 답안지입니다.\n"
+        "이미지에 적힌 모든 한국어 텍스트를 최대한 정확하게 인식하여 그대로 출력해 주세요.\n"
+        "표, 그림 설명, 번호 목록이 있으면 구조를 유지하며 텍스트로 변환하세요.\n"
+        "인식된 텍스트만 출력하고 다른 설명은 붙이지 마세요."
+    )
+
+    ocr_text = ""
+    if _has_gemini():
+        from google.genai import types as gtypes
+        client = _get_gemini_client()
+        for model_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[gtypes.Part.from_bytes(data=raw, mime_type=mime_type), ocr_prompt],
+                )
+                ocr_text = response.text.strip()
+                break
+            except Exception as e:
+                logger.warning("OCR preview Gemini(%s) 실패: %s", model_name, e)
+
+    if not ocr_text and _has_anthropic():
+        try:
+            image_b64 = base64.standard_b64encode(raw).decode("utf-8")
+            client = _get_anthropic_client()
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1024,
+                messages=[{"role": "user", "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": mime_type, "data": image_b64}},
+                    {"type": "text", "text": ocr_prompt},
+                ]}],
+            )
+            ocr_text = response.content[0].text.strip()
+        except Exception as e:
+            logger.warning("OCR preview Anthropic 실패: %s", e)
+
+    return JsonResponse({"ocr_text": ocr_text})
+
+
 def submit_sub_answer(request, sub_question_id):
     """하위 문제 텍스트 서술형 + 사진 제출"""
     sq = get_object_or_404(OlympiadSubQuestion, id=sub_question_id)
@@ -1558,19 +1684,31 @@ def submit_sub_answer(request, sub_question_id):
 
     text = request.POST.get("text_answer", "").strip()
     photo = request.FILES.get("photo")
+    # 모달에서 사용자가 확인/수정한 OCR 결과가 넘어오면 재OCR 생략
+    confirmed_ocr = request.POST.get("confirmed_ocr_text", "").strip()
+
+    prev_text = answer.text_answer.strip()
+    has_existing_feedback = bool(answer.ai_feedback)
 
     answer.text_answer = text
     if photo:
         answer.photo = photo
-        answer.ai_score = None  # 사진 바뀌면 재분석
+        answer.ai_score = None
         answer.ai_feedback = ""
+        has_existing_feedback = False
+        if confirmed_ocr:
+            answer.ocr_text = confirmed_ocr
+            if not text:
+                answer.text_answer = confirmed_ocr
     answer.save()
 
-    # AI 분석 (API 키 있을 때만)
-    from .ai_service import run_ai_analysis
-    if getattr(settings, 'ANTHROPIC_API_KEY', ''):
+    # AI 분석: 재OCR은 confirmed_ocr이 없을 때만
+    text_changed = text != prev_text and len(text) > 10
+    needs_ai = photo is not None or not has_existing_feedback or text_changed
+    from .ai_service import run_ai_analysis, has_any_ai
+    if has_any_ai() and needs_ai:
         try:
-            run_ai_analysis(answer)
+            run_ai_analysis(answer, skip_ocr=bool(confirmed_ocr))
         except Exception:
             pass  # AI 실패해도 저장은 완료
 
@@ -1604,8 +1742,8 @@ def olympiad_qr_upload_page(request, token):
             answer.ai_score = None
             answer.ai_feedback = ""
             answer.save(update_fields=["photo", "ai_score", "ai_feedback", "updated_at"])
-            from .ai_service import run_ai_analysis
-            if getattr(settings, 'ANTHROPIC_API_KEY', ''):
+            from .ai_service import run_ai_analysis, has_any_ai
+            if has_any_ai():
                 try:
                     run_ai_analysis(answer)
                 except Exception:
@@ -1634,6 +1772,28 @@ def olympiad_qr_code(request, sub_answer_id):
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return HttpResponse(buf.getvalue(), content_type="image/png")
+
+
+@login_required
+def reanalyze_sub_answer(request, sub_answer_id):
+    """본인 답안 또는 관리자가 AI 재분석 요청"""
+    answer = get_object_or_404(OlympiadSubAnswer, id=sub_answer_id)
+    if answer.student != request.user and not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, "권한이 없습니다.")
+        return redirect("item_page", item_id=answer.sub_question.item.id)
+
+    from .ai_service import run_ai_analysis, has_any_ai
+    if not has_any_ai():
+        messages.error(request, "GEMINI_API_KEY 또는 ANTHROPIC_API_KEY가 .env에 설정되지 않았습니다.")
+    else:
+        try:
+            run_ai_analysis(answer)
+            messages.success(request, "AI 분석이 완료되었습니다.")
+        except Exception as e:
+            messages.error(request, f"AI 분석 중 오류: {e}")
+
+    sq = answer.sub_question
+    return redirect("sub_question_page", item_id=sq.item.id, sq_number=sq.number)
 
 
 @login_required
@@ -1951,7 +2111,10 @@ def chapter_manage(request, program_id):
         except Exception as e:
             messages.error(request, f"엑셀 처리 중 오류 발생: {str(e)}")
             
-    chapters = Chapter.objects.filter(program=program).prefetch_related('items')
+    chapters = Chapter.objects.filter(program=program).prefetch_related(
+        'items', 'items__sub_questions', 'items__sub_questions__participant_examples',
+        'items__olympiad_examples',
+    )
     return render(request, "courses/chapter_manage.html", {
         "program": program,
         "chapters": chapters,
@@ -2026,6 +2189,102 @@ def olympiad_example_add(request, item_id):
     )
     messages.success(request, f"'{item.title}' 예시답안 이미지가 등록되었습니다.")
     return redirect(redirect_url)
+
+
+@login_required
+@user_passes_test(is_admin)
+def olympiad_sub_question_example_add(request, sq_id):
+    sq = get_object_or_404(OlympiadSubQuestion, id=sq_id)
+    item = sq.item
+
+    next_url = request.POST.get("next") or request.GET.get("next")
+    if next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}):
+        redirect_url = next_url
+    else:
+        redirect_url = reverse("chapter_manage", args=[item.chapter.program.id])
+
+    if request.method != "POST":
+        return redirect(redirect_url)
+
+    image = request.FILES.get("image")
+    if not image:
+        messages.error(request, "등록할 예시답안 이미지 파일을 선택해 주세요.")
+        return redirect(redirect_url)
+
+    image_error = validate_olympiad_example_image(image)
+    if image_error:
+        messages.error(request, image_error)
+        return redirect(redirect_url)
+
+    next_order = (sq.participant_examples.order_by("-order").values_list("order", flat=True).first() or 0) + 1
+    OlympiadAnswerExample.objects.create(
+        item=item,
+        sub_question=sq,
+        image=image,
+        caption=(request.POST.get("caption") or "").strip(),
+        order=next_order,
+    )
+    messages.success(request, f"'{item.title} {item.number}-{sq.number}' 예시답안 이미지가 등록되었습니다.")
+    return redirect(redirect_url)
+
+
+@login_required
+@user_passes_test(is_admin)
+def olympiad_sub_question_edit(request, sq_id):
+    sq = get_object_or_404(OlympiadSubQuestion, id=sq_id)
+    item = sq.item
+    program = item.chapter.program
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        # 참가자 예시답안 이미지 삭제
+        if action == "delete_example":
+            ex_id = request.POST.get("example_id")
+            sq.participant_examples.filter(id=ex_id).delete()
+            messages.success(request, "예시답안 이미지가 삭제되었습니다.")
+            return redirect("olympiad_sub_question_edit", sq_id=sq.id)
+
+        # 참가자 예시답안 이미지 추가
+        if action == "add_example":
+            image = request.FILES.get("image")
+            if image:
+                image_error = validate_olympiad_example_image(image)
+                if image_error:
+                    messages.error(request, image_error)
+                else:
+                    next_order = (sq.participant_examples.order_by("-order").values_list("order", flat=True).first() or 0) + 1
+                    OlympiadAnswerExample.objects.create(
+                        item=item,
+                        sub_question=sq,
+                        image=image,
+                        caption=(request.POST.get("caption") or "").strip(),
+                        order=next_order,
+                    )
+                    messages.success(request, "참가자 예시답안 이미지가 등록되었습니다.")
+            else:
+                messages.error(request, "이미지 파일을 선택해 주세요.")
+            return redirect("olympiad_sub_question_edit", sq_id=sq.id)
+
+        # 기본: 하위문제 내용 저장
+        form = OlympiadSubQuestionForm(request.POST, request.FILES, instance=sq)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"{item.number}-{sq.number} 하위문제가 저장되었습니다.")
+            return redirect("sub_question_page", item_id=item.id, sq_number=sq.number)
+    else:
+        form = OlympiadSubQuestionForm(instance=sq)
+
+    participant_examples = sq.participant_examples.order_by("order")
+
+    return render(request, "courses/sub_question_form.html", {
+        "sq": sq,
+        "item": item,
+        "program": program,
+        "form": form,
+        "participant_examples": participant_examples,
+        "back_url": reverse("chapter_manage", args=[program.id]),
+    })
 
 
 # --- 챕터 관리 ---

@@ -8,6 +8,7 @@ from .models import (
     Item,
     LearningProgram,
     OlympiadAnswerSubmission,
+    OlympiadSubQuestion,
     ProgramType,
 )
 
@@ -187,6 +188,26 @@ class OlympiadAnswerSubmissionForm(forms.ModelForm):
                     "placeholder": "답안을 글로 적거나 사진의 내용을 보완해 주세요",
                 }
             ),
+        }
+
+
+class OlympiadSubQuestionForm(forms.ModelForm):
+    class Meta:
+        model = OlympiadSubQuestion
+        fields = ["question_text", "question_image", "thinking_type", "hint", "example_answer"]
+        labels = {
+            "question_text": "문제 내용",
+            "question_image": "문제 이미지",
+            "thinking_type": "사고력 유형",
+            "hint": "힌트",
+            "example_answer": "예시 답안",
+        }
+        widgets = {
+            "question_text": forms.Textarea(attrs={"class": "form-textarea", "rows": 6}),
+            "question_image": forms.ClearableFileInput(attrs={"class": "form-input", "accept": "image/*"}),
+            "thinking_type": forms.Select(attrs={"class": "form-input"}),
+            "hint": forms.Textarea(attrs={"class": "form-textarea", "rows": 4, "placeholder": "힌트 (선택)"}),
+            "example_answer": forms.Textarea(attrs={"class": "form-textarea", "rows": 8, "placeholder": "예시 답안 (선택)"}),
         }
 
 

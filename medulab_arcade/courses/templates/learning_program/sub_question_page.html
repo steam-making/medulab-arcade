@@ -346,7 +346,8 @@
         <div style="display:flex;align-items:center;gap:12px;">
             <a href="{% url 'chapter_detail' item.chapter.id %}" class="sq-back">← 목록으로 돌아가기</a>
             {% if request.user.is_staff %}
-            <a href="{% url 'olympiad_sub_question_edit' sq.id %}" style="font-size:12px;padding:4px 10px;border-radius:8px;background:rgba(0,255,180,0.12);border:1px solid rgba(0,255,180,0.3);color:var(--accent-green);text-decoration:none;font-weight:700;">✏ 수정</a>
+            <a href="{% url 'olympiad_sub_question_edit' sq.id %}" style="font-size:12px;padding:4px 10px;border-radius:8px;background:rgba(0,255,180,0.12);border:1px solid rgba(0,255,180,0.3);color:var(--accent-green);text-decoration:none;font-weight:700;">✏ 하위문제 수정</a>
+            <a href="{% url 'item_edit' item.id %}?next={% url 'sub_question_page' item.id sq.number %}" style="font-size:12px;padding:4px 10px;border-radius:8px;background:rgba(125,211,252,0.12);border:1px solid rgba(125,211,252,0.3);color:#7dd3fc;text-decoration:none;font-weight:700;">✏ 문제 수정</a>
             {% endif %}
         </div>
         <span class="sq-progress-label">{{ sq_index }} / {{ sq_total }} 번째 문제</span>
@@ -373,6 +374,14 @@
     <div class="sq-intro">{{ intro_html|safe }}</div>
     {% endif %}
 
+    {# 상위 아이템 공통 이미지 (서문 바로 아래) #}
+    {% if item.question_image %}
+    <div style="margin:14px 28px; text-align:center;">
+        <img src="{{ item.question_image.url }}" alt="문제 이미지"
+            style="max-width:100%; max-height:480px; object-fit:contain; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
+    </div>
+    {% endif %}
+
     {# 이번 하위문제 #}
     <div class="sq-question-box">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
@@ -383,8 +392,8 @@
         </div>
         <div class="sq-question-text">{{ sq.question_text }}</div>
         {% if sq.question_image %}
-        <div style="margin-top:16px; text-align:center;">
-            <img src="{{ sq.question_image.url }}" alt="문제 이미지"
+        <div style="margin-top:14px; text-align:center;">
+            <img src="{{ sq.question_image.url }}" alt="하위문제 이미지"
                 style="max-width:100%; max-height:480px; object-fit:contain; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
         </div>
         {% endif %}

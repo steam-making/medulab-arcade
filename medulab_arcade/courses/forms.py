@@ -63,6 +63,7 @@ class ItemForm(forms.ModelForm):
             "title",
             "item_type",
             "explain_html",
+            "question_image",
             "hint",
             "answer_code",
             "example_input",
@@ -78,6 +79,7 @@ class ItemForm(forms.ModelForm):
             "explain_html": forms.Textarea(
                 attrs={"class": "form-input", "rows": 10, "placeholder": "HTML 형식의 설명을 입력하세요"}
             ),
+            "question_image": forms.ClearableFileInput(attrs={"class": "form-input", "accept": "image/*"}),
             "hint": forms.Textarea(attrs={"class": "form-input", "rows": 3, "placeholder": "힌트 내용"}),
             "answer_code": forms.Textarea(
                 attrs={"class": "form-input code-font", "rows": 10, "placeholder": "정답 코드"}

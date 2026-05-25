@@ -2394,10 +2394,13 @@ def item_create(request, chapter_id):
 def item_edit(request, item_id):
     item = get_object_or_404(Item, id=item_id)
     if request.method == "POST":
-        form = ItemForm(request.POST, instance=item)
+        form = ItemForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
             form.save()
             messages.success(request, f"'{item.title}' 아이템이 수정되었습니다.")
+            next_url = request.POST.get("next") or request.GET.get("next")
+            if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+                return redirect(next_url)
             return redirect("item_page", item_id=item.id)
     else:
         form = ItemForm(instance=item)

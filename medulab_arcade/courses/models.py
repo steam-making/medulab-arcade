@@ -93,6 +93,7 @@ class Item(models.Model):
     title = models.CharField("제목", max_length=200)
     item_type = models.CharField("유형", max_length=50, choices=ITEM_TYPES, default='example')
     explain_html = models.TextField("설명 (HTML 가능)", blank=True, null=True)
+    question_image = models.ImageField("문제 공통 이미지", upload_to="item_images/", null=True, blank=True)
     hint = models.TextField("힌트", blank=True, null=True)
     answer_code = models.TextField("정답 코드", blank=True, null=True)
     example_input = models.TextField("테스트용 입력값", blank=True, null=True)

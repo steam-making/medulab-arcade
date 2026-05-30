@@ -274,6 +274,8 @@ def evaluate_sub_answer(sub_question, answer_text: str, ocr_text: str = "") -> d
         except Exception:
             return None
 
+    last_error = ""
+
     # Gemini 우선
     if _has_gemini():
         for model_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]:
@@ -284,8 +286,10 @@ def evaluate_sub_answer(sub_question, answer_text: str, ocr_text: str = "") -> d
                 if result:
                     return result
                 logger.warning("Gemini(%s) 평가 JSON 파싱 실패: %s", model_name, response.text[:200])
+                last_error = f"Gemini({model_name}) 응답 파싱 실패"
                 break
             except Exception as e:
+                last_error = f"Gemini({model_name}): {e}"
                 logger.error("Gemini(%s) 평가 실패: %s", model_name, e)
 
     # Anthropic 차선
@@ -301,12 +305,13 @@ def evaluate_sub_answer(sub_question, answer_text: str, ocr_text: str = "") -> d
             if result:
                 return result
         except Exception as e:
+            last_error = f"Anthropic: {e}"
             logger.error("Anthropic 평가 실패: %s", e)
 
-    return {"score": 0, "feedback": json.dumps({"error": "AI 분석 실패"}, ensure_ascii=False)}
+    return {"score": 0, "feedback": json.dumps({"error": last_error or "AI 분석 실패"}, ensure_ascii=False)}
 
 
-def run_ai_analysis(sub_answer, skip_ocr: bool = False) -> None:
+def run_ai_analysis(sub_answer, skip_ocr: bool = False, force: bool = False) -> None:
     """OlympiadSubAnswer 저장 후 OCR + 평가 실행"""
     from django.utils import timezone
 
@@ -341,11 +346,20 @@ def run_ai_analysis(sub_answer, skip_ocr: bool = False) -> None:
 
     # 4) AI 평가
     result = evaluate_sub_answer(sub_answer.sub_question, sub_answer.text_answer, ocr_text)
-    # 기존 좋은 결과가 있는데 새 분석이 실패(score=0 + error)하면 덮어쓰지 않음
+    # force=True(답안 변경)면 무조건 덮어씀; 아니면 기존 좋은 결과 보호
     is_failure = result["score"] == 0 and "error" in result.get("feedback", "")
-    if is_failure and sub_answer.ai_score and sub_answer.ai_score > 0:
+    if is_failure and not force and sub_answer.ai_score and sub_answer.ai_score > 0:
         sub_answer.save(update_fields=["ocr_text", "text_answer"])
         return
+    if is_failure:
+        # AI 실패 시 예외를 던져서 호출자가 에러 메시지를 표시할 수 있게 함
+        fb = result.get("feedback", "{}")
+        try:
+            fb_data = json.loads(fb)
+            err = fb_data.get("error", "AI 분석 실패")
+        except Exception:
+            err = fb
+        raise RuntimeError(f"AI 평가 실패: {err}")
     sub_answer.ai_score = result["score"]
     sub_answer.ai_feedback = result["feedback"]
     sub_answer.ai_analyzed_at = timezone.now()

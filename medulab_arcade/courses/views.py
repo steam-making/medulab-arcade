@@ -1705,12 +1705,16 @@ def submit_sub_answer(request, sub_question_id):
     # AI 분석: 재OCR은 confirmed_ocr이 없을 때만
     text_changed = text != prev_text and len(text) > 10
     needs_ai = photo is not None or not has_existing_feedback or text_changed
+    ai_error_msg = ""
     from .ai_service import run_ai_analysis, has_any_ai
     if has_any_ai() and needs_ai:
         try:
-            run_ai_analysis(answer, skip_ocr=bool(confirmed_ocr))
-        except Exception:
-            pass  # AI 실패해도 저장은 완료
+            run_ai_analysis(answer, skip_ocr=bool(confirmed_ocr), force=text_changed or bool(photo))
+        except Exception as e:
+            ai_error_msg = str(e)
+            logger.warning("AI 분석 실패 (submit_sub_answer): %s", e)
+    elif not has_any_ai():
+        ai_error_msg = "AI API 키가 설정되지 않았습니다."
 
     # 모든 하위문제에 답안이 있으면 아이템 완료로 표시
     total_sq = item.sub_questions.count()
@@ -1725,7 +1729,10 @@ def submit_sub_answer(request, sub_question_id):
             progress.last_output = "하위 문제 답안 제출 완료"
             progress.save(update_fields=["code", "completed", "last_output", "updated_at"])
 
-    messages.success(request, f"{item.number}-{sq.number} 답안이 저장되었습니다.")
+    if ai_error_msg:
+        messages.warning(request, f"답안은 저장됐으나 AI 평가 실패: {ai_error_msg}")
+    else:
+        messages.success(request, f"{item.number}-{sq.number} 답안이 저장되었습니다.")
     return redirect("sub_question_page", item_id=item.id, sq_number=sq.number)
 
 
@@ -1814,65 +1821,26 @@ def ocr_preview_saved_answer(request, answer_id):
     if not answer.photo:
         return JsonResponse({"ocr_text": "", "no_photo": True})
 
-    # QR 업로드 시 run_ai_analysis가 이미 OCR을 실행했으면 재사용
+    # QR 업로드 중 이미 OCR이 실행됐으면 재사용
     if answer.ocr_text and answer.ocr_text.strip():
         return JsonResponse({"ocr_text": answer.ocr_text.strip()})
 
-    from .ai_service import _has_gemini, _has_anthropic, _get_gemini_client, _get_anthropic_client, has_any_ai
-    import base64
+    from .ai_service import ocr_from_image, has_any_ai
     if not has_any_ai():
         return JsonResponse({"ocr_text": "", "no_ai": True})
 
-    # 저장된 파일 읽기
     try:
-        answer.photo.open("rb")
-        raw = answer.photo.read()
-        answer.photo.close()
-    except Exception:
-        return JsonResponse({"ocr_text": ""})
+        ocr_text = ocr_from_image(answer.photo)
+    except Exception as e:
+        logger.warning("OCR saved 실패: %s", e)
+        ocr_text = ""
 
-    name = answer.photo.name or "image.jpg"
-    ext = name.rsplit(".", 1)[-1].lower() if "." in name else "jpeg"
-    mime_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
-                "gif": "image/gif", "webp": "image/webp"}
-    mime_type = mime_map.get(ext, "image/jpeg")
-
-    ocr_prompt = (
-        "이 이미지는 학생이 손으로 작성한 올림피아드 답안지입니다.\n"
-        "이미지에 적힌 모든 한국어 텍스트를 최대한 정확하게 인식하여 그대로 출력해 주세요.\n"
-        "표, 그림 설명, 번호 목록이 있으면 구조를 유지하며 텍스트로 변환하세요.\n"
-        "인식된 텍스트만 출력하고 다른 설명은 붙이지 마세요."
-    )
-
-    ocr_text = ""
-    if _has_gemini():
-        from google.genai import types as gtypes
-        client = _get_gemini_client()
-        for model_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]:
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=[gtypes.Part.from_bytes(data=raw, mime_type=mime_type), ocr_prompt],
-                )
-                ocr_text = response.text.strip()
-                break
-            except Exception as e:
-                logger.warning("OCR saved Gemini(%s) 실패: %s", model_name, e)
-
-    if not ocr_text and _has_anthropic():
-        try:
-            image_b64 = base64.standard_b64encode(raw).decode("utf-8")
-            client = _get_anthropic_client()
-            response = client.messages.create(
-                model="claude-sonnet-4-6", max_tokens=1024,
-                messages=[{"role": "user", "content": [
-                    {"type": "image", "source": {"type": "base64", "media_type": mime_type, "data": image_b64}},
-                    {"type": "text", "text": ocr_prompt},
-                ]}],
-            )
-            ocr_text = response.content[0].text.strip()
-        except Exception as e:
-            logger.warning("OCR saved Anthropic 실패: %s", e)
+    # 결과를 DB에 저장해 다음 요청 시 재사용
+    if ocr_text:
+        answer.ocr_text = ocr_text
+        if not answer.text_answer.strip():
+            answer.text_answer = ocr_text
+        answer.save(update_fields=["ocr_text", "text_answer"])
 
     return JsonResponse({"ocr_text": ocr_text})
 

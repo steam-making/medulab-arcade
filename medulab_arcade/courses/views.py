@@ -1798,6 +1798,73 @@ def reanalyze_sub_answer(request, sub_answer_id):
 
 @login_required
 @login_required
+def ocr_preview_saved_answer(request, answer_id):
+    """AJAX: 이미 저장된 사진으로 OCR 실행 후 결과 JSON 반환 (QR 업로드 후 PC 확인용)"""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    answer = get_object_or_404(OlympiadSubAnswer, id=answer_id, student=request.user)
+    if not answer.photo:
+        return JsonResponse({"ocr_text": "", "no_photo": True})
+    from .ai_service import _has_gemini, _has_anthropic, _get_gemini_client, _get_anthropic_client, has_any_ai
+    import base64
+    if not has_any_ai():
+        return JsonResponse({"ocr_text": "", "no_ai": True})
+
+    # 저장된 파일 읽기
+    try:
+        answer.photo.open("rb")
+        raw = answer.photo.read()
+        answer.photo.close()
+    except Exception:
+        return JsonResponse({"ocr_text": ""})
+
+    name = answer.photo.name or "image.jpg"
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else "jpeg"
+    mime_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+                "gif": "image/gif", "webp": "image/webp"}
+    mime_type = mime_map.get(ext, "image/jpeg")
+
+    ocr_prompt = (
+        "이 이미지는 학생이 손으로 작성한 올림피아드 답안지입니다.\n"
+        "이미지에 적힌 모든 한국어 텍스트를 최대한 정확하게 인식하여 그대로 출력해 주세요.\n"
+        "표, 그림 설명, 번호 목록이 있으면 구조를 유지하며 텍스트로 변환하세요.\n"
+        "인식된 텍스트만 출력하고 다른 설명은 붙이지 마세요."
+    )
+
+    ocr_text = ""
+    if _has_gemini():
+        from google.genai import types as gtypes
+        client = _get_gemini_client()
+        for model_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[gtypes.Part.from_bytes(data=raw, mime_type=mime_type), ocr_prompt],
+                )
+                ocr_text = response.text.strip()
+                break
+            except Exception as e:
+                logger.warning("OCR saved Gemini(%s) 실패: %s", model_name, e)
+
+    if not ocr_text and _has_anthropic():
+        try:
+            image_b64 = base64.standard_b64encode(raw).decode("utf-8")
+            client = _get_anthropic_client()
+            response = client.messages.create(
+                model="claude-sonnet-4-6", max_tokens=1024,
+                messages=[{"role": "user", "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": mime_type, "data": image_b64}},
+                    {"type": "text", "text": ocr_prompt},
+                ]}],
+            )
+            ocr_text = response.content[0].text.strip()
+        except Exception as e:
+            logger.warning("OCR saved Anthropic 실패: %s", e)
+
+    return JsonResponse({"ocr_text": ocr_text})
+
+
+@login_required
 def sub_answer_photo_status(request, answer_id):
     """AJAX: QR 업로드 완료 여부 + 사진 URL 반환 (PC 폴링용)"""
     answer = get_object_or_404(OlympiadSubAnswer, id=answer_id, student=request.user)

@@ -675,10 +675,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     _answerForm.addEventListener('submit', function(e) {
         var hasPhoto = photoInput && photoInput.files && photoInput.files.length > 0;
-        if (!hasPhoto) return; // 사진 없으면 일반 submit (텍스트만)
+        if (!hasPhoto && !_qrPhotoUploaded) return; // 사진 없으면 일반 submit (텍스트만)
 
         e.preventDefault();
-        openOcrModal();
+        if (_qrPhotoUploaded && !hasPhoto) {
+            openOcrModalFromSaved(); // QR 업로드: 저장된 사진으로 OCR
+        } else {
+            openOcrModal(); // 파일 직접 선택: 업로드하며 OCR
+        }
     });
 });
 
@@ -741,6 +745,46 @@ function openOcrModal() {
     };
 
     xhr.send(fd);
+}
+
+function openOcrModalFromSaved() {
+    var modal = document.getElementById('ocr-modal');
+    modal.style.display = 'flex';
+    _showStep('progress');
+    document.getElementById('modal-bar').style.width = '0%';
+    document.getElementById('modal-percent').textContent = '0%';
+    document.getElementById('modal-status-text').textContent = '손글씨 인식 중...';
+    document.getElementById('modal-ocr-wait').style.display = 'block';
+    document.getElementById('save-btn').disabled = true;
+
+    // 진행 바 애니메이션 (서버 처리 중 표시용)
+    var fakeP = 0;
+    var fakeTimer = setInterval(function() {
+        fakeP = Math.min(fakeP + 5, 85);
+        document.getElementById('modal-bar').style.width = fakeP + '%';
+        document.getElementById('modal-percent').textContent = fakeP + '%';
+    }, 400);
+
+    var csrf = _answerForm.querySelector('[name=csrfmiddlewaretoken]');
+    var fd = new FormData();
+    if (csrf) fd.append('csrfmiddlewaretoken', csrf.value);
+
+    fetch('/courses/olympiad/answer/' + _qrAnswerId + '/ocr-saved/', {method: 'POST', body: fd})
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            clearInterval(fakeTimer);
+            document.getElementById('modal-bar').style.width = '100%';
+            document.getElementById('modal-percent').textContent = '100%';
+            var ocrText = (data.ocr_text || '').trim();
+            document.getElementById('ocr-confirm-textarea').value = ocrText;
+            document.getElementById('ocr-empty-warn').style.display = ocrText ? 'none' : 'block';
+            _showStep('confirm');
+        })
+        .catch(function() {
+            clearInterval(fakeTimer);
+            document.getElementById('ocr-error-msg').textContent = '인식 중 오류가 발생했습니다. 다시 시도해주세요.';
+            _showStep('error');
+        });
 }
 
 function confirmOcrAndSubmit() {

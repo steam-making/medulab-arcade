@@ -52,6 +52,7 @@ urlpatterns = [
     path('olympiad/sub/<int:sub_question_id>/ocr-preview/', views.ocr_preview_sub_answer, name='ocr_preview_sub_answer'),
     path('olympiad/sub/<int:sub_question_id>/qr-token/', views.ensure_sub_answer_token, name='ensure_sub_answer_token'),
     path('olympiad/answer/<int:answer_id>/photo-status/', views.sub_answer_photo_status, name='sub_answer_photo_status'),
+    path('olympiad/answer/<int:answer_id>/ocr-saved/', views.ocr_preview_saved_answer, name='ocr_preview_saved_answer'),
     path('olympiad/sub-answer/<int:sub_answer_id>/reanalyze/', views.reanalyze_sub_answer, name='reanalyze_sub_answer'),
     path('olympiad/qr/<int:sub_answer_id>.png', views.olympiad_qr_code, name='olympiad_qr_code'),
     path('olympiad/upload/<str:token>/', views.olympiad_qr_upload_page, name='olympiad_qr_upload_page'),

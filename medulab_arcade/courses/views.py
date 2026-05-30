@@ -1797,6 +1797,15 @@ def reanalyze_sub_answer(request, sub_answer_id):
 
 
 @login_required
+@login_required
+def sub_answer_photo_status(request, answer_id):
+    """AJAX: QR 업로드 완료 여부 + 사진 URL 반환 (PC 폴링용)"""
+    answer = get_object_or_404(OlympiadSubAnswer, id=answer_id, student=request.user)
+    if answer.photo:
+        return JsonResponse({"has_photo": True, "photo_url": answer.photo.url})
+    return JsonResponse({"has_photo": False})
+
+
 def ensure_sub_answer_token(request, sub_question_id):
     """AJAX: 하위 문제 업로드 토큰 생성 후 QR 이미지 URL 반환"""
     sq = get_object_or_404(OlympiadSubQuestion, id=sub_question_id)

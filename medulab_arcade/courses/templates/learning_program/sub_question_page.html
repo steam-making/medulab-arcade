@@ -534,6 +534,12 @@
                         <div class="qr-box" id="qr-box">
                             <img id="qr-img" src="" alt="QR코드">
                             <div class="qr-caption">스마트폰 카메라로 스캔하세요</div>
+                            <div id="qr-waiting" style="display:none; margin-top:8px; font-size:12px; color:#fb923c; font-weight:700;">
+                                <span id="qr-wait-dot">⏳</span> 폰에서 업로드 대기 중...
+                            </div>
+                            <div id="qr-done" style="display:none; margin-top:8px; font-size:12px; color:var(--accent-green); font-weight:700;">
+                                ✅ 사진 업로드 완료! 저장 버튼을 눌러주세요.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -654,7 +660,7 @@ function _checkDirty() {
     var photoInput = document.getElementById('photo-file');
     var textChanged = textarea && textarea.value !== _origText;
     var photoChanged = photoInput && photoInput.files && photoInput.files.length > 0;
-    btn.disabled = !(textChanged || photoChanged);
+    btn.disabled = !(textChanged || photoChanged || _qrPhotoUploaded);
 }
 var _answerForm = null;
 
@@ -776,13 +782,20 @@ function previewPhoto(input) {
     _checkDirty();
 }
 
+var _qrAnswerId = null;
+var _qrPollTimer = null;
+var _qrPhotoUploaded = false;
+
 function showQR() {
     var box = document.getElementById('qr-box');
     var img = document.getElementById('qr-img');
     if (!box || !img) return;
 
-    if (box.style.display === 'block') { box.style.display = 'none'; return; }
-    if (img.src && img.src !== window.location.href) { box.style.display = 'block'; return; }
+    if (box.style.display === 'block') {
+        box.style.display = 'none';
+        _stopQrPolling();
+        return;
+    }
 
     fetch('/courses/olympiad/sub/' + SQ_ID + '/qr-token/')
         .then(function(r) { return r.json(); })
@@ -790,9 +803,49 @@ function showQR() {
             if (data.qr_url) {
                 img.src = data.qr_url;
                 box.style.display = 'block';
+                _qrAnswerId = data.answer_id;
+                _startQrPolling();
             }
         })
         .catch(function() { alert('QR 코드 생성에 실패했습니다.'); });
+}
+
+function _startQrPolling() {
+    _stopQrPolling();
+    document.getElementById('qr-waiting').style.display = 'block';
+    document.getElementById('qr-done').style.display = 'none';
+    _qrPollTimer = setInterval(_pollPhotoStatus, 3000);
+}
+
+function _stopQrPolling() {
+    if (_qrPollTimer) { clearInterval(_qrPollTimer); _qrPollTimer = null; }
+}
+
+function _pollPhotoStatus() {
+    if (!_qrAnswerId) return;
+    fetch('/courses/olympiad/answer/' + _qrAnswerId + '/photo-status/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.has_photo) {
+                _stopQrPolling();
+                document.getElementById('qr-waiting').style.display = 'none';
+                document.getElementById('qr-done').style.display = 'block';
+
+                // 미리보기 이미지 업데이트
+                var preview = document.getElementById('photo-preview');
+                if (preview) {
+                    preview.src = data.photo_url;
+                    preview.style.display = 'block';
+                }
+                // 저장 버튼 활성화 (QR 업로드는 텍스트 없어도 허용)
+                var btn = document.getElementById('save-btn');
+                if (btn) btn.disabled = false;
+                // file input을 비워서 폼 제출 시 기존 사진 유지
+                // (서버에 이미 저장됐으므로 photo input은 비어도 됨)
+                _qrPhotoUploaded = true;
+            }
+        })
+        .catch(function() {});
 }
 </script>
 {% endblock %}

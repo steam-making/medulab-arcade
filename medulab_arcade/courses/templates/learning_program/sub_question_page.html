@@ -625,9 +625,21 @@
 
         <!-- 단계 3: 최종 저장 중 -->
         <div id="ocr-step-saving" style="display:none; text-align:center;">
-            <div style="font-size:16px; font-weight:900; color:#7dd3fc; margin-bottom:16px;">💾 저장 중...</div>
+            <div style="font-size:16px; font-weight:900; color:#7dd3fc; margin-bottom:16px;">💾 저장 + AI 평가 중...</div>
             <div style="width:40px;height:40px;border:3px solid rgba(125,211,252,0.2);border-top-color:#7dd3fc;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px;"></div>
-            <div style="font-size:13px; color:var(--text-muted);">AI 평가와 함께 저장하고 있습니다.</div>
+            <div style="font-size:13px; color:var(--text-muted);">AI 평가와 함께 저장하고 있습니다.<br>잠시만 기다려 주세요.</div>
+        </div>
+
+        <!-- 단계 4: AI 에러 알림 (저장은 성공) -->
+        <div id="ocr-step-ai-warn" style="display:none; text-align:center;">
+            <div style="font-size:48px; margin-bottom:12px;">⚠️</div>
+            <div style="font-size:15px; font-weight:900; color:#fbbf24; margin-bottom:8px;">답안 저장 완료</div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:4px;">단, AI 평가에 실패했습니다:</div>
+            <div id="ocr-ai-error-detail" style="font-size:12px; color:#fb923c; background:rgba(251,146,60,0.08); border:1px solid rgba(251,146,60,0.25); border-radius:10px; padding:10px 14px; margin:10px 0 16px; text-align:left; line-height:1.7;"></div>
+            <button type="button" onclick="_goToRedirect()"
+                style="padding:10px 24px; border-radius:10px; background:var(--accent-green); color:#0d0d1a; border:none; font-size:13px; font-weight:900; cursor:pointer;">
+                확인
+            </button>
         </div>
 
         <!-- 오류 -->
@@ -645,10 +657,16 @@
 
 <script>
 var SQ_ID = {{ sq.id }};
+var _redirectUrl = null;
 
 function toggleEl(id) {
     var el = document.getElementById(id);
     if (el) el.classList.toggle('is-open');
+}
+
+function _goToRedirect() {
+    if (_redirectUrl) window.location.href = _redirectUrl;
+    else window.location.reload();
 }
 
 // 저장 버튼 활성화
@@ -674,21 +692,22 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!_answerForm) return;
 
     _answerForm.addEventListener('submit', function(e) {
-        var hasPhoto = photoInput && photoInput.files && photoInput.files.length > 0;
-        if (!hasPhoto && !_qrPhotoUploaded) return; // 사진 없으면 일반 submit (텍스트만)
-
         e.preventDefault();
+        var hasPhoto = photoInput && photoInput.files && photoInput.files.length > 0;
+
         if (_qrPhotoUploaded && !hasPhoto) {
             openOcrModalFromSaved(); // QR 업로드: 저장된 사진으로 OCR
-        } else {
+        } else if (hasPhoto) {
             openOcrModal(); // 파일 직접 선택: 업로드하며 OCR
+        } else {
+            submitTextOnly(); // 텍스트만: 저장+AI 모달
         }
     });
 });
 
 /* ── 모달 헬퍼 ── */
 function _showStep(name) {
-    ['progress','confirm','saving','error'].forEach(function(s) {
+    ['progress','confirm','saving','ai-warn','error'].forEach(function(s) {
         document.getElementById('ocr-step-' + s).style.display = (s === name ? 'block' : 'none');
     });
 }
@@ -731,7 +750,14 @@ function openOcrModal() {
             var data = JSON.parse(xhr.responseText);
             var ocrText = (data.ocr_text || '').trim();
             document.getElementById('ocr-confirm-textarea').value = ocrText;
-            document.getElementById('ocr-empty-warn').style.display = ocrText ? 'none' : 'block';
+            var warnEl = document.getElementById('ocr-empty-warn');
+            if (!ocrText) {
+                var detail = data.error_detail || '사진이 선명하지 않거나 AI 서비스에 문제가 있습니다.';
+                warnEl.innerHTML = '⚠ 인식된 내용이 없습니다.<br><span style="font-size:11px;color:#94a3b8;">' + detail + '</span>';
+                warnEl.style.display = 'block';
+            } else {
+                warnEl.style.display = 'none';
+            }
             _showStep('confirm');
         } catch(e) {
             document.getElementById('ocr-error-msg').textContent = '서버 응답을 처리하지 못했습니다.';
@@ -777,7 +803,14 @@ function openOcrModalFromSaved() {
             document.getElementById('modal-percent').textContent = '100%';
             var ocrText = (data.ocr_text || '').trim();
             document.getElementById('ocr-confirm-textarea').value = ocrText;
-            document.getElementById('ocr-empty-warn').style.display = ocrText ? 'none' : 'block';
+            var warnEl = document.getElementById('ocr-empty-warn');
+            if (!ocrText) {
+                var detail = data.error_detail || '사진이 선명하지 않거나 AI 서비스에 문제가 있습니다.';
+                warnEl.innerHTML = '⚠ 인식된 내용이 없습니다.<br><span style="font-size:11px;color:#94a3b8;">' + detail + '</span>';
+                warnEl.style.display = 'block';
+            } else {
+                warnEl.style.display = 'none';
+            }
             _showStep('confirm');
         })
         .catch(function() {
@@ -815,6 +848,43 @@ function confirmOcrAndSubmit() {
 function closeOcrModal() {
     document.getElementById('ocr-modal').style.display = 'none';
     document.getElementById('save-btn').disabled = false;
+}
+
+/* ── 텍스트 전용 저장 (사진 없음) ── */
+function submitTextOnly() {
+    var modal = document.getElementById('ocr-modal');
+    modal.style.display = 'flex';
+    _showStep('saving');
+    document.getElementById('save-btn').disabled = true;
+
+    var fd = new FormData(_answerForm);
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', _answerForm.action);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.onload = function() {
+        try {
+            var data = JSON.parse(xhr.responseText);
+            _redirectUrl = data.redirect || null;
+            if (data.ai_error) {
+                document.getElementById('ocr-ai-error-detail').textContent = data.ai_error;
+                _showStep('ai-warn');
+            } else {
+                _goToRedirect();
+            }
+        } catch(e) {
+            // JSON이 아니면 그냥 redirect
+            if (xhr.responseURL && xhr.responseURL !== window.location.href) {
+                window.location.href = xhr.responseURL;
+            } else {
+                window.location.reload();
+            }
+        }
+    };
+    xhr.onerror = function() {
+        document.getElementById('ocr-error-msg').textContent = '저장 중 오류가 발생했습니다.';
+        _showStep('error');
+    };
+    xhr.send(fd);
 }
 
 function previewPhoto(input) {

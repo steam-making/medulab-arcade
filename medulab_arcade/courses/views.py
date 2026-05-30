@@ -1625,6 +1625,8 @@ def ocr_preview_sub_answer(request, sub_question_id):
     )
 
     ocr_text = ""
+    ocr_errors = []
+
     if _has_gemini():
         from google.genai import types as gtypes
         client = _get_gemini_client()
@@ -1637,6 +1639,8 @@ def ocr_preview_sub_answer(request, sub_question_id):
                 ocr_text = response.text.strip()
                 break
             except Exception as e:
+                err_str = str(e)
+                ocr_errors.append(f"Gemini({model_name}): {err_str}")
                 logger.warning("OCR preview Gemini(%s) 실패: %s", model_name, e)
 
     if not ocr_text and _has_anthropic():
@@ -1653,9 +1657,21 @@ def ocr_preview_sub_answer(request, sub_question_id):
             )
             ocr_text = response.content[0].text.strip()
         except Exception as e:
+            ocr_errors.append(f"Anthropic: {e}")
             logger.warning("OCR preview Anthropic 실패: %s", e)
 
-    return JsonResponse({"ocr_text": ocr_text})
+    # 에러 원인 분류
+    error_detail = ""
+    if not ocr_text and ocr_errors:
+        combined = " | ".join(ocr_errors)
+        if "429" in combined or "RESOURCE_EXHAUSTED" in combined or "quota" in combined.lower() or "rate" in combined.lower():
+            error_detail = "무료 API 할당량을 모두 사용했습니다. 내일 리셋되거나 API 플랜을 업그레이드하면 다시 사용할 수 있습니다."
+        elif "401" in combined or "403" in combined or "API_KEY" in combined.upper() or "invalid" in combined.lower():
+            error_detail = "API 키가 올바르지 않습니다. 서버의 .env 설정을 확인해 주세요."
+        else:
+            error_detail = f"OCR 서버 오류: {combined[:200]}"
+
+    return JsonResponse({"ocr_text": ocr_text, "error_detail": error_detail})
 
 
 def submit_sub_answer(request, sub_question_id):
@@ -1728,6 +1744,16 @@ def submit_sub_answer(request, sub_question_id):
             progress.completed = True
             progress.last_output = "하위 문제 답안 제출 완료"
             progress.save(update_fields=["code", "completed", "last_output", "updated_at"])
+
+    redirect_url = request.build_absolute_uri(
+        f"/courses/item/{item.id}/sub/{sq.number}/"
+    )
+
+    # AJAX 요청이면 JSON으로 응답 (텍스트 전용 저장 흐름)
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        if ai_error_msg:
+            return JsonResponse({"ok": True, "ai_error": ai_error_msg, "redirect": redirect_url})
+        return JsonResponse({"ok": True, "redirect": redirect_url})
 
     if ai_error_msg:
         messages.warning(request, f"답안은 저장됐으나 AI 평가 실패: {ai_error_msg}")
@@ -1829,10 +1855,12 @@ def ocr_preview_saved_answer(request, answer_id):
     if not has_any_ai():
         return JsonResponse({"ocr_text": "", "no_ai": True})
 
+    ocr_error = ""
     try:
         ocr_text = ocr_from_image(answer.photo)
     except Exception as e:
         logger.warning("OCR saved 실패: %s", e)
+        ocr_error = str(e)
         ocr_text = ""
 
     # 결과를 DB에 저장해 다음 요청 시 재사용
@@ -1842,7 +1870,17 @@ def ocr_preview_saved_answer(request, answer_id):
             answer.text_answer = ocr_text
         answer.save(update_fields=["ocr_text", "text_answer"])
 
-    return JsonResponse({"ocr_text": ocr_text})
+    # 에러 원인 분류
+    error_detail = ""
+    if not ocr_text and ocr_error:
+        if "429" in ocr_error or "RESOURCE_EXHAUSTED" in ocr_error or "quota" in ocr_error.lower() or "rate" in ocr_error.lower():
+            error_detail = "무료 API 할당량을 모두 사용했습니다. 내일 리셋되거나 API 플랜을 업그레이드하면 다시 사용할 수 있습니다."
+        elif "401" in ocr_error or "403" in ocr_error or "API_KEY" in ocr_error.upper() or "invalid" in ocr_error.lower():
+            error_detail = "API 키가 올바르지 않습니다. 서버의 .env 설정을 확인해 주세요."
+        elif ocr_error:
+            error_detail = f"OCR 오류: {ocr_error[:200]}"
+
+    return JsonResponse({"ocr_text": ocr_text, "error_detail": error_detail})
 
 
 @login_required

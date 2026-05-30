@@ -1738,10 +1738,19 @@ def olympiad_qr_upload_page(request, token):
     if request.method == "POST":
         photo = request.FILES.get("photo")
         if photo:
+            # 기존 사진 파일 삭제
+            if answer.photo:
+                try:
+                    from django.core.files.storage import default_storage
+                    if default_storage.exists(answer.photo.name):
+                        default_storage.delete(answer.photo.name)
+                except Exception:
+                    pass
             answer.photo = photo
+            answer.ocr_text = ""
             answer.ai_score = None
             answer.ai_feedback = ""
-            answer.save(update_fields=["photo", "ai_score", "ai_feedback", "updated_at"])
+            answer.save(update_fields=["photo", "ocr_text", "ai_score", "ai_feedback", "updated_at"])
             from .ai_service import run_ai_analysis, has_any_ai
             if has_any_ai():
                 try:
@@ -1796,7 +1805,6 @@ def reanalyze_sub_answer(request, sub_answer_id):
     return redirect("sub_question_page", item_id=sq.item.id, sq_number=sq.number)
 
 
-@login_required
 @login_required
 def ocr_preview_saved_answer(request, answer_id):
     """AJAX: 이미 저장된 사진으로 OCR 실행 후 결과 JSON 반환 (QR 업로드 후 PC 확인용)"""

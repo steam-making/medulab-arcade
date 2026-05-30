@@ -12,6 +12,18 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
+def _friendly_ai_error(raw: str) -> str:
+    """기술적 AI 에러 문자열을 사람이 읽기 쉬운 메시지로 변환"""
+    if "429" in raw or "RESOURCE_EXHAUSTED" in raw or "quota" in raw.lower():
+        return "오늘의 무료 AI 사용량이 모두 소진되었습니다. 내일 다시 시도하거나 API 키를 추가해 주세요."
+    if "401" in raw or "403" in raw or "invalid" in raw.lower() or "API_KEY" in raw.upper():
+        return "AI API 키가 유효하지 않습니다. 서버 .env 설정을 확인해 주세요."
+    if "500" in raw or "503" in raw or "unavailable" in raw.lower():
+        return "AI 서버가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해 주세요."
+    # 너무 긴 에러는 앞 80자만
+    return raw[:80] if len(raw) > 80 else raw
+
+
 def _get_gemini_api_keys() -> list[str]:
     """GEMINI_API_KEY, GEMINI_API_KEY_2, GEMINI_API_KEY_3 ... 순으로 수집"""
     keys = []
@@ -395,14 +407,12 @@ def run_ai_analysis(sub_answer, skip_ocr: bool = False, force: bool = False) -> 
         sub_answer.save(update_fields=["ocr_text", "text_answer"])
         return
     if is_failure:
-        # AI 실패 시 예외를 던져서 호출자가 에러 메시지를 표시할 수 있게 함
         fb = result.get("feedback", "{}")
         try:
-            fb_data = json.loads(fb)
-            err = fb_data.get("error", "AI 분석 실패")
+            raw_err = json.loads(fb).get("error", "AI 분석 실패")
         except Exception:
-            err = fb
-        raise RuntimeError(f"AI 평가 실패: {err}")
+            raw_err = fb
+        raise RuntimeError(_friendly_ai_error(raw_err))
     sub_answer.ai_score = result["score"]
     sub_answer.ai_feedback = result["feedback"]
     sub_answer.ai_analyzed_at = timezone.now()

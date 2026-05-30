@@ -61,15 +61,16 @@
 /* 공통 안내 */
 .sq-intro {
     margin: 16px 28px 0;
-    padding: 16px 20px;
+    padding: 20px 24px;
     border-radius: 16px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-    color: var(--text-secondary);
-    font-size: 14px;
-    line-height: 1.8;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #e2e8f0;
+    font-size: 16px;
+    line-height: 1.9;
+    font-weight: 500;
 }
-.sq-intro h2, .sq-intro h3 { color: #fff; margin: 14px 0 8px; }
+.sq-intro h2, .sq-intro h3 { color: #fff; margin: 14px 0 8px; font-size: 18px; }
 .sq-intro p { margin: 0 0 8px; }
 /* 문제 본문 */
 .sq-question-box {
@@ -463,12 +464,11 @@
                     <span class="ai-score-num">{{ my_answer.ai_score }}점</span>
                     <div class="ai-score-bar"><div class="ai-score-fill" style="width:{{ my_answer.ai_score }}%;"></div></div>
                 </div>
-                <div id="ai-feedback-detail" style="display:none;">
+                <div id="ai-feedback-detail">
                     <div class="ai-section strengths"><div class="ai-section-title">✅ 잘한 점</div><div class="ai-section-body" id="ai-strengths"></div></div>
                     <div class="ai-section improvements"><div class="ai-section-title">🔥 보완할 점</div><div class="ai-section-body" id="ai-improvements"></div></div>
                     <div class="ai-section summary"><div class="ai-section-title">💬 총평</div><div class="ai-section-body" id="ai-summary"></div></div>
                 </div>
-                <button type="button" class="toggle-btn" style="margin-top:10px;width:100%;" onclick="toggleAIDetail()">상세 보기 / 숨기기</button>
                 <script>
                 (function(){
                     try {
@@ -480,10 +480,6 @@
                         document.getElementById('ai-summary').textContent = fb.summary || '';
                     } catch(e) {}
                 })();
-                function toggleAIDetail(){
-                    var d = document.getElementById('ai-feedback-detail');
-                    d.style.display = d.style.display === 'block' ? 'none' : 'block';
-                }
                 </script>
                 {% endwith %}
             </div>

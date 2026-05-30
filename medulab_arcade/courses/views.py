@@ -1875,8 +1875,15 @@ def ocr_preview_saved_answer(request, answer_id):
 @login_required
 def sub_answer_photo_status(request, answer_id):
     """AJAX: QR 업로드 완료 여부 + 사진 URL 반환 (PC 폴링용)"""
+    from django.utils.dateparse import parse_datetime
     answer = get_object_or_404(OlympiadSubAnswer, id=answer_id, student=request.user)
     if answer.photo:
+        # since 파라미터가 있으면 그 이후에 업로드된 경우만 감지
+        since_str = request.GET.get("since")
+        if since_str:
+            since_dt = parse_datetime(since_str)
+            if since_dt and answer.updated_at and answer.updated_at <= since_dt:
+                return JsonResponse({"has_photo": False})
         return JsonResponse({"has_photo": True, "photo_url": answer.photo.url})
     return JsonResponse({"has_photo": False})
 

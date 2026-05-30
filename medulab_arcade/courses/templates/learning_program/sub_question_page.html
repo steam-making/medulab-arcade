@@ -829,6 +829,7 @@ function previewPhoto(input) {
 var _qrAnswerId = null;
 var _qrPollTimer = null;
 var _qrPhotoUploaded = false;
+var _qrOpenedAt = null;
 
 function showQR() {
     var box = document.getElementById('qr-box');
@@ -840,6 +841,9 @@ function showQR() {
         _stopQrPolling();
         return;
     }
+    // 이전 상태 초기화
+    document.getElementById('qr-waiting').style.display = 'none';
+    document.getElementById('qr-done').style.display = 'none';
 
     fetch('/courses/olympiad/sub/' + SQ_ID + '/qr-token/')
         .then(function(r) { return r.json(); })
@@ -848,6 +852,8 @@ function showQR() {
                 img.src = data.qr_url;
                 box.style.display = 'block';
                 _qrAnswerId = data.answer_id;
+                _qrOpenedAt = new Date().toISOString();
+                _qrPhotoUploaded = false;
                 _startQrPolling();
             }
         })
@@ -867,7 +873,8 @@ function _stopQrPolling() {
 
 function _pollPhotoStatus() {
     if (!_qrAnswerId) return;
-    fetch('/courses/olympiad/answer/' + _qrAnswerId + '/photo-status/')
+    var sinceParam = _qrOpenedAt ? '?since=' + encodeURIComponent(_qrOpenedAt) : '';
+    fetch('/courses/olympiad/answer/' + _qrAnswerId + '/photo-status/' + sinceParam)
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.has_photo) {

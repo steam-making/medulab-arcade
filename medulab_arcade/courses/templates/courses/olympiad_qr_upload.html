@@ -71,7 +71,16 @@
     cursor: pointer;
   }
   .btn:active { opacity: 0.85; }
+  .btn:disabled { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.4); cursor: not-allowed; }
   .error { color: #f87171; font-size: 13px; margin-bottom: 14px; }
+  .progress-wrap { display: none; margin-bottom: 16px; }
+  .progress-label { font-size: 13px; font-weight: 700; color: #7dd3fc; margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .progress-track { height: 10px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, #00ffb4, #7dd3fc); transition: width 0.2s ease; }
+  .done-msg { display: none; text-align: center; padding: 20px 0 4px; }
+  .done-icon { font-size: 48px; margin-bottom: 10px; }
+  .done-text { font-size: 18px; font-weight: 900; color: #00ffb4; margin-bottom: 6px; }
+  .done-sub { font-size: 13px; color: #94a3b8; }
 </style>
 </head>
 <body>
@@ -89,13 +98,30 @@
     {% for msg in messages %}<div class="error">{{ msg }}</div>{% endfor %}
   {% endif %}
 
-  <form method="POST" enctype="multipart/form-data">
+  <form id="upload-form" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
     <label class="file-label" for="photo-input">📷 사진 선택 (카메라 촬영 또는 갤러리)</label>
     <input type="file" id="photo-input" name="photo" accept="image/*" capture="environment" required onchange="previewImg(this)">
     <img id="preview" class="preview" alt="미리보기">
-    <button type="submit" class="btn">업로드 완료</button>
+
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-label">
+        <span id="progress-status">업로드 중...</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn" id="upload-btn">업로드 완료</button>
   </form>
+
+  <div class="done-msg" id="done-msg">
+    <div class="done-icon">✅</div>
+    <div class="done-text">업로드 완료!</div>
+    <div class="done-sub">PC 화면에서 저장 버튼을 눌러주세요.</div>
+  </div>
 </div>
 <script>
 function previewImg(input) {
@@ -105,6 +131,51 @@ function previewImg(input) {
     img.style.display = 'block';
   }
 }
+
+document.getElementById('upload-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var photoInput = document.getElementById('photo-input');
+  if (!photoInput.files || !photoInput.files[0]) return;
+
+  var btn = document.getElementById('upload-btn');
+  var progressWrap = document.getElementById('progress-wrap');
+  var fill = document.getElementById('progress-fill');
+  var pct = document.getElementById('progress-pct');
+  var status = document.getElementById('progress-status');
+
+  btn.disabled = true;
+  progressWrap.style.display = 'block';
+
+  var fd = new FormData(this);
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', window.location.href);
+
+  xhr.upload.onprogress = function(ev) {
+    if (!ev.lengthComputable) return;
+    var p = Math.round(ev.loaded / ev.total * 95);
+    fill.style.width = p + '%';
+    pct.textContent = p + '%';
+    status.textContent = '업로드 중...';
+  };
+
+  xhr.onload = function() {
+    fill.style.width = '100%';
+    pct.textContent = '100%';
+    status.textContent = '완료!';
+    setTimeout(function() {
+      document.getElementById('upload-form').style.display = 'none';
+      document.getElementById('done-msg').style.display = 'block';
+    }, 400);
+  };
+
+  xhr.onerror = function() {
+    status.textContent = '⚠ 오류 발생 — 다시 시도해주세요.';
+    fill.style.background = '#f87171';
+    btn.disabled = false;
+  };
+
+  xhr.send(fd);
+});
 </script>
 </body>
 </html>

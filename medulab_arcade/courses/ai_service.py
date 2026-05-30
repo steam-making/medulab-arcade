@@ -22,10 +22,16 @@ def _get_gemini_client():
 
 def _get_anthropic_client():
     import anthropic
+    import httpx
     api_key = getattr(settings, 'ANTHROPIC_API_KEY', '')
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY가 .env에 설정되지 않았습니다.")
-    return anthropic.Anthropic(api_key=api_key)
+    # httpx 클라이언트에 UTF-8 강제 지정 (서버 locale이 ASCII인 경우 대비)
+    http_client = httpx.Client(
+        headers={"Content-Type": "application/json; charset=utf-8"},
+        timeout=60.0,
+    )
+    return anthropic.Anthropic(api_key=api_key, http_client=http_client)
 
 
 def _has_gemini():
@@ -296,10 +302,12 @@ def evaluate_sub_answer(sub_question, answer_text: str, ocr_text: str = "") -> d
     if _has_anthropic():
         try:
             client = _get_anthropic_client()
+            # content를 bytes로 강제 인코딩 후 디코딩 → locale ASCII 문제 우회
+            safe_prompt = prompt.encode("utf-8").decode("utf-8")
             response = client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=1024,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "user", "content": [{"type": "text", "text": safe_prompt}]}],
             )
             result = _parse(response.content[0].text)
             if result:

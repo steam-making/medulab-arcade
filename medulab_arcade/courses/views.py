@@ -1813,6 +1813,11 @@ def ocr_preview_saved_answer(request, answer_id):
     answer = get_object_or_404(OlympiadSubAnswer, id=answer_id, student=request.user)
     if not answer.photo:
         return JsonResponse({"ocr_text": "", "no_photo": True})
+
+    # QR 업로드 시 run_ai_analysis가 이미 OCR을 실행했으면 재사용
+    if answer.ocr_text and answer.ocr_text.strip():
+        return JsonResponse({"ocr_text": answer.ocr_text.strip()})
+
     from .ai_service import _has_gemini, _has_anthropic, _get_gemini_client, _get_anthropic_client, has_any_ai
     import base64
     if not has_any_ai():

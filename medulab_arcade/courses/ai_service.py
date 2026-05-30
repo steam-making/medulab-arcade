@@ -12,12 +12,34 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def _get_gemini_client():
+def _get_gemini_api_keys() -> list[str]:
+    """GEMINI_API_KEY, GEMINI_API_KEY_2, GEMINI_API_KEY_3 ... 순으로 수집"""
+    keys = []
+    # 기본 키
+    k = getattr(settings, 'GEMINI_API_KEY', '').strip()
+    if k:
+        keys.append(k)
+    # 번호 붙은 추가 키 (2~20)
+    for i in range(2, 21):
+        k = getattr(settings, f'GEMINI_API_KEY_{i}', '').strip()
+        if k:
+            keys.append(k)
+    return keys
+
+
+def _get_gemini_clients():
+    """등록된 모든 Gemini API 키에 대한 클라이언트 리스트 반환"""
     import google.genai as genai
-    api_key = getattr(settings, 'GEMINI_API_KEY', '')
-    if not api_key:
+    keys = _get_gemini_api_keys()
+    if not keys:
         raise ValueError("GEMINI_API_KEY가 .env에 설정되지 않았습니다.")
-    return genai.Client(api_key=api_key)
+    return [genai.Client(api_key=k) for k in keys]
+
+
+def _get_gemini_client():
+    """단일 클라이언트 반환 (하위 호환)"""
+    clients = _get_gemini_clients()
+    return clients[0]
 
 
 def _get_anthropic_client():
@@ -35,7 +57,7 @@ def _get_anthropic_client():
 
 
 def _has_gemini():
-    return bool(getattr(settings, 'GEMINI_API_KEY', ''))
+    return bool(_get_gemini_api_keys())
 
 
 def _has_anthropic():
@@ -90,22 +112,27 @@ def ocr_from_image(image_field) -> str:
         "인식된 텍스트만 출력하고 다른 설명은 붙이지 마세요."
     )
 
-    # Gemini 우선 (할당량 초과 시 하위 모델로 순차 시도)
+    # Gemini 우선 — 키별 × 모델별 순환 (429면 다음 키로)
     if _has_gemini():
         from google.genai import types as gtypes
-        client = _get_gemini_client()
+        clients = _get_gemini_clients()
         for model_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]:
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=[
-                        gtypes.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-                        ocr_prompt,
-                    ],
-                )
-                return response.text.strip()
-            except Exception as e:
-                logger.error("Gemini OCR(%s) 실패: %s", model_name, e)
+            for idx, client in enumerate(clients):
+                try:
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=[
+                            gtypes.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+                            ocr_prompt,
+                        ],
+                    )
+                    return response.text.strip()
+                except Exception as e:
+                    err_str = str(e)
+                    logger.warning("Gemini OCR(%s) 키%d 실패: %s", model_name, idx + 1, e)
+                    is_quota = "429" in err_str or "RESOURCE_EXHAUSTED" in err_str
+                    if not is_quota:
+                        break  # 할당량 외 오류 → 다음 키로 재시도 불필요
 
     # Anthropic 차선
     if _has_anthropic():
@@ -282,21 +309,29 @@ def evaluate_sub_answer(sub_question, answer_text: str, ocr_text: str = "") -> d
 
     last_error = ""
 
-    # Gemini 우선
+    # Gemini 우선 — 키별 × 모델별 순환 (429면 다음 키로)
     if _has_gemini():
+        clients = _get_gemini_clients()
         for model_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]:
-            try:
-                client = _get_gemini_client()
-                response = client.models.generate_content(model=model_name, contents=prompt)
-                result = _parse(response.text)
-                if result:
-                    return result
-                logger.warning("Gemini(%s) 평가 JSON 파싱 실패: %s", model_name, response.text[:200])
-                last_error = f"Gemini({model_name}) 응답 파싱 실패"
-                break
-            except Exception as e:
-                last_error = f"Gemini({model_name}): {e}"
-                logger.error("Gemini(%s) 평가 실패: %s", model_name, e)
+            for idx, client in enumerate(clients):
+                try:
+                    response = client.models.generate_content(model=model_name, contents=prompt)
+                    result = _parse(response.text)
+                    if result:
+                        return result
+                    logger.warning("Gemini(%s) 키%d 평가 JSON 파싱 실패", model_name, idx + 1)
+                    last_error = f"Gemini({model_name}) 응답 파싱 실패"
+                    break  # 파싱 실패는 같은 모델 다른 키로 재시도 불필요
+                except Exception as e:
+                    err_str = str(e)
+                    last_error = f"Gemini({model_name}) 키{idx + 1}: {err_str}"
+                    logger.warning("Gemini(%s) 키%d 평가 실패: %s", model_name, idx + 1, e)
+                    is_quota = "429" in err_str or "RESOURCE_EXHAUSTED" in err_str
+                    if not is_quota:
+                        break  # 할당량 외 오류는 다음 키로 재시도 불필요
+            else:
+                continue  # 이 모델의 모든 키가 할당량 소진 → 다음 모델 시도
+            break  # 파싱 실패 또는 비할당량 오류 → 다음 모델 불필요
 
     # Anthropic 차선
     if _has_anthropic():

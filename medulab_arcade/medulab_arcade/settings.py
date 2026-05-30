@@ -14,6 +14,11 @@ SECRET_KEY = 'django-insecure-change-this-in-production-medulab-2026'
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+# 추가 Gemini API 키 (GEMINI_API_KEY_2, GEMINI_API_KEY_3 ... 최대 20개)
+for _i in range(2, 21):
+    _k = os.environ.get(f'GEMINI_API_KEY_{_i}', '')
+    if _k:
+        vars()[f'GEMINI_API_KEY_{_i}'] = _k
 
 # SECURITY WARNING: 배포 시 False로 변경하세요!
 DEBUG = True

@@ -1,0 +1,84 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link "메듀랩 MEDULAB AI로봇코딩 융합학원" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "메듀랩" [ref=e6]
+        - generic [ref=e7]:
+          - generic [ref=e8]: MEDULAB
+          - generic [ref=e9]: AI로봇코딩 융합학원
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]:
+            - generic [ref=e13]: 🔍
+            - textbox "작품 검색..." [ref=e14]
+          - link "⌨️ 타자연습" [ref=e15] [cursor=pointer]:
+            - /url: /typing/
+          - link "🏫 교육프로그램" [ref=e16] [cursor=pointer]:
+            - /url: /courses/student/courses/
+          - link "📅 학원일정" [ref=e17] [cursor=pointer]:
+            - /url: /schedule/
+          - link "🏠 홈플레이" [ref=e18] [cursor=pointer]:
+            - /url: /courses/student/homework/
+        - generic [ref=e19]:
+          - link "👤 qa_browser_staff · 마이페이지" [ref=e20] [cursor=pointer]:
+            - /url: /profile/
+          - button "🛠️ 관리 서비스 ▼" [ref=e22] [cursor=pointer]:
+            - text: 🛠️ 관리 서비스
+            - generic [ref=e23]: ▼
+          - link "로그아웃" [ref=e24] [cursor=pointer]:
+            - /url: /accounts/logout/
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - heading "MEDULAB WORKS" [level=1] [ref=e27]
+      - paragraph [ref=e28]: 메듀랩 학생들이 창의력으로 빚어낸 놀라운 코딩 작품들을 만나보세요.
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]: "2"
+          - generic [ref=e32]: PROJECTS
+        - generic [ref=e33]:
+          - generic [ref=e34]: "36"
+          - generic [ref=e35]: PLAYS
+    - generic [ref=e36]:
+      - link "전체 작품" [ref=e37] [cursor=pointer]:
+        - /url: /
+      - link "🎮TestCat" [ref=e38] [cursor=pointer]:
+        - /url: "?category=TestCat"
+      - link "🐍Python" [ref=e39] [cursor=pointer]:
+        - /url: "?category=Python"
+      - link "🌐HTML/JS" [ref=e40] [cursor=pointer]:
+        - /url: "?category=HTML/JS"
+      - link "🎨CSS" [ref=e41] [cursor=pointer]:
+        - /url: "?category=CSS"
+      - link "🎮게임" [ref=e42] [cursor=pointer]:
+        - /url: "?category=게임"
+      - link "🤖AI/ML" [ref=e43] [cursor=pointer]:
+        - /url: "?category=AI/ML"
+    - generic [ref=e44]:
+      - 'link "눈덩이싸움 BY 권이용120112 #게임개발 #눈덩이 #겨울테마 🌐 🎨 🎮" [ref=e45] [cursor=pointer]':
+        - /url: /play/%EB%88%88%EB%8D%A9%EC%9D%B4%EC%8B%B8%EC%9B%80/
+        - generic [ref=e48]:
+          - generic [ref=e49]: 눈덩이싸움
+          - generic [ref=e50]: BY 권이용120112
+          - generic [ref=e51]:
+            - generic [ref=e52]: "#게임개발"
+            - generic [ref=e53]: "#눈덩이"
+            - generic [ref=e54]: "#겨울테마"
+        - generic [ref=e55]:
+          - generic "HTML/JS" [ref=e56]: 🌐
+          - generic "CSS" [ref=e57]: 🎨
+          - generic "게임" [ref=e58]: 🎮
+      - 'link "가위바위보 해서 지면 운지 BY 김하준 #겨울테마 #키보드조작 #플랫포머 🌐 🎨" [ref=e59] [cursor=pointer]':
+        - /url: /play/%EA%B0%80%EC%9C%84%EB%B0%94%EC%9C%84%EB%B3%B4-%ED%95%B4%EC%84%9C-%EC%A7%80%EB%A9%B4-%EC%9A%B4%EC%A7%80/
+        - generic [ref=e62]:
+          - generic [ref=e63]: 가위바위보 해서 지면 운지
+          - generic [ref=e64]: BY 김하준
+          - generic [ref=e65]:
+            - generic [ref=e66]: "#겨울테마"
+            - generic [ref=e67]: "#키보드조작"
+            - generic [ref=e68]: "#플랫포머"
+        - generic [ref=e69]:
+          - generic "HTML/JS" [ref=e70]: 🌐
+          - generic "CSS" [ref=e71]: 🎨
+  - contentinfo [ref=e72]:
+    - paragraph [ref=e73]: © 2026 메듀랩 AI로봇코딩 융합학원 — Medulab

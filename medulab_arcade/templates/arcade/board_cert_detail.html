@@ -1,0 +1,53 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}{{ cert.title }} - 자격취득{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 40px auto; padding: 20px;">
+    <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="color: #fff; font-size: 28px; font-weight: 800; margin: 0;">🏅 자격취득</h2>
+        <a href="{% url 'board_cert' %}" style="color: var(--text-muted); text-decoration: none; padding: 8px 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">목록으로</a>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.05); padding: 40px; border-radius: 16px; display: flex; flex-direction: column; gap: 40px;">
+        
+        <!-- 헤더 섹션 -->
+        <div style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 40px; position: relative;">
+            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 100%; height: 100%; background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
+            
+            <div style="font-size: 64px; margin-bottom: 12px; filter: drop-shadow(0 0 15px rgba(96,165,250,0.4)); animation: float-medal 3s infinite ease-in-out; display: inline-block;">🏅</div>
+            <style>
+                @keyframes float-medal {
+                    0% { transform: translateY(0) rotate(0deg); }
+                    50% { transform: translateY(-8px) rotate(5deg); }
+                    100% { transform: translateY(0) rotate(0deg); }
+                }
+            </style>
+            
+            <h3 style="color: #60a5fa; font-size: 44px; font-weight: 900; margin: 0 0 10px 0; letter-spacing: 2px; text-shadow: 0 0 20px rgba(96,165,250,0.6);">{{ cert.cert_name }}</h3>
+            <p style="color: rgba(255,255,255,0.9); font-size: 20px; font-weight: bold; margin: 0 0 24px 0; background: linear-gradient(90deg, transparent, rgba(96,165,250,0.2), transparent); padding: 8px 0; letter-spacing: 1px;">{{ congrats_msg }}</p>
+            
+            <div style="display: flex; justify-content: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+                <span style="background: rgba(255,255,255,0.1); padding: 8px 20px; border-radius: 30px; color: #fff; font-size: 18px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">🧑‍🎓 {{ cert.masked_name }}</span>
+                <span style="background: rgba(96,165,250,0.1); padding: 8px 20px; border-radius: 30px; color: #93c5fd; font-size: 18px; font-weight: bold; border: 1px solid rgba(96,165,250,0.3); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">📅 {{ cert.date_acquired|date:"Y.m.d" }}</span>
+                {% if cert.issuer %}
+                <span style="background: rgba(167,139,250,0.1); padding: 8px 20px; border-radius: 30px; color: #c4b5fd; font-size: 18px; font-weight: bold; border: 1px solid rgba(167,139,250,0.3); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">🏢 {{ cert.issuer }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 이미지 섹션 -->
+        {% if cert.thumbnail %}
+        <div style="max-width: 500px; margin: 0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 20px; background: rgba(255,255,255,0.1);">
+            <img src="{{ cert.thumbnail.url }}" style="width: 100%; display: block; object-fit: contain;" alt="자격증 사진">
+        </div>
+        {% endif %}
+
+        <!-- 내용 섹션 -->
+        {% if cert.content %}
+        <div style="color: #ddd; line-height: 1.8; font-size: 16px; padding: 20px 40px; background: rgba(0,0,0,0.2); border-radius: 12px; white-space: pre-wrap;">{{ cert.content }}</div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

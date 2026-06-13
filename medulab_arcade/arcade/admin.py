@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.utils import timezone
-from .models import Badge, Bookmark, Category, Like, Project, ScheduleAttachment, ScheduleEvent, UserBadge, UserProfile
+from .models import Badge, Bookmark, Category, Like, Project, ScheduleAttachment, ScheduleEvent, UserBadge, UserProfile, Notice, Award, Certification
 
 
 BADGE_CRITERIA_HELP = (
@@ -157,3 +157,23 @@ class UserBadgeAdmin(admin.ModelAdmin):
     list_display = ('user', 'badge', 'awarded_at')
     list_filter = ('badge__category', 'awarded_at')
     search_fields = ('user__username', 'badge__name', 'badge__code')
+
+@admin.register(Notice)
+class NoticeAdmin(admin.ModelAdmin):
+    list_display = ('title', 'author', 'created_at', 'view_count', 'is_pinned')
+    list_filter = ('is_pinned', 'created_at')
+    search_fields = ('title', 'content')
+    list_editable = ('is_pinned',)
+
+@admin.register(Award)
+class AwardAdmin(admin.ModelAdmin):
+    list_display = ('title', 'student_name', 'competition_name', 'organization', 'award_name', 'date_awarded')
+    list_filter = ('date_awarded',)
+    search_fields = ('student_name', 'competition_name', 'award_name', 'organization', 'title')
+
+@admin.register(Certification)
+class CertificationAdmin(admin.ModelAdmin):
+    list_display = ('title', 'student_name', 'cert_name', 'issuer', 'date_acquired')
+    list_filter = ('date_acquired',)
+    search_fields = ('student_name', 'cert_name', 'issuer', 'title')
+

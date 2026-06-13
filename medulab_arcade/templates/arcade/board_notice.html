@@ -1,0 +1,58 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}공지사항 - 메듀랩 아케이드{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 40px auto; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="color: #fff; font-size: 28px; font-weight: 800; margin: 0;">📢 공지사항</h2>
+        {% if user.is_staff %}
+        <a href="{% url 'board_notice_create' %}" style="background: #3b82f6; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">✍️ 글쓰기</a>
+        {% endif %}
+    </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 16px;">
+        <table style="width: 100%; border-collapse: collapse; color: var(--text-muted);">
+            <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <th style="padding: 12px; text-align: left;">번호</th>
+                    <th style="padding: 12px; text-align: left;">제목</th>
+                    <th style="padding: 12px; text-align: left;">작성일</th>
+                    <th style="padding: 12px; text-align: right;">조회수</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for notice in notices %}
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 16px 12px;">
+                        {% if notice.is_pinned %}
+                        <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">공지</span>
+                        {% else %}
+                        {{ forloop.revcounter }}
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px 12px;">
+                        <a href="{% url 'board_notice_detail' notice.pk %}" style="color: #fff; text-decoration: none; font-weight: {% if notice.is_pinned %}bold{% else %}normal{% endif %};">
+                            {{ notice.title }}
+                        </a>
+                    </td>
+                    <td style="padding: 16px 12px;">{{ notice.created_at|date:"Y.m.d" }}</td>
+                    <td style="padding: 16px 12px; text-align: right;">
+                        {{ notice.view_count }}
+                        {% if user.is_staff %}
+                        <div style="display: inline-flex; gap: 4px; margin-left: 12px; vertical-align: middle;">
+                            <a href="{% url 'board_notice_update' notice.pk %}" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 2px 6px; border-radius: 4px; text-decoration: none; font-size: 12px; border: 1px solid rgba(59, 130, 246, 0.5);">수정</a>
+                            <a href="{% url 'board_notice_delete' notice.pk %}" style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 2px 6px; border-radius: 4px; text-decoration: none; font-size: 12px; border: 1px solid rgba(239, 68, 68, 0.5);">삭제</a>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="padding: 40px; text-align: center;">등록된 공지사항이 없습니다.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

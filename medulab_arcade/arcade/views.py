@@ -24,7 +24,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, UserProfileUpdateForm
 from .holiday_utils import ensure_holidays
 
@@ -1132,6 +1132,26 @@ def check_username(request):
     })
 
 
+@login_required
+def search_users(request):
+    """학생 이름 자동완성을 위한 API"""
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({'users': []})
+    
+    profiles = UserProfile.objects.filter(
+        Q(real_name__icontains=q) | Q(user__username__icontains=q)
+    ).select_related('user')[:10]
+    
+    results = []
+    for p in profiles:
+        name = p.real_name if p.real_name else p.user.username
+        if name not in [r['name'] for r in results]: # 중복 방지
+            results.append({'id': p.user.id, 'name': name})
+            
+    return JsonResponse({'users': results})
+
+
 def signup(request):
     """회원가입"""
     if request.method == 'POST':
@@ -1640,3 +1660,152 @@ def profile_view(request):
         'badge_catalog': badge_catalog,
     }
     return render(request, 'arcade/profile.html', context)
+
+def board_notice(request):
+    notices = Notice.objects.all()
+    return render(request, 'arcade/board_notice.html', {'notices': notices})
+
+def board_awards(request):
+    awards = Award.objects.all()
+    return render(request, 'arcade/board_awards.html', {'awards': awards})
+
+def board_cert(request):
+    certs = Certification.objects.all()
+    return render(request, 'arcade/board_cert.html', {'certs': certs})
+
+def board_notice_detail(request, pk):
+    notice = get_object_or_404(Notice, pk=pk)
+    notice.view_count += 1
+    notice.save()
+    return render(request, 'arcade/board_notice_detail.html', {'notice': notice})
+
+import random
+
+AWARD_MESSAGES = [
+    "🎉 자랑스러운 대회 수상을 진심으로 축하합니다! 🎉",
+    "🎊 엄청난 노력의 결실! 수상을 축하해요! 🎊",
+    "🌟 눈부신 활약으로 이뤄낸 수상을 축하합니다! 🌟",
+    "👏 멋진 성과를 이룬 것을 진심으로 축하해요! 👏",
+    "✨ 앞으로도 계속될 멋진 도전을 응원합니다! ✨"
+]
+
+CERT_MESSAGES = [
+    "🎉 자랑스러운 자격 취득을 진심으로 축하합니다! 🎉",
+    "🎊 새로운 자격 증명! 한 걸음 더 성장했네요! 🎊",
+    "🌟 멋진 도전을 성공으로 이끈 것을 축하해요! 🌟",
+    "👏 대단한 성과입니다! 자격 취득을 축하합니다! 👏",
+    "✨ 값진 노력으로 얻은 자격증을 축하해요! ✨"
+]
+
+def board_awards_detail(request, pk):
+    award = get_object_or_404(Award, pk=pk)
+    congrats_msg = random.choice(AWARD_MESSAGES)
+    return render(request, 'arcade/board_awards_detail.html', {'award': award, 'congrats_msg': congrats_msg})
+
+def board_cert_detail(request, pk):
+    cert = get_object_or_404(Certification, pk=pk)
+    congrats_msg = random.choice(CERT_MESSAGES)
+    return render(request, 'arcade/board_cert_detail.html', {'cert': cert, 'congrats_msg': congrats_msg})
+
+
+@user_passes_test(lambda u: u.is_staff)
+def board_notice_create(request):
+    from .forms import NoticeForm
+    if request.method == 'POST':
+        form = NoticeForm(request.POST, request.FILES)
+        if form.is_valid():
+            notice = form.save(commit=False)
+            notice.author = request.user
+            notice.save()
+            return redirect('board_notice')
+    else:
+        form = NoticeForm()
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '공지사항 글쓰기'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_awards_create(request):
+    from .forms import AwardForm
+    if request.method == 'POST':
+        form = AwardForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('board_awards')
+    else:
+        form = AwardForm()
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '대회수상 글쓰기'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_cert_create(request):
+    from .forms import CertificationForm
+    if request.method == 'POST':
+        form = CertificationForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('board_cert')
+    else:
+        form = CertificationForm()
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '자격취득 글쓰기'})
+
+
+@user_passes_test(lambda u: u.is_staff)
+def board_notice_update(request, pk):
+    from .forms import NoticeForm
+    notice = get_object_or_404(Notice, pk=pk)
+    if request.method == 'POST':
+        form = NoticeForm(request.POST, request.FILES, instance=notice)
+        if form.is_valid():
+            form.save()
+            return redirect('board_notice_detail', pk=notice.pk)
+    else:
+        form = NoticeForm(instance=notice)
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '공지사항 수정'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_notice_delete(request, pk):
+    notice = get_object_or_404(Notice, pk=pk)
+    if request.method == 'POST':
+        notice.delete()
+        return redirect('board_notice')
+    return render(request, 'arcade/board_confirm_delete.html', {'object': notice, 'title': '공지사항 삭제', 'cancel_url': reverse('board_notice_detail', args=[pk])})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_awards_update(request, pk):
+    from .forms import AwardForm
+    award = get_object_or_404(Award, pk=pk)
+    if request.method == 'POST':
+        form = AwardForm(request.POST, request.FILES, instance=award)
+        if form.is_valid():
+            form.save()
+            return redirect('board_awards_detail', pk=award.pk)
+    else:
+        form = AwardForm(instance=award)
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '대회수상 수정'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_awards_delete(request, pk):
+    award = get_object_or_404(Award, pk=pk)
+    if request.method == 'POST':
+        award.delete()
+        return redirect('board_awards')
+    return render(request, 'arcade/board_confirm_delete.html', {'object': award, 'title': '대회수상 삭제', 'cancel_url': reverse('board_awards_detail', args=[pk])})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_cert_update(request, pk):
+    from .forms import CertificationForm
+    cert = get_object_or_404(Certification, pk=pk)
+    if request.method == 'POST':
+        form = CertificationForm(request.POST, request.FILES, instance=cert)
+        if form.is_valid():
+            form.save()
+            return redirect('board_cert_detail', pk=cert.pk)
+    else:
+        form = CertificationForm(instance=cert)
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '자격취득 수정'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_cert_delete(request, pk):
+    cert = get_object_or_404(Certification, pk=pk)
+    if request.method == 'POST':
+        cert.delete()
+        return redirect('board_cert')
+    return render(request, 'arcade/board_confirm_delete.html', {'object': cert, 'title': '자격취득 삭제', 'cancel_url': reverse('board_cert_detail', args=[pk])})

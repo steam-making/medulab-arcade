@@ -1,0 +1,111 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 40px auto; padding: 20px;">
+    <h2 style="color: #fff; font-size: 28px; font-weight: 800; margin-bottom: 24px;">{{ title }}</h2>
+    
+    <div style="background: rgba(255,255,255,0.05); padding: 40px; border-radius: 16px;">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            {% for field in form %}
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-muted); margin-bottom: 8px; font-weight: bold;">
+                    {{ field.label }}
+                    {% if field.field.required %}<span style="color: #ef4444;">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}
+                <div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">{{ field.help_text }}</div>
+                {% endif %}
+                {% if field.errors %}
+                <div style="color: #ef4444; font-size: 13px; margin-top: 4px;">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <div style="margin-top: 40px; display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" onclick="history.back()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">취소</button>
+                <button type="submit" style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">저장하기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentInput = document.getElementById('id_student_name');
+    if (!studentInput) return;
+
+    // 자동완성 드롭다운 컨테이너 생성
+    const dropdown = document.createElement('div');
+    dropdown.style.position = 'absolute';
+    dropdown.style.left = '0';
+    dropdown.style.top = '100%';
+    dropdown.style.width = '100%';
+    dropdown.style.background = '#1e293b';
+    dropdown.style.border = '1px solid rgba(255,255,255,0.1)';
+    dropdown.style.borderRadius = '8px';
+    dropdown.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.5)';
+    dropdown.style.zIndex = '1000';
+    dropdown.style.display = 'none';
+    dropdown.style.maxHeight = '200px';
+    dropdown.style.overflowY = 'auto';
+    dropdown.style.marginTop = '-10px';
+    
+    studentInput.parentNode.style.position = 'relative';
+    studentInput.parentNode.appendChild(dropdown);
+
+    let timeout = null;
+
+    studentInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        dropdown.style.display = 'none';
+        dropdown.innerHTML = '';
+        
+        if (!query) return;
+
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            fetch(`/api/search-users/?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.users && data.users.length > 0) {
+                        dropdown.innerHTML = '';
+                        data.users.forEach(user => {
+                            const item = document.createElement('div');
+                            item.style.padding = '10px 16px';
+                            item.style.cursor = 'pointer';
+                            item.style.color = '#fff';
+                            item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                            item.innerHTML = `👤 <strong>${user.name}</strong>`;
+                            
+                            item.addEventListener('mouseenter', () => item.style.background = 'rgba(59, 130, 246, 0.5)');
+                            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+                            
+                            item.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                studentInput.value = user.name;
+                                dropdown.style.display = 'none';
+                            });
+                            
+                            dropdown.appendChild(item);
+                        });
+                        dropdown.style.display = 'block';
+                    }
+                })
+                .catch(err => console.error(err));
+        }, 200);
+    });
+
+    // 외부 클릭 시 드롭다운 닫기
+    document.addEventListener('click', function(e) {
+        if (e.target !== studentInput && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

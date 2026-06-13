@@ -1,0 +1,66 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link "메듀랩 MEDULAB AI로봇코딩 융합학원" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "메듀랩" [ref=e6]
+        - generic [ref=e7]:
+          - generic [ref=e8]: MEDULAB
+          - generic [ref=e9]: AI로봇코딩 융합학원
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]:
+            - generic [ref=e13]: 🔍
+            - textbox "작품 검색..." [ref=e14]
+          - link "⌨️ 타자연습" [ref=e15] [cursor=pointer]:
+            - /url: /typing/
+          - link "🏫 교육프로그램" [ref=e16] [cursor=pointer]:
+            - /url: /courses/student/courses/
+          - link "📅 학원일정" [ref=e17] [cursor=pointer]:
+            - /url: /schedule/
+          - link "🏠 홈플레이" [ref=e18] [cursor=pointer]:
+            - /url: /courses/student/homework/
+        - generic [ref=e19]:
+          - link "로그인" [ref=e20] [cursor=pointer]:
+            - /url: /accounts/login/
+          - link "회원가입" [ref=e21] [cursor=pointer]:
+            - /url: /signup/
+  - main [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - link "← 목록으로 돌아가기" [ref=e26] [cursor=pointer]:
+            - /url: /courses/chapter/103/
+          - generic [ref=e27]: QA Browser Chapter
+        - generic [ref=e28]: ✍️ 사고력 올림피아드
+        - heading "QA Browser Olympiad Item" [level=1] [ref=e29]
+        - paragraph [ref=e30]: 실제 대회처럼 종이에 답안을 작성한 뒤 사진으로 제출하세요. 제출 후에는 예시 답안을 보며 내 답안을 비교하고 보완할 수 있습니다.
+      - generic [ref=e31]:
+        - article [ref=e32]:
+          - generic [ref=e34]: 📄 기출문제 원문
+          - generic [ref=e35]: Browser QA Prompt
+          - generic [ref=e36]:
+            - generic [ref=e38]: 🔒 참가자 답안 예시는 제출 후 공개
+            - generic [ref=e39]: 먼저 자신의 답안을 끝까지 작성해 제출해 보세요. 제출 후 예시 답안과 비교하면 훨씬 효과적으로 보완할 수 있습니다.
+        - complementary [ref=e40]:
+          - generic [ref=e41]:
+            - generic [ref=e43]: 💡 답안 작성 힌트
+            - button "힌트 보기 / 숨기기" [ref=e44] [cursor=pointer]
+          - generic [ref=e45]:
+            - generic [ref=e47]: 🏆 수상권 답안 체크리스트
+            - list [ref=e48]:
+              - listitem [ref=e49]: 문제에서 요구한 조건을 모두 표시했나요?
+              - listitem [ref=e50]: 분류 기준·규칙·순서를 명확히 썼나요?
+              - listitem [ref=e51]: 표, 그림, 순서도, 번호 목록을 활용했나요?
+              - listitem [ref=e52]: 왜 좋은 방법인지 이유와 장점을 썼나요?
+              - listitem [ref=e53]: 안전성·공정성·편리성까지 생각했나요?
+          - generic [ref=e54]:
+            - generic [ref=e56]: 로그인 필요
+            - paragraph [ref=e57]: 답안 사진 제출과 예시답안 확인은 로그인 후 이용할 수 있습니다.
+      - generic [ref=e59]:
+        - link "목록" [ref=e60] [cursor=pointer]:
+          - /url: /courses/chapter/103/
+        - link "학습 완료" [ref=e61] [cursor=pointer]:
+          - /url: /courses/chapter/103/
+  - contentinfo [ref=e62]:
+    - paragraph [ref=e63]: © 2026 메듀랩 AI로봇코딩 융합학원 — Medulab

@@ -628,10 +628,18 @@
                         style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); white-space: nowrap;">
                         🏫 교육프로그램
                     </a>
-                    <a href="{% url 'schedule' %}" class="nav-link"
-                        style="background: rgba(20, 184, 166, 0.15); color: #14b8a6; border: 1px solid rgba(20, 184, 166, 0.3); white-space: nowrap;">
-                        📅 학원일정
-                    </a>
+                    <div class="nav-dropdown">
+                        <button class="nav-link dropdown-toggle"
+                            style="background: rgba(20, 184, 166, 0.15); color: #14b8a6; border: 1px solid rgba(20, 184, 166, 0.3); white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            📢 공지/일정 <span style="font-size: 10px;">▼</span>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="{% url 'board_notice' %}">📢 공지사항</a>
+                            <a href="{% url 'schedule' %}">📅 학원일정</a>
+                            <a href="{% url 'board_awards' %}">🏆 대회수상</a>
+                            <a href="{% url 'board_cert' %}">🏅 자격취득</a>
+                        </div>
+                    </div>
                     <a href="{% url 'student_homework_list' %}" class="nav-link restriction-check"
                         style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); white-space: nowrap;">
                         🏠 홈플레이
@@ -763,30 +771,38 @@
         })();
     </script>
     <script>
-        /* ── 관리서비스 클릭 토글 ── */
+        /* ── 드롭다운 클릭 토글 ── */
         (function () {
-            function initAdminDropdownToggle() {
-                const dropdown = document.querySelector('.nav-dropdown');
-                const toggle = dropdown ? dropdown.querySelector('.dropdown-toggle') : null;
-                if (!dropdown || !toggle) return;
+            function initDropdownToggles() {
+                const dropdowns = document.querySelectorAll('.nav-dropdown');
+                dropdowns.forEach(dropdown => {
+                    const toggle = dropdown.querySelector('.dropdown-toggle');
+                    if (!toggle) return;
 
-                toggle.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    dropdown.classList.toggle('is-open');
+                    toggle.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        // Close other dropdowns
+                        dropdowns.forEach(d => {
+                            if (d !== dropdown) d.classList.remove('is-open');
+                        });
+                        dropdown.classList.toggle('is-open');
+                    });
                 });
 
                 document.addEventListener('click', function (event) {
-                    if (!dropdown.contains(event.target)) {
-                        dropdown.classList.remove('is-open');
-                    }
+                    dropdowns.forEach(dropdown => {
+                        if (!dropdown.contains(event.target)) {
+                            dropdown.classList.remove('is-open');
+                        }
+                    });
                 });
             }
 
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initAdminDropdownToggle);
+                document.addEventListener('DOMContentLoaded', initDropdownToggles);
             } else {
-                initAdminDropdownToggle();
+                initDropdownToggles();
             }
         })();
     </script>

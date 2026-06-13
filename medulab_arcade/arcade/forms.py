@@ -3,7 +3,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from .models import Badge, Project, ScheduleEvent, Tag, UserProfile
+from .models import Badge, Project, ScheduleEvent, Tag, UserProfile, Notice, Award, Certification
 
 
 BADGE_CRITERIA_HELP = (
@@ -580,4 +580,39 @@ class ScheduleEventForm(forms.ModelForm):
             'is_active': '체크하면 학원 일정 페이지에 노출됩니다.',
             'external_url': '대회 페이지나 관련 자료가 있는 링크를 입력하세요. (선택사항)',
             'image': '대회 포스터나 관련 이미지를 첨부할 수 있습니다. (선택사항)',
+        }
+
+
+class NoticeForm(forms.ModelForm):
+    class Meta:
+        model = Notice
+        fields = ['title', 'content', 'is_pinned', 'attachment']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '공지 제목', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'content': forms.Textarea(attrs={'class': 'form-input', 'rows': 10, 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+        }
+
+class AwardForm(forms.ModelForm):
+    class Meta:
+        model = Award
+        fields = ['student_name', 'competition_name', 'award_name', 'organization', 'date_awarded', 'thumbnail', 'content']
+        widgets = {
+            'student_name': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'competition_name': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'award_name': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'organization': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '예: 교육부', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'date_awarded': forms.DateInput(attrs={'class': 'form-input', 'type': 'date', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'content': forms.Textarea(attrs={'class': 'form-input', 'rows': 5, 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+        }
+
+class CertificationForm(forms.ModelForm):
+    class Meta:
+        model = Certification
+        fields = ['student_name', 'cert_name', 'issuer', 'date_acquired', 'thumbnail', 'content']
+        widgets = {
+            'student_name': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'cert_name': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'issuer': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '예: 대한상공회의소', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'date_acquired': forms.DateInput(attrs={'class': 'form-input', 'type': 'date', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'content': forms.Textarea(attrs={'class': 'form-input', 'rows': 5, 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
         }

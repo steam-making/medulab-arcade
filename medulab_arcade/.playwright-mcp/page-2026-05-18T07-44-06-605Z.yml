@@ -1,0 +1,45 @@
+- generic [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link "메듀랩 MEDULAB AI로봇코딩 융합학원" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "메듀랩" [ref=e6]
+        - generic [ref=e7]:
+          - generic [ref=e8]: MEDULAB
+          - generic [ref=e9]: AI로봇코딩 융합학원
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]:
+            - generic [ref=e13]: 🔍
+            - textbox "작품 검색..." [ref=e14]
+          - link "⌨️ 타자연습" [ref=e15] [cursor=pointer]:
+            - /url: /typing/
+          - link "🏫 교육프로그램" [ref=e16] [cursor=pointer]:
+            - /url: /courses/student/courses/
+          - link "📅 학원일정" [ref=e17] [cursor=pointer]:
+            - /url: /schedule/
+          - link "🏠 홈플레이" [ref=e18] [cursor=pointer]:
+            - /url: /courses/student/homework/
+        - generic [ref=e19]:
+          - link "로그인" [ref=e20] [cursor=pointer]:
+            - /url: /accounts/login/
+          - link "회원가입" [ref=e21] [cursor=pointer]:
+            - /url: /signup/
+  - generic [ref=e23]:
+    - generic [ref=e24]:
+      - heading "LOGIN" [level=1] [ref=e25]
+      - paragraph [ref=e26]: 메듀랩 센터에 다시 오신 것을 환영합니다
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: 아이디 또는 이메일
+        - textbox "아이디 또는 이메일 주소를 입력하세요" [active] [ref=e30]: qa_browser_student
+      - generic [ref=e31]:
+        - generic [ref=e32]: Password
+        - textbox "비밀번호를 입력하세요" [ref=e33]: qa-pass-123
+      - button "로그인하기" [ref=e34] [cursor=pointer]
+    - generic [ref=e35]:
+      - text: 아직 계정이 없으신가요?
+      - link "회원가입하기" [ref=e36] [cursor=pointer]:
+        - /url: /signup/
+  - contentinfo [ref=e37]:
+    - paragraph [ref=e38]: © 2026 메듀랩 AI로봇코딩 융합학원 — Medulab

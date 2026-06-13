@@ -1,0 +1,60 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}자격취득 - 메듀랩 아케이드{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 40px auto; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="color: #fff; font-size: 28px; font-weight: 800; margin: 0;">🏅 자격취득</h2>
+        {% if user.is_staff %}
+        <a href="{% url 'board_cert_create' %}" style="background: #3b82f6; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">✍️ 글쓰기</a>
+        {% endif %}
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;">
+        {% for cert in certs %}
+            <div style="background: rgba(255,255,255,0.05); border-radius: 16px; overflow: hidden; transition: transform 0.2s, background 0.2s; position: relative; border: 1px solid rgba(255,255,255,0.05);" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(-4px)';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.transform='translateY(0)';">
+                <a href="{% url 'board_cert_detail' cert.pk %}" style="text-decoration: none; color: inherit; display: block;">
+                    <div style="aspect-ratio: 4/3; background: linear-gradient(135deg, #0f766e, #3b82f6, #4338ca); display: flex; align-items: center; justify-content: center; position: relative;">
+                        {% if cert.thumbnail %}
+                        <img src="{{ cert.thumbnail.url }}" style="width: 100%; height: 100%; object-fit: contain; background: rgba(255,255,255,0.1); padding: 10px; box-sizing: border-box;">
+                        {% else %}
+                        <div style="text-align: center; animation: float-medal 3s infinite ease-in-out; padding: 20px;">
+                            <style>
+                            @keyframes float-medal {
+                                0% { transform: translateY(0) rotate(0deg); filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)) drop-shadow(0 0 10px rgba(96,165,250,0.3)); }
+                                50% { transform: translateY(-4px) rotate(3deg); filter: drop-shadow(0 8px 15px rgba(0,0,0,0.5)) drop-shadow(0 0 25px rgba(96,165,250,0.8)); }
+                                100% { transform: translateY(0) rotate(0deg); filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)) drop-shadow(0 0 10px rgba(96,165,250,0.3)); }
+                            }
+                            </style>
+                            <span style="font-size: 48px; display: inline-block; margin-bottom: 8px;">🏅</span>
+                            <div style="color: #60a5fa; font-size: 24px; font-weight: 900; margin-bottom: 6px; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">{{ cert.cert_name }}</div>
+                            {% if cert.issuer %}
+                            <div style="color: rgba(255,255,255,0.9); font-size: 16px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{{ cert.issuer }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="color: #fff; font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">🧑‍🎓</span> {{ cert.masked_name }}
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 16px;">
+                            {{ cert.date_acquired|date:"Y.m.d" }}
+                        </div>
+                    </div>
+                </a>
+                {% if user.is_staff %}
+                <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 6px;">
+                    <a href="{% url 'board_cert_update' cert.pk %}" style="background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 12px; transition: background 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.9)';" onmouseout="this.style.background='rgba(0,0,0,0.7)';">수정</a>
+                    <a href="{% url 'board_cert_delete' cert.pk %}" style="background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 12px; transition: background 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.9)';" onmouseout="this.style.background='rgba(0,0,0,0.7)';">삭제</a>
+                </div>
+                {% endif %}
+            </div>
+        {% empty %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); background: rgba(255,255,255,0.05); border-radius: 16px;">
+            등록된 자격취득 내역이 없습니다.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

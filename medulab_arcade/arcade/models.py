@@ -538,3 +538,21 @@ class Certification(models.Model):
         elif len(self.student_name) > 2:
             return self.student_name[0] + "*" * (len(self.student_name) - 2) + self.student_name[-1]
         return self.student_name
+
+
+class CertInfo(models.Model):
+    name = models.CharField('자격증명', max_length=100)
+    issuer = models.CharField('발급기관', max_length=100, blank=True, null=True)
+    description = models.TextField('자격내용 및 소개', blank=True, null=True)
+    thumbnail = models.ImageField('대표 이미지(로고 등)', upload_to='certinfo/', blank=True, null=True)
+    link = models.URLField('관련 링크', blank=True, null=True)
+    order = models.IntegerField('정렬순서', default=0)
+    created_at = models.DateTimeField('등록일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '자격종류'
+        verbose_name_plural = '자격종류'
+        ordering = ['order', '-created_at']
+
+    def __str__(self):
+        return self.name

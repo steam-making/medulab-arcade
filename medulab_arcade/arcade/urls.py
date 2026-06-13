@@ -21,6 +21,11 @@ urlpatterns = [
     path('board/cert/<int:pk>/', views.board_cert_detail, name='board_cert_detail'),
     path('board/cert/<int:pk>/update/', views.board_cert_update, name='board_cert_update'),
     path('board/cert/<int:pk>/delete/', views.board_cert_delete, name='board_cert_delete'),
+    path('board/certinfo/', views.board_certinfo, name='board_certinfo'),
+    path('board/certinfo/create/', views.board_certinfo_create, name='board_certinfo_create'),
+    path('board/certinfo/<int:pk>/', views.board_certinfo_detail, name='board_certinfo_detail'),
+    path('board/certinfo/<int:pk>/update/', views.board_certinfo_update, name='board_certinfo_update'),
+    path('board/certinfo/<int:pk>/delete/', views.board_certinfo_delete, name='board_certinfo_delete'),
     path('my-projects/', views.my_projects, name='my_projects'),
     path('project/<int:project_id>/preview/', views.project_preview, name='project_preview'),
     path('project/<int:project_id>/delete/', views.delete_project, name='delete_project'),
@@ -37,6 +42,7 @@ urlpatterns = [
     path('api/analyze-zip/', views.analyze_zip, name='analyze_zip'),
     path('api/check-username/', views.check_username, name='check_username'),
     path('api/search-users/', views.search_users, name='search_users'),
+    path('api/search-certinfos/', views.search_certinfos, name='search_certinfos'),
 
     # 회원 관리 (관리자 전용)
     path('admin-services/members/', views.member_list, name='member_list'),

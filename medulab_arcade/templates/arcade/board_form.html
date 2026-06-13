@@ -36,76 +36,80 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const studentInput = document.getElementById('id_student_name');
-    if (!studentInput) return;
+    function setupAutocomplete(inputId, apiUrl, iconStr) {
+        const inputEl = document.getElementById(inputId);
+        if (!inputEl) return;
 
-    // 자동완성 드롭다운 컨테이너 생성
-    const dropdown = document.createElement('div');
-    dropdown.style.position = 'absolute';
-    dropdown.style.left = '0';
-    dropdown.style.top = '100%';
-    dropdown.style.width = '100%';
-    dropdown.style.background = '#1e293b';
-    dropdown.style.border = '1px solid rgba(255,255,255,0.1)';
-    dropdown.style.borderRadius = '8px';
-    dropdown.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.5)';
-    dropdown.style.zIndex = '1000';
-    dropdown.style.display = 'none';
-    dropdown.style.maxHeight = '200px';
-    dropdown.style.overflowY = 'auto';
-    dropdown.style.marginTop = '-10px';
-    
-    studentInput.parentNode.style.position = 'relative';
-    studentInput.parentNode.appendChild(dropdown);
-
-    let timeout = null;
-
-    studentInput.addEventListener('input', function() {
-        const query = this.value.trim();
+        const dropdown = document.createElement('div');
+        dropdown.style.position = 'absolute';
+        dropdown.style.left = '0';
+        dropdown.style.top = '100%';
+        dropdown.style.width = '100%';
+        dropdown.style.background = '#1e293b';
+        dropdown.style.border = '1px solid rgba(255,255,255,0.1)';
+        dropdown.style.borderRadius = '8px';
+        dropdown.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.5)';
+        dropdown.style.zIndex = '1000';
         dropdown.style.display = 'none';
-        dropdown.innerHTML = '';
+        dropdown.style.maxHeight = '200px';
+        dropdown.style.overflowY = 'auto';
+        dropdown.style.marginTop = '-10px';
         
-        if (!query) return;
+        inputEl.parentNode.style.position = 'relative';
+        inputEl.parentNode.appendChild(dropdown);
 
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            fetch(`/api/search-users/?q=${encodeURIComponent(query)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.users && data.users.length > 0) {
-                        dropdown.innerHTML = '';
-                        data.users.forEach(user => {
-                            const item = document.createElement('div');
-                            item.style.padding = '10px 16px';
-                            item.style.cursor = 'pointer';
-                            item.style.color = '#fff';
-                            item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-                            item.innerHTML = `👤 <strong>${user.name}</strong>`;
-                            
-                            item.addEventListener('mouseenter', () => item.style.background = 'rgba(59, 130, 246, 0.5)');
-                            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
-                            
-                            item.addEventListener('click', function(e) {
-                                e.preventDefault();
-                                studentInput.value = user.name;
-                                dropdown.style.display = 'none';
-                            });
-                            
-                            dropdown.appendChild(item);
-                        });
-                        dropdown.style.display = 'block';
-                    }
-                })
-                .catch(err => console.error(err));
-        }, 200);
-    });
+        let timeout = null;
 
-    // 외부 클릭 시 드롭다운 닫기
-    document.addEventListener('click', function(e) {
-        if (e.target !== studentInput && !dropdown.contains(e.target)) {
+        inputEl.addEventListener('input', function() {
+            const query = this.value.trim();
             dropdown.style.display = 'none';
-        }
-    });
+            dropdown.innerHTML = '';
+            
+            if (!query) return;
+
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                fetch(`${apiUrl}?q=${encodeURIComponent(query)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        let items = data.users || data.certinfos || [];
+                        if (items.length > 0) {
+                            dropdown.innerHTML = '';
+                            items.forEach(itemData => {
+                                const item = document.createElement('div');
+                                item.style.padding = '10px 16px';
+                                item.style.cursor = 'pointer';
+                                item.style.color = '#fff';
+                                item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                                item.innerHTML = `${iconStr} <strong>${itemData.name}</strong>`;
+                                
+                                item.addEventListener('mouseenter', () => item.style.background = 'rgba(59, 130, 246, 0.5)');
+                                item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+                                
+                                item.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    inputEl.value = itemData.name;
+                                    dropdown.style.display = 'none';
+                                });
+                                
+                                dropdown.appendChild(item);
+                            });
+                            dropdown.style.display = 'block';
+                        }
+                    })
+                    .catch(err => console.error(err));
+            }, 200);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target !== inputEl && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+    }
+
+    setupAutocomplete('id_student_name', '/api/search-users/', '👤');
+    setupAutocomplete('id_cert_name', '/api/search-certinfos/', '📜');
 });
 </script>
 {% endblock %}

@@ -24,7 +24,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, UserProfileUpdateForm
 from .holiday_utils import ensure_holidays
 
@@ -1151,6 +1151,17 @@ def search_users(request):
             
     return JsonResponse({'users': results})
 
+@login_required
+def search_certinfos(request):
+    """자격증명 자동완성을 위한 API"""
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({'certinfos': []})
+    
+    certs = CertInfo.objects.filter(name__icontains=q)[:10]
+    results = [{'id': c.id, 'name': c.name} for c in certs]
+    return JsonResponse({'certinfos': results})
+
 
 def signup(request):
     """회원가입"""
@@ -1809,3 +1820,45 @@ def board_cert_delete(request, pk):
         cert.delete()
         return redirect('board_cert')
     return render(request, 'arcade/board_confirm_delete.html', {'object': cert, 'title': '자격취득 삭제', 'cancel_url': reverse('board_cert_detail', args=[pk])})
+
+# --- 자격종류 (CertInfo) 게시판 ---
+def board_certinfo(request):
+    certinfos = CertInfo.objects.all()
+    return render(request, 'arcade/board_certinfo.html', {'certinfos': certinfos})
+
+def board_certinfo_detail(request, pk):
+    certinfo = get_object_or_404(CertInfo, pk=pk)
+    return render(request, 'arcade/board_certinfo_detail.html', {'certinfo': certinfo})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_certinfo_create(request):
+    from .forms import CertInfoForm
+    if request.method == 'POST':
+        form = CertInfoForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('board_certinfo')
+    else:
+        form = CertInfoForm()
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '자격종류 글쓰기'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_certinfo_update(request, pk):
+    from .forms import CertInfoForm
+    certinfo = get_object_or_404(CertInfo, pk=pk)
+    if request.method == 'POST':
+        form = CertInfoForm(request.POST, request.FILES, instance=certinfo)
+        if form.is_valid():
+            form.save()
+            return redirect('board_certinfo_detail', pk=certinfo.pk)
+    else:
+        form = CertInfoForm(instance=certinfo)
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '자격종류 수정'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_certinfo_delete(request, pk):
+    certinfo = get_object_or_404(CertInfo, pk=pk)
+    if request.method == 'POST':
+        certinfo.delete()
+        return redirect('board_certinfo')
+    return render(request, 'arcade/board_confirm_delete.html', {'object': certinfo, 'title': '자격종류 삭제', 'cancel_url': reverse('board_certinfo_detail', args=[pk])})

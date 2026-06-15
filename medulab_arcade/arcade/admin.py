@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.utils import timezone
-from .models import Badge, Bookmark, Category, Like, Project, ScheduleAttachment, ScheduleEvent, UserBadge, UserProfile, Notice, Award, Certification
+from .models import Badge, Bookmark, Category, Like, Project, ScheduleAttachment, ScheduleEvent, UserBadge, UserProfile, Notice, Award, Certification, CertInfo, CompetitionType
 
 
 BADGE_CRITERIA_HELP = (
@@ -167,13 +167,29 @@ class NoticeAdmin(admin.ModelAdmin):
 
 @admin.register(Award)
 class AwardAdmin(admin.ModelAdmin):
-    list_display = ('title', 'student_name', 'competition_name', 'organization', 'award_name', 'date_awarded')
-    list_filter = ('date_awarded',)
+    list_display = ('title', 'student_name', 'competition_type', 'competition_name', 'organization', 'award_name', 'date_awarded')
+    list_filter = ('competition_type', 'date_awarded')
     search_fields = ('student_name', 'competition_name', 'award_name', 'organization', 'title')
 
 @admin.register(Certification)
 class CertificationAdmin(admin.ModelAdmin):
-    list_display = ('title', 'student_name', 'cert_name', 'issuer', 'date_acquired')
-    list_filter = ('date_acquired',)
+    list_display = ('title', 'student_name', 'cert_info', 'cert_name', 'issuer', 'date_acquired')
+    list_filter = ('cert_info', 'date_acquired')
     search_fields = ('student_name', 'cert_name', 'issuer', 'title')
+
+
+@admin.register(CertInfo)
+class CertInfoAdmin(admin.ModelAdmin):
+    list_display = ('name', 'issuer', 'order', 'created_at')
+    list_filter = ('issuer',)
+    search_fields = ('name', 'issuer', 'description')
+    list_editable = ('order',)
+
+
+@admin.register(CompetitionType)
+class CompetitionTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'organization', 'order', 'created_at')
+    list_filter = ('organization',)
+    search_fields = ('name', 'organization', 'description')
+    list_editable = ('order',)
 

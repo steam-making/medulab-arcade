@@ -474,6 +474,14 @@ class Notice(models.Model):
 class Award(models.Model):
     title = models.CharField('제목 (게시물용)', max_length=200, blank=True, null=True)
     student_name = models.CharField('학생 이름', max_length=50)
+    competition_type = models.ForeignKey(
+        'CompetitionType',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='awards',
+        verbose_name='대회종류'
+    )
     competition_name = models.CharField('대회명', max_length=100)
     award_name = models.CharField('상격 (예: 대상, 금상)', max_length=50)
     organization = models.CharField('수여기관', max_length=100, blank=True, null=True)
@@ -483,6 +491,10 @@ class Award(models.Model):
     created_at = models.DateTimeField('등록일', auto_now_add=True)
 
     def save(self, *args, **kwargs):
+        if self.competition_type:
+            self.competition_name = self.competition_type.name
+            if not self.organization and self.competition_type.organization:
+                self.organization = self.competition_type.organization
         if not self.title:
             self.title = f"[{self.competition_name}] {self.student_name} {self.award_name} 수상"
         super().save(*args, **kwargs)
@@ -509,6 +521,14 @@ class Award(models.Model):
 class Certification(models.Model):
     title = models.CharField('제목 (게시물용)', max_length=200, blank=True, null=True)
     student_name = models.CharField('학생 이름', max_length=50)
+    cert_info = models.ForeignKey(
+        'CertInfo',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='certifications',
+        verbose_name='자격종류'
+    )
     cert_name = models.CharField('자격증명', max_length=100)
     issuer = models.CharField('발급기관', max_length=100, blank=True, null=True)
     date_acquired = models.DateField('취득일자')
@@ -517,6 +537,10 @@ class Certification(models.Model):
     created_at = models.DateTimeField('등록일', auto_now_add=True)
 
     def save(self, *args, **kwargs):
+        if self.cert_info:
+            self.cert_name = self.cert_info.name
+            if not self.issuer and self.cert_info.issuer:
+                self.issuer = self.cert_info.issuer
         if not self.title:
             self.title = f"[{self.cert_name}] {self.student_name} 자격 취득"
         super().save(*args, **kwargs)
@@ -552,6 +576,24 @@ class CertInfo(models.Model):
     class Meta:
         verbose_name = '자격종류'
         verbose_name_plural = '자격종류'
+        ordering = ['order', '-created_at']
+
+    def __str__(self):
+        return self.name
+
+
+class CompetitionType(models.Model):
+    name = models.CharField('대회명', max_length=100)
+    organization = models.CharField('주최/주관', max_length=100, blank=True, null=True)
+    description = models.TextField('대회 소개', blank=True, null=True)
+    thumbnail = models.ImageField('대표 이미지(포스터/로고)', upload_to='competition_types/', blank=True, null=True)
+    link = models.URLField('관련 링크', blank=True, null=True)
+    order = models.IntegerField('정렬순서', default=0)
+    created_at = models.DateTimeField('등록일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '대회종류'
+        verbose_name_plural = '대회종류'
         ordering = ['order', '-created_at']
 
     def __str__(self):

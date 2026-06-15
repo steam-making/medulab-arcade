@@ -4,12 +4,27 @@
 
 {% block content %}
 <div style="max-width: 1000px; margin: 40px auto; padding: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap;">
         <h2 style="color: #fff; font-size: 28px; font-weight: 800; margin: 0;">🏅 자격취득</h2>
-        {% if user.is_staff %}
-        <a href="{% url 'board_cert_create' %}" style="background: #3b82f6; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">✍️ 글쓰기</a>
-        {% endif %}
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <form method="get" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <select name="cert_type" onchange="this.form.submit()" style="padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(15,23,42,0.95); color: #fff; min-width: 220px;">
+                    <option value="">전체 자격종류</option>
+                    {% for cert_type in cert_types %}
+                    <option value="{{ cert_type.pk }}" {% if selected_cert_type == cert_type.pk|stringformat:'s' %}selected{% endif %}>{{ cert_type.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if selected_cert_type %}
+                <a href="{% url 'board_cert' %}" style="background: rgba(255,255,255,0.08); color: white; padding: 10px 14px; border-radius: 10px; text-decoration: none; font-size: 14px;">초기화</a>
+                {% endif %}
+            </form>
+            {% if user.is_staff %}
+            <a href="{% url 'board_certinfo' %}" style="background: rgba(96, 165, 250, 0.18); color: #93c5fd; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">🗂️ 자격종류 관리</a>
+            <a href="{% url 'board_cert_create' %}" style="background: #3b82f6; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">✍️ 글쓰기</a>
+            {% endif %}
+        </div>
     </div>
+    <div style="margin-bottom: 18px; color: var(--text-muted); font-size: 14px;">최신 취득순으로 표시됩니다.</div>
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;">
         {% for cert in certs %}
             <div style="background: rgba(255,255,255,0.05); border-radius: 16px; overflow: hidden; transition: transform 0.2s, background 0.2s; position: relative; border: 1px solid rgba(255,255,255,0.05);" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(-4px)';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.transform='translateY(0)';">
@@ -27,6 +42,7 @@
                             }
                             </style>
                             <span style="font-size: 48px; display: inline-block; margin-bottom: 8px;">🏅</span>
+                            <div style="color: rgba(255,255,255,0.8); font-size: 13px; margin-bottom: 6px;">{{ cert.cert_info.name|default:cert.cert_name }}</div>
                             <div style="color: #60a5fa; font-size: 24px; font-weight: 900; margin-bottom: 6px; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">{{ cert.cert_name }}</div>
                             {% if cert.issuer %}
                             <div style="color: rgba(255,255,255,0.9); font-size: 16px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{{ cert.issuer }}</div>
@@ -34,11 +50,14 @@
                         </div>
                         {% endif %}
                     </div>
-                    <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="color: #fff; font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 20px;">🧑‍🎓</span> {{ cert.masked_name }}
+                    <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                        <div>
+                            <div style="display: inline-flex; align-items: center; gap: 6px; color: #bfdbfe; font-size: 12px; font-weight: 700; margin-bottom: 10px; background: rgba(59, 130, 246, 0.14); border: 1px solid rgba(59, 130, 246, 0.24); padding: 4px 10px; border-radius: 999px;">{{ cert.cert_info.name|default:cert.cert_name }}</div>
+                            <div style="color: #fff; font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 20px;">🧑‍🎓</span> {{ cert.masked_name }}
+                            </div>
                         </div>
-                        <div style="color: var(--text-muted); font-size: 16px;">
+                        <div style="color: var(--text-muted); font-size: 16px; white-space: nowrap;">
                             {{ cert.date_acquired|date:"Y.m.d" }}
                         </div>
                     </div>

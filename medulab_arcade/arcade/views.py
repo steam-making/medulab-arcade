@@ -24,7 +24,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, UserProfileUpdateForm
 from .holiday_utils import ensure_holidays
 
@@ -1159,7 +1159,7 @@ def search_certinfos(request):
         return JsonResponse({'certinfos': []})
     
     certs = CertInfo.objects.filter(name__icontains=q)[:10]
-    results = [{'id': c.id, 'name': c.name} for c in certs]
+    results = [{'id': c.id, 'name': c.name, 'issuer': c.issuer} for c in certs]
     return JsonResponse({'certinfos': results})
 
 
@@ -1677,12 +1677,32 @@ def board_notice(request):
     return render(request, 'arcade/board_notice.html', {'notices': notices})
 
 def board_awards(request):
-    awards = Award.objects.all()
-    return render(request, 'arcade/board_awards.html', {'awards': awards})
+    competition_types = CompetitionType.objects.all().order_by('order', 'name')
+    selected_competition_type = request.GET.get('competition_type', '').strip()
+    awards = Award.objects.select_related('competition_type').all().order_by('-date_awarded', '-created_at')
+
+    if selected_competition_type:
+        awards = awards.filter(competition_type_id=selected_competition_type)
+
+    return render(request, 'arcade/board_awards.html', {
+        'awards': awards,
+        'competition_types': competition_types,
+        'selected_competition_type': selected_competition_type,
+    })
 
 def board_cert(request):
-    certs = Certification.objects.all()
-    return render(request, 'arcade/board_cert.html', {'certs': certs})
+    cert_types = CertInfo.objects.all().order_by('order', 'name')
+    selected_cert_type = request.GET.get('cert_type', '').strip()
+    certs = Certification.objects.select_related('cert_info').all().order_by('-date_acquired', '-created_at')
+
+    if selected_cert_type:
+        certs = certs.filter(cert_info_id=selected_cert_type)
+
+    return render(request, 'arcade/board_cert.html', {
+        'certs': certs,
+        'cert_types': cert_types,
+        'selected_cert_type': selected_cert_type,
+    })
 
 def board_notice_detail(request, pk):
     notice = get_object_or_404(Notice, pk=pk)
@@ -1821,9 +1841,52 @@ def board_cert_delete(request, pk):
         return redirect('board_cert')
     return render(request, 'arcade/board_confirm_delete.html', {'object': cert, 'title': '자격취득 삭제', 'cancel_url': reverse('board_cert_detail', args=[pk])})
 
+# --- 대회종류 (CompetitionType) 게시판 ---
+def board_competition_type(request):
+    competition_types = CompetitionType.objects.all().order_by('order', 'name')
+    return render(request, 'arcade/board_competition_type.html', {'competition_types': competition_types})
+
+def board_competition_type_detail(request, pk):
+    competition_type = get_object_or_404(CompetitionType, pk=pk)
+    return render(request, 'arcade/board_competition_type_detail.html', {'competition_type': competition_type})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_competition_type_create(request):
+    from .forms import CompetitionTypeForm
+    if request.method == 'POST':
+        form = CompetitionTypeForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('board_competition_type')
+    else:
+        form = CompetitionTypeForm()
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '대회종류 글쓰기'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_competition_type_update(request, pk):
+    from .forms import CompetitionTypeForm
+    competition_type = get_object_or_404(CompetitionType, pk=pk)
+    if request.method == 'POST':
+        form = CompetitionTypeForm(request.POST, request.FILES, instance=competition_type)
+        if form.is_valid():
+            form.save()
+            return redirect('board_competition_type_detail', pk=competition_type.pk)
+    else:
+        form = CompetitionTypeForm(instance=competition_type)
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '대회종류 수정'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_competition_type_delete(request, pk):
+    competition_type = get_object_or_404(CompetitionType, pk=pk)
+    if request.method == 'POST':
+        competition_type.delete()
+        return redirect('board_competition_type')
+    return render(request, 'arcade/board_confirm_delete.html', {'object': competition_type, 'title': '대회종류 삭제', 'cancel_url': reverse('board_competition_type_detail', args=[pk])})
+
+
 # --- 자격종류 (CertInfo) 게시판 ---
 def board_certinfo(request):
-    certinfos = CertInfo.objects.all()
+    certinfos = CertInfo.objects.all().order_by('order', 'name')
     return render(request, 'arcade/board_certinfo.html', {'certinfos': certinfos})
 
 def board_certinfo_detail(request, pk):

@@ -36,7 +36,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    function setupAutocomplete(inputId, apiUrl, iconStr) {
+    function setupAutocomplete(inputId, apiUrl, iconStr, onSelect) {
         const inputEl = document.getElementById(inputId);
         if (!inputEl) return;
 
@@ -90,6 +90,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     e.preventDefault();
                                     inputEl.value = itemData.name;
                                     dropdown.style.display = 'none';
+                                    if (onSelect) {
+                                        onSelect(itemData);
+                                    }
                                 });
                                 
                                 dropdown.appendChild(item);
@@ -109,7 +112,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     setupAutocomplete('id_student_name', '/api/search-users/', '👤');
-    setupAutocomplete('id_cert_name', '/api/search-certinfos/', '📜');
 });
 </script>
 {% endblock %}

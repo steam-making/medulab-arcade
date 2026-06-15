@@ -5,6 +5,7 @@ import re
 import os
 import uuid
 import base64
+from collections import OrderedDict
 from datetime import timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
@@ -36,6 +37,15 @@ SCHEDULE_EVENT_COLORS = {
     ScheduleEvent.EVENT_TYPE_SEMINAR: '#00ffb4',
     ScheduleEvent.EVENT_TYPE_CERTIFICATION: '#a855f7',
 }
+
+AICE_FUTURE_PATTERN = re.compile(r'^AICE\s+FUTURE(?:\s+\d+급)?$', re.IGNORECASE)
+
+
+def get_certinfo_group_name(name):
+    normalized_name = re.sub(r'\s+', ' ', (name or '').strip())
+    if AICE_FUTURE_PATTERN.fullmatch(normalized_name):
+        return 'AICE FUTURE'
+    return normalized_name
 
 
 def home(request):
@@ -1887,7 +1897,17 @@ def board_competition_type_delete(request, pk):
 # --- 자격종류 (CertInfo) 게시판 ---
 def board_certinfo(request):
     certinfos = CertInfo.objects.all().order_by('order', 'name')
-    return render(request, 'arcade/board_certinfo.html', {'certinfos': certinfos})
+    grouped_certinfos = OrderedDict()
+
+    for certinfo in certinfos:
+        group_name = get_certinfo_group_name(certinfo.name)
+        certinfo.display_name = group_name
+        existing = grouped_certinfos.get(group_name)
+
+        if existing is None or (existing.name != group_name and certinfo.name == group_name):
+            grouped_certinfos[group_name] = certinfo
+
+    return render(request, 'arcade/board_certinfo.html', {'certinfos': grouped_certinfos.values()})
 
 def board_certinfo_detail(request, pk):
     certinfo = get_object_or_404(CertInfo, pk=pk)

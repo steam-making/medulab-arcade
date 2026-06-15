@@ -48,6 +48,7 @@ urlpatterns = [
     path('api/check-username/', views.check_username, name='check_username'),
     path('api/search-users/', views.search_users, name='search_users'),
     path('api/search-certinfos/', views.search_certinfos, name='search_certinfos'),
+    path('api/search-competition-types/', views.search_competition_types, name='search_competition_types'),
 
     # 회원 관리 (관리자 전용)
     path('admin-services/members/', views.member_list, name='member_list'),

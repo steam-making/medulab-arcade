@@ -1172,6 +1172,20 @@ def search_certinfos(request):
     results = [{'id': c.id, 'name': c.name, 'issuer': c.issuer} for c in certs]
     return JsonResponse({'certinfos': results})
 
+@login_required
+def search_competition_types(request):
+    """대회종류 자동완성을 위한 API"""
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({'competition_types': []})
+
+    competition_types = CompetitionType.objects.filter(name__icontains=q)[:10]
+    results = [
+        {'id': c.id, 'name': c.name, 'organization': c.organization}
+        for c in competition_types
+    ]
+    return JsonResponse({'competition_types': results})
+
 
 def signup(request):
     """회원가입"""

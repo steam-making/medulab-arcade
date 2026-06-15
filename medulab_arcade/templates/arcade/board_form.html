@@ -16,7 +16,28 @@
                     {{ field.label }}
                     {% if field.field.required %}<span style="color: #ef4444;">*</span>{% endif %}
                 </label>
+                {% if field.name == 'cert_info' or field.name == 'competition_type' %}
+                <div id="{{ field.name }}-autocomplete" style="position: relative;">
+                    <input
+                        type="text"
+                        id="{{ field.name }}-search"
+                        class="form-input"
+                        placeholder="{% if field.name == 'cert_info' %}자격종류를 입력해 검색하고 선택하세요{% else %}대회종류를 입력해 검색하고 선택하세요{% endif %}"
+                        autocomplete="off"
+                        value="{% if field.value and field.field.queryset %}{% for option in field.field.queryset %}{% if option.pk|stringformat:'s' == field.value|stringformat:'s' %}{{ option.name }}{% endif %}{% endfor %}{% endif %}"
+                        style="width:100%; padding: 10px; margin-bottom: 10px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);"
+                    >
+                    <div id="{{ field.name }}-dropdown" style="display:none; position:absolute; left:0; right:0; top:calc(100% - 2px); background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:12px; box-shadow:0 12px 24px rgba(0,0,0,0.35); overflow:hidden; z-index:1000; max-height:260px; overflow-y:auto;"></div>
+                </div>
+                <div style="display:none;">
+                    {{ field }}
+                </div>
+                <div id="{{ field.name }}-selected-hint" style="color: var(--text-muted); font-size: 12px; margin-top: 6px;">
+                    {% if field.name == 'cert_info' %}자격종류를 검색한 뒤 목록에서 선택하세요.{% else %}대회종류를 검색한 뒤 목록에서 선택하세요.{% endif %}
+                </div>
+                {% else %}
                 {{ field }}
+                {% endif %}
                 {% if field.help_text %}
                 <div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">{{ field.help_text }}</div>
                 {% endif %}
@@ -112,6 +133,187 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     setupAutocomplete('id_student_name', '/api/search-users/', '👤');
+
+    function setupSelectAutocomplete(config) {
+        const searchInput = document.getElementById(config.searchInputId);
+        const dropdown = document.getElementById(config.dropdownId);
+        const select = document.getElementById(config.selectId);
+        const hint = document.getElementById(config.hintId);
+
+        if (!searchInput || !dropdown || !select) return;
+
+        let activeIndex = -1;
+        let currentItems = [];
+        let searchTimeout = null;
+
+        const hideDropdown = () => {
+            dropdown.style.display = 'none';
+            dropdown.innerHTML = '';
+            activeIndex = -1;
+            currentItems = [];
+        };
+
+        const updateHint = (itemData) => {
+            if (!hint) return;
+            if (!itemData) {
+                hint.textContent = config.emptyHint;
+                return;
+            }
+            const meta = config.metaText ? config.metaText(itemData) : '';
+            hint.textContent = meta ? `선택됨: ${itemData.name} · ${meta}` : `선택됨: ${itemData.name}`;
+        };
+
+        const setSelectedItem = (itemData) => {
+            let existingOption = Array.from(select.options).find(option => option.value === String(itemData.id));
+            if (!existingOption) {
+                existingOption = new Option(itemData.name, itemData.id, true, true);
+                select.add(existingOption);
+            }
+            select.value = String(itemData.id);
+            searchInput.value = itemData.name;
+            updateHint(itemData);
+            hideDropdown();
+        };
+
+        const updateActiveItem = () => {
+            Array.from(dropdown.children).forEach((child, index) => {
+                child.style.background = index === activeIndex ? 'rgba(59, 130, 246, 0.28)' : 'transparent';
+            });
+        };
+
+        const renderDropdown = (items) => {
+            currentItems = items;
+            activeIndex = -1;
+            dropdown.innerHTML = '';
+
+            if (!items.length) {
+                const emptyItem = document.createElement('div');
+                emptyItem.textContent = '검색 결과가 없습니다.';
+                emptyItem.style.padding = '12px 16px';
+                emptyItem.style.color = 'rgba(255,255,255,0.65)';
+                emptyItem.style.fontSize = '14px';
+                dropdown.appendChild(emptyItem);
+                dropdown.style.display = 'block';
+                return;
+            }
+
+            items.forEach((itemData, index) => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.style.display = 'block';
+                item.style.width = '100%';
+                item.style.padding = '12px 16px';
+                item.style.background = 'transparent';
+                item.style.border = 'none';
+                item.style.borderBottom = '1px solid rgba(255,255,255,0.06)';
+                item.style.cursor = 'pointer';
+                item.style.textAlign = 'left';
+                item.style.color = '#fff';
+                const meta = config.metaText ? config.metaText(itemData) : '';
+                item.innerHTML = `<div style="font-weight:700;">${config.icon} ${itemData.name}</div>${meta ? `<div style="font-size:12px; color:rgba(255,255,255,0.65); margin-top:4px;">${meta}</div>` : ''}`;
+
+                item.addEventListener('mouseenter', () => {
+                    activeIndex = index;
+                    updateActiveItem();
+                });
+                item.addEventListener('click', () => setSelectedItem(itemData));
+                dropdown.appendChild(item);
+            });
+
+            dropdown.style.display = 'block';
+        };
+
+        const runSearch = (query) => {
+            const normalizedQuery = query.trim();
+            if (!normalizedQuery) {
+                hideDropdown();
+                if (!select.value) updateHint(null);
+                return;
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                fetch(`${config.apiUrl}?q=${encodeURIComponent(normalizedQuery)}`)
+                    .then(res => res.json())
+                    .then(data => renderDropdown(data[config.responseKey] || []))
+                    .catch(err => {
+                        console.error(err);
+                        hideDropdown();
+                    });
+            }, 180);
+        };
+
+        searchInput.addEventListener('input', function() {
+            if (!this.value.trim()) {
+                select.value = '';
+            }
+            runSearch(this.value);
+        });
+
+        searchInput.addEventListener('focus', function() {
+            if (this.value.trim()) {
+                runSearch(this.value);
+            }
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (dropdown.style.display === 'none' || !currentItems.length) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeIndex = Math.min(activeIndex + 1, currentItems.length - 1);
+                updateActiveItem();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeIndex = Math.max(activeIndex - 1, 0);
+                updateActiveItem();
+            } else if (e.key === 'Enter') {
+                if (activeIndex >= 0 && currentItems[activeIndex]) {
+                    e.preventDefault();
+                    setSelectedItem(currentItems[activeIndex]);
+                }
+            } else if (e.key === 'Escape') {
+                hideDropdown();
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest(`#${config.containerId}`)) {
+                hideDropdown();
+            }
+        });
+
+        const selectedOption = select.options[select.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            updateHint({ id: selectedOption.value, name: selectedOption.text });
+        }
+    }
+
+    setupSelectAutocomplete({
+        containerId: 'cert_info-autocomplete',
+        searchInputId: 'cert_info-search',
+        dropdownId: 'cert_info-dropdown',
+        selectId: 'id_cert_info',
+        hintId: 'cert_info-selected-hint',
+        apiUrl: '/api/search-certinfos/',
+        responseKey: 'certinfos',
+        icon: '🎖️',
+        emptyHint: '자격종류를 검색한 뒤 목록에서 선택하세요.',
+        metaText: (item) => item.issuer ? `발급기관 ${item.issuer}` : ''
+    });
+
+    setupSelectAutocomplete({
+        containerId: 'competition_type-autocomplete',
+        searchInputId: 'competition_type-search',
+        dropdownId: 'competition_type-dropdown',
+        selectId: 'id_competition_type',
+        hintId: 'competition_type-selected-hint',
+        apiUrl: '/api/search-competition-types/',
+        responseKey: 'competition_types',
+        icon: '🏁',
+        emptyHint: '대회종류를 검색한 뒤 목록에서 선택하세요.',
+        metaText: (item) => item.organization ? `주최/주관 ${item.organization}` : ''
+    });
 });
 </script>
 {% endblock %}

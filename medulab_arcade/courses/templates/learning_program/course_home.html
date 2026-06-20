@@ -418,27 +418,27 @@
 
     <div class="chapter-section fade-in" style="animation-delay: 0.1s;">
         <div class="section-head">
-            <h2><span>📚</span> Chapters</h2>
-            <div style="font-size: 13px; color: var(--text-muted);">총 {{ chapters|length }}개의 단원</div>
+            <h2><span>📚</span> 챕터 구성</h2>
+            <div style="font-size: 13px; color: var(--text-muted);">총 {{ chapters|length }}개 레벨</div>
         </div>
 
         <div class="chapter-list">
             {% for ch in chapters %}
             <a href="{% url 'chapter_detail' ch.id %}" class="chapter-card">
                 <div class="chapter-idx">{{ ch.number|stringformat:"02d" }}</div>
-                
+
                 <div class="chapter-main">
                     <div class="chapter-name">{{ ch.title }}</div>
-                    <div class="chapter-summary">{{ ch.content|truncatechars:80|default:"학습 목표와 주요 내용을 확인하세요." }}</div>
+                    <div class="chapter-summary">{{ ch.content|truncatechars:120|default:"학습 목표와 주요 내용을 확인하세요." }}</div>
                 </div>
-                
+
                 <div class="progress-info">
                     <div class="perc-text">{{ ch.progress|default:0 }}% COMPLETE</div>
                     <div class="bar-bg">
                         <div class="bar-fill" style="width: {{ ch.progress|default:0 }}%;"></div>
                     </div>
                 </div>
-                
+
                 <div class="card-arrow">→</div>
             </a>
             {% empty %}

@@ -44,7 +44,15 @@
         justify-content: center;
         flex-wrap: wrap;
         gap: 12px;
-        margin-top: 20px;
+        margin-bottom: 24px;
+    }
+
+    .hero-user-actions {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 28px;
     }
 
     .hero-admin-actions .nav-link {
@@ -274,14 +282,24 @@
 {% block content %}
 <main class="main">
     <div class="hero-section">
-        <h1 class="fade-in">LEARNING CENTER</h1>
-        <p class="fade-in">나의 잠재력을 깨우는 최고의 코딩 교육 커리큘럼을 경험해보세요.</p>
         {% if user.is_staff %}
         <div class="hero-admin-actions fade-in">
             <a href="{% url 'learning_program_create' %}" class="nav-link accent">+ 교육프로그램 추가</a>
             <a href="{% url 'program_type_list' %}" class="nav-link">📂 유형 관리</a>
         </div>
         {% endif %}
+
+        <h1 class="fade-in">LEARNING CENTER</h1>
+        <p class="fade-in">나의 잠재력을 깨우는 최고의 코딩 교육 커리큘럼을 경험해보세요.</p>
+        
+        <div class="hero-user-actions fade-in">
+            <a href="{% url 'program_roadmap' %}" class="filter-button active" style="font-size: 15px; padding: 14px 28px; border-radius: 16px; display: inline-flex; align-items: center; gap: 8px;">
+                🗺️ 프로그램 로드맵
+            </a>
+            <a href="{% url 'program_finder' %}" class="filter-button" style="font-size: 15px; padding: 14px 28px; border-radius: 16px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--course-border); background: rgba(255,255,255,0.05); text-decoration: none;">
+                🔍 나에게 맞는 프로그램 찾기
+            </a>
+        </div>
     </div>
 
     {% if program_types %}
@@ -292,6 +310,7 @@
             {% for program_type in program_types %}
                 {% if program_type.name == "코딩" %}
                     <a href="{% url 'student_course_list' %}?program_type=python-coding" class="filter-button {% if selected_program_type == 'python-coding' %}active{% endif %}">파이썬코딩</a>
+                    <a href="{% url 'student_course_list' %}?program_type=robot-coding" class="filter-button {% if selected_program_type == 'robot-coding' %}active{% endif %}">로봇코딩</a>
                 {% elif program_type.name == "대회 대비" %}
                     {# "대회 대비"는 "대회 준비"로 통합 — 별도 버튼 미표시 #}
                 {% else %}
@@ -323,20 +342,38 @@
                 <p class="course-desc">{{ p.description }}</p>
                 
                 <div class="course-actions">
-                    {% if p.id in enrolled_ids %}
-                        <a href="{% url 'course_home' p.id %}" class="btn-action btn-continue">
-                            계속 학습하기 
-                            <span style="font-size: 18px; margin-left:8px;">→</span>
-                        </a>
-                    {% elif can_apply %}
-                        <a href="{% url 'student_course_apply' p.id %}" class="btn-action btn-apply" onclick="return confirm('해당 과정을 수강신청 하시겠습니까?');">
-                            수강 신청하기
-                        </a>
-                    {% else %}
-                        <a href="{% if user.is_authenticated %}{% url 'student_course_list' %}{% else %}{% url 'login' %}{% endif %}" class="btn-action btn-apply">
-                            메듀랩 정회원 신청 가능
-                        </a>
-                    {% endif %}
+                    <div style="display: flex; gap: 8px; flex-direction: column;">
+                        {% if p.id in enrolled_ids %}
+                            <div style="display: flex; gap: 8px; width: 100%;">
+                                <a href="{% url 'course_curriculum_preview' p.id %}" class="btn-action btn-apply" style="flex: 1; padding: 16px 8px; font-size: 13px;">
+                                    상세 커리큘럼
+                                </a>
+                                <a href="{% url 'course_home' p.id %}" class="btn-action btn-continue" style="flex: 1; padding: 16px 8px; font-size: 13px; margin: 0; display: inline-flex; align-items: center; justify-content: center;">
+                                    계속 학습하기 
+                                    <span style="font-size: 16px; margin-left:4px;">→</span>
+                                </a>
+                            </div>
+                        {% elif can_apply %}
+                            <div style="display: flex; gap: 8px; width: 100%;">
+                                <a href="{% url 'course_curriculum_preview' p.id %}" class="btn-action btn-apply" style="flex: 1; padding: 16px 8px; font-size: 13px;">
+                                    상세 커리큘럼
+                                </a>
+                                <a href="{% url 'student_course_apply' p.id %}" class="btn-action btn-apply" onclick="return confirm('해당 과정을 수강신청 하시겠습니까?');" style="flex: 1; padding: 16px 8px; font-size: 13px; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #60a5fa;">
+                                    수강 신청하기
+                                </a>
+                            </div>
+                        {% else %}
+                            <div style="display: flex; gap: 8px; width: 100%;">
+                                <a href="{% url 'course_curriculum_preview' p.id %}" class="btn-action btn-apply" style="flex: 1; padding: 16px 8px; font-size: 13px;">
+                                    상세 커리큘럼
+                                </a>
+                                <a href="{% if user.is_authenticated %}{% url 'student_course_list' %}{% else %}{% url 'login' %}{% endif %}" class="btn-action btn-apply" style="flex: 1; padding: 16px 8px; font-size: 13px;">
+                                    정회원 신청 가능
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
                     
                     {% if user.is_staff %}
                         <div class="admin-actions-group">
@@ -356,7 +393,6 @@
                     {% endif %}
                 </div>
             </div>
-        </div>
         {% empty %}
         <div class="empty-state">
             <div style="font-size: 48px; margin-bottom: 20px;">📂</div>

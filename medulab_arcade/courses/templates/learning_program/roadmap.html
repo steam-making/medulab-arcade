@@ -1,0 +1,1490 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}교육 프로그램 로드맵 - MEDULAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --dash-glass: rgba(255, 255, 255, 0.02);
+        --dash-border: rgba(255, 255, 255, 0.08);
+        --neon-blue: #3b82f6;
+        --neon-green: #00ffb4;
+        --neon-purple: #a855f7;
+        --neon-orange: #f97316;
+    }
+
+    .main { padding-top: 40px; padding-bottom: 100px; }
+
+    .roadmap-header {
+        max-width: 1200px;
+        margin: 0 auto 40px;
+        text-align: center;
+    }
+
+    .roadmap-header h1 {
+        font: 900 40px 'Orbitron', sans-serif;
+        color: #fff;
+        margin-bottom: 12px;
+        background: linear-gradient(90deg, #fff, var(--neon-blue));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .roadmap-header p {
+        color: #fff;
+        font-size: 16px;
+        opacity: 0.95;
+    }
+
+    /* 가이드 카드 스타일 */
+    .roadmap-guide-card {
+        max-width: 1200px;
+        margin: 24px auto 0;
+        background: rgba(255, 255, 255, 0.04);
+        border: 2px solid rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        padding: 20px 24px;
+        text-align: left;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .guide-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .guide-icon {
+        font-size: 18px;
+    }
+    .guide-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    @media (max-width: 768px) {
+        .guide-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+    }
+    .guide-item {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 14px 16px;
+        border-radius: 12px;
+        border-left: 4px solid var(--neon-blue);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-left-width: 4px;
+    }
+    .guide-item:nth-child(2) {
+        border-left-color: var(--neon-green);
+    }
+    .item-title {
+        font-size: 13px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 6px;
+    }
+    .item-desc {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.85);
+        line-height: 1.5;
+    }
+    .item-desc strong {
+        color: #fff;
+    }
+
+    /* 가로 스크롤 가능 테이블 영역 */
+    .roadmap-container {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .table-wrapper {
+        width: 100%;
+        overflow-x: hidden;
+        background: rgba(10, 15, 28, 0.78);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 28px;
+        padding: 32px 20px 28px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 0 30px rgba(255, 255, 255, 0.02);
+    }
+
+    .roadmap-table {
+        width: 100%;
+        min-width: 0;
+        border-collapse: separate;
+        border-spacing: 0 14px;
+        table-layout: fixed;
+    }
+
+    .roadmap-table th,
+    .roadmap-table td {
+        vertical-align: middle;
+    }
+
+    .roadmap-table td {
+        padding: 0 7px;
+    }
+
+    /* 테이블 헤더 */
+    .roadmap-table th {
+        font-size: 14px;
+        font-weight: 800;
+        color: rgba(255, 255, 255, 0.92);
+        text-align: center;
+        padding: 10px 8px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+        font-family: 'Orbitron', 'Pretendard', sans-serif;
+        line-height: 1.35;
+        white-space: normal;
+    }
+
+    .grade-header-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+    }
+
+    .grade-header-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+        border: 1px solid rgba(255,255,255,0.14);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+    }
+
+    .grade-header-label {
+        font-size: 12.5px;
+        line-height: 1.4;
+        word-break: keep-all;
+        letter-spacing: -0.1px;
+    }
+
+    /* 첫 번째 열도 일반 스크롤 영역으로 처리 */
+    .roadmap-table th:first-child,
+    .track-label-cell {
+        position: relative;
+        background: linear-gradient(180deg, rgba(10, 15, 28, 0.98), rgba(10, 15, 28, 0.94)) !important;
+        box-shadow: none;
+        width: 136px !important;
+        min-width: 136px !important;
+        max-width: 136px !important;
+        box-sizing: border-box;
+        overflow: hidden;
+        border-radius: 18px;
+    }
+
+    .roadmap-table th:first-child {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+        padding: 10px 12px 16px;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    /* 학년별 고유 테마 컬러 스타일 정의 */
+    .grade-header-kids_5_7 {
+        --grade-color: #ff2a5f;
+        --grade-color-rgb: 255, 42, 95;
+    }
+    .grade-header-elem_1_2 {
+        --grade-color: #f97316;
+        --grade-color-rgb: 249, 115, 22;
+    }
+    .grade-header-elem_3_4 {
+        --grade-color: #00ffb4;
+        --grade-color-rgb: 0, 255, 180;
+    }
+    .grade-header-elem_5_6 {
+        --grade-color: #3b82f6;
+        --grade-color-rgb: 59, 130, 246;
+    }
+    .grade-header-mid_high {
+        --grade-color: #a855f7;
+        --grade-color-rgb: 168, 85, 247;
+    }
+
+    .roadmap-table th.grade-header {
+        background: linear-gradient(180deg, rgba(var(--grade-color-rgb, 255, 255, 255), 0.14), rgba(var(--grade-color-rgb, 255, 255, 255), 0.06)) !important;
+        border: 1px solid rgba(var(--grade-color-rgb, 255, 255, 255), 0.22) !important;
+        border-radius: 16px;
+        color: #fff;
+        min-width: 0;
+        width: auto;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 20px rgba(0, 0, 0, 0.12);
+        transition: all 0.25s ease;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+        padding-top: 14px;
+        padding-bottom: 14px;
+    }
+    .roadmap-table th.grade-header:hover {
+        background: linear-gradient(180deg, rgba(var(--grade-color-rgb, 255, 255, 255), 0.18), rgba(var(--grade-color-rgb, 255, 255, 255), 0.08)) !important;
+        border-color: rgba(var(--grade-color-rgb, 255, 255, 255), 0.42) !important;
+        box-shadow: 0 0 18px rgba(var(--grade-color-rgb, 255, 255, 255), 0.18);
+    }
+
+    .roadmap-table th.arrow-header {
+        width: 28px;
+        min-width: 28px;
+        border-bottom: none;
+    }
+
+    /* 테이블 로우 분류 레이블 */
+    .track-label-cell {
+        font-size: 12px;
+        font-weight: 800;
+        color: #fff;
+        padding: 18px 14px;
+        text-align: center;
+        border-right: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .track-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        background: rgba(var(--track-color-rgb), 0.16);
+        color: var(--track-color);
+        border: 1px solid rgba(var(--track-color-rgb), 0.28);
+        margin-bottom: 8px;
+    }
+
+    .track-title {
+        font-size: 13.5px;
+        font-weight: 800;
+        margin-top: 2px;
+        color: rgba(255,255,255,0.95);
+        line-height: 1.5;
+        white-space: normal;
+        word-break: keep-all;
+        text-align: center;
+        letter-spacing: -0.1px;
+    }
+
+    /* 과정 카드 기본 디자인 (트랙별 시인성 높은 기본 네온 테마 적용) */
+    .course-node {
+        border-radius: 18px;
+        padding: 12px 10px;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+        width: 100%;
+        min-height: 84px;
+        height: 84px;
+        position: relative;
+        background: rgba(var(--track-color-rgb), 0.08);
+        border: 1px solid rgba(var(--track-color-rgb), 0.34);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        box-sizing: border-box;
+    }
+
+    .course-node:hover {
+        transform: translateY(-4px);
+        background: rgba(var(--track-color-rgb), 0.15);
+        border-color: var(--track-color);
+        box-shadow: 0 0 20px rgba(var(--track-color-rgb), 0.6);
+    }
+
+    .node-title {
+        font-size: 13.5px;
+        font-weight: 800;
+        color: #fff;
+        line-height: 1.4;
+        margin-bottom: 4px;
+        word-break: keep-all;
+        letter-spacing: -0.1px;
+    }
+
+    .node-subtitle {
+        font-size: 11.5px;
+        color: rgba(255, 255, 255, 0.72);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* 연결 화살표 칸 */
+    .arrow-cell {
+        text-align: center;
+        vertical-align: middle;
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.10);
+        font-family: 'Orbitron', sans-serif;
+        width: 20px;
+        min-width: 20px;
+        font-weight: 900;
+        line-height: 1;
+        text-shadow: 0 0 3px rgba(255, 255, 255, 0.08);
+        padding: 0 2px;
+    }
+
+    .track-row .arrow-active {
+        color: var(--track-color);
+        opacity: 1;
+        text-shadow: 0 0 12px var(--track-color), 0 0 20px var(--track-color);
+    }
+
+    /* 빈 셀 및 관리자 추가 호버 영역 */
+    .empty-cell-box {
+        min-width: 0;
+        width: 100%;
+        height: 84px;
+        border: 1px dashed rgba(255, 255, 255, 0.10);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.012);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.25s ease;
+        position: relative;
+        box-sizing: border-box;
+    }
+
+    .admin-mode .empty-cell-box {
+        cursor: pointer;
+    }
+    
+    .admin-mode .empty-cell-box:hover {
+        border-color: rgba(59, 130, 246, 0.45);
+        background: rgba(59, 130, 246, 0.10);
+    }
+
+    @media (max-width: 1024px) {
+        .table-wrapper {
+            padding: 24px 14px 22px;
+        }
+
+        .roadmap-table th:first-child,
+        .track-label-cell {
+            width: 118px !important;
+            min-width: 118px !important;
+            max-width: 118px !important;
+        }
+    }
+
+    .admin-add-btn {
+        font-size: 20px;
+        color: rgba(255, 255, 255, 0.4);
+        opacity: 0.3;
+        transition: opacity 0.2s, transform 0.2s;
+    }
+    .empty-cell-box:hover .admin-add-btn {
+        opacity: 1;
+        color: var(--neon-blue);
+        transform: scale(1.2);
+    }
+
+    .back-btn-container {
+        max-width: 1240px;
+        margin: 0 auto 24px;
+        padding: 0 20px;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 700;
+        transition: color 0.2s;
+    }
+    .btn-back:hover {
+        color: #fff;
+    }
+
+    /* 관리자 노드 툴바 */
+    .node-action-group {
+        position: absolute;
+        top: -10px;
+        right: -8px;
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s, transform 0.2s;
+        transform: translateY(5px);
+        z-index: 15;
+    }
+
+    .course-node-wrapper:hover .node-action-group {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .node-action-btn {
+        background: #1e293b;
+        border: 1px solid var(--dash-border);
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .node-action-btn.edit-btn:hover {
+        background: var(--neon-blue);
+        border-color: transparent;
+    }
+
+    .node-action-btn.del-btn:hover {
+        background: #ef4444;
+        border-color: transparent;
+    }
+
+    /* 팝업 모달 */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .modal-box {
+        background: rgba(18, 24, 38, 0.98);
+        border: 2px solid rgba(255, 255, 255, 0.15);
+        border-radius: 28px;
+        padding: 40px;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7);
+        transform: translateY(20px);
+        transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .modal-overlay.active .modal-box {
+        transform: translateY(0);
+    }
+
+    .modal-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .modal-body {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-secondary);
+    }
+
+    .form-control {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--dash-border);
+        border-radius: 12px;
+        padding: 12px 16px;
+        color: #fff;
+        font-size: 14px;
+        outline: none;
+        transition: all 0.2s;
+    }
+
+    .form-control:focus {
+        border-color: var(--neon-blue);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 12px;
+        margin-top: 32px;
+    }
+
+    .btn-modal {
+        flex: 1;
+        padding: 14px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        outline: none;
+    }
+
+    .btn-modal-save {
+        background: var(--neon-blue);
+        color: #fff;
+    }
+    .btn-modal-save:hover { filter: brightness(1.15); }
+
+    .btn-modal-cancel {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--dash-border);
+        color: #fff;
+    }
+    .btn-modal-cancel:hover { background: rgba(255, 255, 255, 0.1); }
+
+    /* 연결점 핸들러 도트 */
+    .node-connector-dot {
+        position: absolute;
+        right: -6px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 14px;
+        background: #1e293b;
+        border: 2px solid var(--neon-blue);
+        border-radius: 50%;
+        z-index: 20;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        color: var(--neon-blue);
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+        transition: all 0.2s ease;
+        opacity: 0;
+    }
+
+    .course-node-wrapper:hover .node-connector-dot {
+        opacity: 1;
+    }
+
+    .node-connector-dot:hover {
+        background: var(--neon-blue);
+        color: #fff;
+        transform: translateY(-50%) scale(1.3);
+        box-shadow: 0 0 12px var(--neon-blue);
+    }
+
+    /* 연결 모드 활성화 시 피드백 스타일 */
+    .connection-linking-active .course-node-wrapper {
+        animation: pulse-border 1.5s infinite alternate;
+    }
+
+    .connection-source-highlight {
+        border: 2px solid var(--neon-green) !important;
+        box-shadow: 0 0 15px var(--neon-green) !important;
+        border-radius: 16px;
+    }
+
+    .connection-target-candidate {
+        cursor: pointer !important;
+    }
+    .connection-target-candidate:hover .course-node {
+        border-color: var(--neon-blue) !important;
+        box-shadow: 0 0 15px var(--neon-blue) !important;
+    }
+
+    @keyframes pulse-border {
+        0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.2); }
+        100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); }
+    }
+
+    /* 모달 내의 연결 해제 리스트 */
+    .connection-list-container {
+        margin-top: 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        padding: 12px;
+        border: 1px solid var(--dash-border);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    .connection-list-title {
+        font-size: 12.5px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 8px;
+    }
+    .connection-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+        color: rgba(255,255,255,0.9);
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .connection-del-btn {
+        background: transparent;
+        border: none;
+        color: #ef4444;
+        font-weight: 800;
+        cursor: pointer;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+    .connection-del-btn:hover {
+        background: rgba(239, 68, 68, 0.15);
+    }
+    
+    /* 헤더 내 트랙 추가 + 버튼 스타일 */
+    .btn-track-add-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px; /* 크기 2px 더 축소 */
+        height: 18px;
+        margin-left: 6px;
+        background: rgba(59, 130, 246, 0.2);
+        border: 1px solid rgba(59, 130, 246, 0.4);
+        color: #60a5fa;
+        border-radius: 50%;
+        font-size: 12px; /* 폰트 축소 */
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        vertical-align: middle;
+        line-height: 1;
+        padding: 0;
+    }
+    .btn-track-add-icon:hover {
+        background: #3b82f6;
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+        transform: scale(1.1);
+    }
+    
+    /* 세로 열 학년별 은은한 배경 구분 스타일 */
+    .grade-col-kids_5_7 {
+        background: rgba(255, 42, 95, 0.075) !important;
+    }
+    .grade-col-elem_1_2 {
+        background: rgba(249, 115, 22, 0.075) !important;
+    }
+    .grade-col-elem_3_4 {
+        background: rgba(0, 255, 180, 0.075) !important;
+    }
+    .grade-col-elem_5_6 {
+        background: rgba(59, 130, 246, 0.075) !important;
+    }
+    .grade-col-mid_high {
+        background: rgba(168, 85, 247, 0.075) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main {% if is_admin %}admin-mode{% endif %}">
+    <div class="back-btn-container fade-in">
+        <a href="{% url 'student_course_list' %}" class="btn-back">
+            <span>←</span> 교육 프로그램 목록으로 돌아가기
+        </a>
+    </div>
+
+    <div class="roadmap-header fade-in">
+        <h1>MEDULAB ROADMAP</h1>
+        <p style="color: #fff; font-size: 16px; opacity: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-weight: 500;">
+            5세 유아부터 고등학생까지, 체계적으로 설계된 성장형 맞춤 코딩 커리큘럼입니다.
+        </p>
+
+        <!-- 로드맵 안내 및 이용 팁 가이드 카드 -->
+        <div class="roadmap-guide-card">
+            <div class="guide-title">
+                <span class="guide-icon">💡</span> 로드맵 이용 및 구성 안내
+            </div>
+            <div class="guide-grid">
+                <div class="guide-item">
+                    <div class="item-title">
+                        <span style="color: var(--neon-blue);">■</span> 여러 학년(기간)을 차지하는 과정 추가
+                    </div>
+                    <div class="item-desc">
+                        과정을 등록/수정할 때 <strong>'점유 칸 수(학년 범위)'</strong> 값을 늘려주세요. (예: 3칸으로 설정하면 3학년 기간 동안 가로로 합쳐져 넓게 표시됩니다.)
+                    </div>
+                </div>
+                <div class="guide-item">
+                    <div class="item-title">
+                        <span style="color: var(--neon-green);">■</span> 화살표 연결선 자동 연계
+                    </div>
+                    <div class="item-desc">
+                        동일한 트랙(가로 줄)에서 <strong>인접한 학년에 과정을 연속해서 등록</strong>하면, 화살표(→)가 네온 라이트처럼 자동으로 밝게 켜지며 연결됩니다! (사이에 빈 칸이 있으면 연결되지 않습니다.)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="roadmap-container fade-in" style="animation-delay: 0.1s;">
+        <div class="table-wrapper" style="position: relative;">
+            <!-- 대안 B: 트랙 간 수동 연결용 SVG 오버레이 캔버스 -->
+            <svg id="roadmap-svg-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 1600px; pointer-events: none; z-index: 12;">
+                <defs>
+                    <marker id="arrow-marker-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#00ffb4" />
+                    </marker>
+                    <marker id="arrow-marker-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#3b82f6" />
+                    </marker>
+                    <marker id="arrow-marker-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f97316" />
+                    </marker>
+                    <marker id="arrow-marker-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#a855f7" />
+                    </marker>
+                </defs>
+                <g id="roadmap-connections-group"></g>
+            </svg>
+
+            <table class="roadmap-table" style="position: relative; z-index: 8;">
+                <thead>
+                    <tr>
+                        <th>
+                            커리큘럼 트랙
+                            {% if is_admin %}
+                            <button type="button" class="btn-track-add-icon" onclick="openTrackAddModal()" title="커리큘럼 트랙 추가">+</button>
+                            {% endif %}
+                        </th>
+                        <!-- 학년 헤더 동적 렌더링 -->
+                        {% for grade_key, grade_label in grades %}
+                        <th class="grade-header grade-header-{{ grade_key }}">
+                            <div class="grade-header-inner">
+                                <span class="grade-header-icon">
+                                    {% if grade_key == 'kids_5_7' %}🧸
+                                    {% elif grade_key == 'elem_1_2' %}🌱
+                                    {% elif grade_key == 'elem_3_4' %}📘
+                                    {% elif grade_key == 'elem_5_6' %}🚀
+                                    {% elif grade_key == 'mid_high' %}🎯
+                                    {% else %}📚
+                                    {% endif %}
+                                </span>
+                                <span class="grade-header-label">{{ grade_label }}</span>
+                            </div>
+                        </th>
+                        {% if not forloop.last %}
+                        <th class="arrow-header"></th>
+                        {% endif %}
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for track in tracks %}
+                    <tr class="track-row track-{{ track.track_id }}" style="--track-color: {{ track.color }}; --track-color-rgb: {{ track.color_rgb }};" data-track-id="{{ track.track_id }}" data-track-color="{{ track.color }}">
+                        <!-- 트랙 정보 고정 열 -->
+                        <td class="track-label-cell">
+                            {% if track.badge %}
+                            <span class="track-badge">{{ track.badge }}</span>
+                            {% endif %}
+                            <div class="track-title">{{ track.title }}</div>
+                            {% if is_admin %}
+                            <div class="track-admin-actions" style="margin-top: 8px; display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; z-index: 15; position: relative;">
+                                <button type="button" class="node-action-btn edit-btn" onclick="openTrackEditModal({{ track.track_id }}, '{{ track.title|escapejs }}', '{{ track.badge|escapejs }}', '{{ track.color|escapejs }}', {{ track.order|default:0 }})" style="padding: 2px 0; font-size: 9px; line-height: 1; width: 100%; max-width: 60px; text-align: center;">수정</button>
+                                <button type="button" class="node-action-btn del-btn" onclick="deleteTrack({{ track.track_id }})" style="padding: 2px 0; font-size: 9px; line-height: 1; width: 100%; max-width: 60px; text-align: center;">삭제</button>
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- 각 학년별 노드 렌더링 -->
+                        {% for node in track.nodes %}
+                        <td colspan="{{ node.colspan }}" class="grade-col-{{ node.grade_key }}">
+                            {% if node.node %}
+                            <!-- 과정 노드 카드 (여러 칸 병합 가능) -->
+                            <div class="course-node-wrapper" style="position: relative;" data-node-id="{{ node.node.id }}" data-track-id="{{ track.track_id }}">
+                                <a {% if node.node.link_url %}href="{{ node.node.link_url }}"{% else %}href="javascript:void(0)" style="cursor: default;"{% endif %} class="course-node">
+                                    <span class="node-title">{{ node.node.title }}</span>
+                                    <span class="node-subtitle">{{ node.node.subtitle }}</span>
+                                </a>
+                                {% if is_admin %}
+                                <div class="node-action-group">
+                                    <button type="button" class="node-action-btn connect-btn" onclick="startConnection({{ node.node.id }}, event)" title="이 노드에서 다른 노드로 선 연결">
+                                        🔗 연결
+                                    </button>
+                                    <button type="button" class="node-action-btn edit-btn" onclick="openEditModal({{ node.node.id }}, {{ track.track_id }}, '{{ node.grade_key }}', '{{ node.node.title|escapejs }}', '{{ node.node.subtitle|escapejs }}', '{{ node.node.link_url|escapejs }}', {{ node.node.span_width }})">
+                                        수정
+                                    </button>
+                                    <button type="button" class="node-action-btn del-btn" onclick="deleteNode({{ node.node.id }})">
+                                        삭제
+                                    </button>
+                                </div>
+                                <div class="node-connector-dot" onclick="startConnection({{ node.node.id }}, event)" title="클릭하여 다른 과정 연결">●</div>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <!-- 빈 셀 및 관리자 추가용 호버 버튼 -->
+                            <div class="empty-cell-box" {% if is_admin %}onclick="openAddModal({{ track.track_id }}, '{{ node.grade_key }}', '{{ track.title }}', '{{ node.grade_label }}')"{% endif %}>
+                                {% if is_admin %}
+                                <span class="admin-add-btn">+</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- 화살표 렌더링 (병합 처리 후 마지막 열 구분선이 아닌 경우에만 동적 노출) -->
+                        {% if node.has_arrow_after %}
+                        <td class="arrow-cell grade-col-{{ node.grade_key }} {% if node.has_next_node and node.node %}arrow-active{% endif %}">
+                            →
+                        </td>
+                        {% endif %}
+
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+{% if is_admin %}
+<!-- 관리자 전용 추가/수정 모달창 -->
+<div class="modal-overlay" id="nodeModal">
+    <div class="modal-box">
+        <h3 class="modal-title" id="modalTitle">🗺️ 로드맵 과정 노드 추가</h3>
+        <div class="modal-body">
+            <input type="hidden" id="nodeId">
+            <input type="hidden" id="nodeTrack">
+            <input type="hidden" id="nodeGrade">
+
+            <div class="form-group">
+                <label>📍 배치 정보</label>
+                <div id="positionLabel" style="font-size: 13px; color: var(--neon-blue); font-weight: 700;">트랙 & 학년 정보</div>
+            </div>
+
+            <div class="form-group">
+                <label for="courseTitle">과정명 *</label>
+                <input type="text" id="courseTitle" class="form-control" placeholder="과정명 (예: 파이썬 스타터)">
+            </div>
+
+            <div class="form-group">
+                <label for="courseSubtitle">소개 / 학년 수준</label>
+                <input type="text" id="courseSubtitle" class="form-control" placeholder="요약 설명 (예: 초3 텍스트 첫걸음)">
+            </div>
+
+            <div class="form-group">
+                <label for="courseSpan" style="color: var(--neon-blue); font-weight: 800;">점유 칸 수 (학년 범위, 최대 5) *</label>
+                <input type="number" id="courseSpan" class="form-control" value="1" min="1" max="5">
+                <span style="font-size: 11.5px; color: rgba(255, 255, 255, 0.7); line-height: 1.4; margin-top: 4px;">
+                    💡 <strong>여러 학년에 걸쳐 과정을 표시하려면 이 값을 2 이상으로 늘려주세요.</strong><br>
+                    (예: 3을 설정하면 시작 학년부터 가로로 총 3칸의 영역을 합쳐서 넓게 표시합니다. 최대 5칸)
+                </span>
+            </div>
+
+            <div class="form-group">
+                <label for="courseLink">연결 링크 URL (선택)</label>
+                <input type="text" id="courseLink" class="form-control" placeholder="예: /courses/program/1/curriculum/ 혹은 외부링크">
+                <span style="font-size: 11px; color: var(--text-muted);">
+                    과정 카드를 클릭했을 때 이동할 상세 커리큘럼 Preview 주소나 외부 URL을 입력합니다.
+                </span>
+            </div>
+
+            <!-- 연결된 다음 과정 해제용 리스트 -->
+            <div class="form-group" id="connectionListGroup" style="display: none;">
+                <label style="color: var(--neon-blue); font-weight: 800;">🔗 연결된 다음 과정 목록</label>
+                <div class="connection-list-container" id="connectionList">
+                    <!-- JS에서 동적 추가 -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal()">취소</button>
+            <button type="button" class="btn-modal btn-modal-save" onclick="saveNode()">저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 관리자 전용 트랙 추가/수정 모달창 -->
+<div class="modal-overlay" id="trackModal">
+    <div class="modal-box">
+        <h3 class="modal-title" id="trackModalTitle">🧭 커리큘럼 트랙 추가</h3>
+        <div class="modal-body">
+            <input type="hidden" id="trackIdField">
+
+            <div class="form-group">
+                <label for="trackTitleField">트랙명 *</label>
+                <input type="text" id="trackTitleField" class="form-control" placeholder="트랙명 (예: 웹 프로그래밍)">
+            </div>
+
+            <div class="form-group">
+                <label for="trackBadgeField">배지 텍스트</label>
+                <input type="text" id="trackBadgeField" class="form-control" placeholder="배지 텍스트 (예: WEB DEV)">
+            </div>
+
+            <div class="form-group">
+                <label for="trackColorField">대표 색상 (헥사코드) *</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="trackColorField" class="form-control" value="#3b82f6" style="flex: 1;">
+                    <input type="color" id="trackColorPicker" class="form-control" value="#3b82f6" style="width: 50px; padding: 0 4px; cursor: pointer;" oninput="document.getElementById('trackColorField').value = this.value">
+                </div>
+                <span style="font-size: 11px; color: rgba(255, 255, 255, 0.7); line-height: 1.4; margin-top: 4px;">
+                    💡 <strong>과정 카드 테두리 및 연결선 화살표의 네온 컬러로 사용됩니다.</strong>
+                </span>
+            </div>
+
+            <div class="form-group">
+                <label for="trackOrderField">정렬 순서</label>
+                <input type="number" id="trackOrderField" class="form-control" value="0" min="0">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-modal btn-modal-cancel" onclick="closeTrackModal()">취소</button>
+            <button type="button" class="btn-modal btn-modal-save" onclick="saveTrack()">저장</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const csrfToken = "{{ csrf_token }}";
+    const isAdmin = {% if is_admin %}true{% else %}false{% endif %};
+    const roadmapConnections = {{ connections_json|safe }};
+
+    // ----------------------------------------------------
+    // SVG 화살표 드로잉 로직 (공통)
+    // ----------------------------------------------------
+    // 동적 마커 생성 및 반환 헬퍼 함수
+    function ensureMarker(colorHex) {
+        const defs = document.querySelector('#roadmap-svg-canvas defs');
+        if (!defs) return 'arrow-marker-blue';
+
+        const cleanColor = colorHex.replace('#', '').replace(/\s+/g, '').replace(/,/g, '-');
+        const markerId = `arrow-marker-${cleanColor}`;
+
+        if (!document.getElementById(markerId)) {
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', markerId);
+            marker.setAttribute('viewBox', '0 0 10 10');
+            marker.setAttribute('refX', '6');
+            marker.setAttribute('refY', '5');
+            marker.setAttribute('markerWidth', '6');
+            marker.setAttribute('markerHeight', '6');
+            marker.setAttribute('orient', 'auto-start-reverse');
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M 0 1.5 L 8 5 L 0 8.5 z');
+            path.setAttribute('fill', colorHex);
+
+            marker.appendChild(path);
+            defs.appendChild(marker);
+        }
+        return markerId;
+    }
+
+    function drawConnections() {
+        const svgGroup = document.getElementById('roadmap-connections-group');
+        if (!svgGroup) return;
+
+        svgGroup.innerHTML = ''; // 기존 연결선 초기화
+
+        const wrapperEl = document.querySelector('.table-wrapper');
+        if (!wrapperEl) return;
+
+        const rectWrapper = wrapperEl.getBoundingClientRect();
+        const scrollLeft = wrapperEl.scrollLeft;
+        const scrollTop = wrapperEl.scrollTop;
+
+        for (const sourceId in roadmapConnections) {
+            const sourceEl = document.querySelector(`[data-node-id="${sourceId}"]`);
+            if (!sourceEl) continue;
+
+            const targetIds = roadmapConnections[sourceId];
+            const trackId = parseInt(sourceEl.getAttribute('data-track-id')) || 1;
+
+            // DOM 트랙 엘리먼트로부터 색상을 동적으로 가져오고 마커 생성
+            const trackEl = document.querySelector(`.track-${trackId}`);
+            let strokeColor = trackEl ? trackEl.getAttribute('data-track-color') : '#3b82f6';
+            let markerId = ensureMarker(strokeColor);
+
+            const rectS = sourceEl.getBoundingClientRect();
+            // 출발 위치: 노드 카드의 중간 우측 끝
+            const x1 = rectS.right - rectWrapper.left + scrollLeft;
+            const y1 = rectS.top + rectS.height / 2 - rectWrapper.top + scrollTop;
+
+            targetIds.forEach(targetId => {
+                const targetEl = document.querySelector(`[data-node-id="${targetId}"]`);
+                if (!targetEl) return;
+
+                const rectT = targetEl.getBoundingClientRect();
+                // 도착 위치: 대상 노드 카드의 중간 좌측 끝
+                const x2 = rectT.left - rectWrapper.left + scrollLeft;
+                const y2 = rectT.top + rectT.height / 2 - rectWrapper.top + scrollTop;
+
+                // 부드러운 대각선 또는 베지어 곡선 제어점 연산
+                const deltaX = x2 - x1;
+                const cp1_x = x1 + Math.max(40, deltaX / 2);
+                const cp1_y = y1;
+                const cp2_x = x2 - Math.max(40, deltaX / 2);
+                const cp2_y = y2;
+
+                const pathD = `M ${x1} ${y1} C ${cp1_x} ${cp1_y}, ${cp2_x} ${cp2_y}, ${x2} ${y2}`;
+
+                // SVG Path 생성 및 렌더링
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathD);
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', strokeColor);
+                path.setAttribute('stroke-width', '2.5');
+                path.setAttribute('marker-end', `url(#${markerId})`);
+
+                if (isAdmin) {
+                    // 관리자인 경우 연결선이 마우스 호버/클릭 이벤트를 받을 수 있도록 pointer-events 강제
+                    path.setAttribute('style', `filter: drop-shadow(0 0 5px ${strokeColor}); opacity: 0.85; transition: stroke-width 0.2s, filter 0.2s; pointer-events: stroke !important; cursor: pointer;`);
+                    path.setAttribute('title', '클릭하여 연결 해제');
+
+                    path.addEventListener('mouseenter', () => {
+                        path.setAttribute('stroke', '#ef4444');
+                        path.setAttribute('stroke-width', '6');
+                        path.setAttribute('style', `filter: drop-shadow(0 0 10px #ef4444); opacity: 1; cursor: pointer; pointer-events: stroke !important;`);
+                    });
+                    path.addEventListener('mouseleave', () => {
+                        path.setAttribute('stroke', strokeColor);
+                        path.setAttribute('stroke-width', '2.5');
+                        path.setAttribute('style', `filter: drop-shadow(0 0 5px ${strokeColor}); opacity: 0.85; pointer-events: stroke !important; cursor: pointer;`);
+                    });
+                    path.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        disconnectNodes(parseInt(sourceId), parseInt(targetId));
+                    });
+                } else {
+                    path.setAttribute('style', `filter: drop-shadow(0 0 5px ${strokeColor}); opacity: 0.85; transition: stroke-width 0.2s, filter 0.2s; pointer-events: none;`);
+                }
+
+                svgGroup.appendChild(path);
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(drawConnections, 150); // 요소들의 배치가 완전히 끝나길 살짝 지연 대기
+        
+        const wrapper = document.querySelector('.table-wrapper');
+        if (wrapper) {
+            wrapper.addEventListener('scroll', drawConnections);
+        }
+        window.addEventListener('resize', drawConnections);
+    });
+
+    // ----------------------------------------------------
+    // 관리자 전용 기능 (연결 설정/수정 모달)
+    // ----------------------------------------------------
+    {% if is_admin %}
+    let linkingSourceId = null;
+
+    function startConnection(nodeId, event) {
+        if (event) event.stopPropagation();
+
+        const nodeEl = document.querySelector(`[data-node-id="${nodeId}"]`);
+        if (!nodeEl) return;
+
+        linkingSourceId = nodeId;
+        showLinkingGuide(nodeEl.querySelector('.node-title').innerText);
+
+        document.body.classList.add('connection-linking-active');
+        document.querySelectorAll('.course-node-wrapper').forEach(el => {
+            const elNodeId = parseInt(el.getAttribute('data-node-id'));
+            if (elNodeId === nodeId) {
+                el.classList.add('connection-source-highlight');
+            } else {
+                el.classList.add('connection-target-candidate');
+                el.setAttribute('onclick', `handleNodeClickForConnection(${elNodeId}, event)`);
+            }
+        });
+    }
+
+    function showLinkingGuide(sourceTitle) {
+        let guideEl = document.getElementById('connection-guide-toast');
+        if (!guideEl) {
+            guideEl = document.createElement('div');
+            guideEl.id = 'connection-guide-toast';
+            guideEl.style = `
+                position: fixed;
+                bottom: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(18, 24, 38, 0.95);
+                border: 2px solid var(--neon-blue);
+                box-shadow: 0 0 15px var(--neon-blue);
+                color: #fff;
+                padding: 16px 28px;
+                border-radius: 16px;
+                z-index: 2000;
+                font-size: 14px;
+                font-weight: 800;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            `;
+            document.body.appendChild(guideEl);
+        }
+        guideEl.innerHTML = `
+            <span>🔗 <strong>[${sourceTitle}]</strong>에서 연결할 다음 과정 노드를 클릭해 주세요...</span>
+            <button onclick="cancelConnection(event)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 11px;">연결 취소</button>
+        `;
+        guideEl.style.display = 'flex';
+    }
+
+    function cancelConnection(event) {
+        if (event) event.stopPropagation();
+        linkingSourceId = null;
+        document.body.classList.remove('connection-linking-active');
+
+        const toast = document.getElementById('connection-guide-toast');
+        if (toast) toast.style.display = 'none';
+
+        document.querySelectorAll('.course-node-wrapper').forEach(el => {
+            el.classList.remove('connection-source-highlight');
+            el.classList.remove('connection-target-candidate');
+            el.removeAttribute('onclick');
+        });
+    }
+
+    function handleNodeClickForConnection(targetId, event) {
+        if (event) event.stopPropagation();
+        if (!linkingSourceId) return;
+
+        const sourceId = linkingSourceId;
+        cancelConnection();
+
+        fetch("{% url 'api_roadmap_connect' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            body: JSON.stringify({
+                source_id: sourceId,
+                target_id: targetId
+            })
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'ok') {
+                location.reload();
+            } else {
+                alert("연결 실패: " + (res.error || "알 수 없는 오류"));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("서버 연결 실패");
+        });
+    }
+
+    function disconnectNodes(sourceId, targetId) {
+        if (!confirm("정말 이 두 과정의 화살표 연결을 해제하시겠습니까?")) return;
+
+        fetch("{% url 'api_roadmap_disconnect' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            body: JSON.stringify({
+                source_id: sourceId,
+                target_id: targetId
+            })
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'ok') {
+                location.reload();
+            } else {
+                alert("연결 해제 실패: " + (res.error || "알 수 없는 오류"));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("서버 연결 실패");
+        });
+    }
+
+    function openAddModal(trackId, gradeKey, trackTitle, gradeLabel) {
+        document.getElementById('nodeId').value = "";
+        document.getElementById('nodeTrack').value = trackId;
+        document.getElementById('nodeGrade').value = gradeKey;
+        document.getElementById('courseTitle').value = "";
+        document.getElementById('courseSubtitle').value = "";
+        document.getElementById('courseSpan').value = "1";
+        document.getElementById('courseLink').value = "";
+        
+        document.getElementById('modalTitle').innerText = "🗺️ 로드맵 과정 노드 추가";
+        document.getElementById('positionLabel').innerText = `[${trackTitle}] → ${gradeLabel}`;
+        
+        document.getElementById('connectionListGroup').style.display = 'none';
+        document.getElementById('nodeModal').classList.add('active');
+    }
+
+    function openEditModal(nodeId, trackId, gradeKey, title, subtitle, linkUrl, spanWidth) {
+        document.getElementById('nodeId').value = nodeId;
+        document.getElementById('nodeTrack').value = trackId;
+        document.getElementById('nodeGrade').value = gradeKey;
+        document.getElementById('courseTitle').value = title;
+        document.getElementById('courseSubtitle').value = subtitle;
+        document.getElementById('courseSpan').value = spanWidth || 1;
+        document.getElementById('courseLink').value = linkUrl;
+
+        // 연결 해제 관리 리스트 렌더링
+        const connectionListGroup = document.getElementById('connectionListGroup');
+        const connectionList = document.getElementById('connectionList');
+        if (connectionListGroup && connectionList) {
+            connectionList.innerHTML = '';
+            const targetIds = roadmapConnections[nodeId] || [];
+            if (targetIds.length > 0) {
+                connectionListGroup.style.display = 'block';
+                targetIds.forEach(targetId => {
+                    const targetEl = document.querySelector(`[data-node-id="${targetId}"]`);
+                    const targetTitle = targetEl ? targetEl.querySelector('.node-title').innerText : `과정 ID: ${targetId}`;
+
+                    const item = document.createElement('div');
+                    item.className = 'connection-item';
+                    item.innerHTML = `
+                        <span>➡️ ${targetTitle}</span>
+                        <button type="button" class="connection-del-btn" onclick="disconnectNodes(${nodeId}, ${targetId})">연결 해제</button>
+                    `;
+                    connectionList.appendChild(item);
+                });
+            } else {
+                connectionListGroup.style.display = 'none';
+            }
+        }
+
+        const trackNames = {};
+        document.querySelectorAll('.track-row').forEach(row => {
+            const tId = row.getAttribute('data-track-id');
+            const tTitle = row.querySelector('.track-title').innerText;
+            trackNames[tId] = tTitle;
+        });
+
+        document.getElementById('modalTitle').innerText = "✏️ 로드맵 과정 노드 수정";
+        document.getElementById('positionLabel').innerText = `[${trackNames[trackId] || trackId}] 위치 노드 수정`;
+
+        document.getElementById('nodeModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('nodeModal').classList.remove('active');
+        const connectionListGroup = document.getElementById('connectionListGroup');
+        if (connectionListGroup) connectionListGroup.style.display = 'none';
+    }
+
+    function saveNode() {
+        const id = document.getElementById('nodeId').value;
+        const track = document.getElementById('nodeTrack').value;
+        const grade = document.getElementById('nodeGrade').value;
+        const title = document.getElementById('courseTitle').value.trim();
+        const subtitle = document.getElementById('courseSubtitle').value.trim();
+        const span_width = document.getElementById('courseSpan').value;
+        const link_url = document.getElementById('courseLink').value.trim();
+
+        if (!title) {
+            alert("과정명은 필수 항목입니다.");
+            return;
+        }
+
+        const data = {
+            id: id ? parseInt(id) : null,
+            roadmap_track: parseInt(track),
+            roadmap_grade: grade,
+            title: title,
+            subtitle: subtitle,
+            span_width: parseInt(span_width) || 1,
+            link_url: link_url
+        };
+
+        fetch("{% url 'api_roadmap_node_save' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'ok') {
+                location.reload();
+            } else {
+                alert("저장 실패: " + (res.error || "알 수 없는 오류"));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("서버 연결 실패");
+        });
+    }
+
+    function deleteNode(nodeId) {
+        if (!confirm("정말 이 과정을 로드맵에서 삭제하시겠습니까?")) {
+            return;
+        }
+
+        const url = `/courses/api/roadmap/delete/${nodeId}/`;
+
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken
+            }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'ok') {
+                location.reload();
+            } else {
+                alert("삭제 실패: " + (res.error || "알 수 없는 오류"));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("서버 연결 실패");
+        });
+    }
+
+    // ----------------------------------------------------
+    // 관리자 전용 기능 (트랙 CRUD 추가/수정/삭제 모달 연동)
+    // ----------------------------------------------------
+    function openTrackAddModal() {
+        document.getElementById('trackIdField').value = "";
+        document.getElementById('trackTitleField').value = "";
+        document.getElementById('trackBadgeField').value = "";
+        document.getElementById('trackColorField').value = "#3b82f6";
+        document.getElementById('trackColorPicker').value = "#3b82f6";
+        document.getElementById('trackOrderField').value = "0";
+
+        document.getElementById('trackModalTitle').innerText = "🧭 커리큘럼 트랙 추가";
+        document.getElementById('trackModal').classList.add('active');
+    }
+
+    function openTrackEditModal(trackId, title, badge, color, order) {
+        document.getElementById('trackIdField').value = trackId;
+        document.getElementById('trackTitleField').value = title;
+        document.getElementById('trackBadgeField').value = badge;
+        document.getElementById('trackColorField').value = color || "#3b82f6";
+        document.getElementById('trackColorPicker').value = color || "#3b82f6";
+        document.getElementById('trackOrderField').value = order || 0;
+
+        document.getElementById('trackModalTitle').innerText = "✏️ 커리큘럼 트랙 수정";
+        document.getElementById('trackModal').classList.add('active');
+    }
+
+    function closeTrackModal() {
+        document.getElementById('trackModal').classList.remove('active');
+    }
+
+    function saveTrack() {
+        const id = document.getElementById('trackIdField').value;
+        const title = document.getElementById('trackTitleField').value.trim();
+        const badge = document.getElementById('trackBadgeField').value.trim();
+        const color = document.getElementById('trackColorField').value.trim() || "#3b82f6";
+        const order = document.getElementById('trackOrderField').value;
+
+        if (!title) {
+            alert("트랙명은 필수 항목입니다.");
+            return;
+        }
+
+        const data = {
+            id: id ? parseInt(id) : null,
+            title: title,
+            badge: badge,
+            color: color,
+            order: parseInt(order) || 0
+        };
+
+        fetch("{% url 'api_roadmap_track_save' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'ok') {
+                location.reload();
+            } else {
+                alert("트랙 저장 실패: " + (res.error || "알 수 없는 오류"));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("서버 연결 실패");
+        });
+    }
+
+    function deleteTrack(trackId) {
+        if (!confirm("정말 이 트랙을 삭제하시겠습니까?\n트랙을 삭제하면 해당 트랙에 포함된 모든 과정 노드들도 함께 연쇄 삭제됩니다!")) {
+            return;
+        }
+
+        const url = `/courses/api/roadmap/track/delete/${trackId}/`;
+
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken
+            }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'ok') {
+                location.reload();
+            } else {
+                alert("트랙 삭제 실패: " + (res.error || "알 수 없는 오류"));
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("서버 연결 실패");
+        });
+    }
+    {% endif %}
+</script>
+{% endblock %}

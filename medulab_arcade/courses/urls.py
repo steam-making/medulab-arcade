@@ -36,6 +36,14 @@ urlpatterns = [
     
     # 학생용
     path('student/courses/', views.student_course_list, name='student_course_list'),
+    path('student/roadmap/', views.program_roadmap, name='program_roadmap'),
+    path('student/finder/', views.program_finder, name='program_finder'),
+    path('api/roadmap/save/', views.api_roadmap_node_save, name='api_roadmap_node_save'),
+    path('api/roadmap/delete/<int:node_id>/', views.api_roadmap_node_delete, name='api_roadmap_node_delete'),
+    path('api/roadmap/connect/', views.api_roadmap_connect, name='api_roadmap_connect'),
+    path('api/roadmap/disconnect/', views.api_roadmap_disconnect, name='api_roadmap_disconnect'),
+    path('api/roadmap/track/save/', views.api_roadmap_track_save, name='api_roadmap_track_save'),
+    path('api/roadmap/track/delete/<int:track_id>/', views.api_roadmap_track_delete, name='api_roadmap_track_delete'),
     path('student/homework/', views.student_homework_list, name='student_homework_list'),
     path('student/homework/<int:assignment_id>/submit/', views.student_homework_submit, name='student_homework_submit'),
     path('student/homework/submission/<int:submission_id>/action/', views.homework_submission_action, name='homework_submission_action'),
@@ -44,6 +52,7 @@ urlpatterns = [
     
     # 학습 흐름
     path('<int:program_id>/', views.course_home, name='course_home'),
+    path('program/<int:program_id>/curriculum/', views.course_curriculum_preview, name='course_curriculum_preview'),
     path('chapter/<int:chapter_id>/', views.chapter_detail, name='chapter_detail'),
     path('item/<int:item_id>/', views.item_page, name='item_page'),
     path('item/<int:item_id>/olympiad/submit/', views.submit_olympiad_answer, name='submit_olympiad_answer'),

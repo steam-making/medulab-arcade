@@ -39,6 +39,8 @@ from arcade.badge_service import (
 )
 from .models import (
     AnswerZipImportBatch,
+    FinderQuestion,
+    FinderRecommendation,
     LearningProgram,
     Chapter,
     Item,
@@ -52,6 +54,7 @@ from .models import (
     OlympiadAnswerExample,
     OlympiadSubQuestion,
     OlympiadSubAnswer,
+    RoadmapNode,
 )
 from .forms import (
     AnswerZipImportForm,
@@ -64,6 +67,7 @@ from .forms import (
     HomeworkSubmissionReviewForm,
     OlympiadAnswerSubmissionForm,
     OlympiadSubQuestionForm,
+    RoadmapNodeForm,
 )
 from django.db.models import Count, Q
 
@@ -1247,6 +1251,7 @@ def student_course_list(request):
 
     coding_type = available_program_types.filter(name="코딩").first()
     python_coding_filter = coding_type is not None
+    robot_coding_filter = coding_type is not None
 
     # "대회 대비"와 "대회 준비"를 동일 필터로 묶기 위해 대비 타입 ID 수집
     contest_prep_ids = list(
@@ -1256,10 +1261,15 @@ def student_course_list(request):
     if selected_program_type == "python-coding":
         all_programs = all_programs.filter(
             Q(program_type=coding_type)
-            | (
-                (Q(program_type__name__icontains="대회") | Q(program_type__name__icontains="자격증"))
-                & (Q(name__icontains="python") | Q(name__icontains="파이썬") | Q(description__icontains="python") | Q(description__icontains="파이썬"))
-            )
+            & ~(Q(name__icontains="로봇") | Q(name__icontains="프로보") | Q(name__icontains="connect") | Q(name__icontains="커넥트") | Q(description__icontains="로봇") | Q(description__icontains="프로보") | Q(description__icontains="connect") | Q(description__icontains="커넥트"))
+        ) | all_programs.filter(
+            (Q(program_type__name__icontains="대회") | Q(program_type__name__icontains="자격증"))
+            & (Q(name__icontains="python") | Q(name__icontains="파이썬") | Q(description__icontains="python") | Q(description__icontains="파이썬"))
+        )
+    elif selected_program_type == "robot-coding":
+        all_programs = all_programs.filter(
+            Q(program_type=coding_type)
+            & (Q(name__icontains="로봇") | Q(name__icontains="프로보") | Q(name__icontains="connect") | Q(name__icontains="커넥트") | Q(description__icontains="로봇") | Q(description__icontains="프로보") | Q(description__icontains="connect") | Q(description__icontains="커넥트"))
         )
     elif selected_program_type.isdigit() and int(selected_program_type) in contest_prep_ids:
         all_programs = all_programs.filter(program_type_id__in=contest_prep_ids)
@@ -1284,7 +1294,360 @@ def student_course_list(request):
         "program_types": available_program_types,
         "selected_program_type": selected_program_type,
         "show_python_coding_filter": python_coding_filter,
+        "show_robot_coding_filter": robot_coding_filter,
         "can_apply": can_apply,
+    })
+
+def program_roadmap(request):
+    from .models import RoadmapTrack
+    
+    tracks_list = RoadmapTrack.objects.all()
+    nodes_list = RoadmapNode.objects.all()
+    
+    grades = [
+        ("kids_5_7", "유아 5~7세"),
+        ("elem_1_2", "초등 1~2학년"),
+        ("elem_3_4", "초등 3~4학년"),
+        ("elem_5_6", "초등 5~6학년"),
+        ("mid_high", "중고등"),
+    ]
+    
+    mapping = {track.id: {} for track in tracks_list}
+    for n in nodes_list:
+        if n.roadmap_track_id in mapping:
+            mapping[n.roadmap_track_id][n.roadmap_grade] = n
+            
+    tracks_data = []
+    for track in tracks_list:
+        nodes = []
+        skip_count = 0
+        for i, (grade_key, grade_label) in enumerate(grades):
+            if skip_count > 0:
+                skip_count -= 1
+                continue
+                
+            node_obj = mapping[track.id].get(grade_key, None)
+            
+            if node_obj:
+                S = node_obj.span_width
+                if S < 1:
+                    S = 1
+                max_allowed_span = len(grades) - i
+                if S > max_allowed_span:
+                    S = max_allowed_span
+                    
+                skip_count = S - 1
+                
+                has_next = False
+                last_active_idx = i + S - 1
+                if last_active_idx < len(grades) - 1:
+                    next_grade_key = grades[last_active_idx + 1][0]
+                    has_next = mapping[track.id].get(next_grade_key, None) is not None
+                
+                has_arrow = last_active_idx < len(grades) - 1
+                
+                nodes.append({
+                    "grade_key": grade_key,
+                    "grade_label": grade_label,
+                    "node": node_obj,
+                    "colspan": 2 * S - 1,
+                    "has_next_node": has_next,
+                    "has_arrow_after": has_arrow,
+                })
+            else:
+                has_arrow = i < len(grades) - 1
+                nodes.append({
+                    "grade_key": grade_key,
+                    "grade_label": grade_label,
+                    "node": None,
+                    "colspan": 1,
+                    "has_next_node": False,
+                    "has_arrow_after": has_arrow,
+                })
+            
+        tracks_data.append({
+            "track_id": track.id,
+            "badge": track.badge,
+            "title": track.title,
+            "color": track.color,
+            "color_rgb": track.color_rgb,
+            "nodes": nodes
+        })
+        
+    connections_map = {}
+    for n in nodes_list:
+        next_ids = list(n.next_nodes.values_list("id", flat=True))
+        if next_ids:
+            connections_map[n.id] = next_ids
+    connections_json = json.dumps(connections_map)
+
+    form = RoadmapNodeForm()
+    is_admin_user = is_admin(request.user) if request.user.is_authenticated else False
+    
+    return render(request, "learning_program/roadmap.html", {
+        "tracks": tracks_data,
+        "grades": grades,
+        "form": form,
+        "is_admin": is_admin_user,
+        "connections_json": connections_json,
+    })
+
+from django.views.decorators.http import require_POST
+
+@login_required
+@user_passes_test(is_admin)
+@require_POST
+def api_roadmap_node_save(request):
+    from .models import RoadmapTrack
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"status": "error", "error": "잘못된 데이터 요청입니다."}, status=400)
+
+    node_id = data.get("id")
+    track = data.get("roadmap_track")
+    grade = data.get("roadmap_grade")
+    title = data.get("title", "").strip()
+    subtitle = data.get("subtitle", "").strip()
+    link_url = data.get("link_url", "").strip()
+    span_width = data.get("span_width", 1)
+
+    if not track or not grade or not title:
+        return JsonResponse({"status": "error", "error": "트랙, 학년, 과정명은 필수 항목입니다."}, status=400)
+
+    try:
+        span_width = int(span_width)
+        if span_width < 1:
+            span_width = 1
+    except (ValueError, TypeError):
+        span_width = 1
+
+    try:
+        track_obj = RoadmapTrack.objects.get(id=int(track))
+    except RoadmapTrack.DoesNotExist:
+        return JsonResponse({"status": "error", "error": "존재하지 않는 트랙입니다."}, status=400)
+
+    try:
+        if node_id:
+            node = RoadmapNode.objects.get(id=node_id)
+            node.roadmap_track = track_obj
+            node.roadmap_grade = grade
+            node.title = title
+            node.subtitle = subtitle
+            node.link_url = link_url
+            node.span_width = span_width
+            node.save()
+        else:
+            node, created = RoadmapNode.objects.update_or_create(
+                roadmap_track=track_obj,
+                roadmap_grade=grade,
+                defaults={
+                    "title": title,
+                    "subtitle": subtitle,
+                    "link_url": link_url,
+                    "span_width": span_width
+                }
+            )
+        return JsonResponse({"status": "ok"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "error": str(e)}, status=500)
+
+@login_required
+@user_passes_test(is_admin)
+@require_POST
+def api_roadmap_node_delete(request, node_id):
+    node = get_object_or_404(RoadmapNode, id=node_id)
+    try:
+        node.delete()
+        return JsonResponse({"status": "ok"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "error": str(e)}, status=500)
+
+@login_required
+@user_passes_test(is_admin)
+@require_POST
+def api_roadmap_connect(request):
+    try:
+        data = json.loads(request.body)
+        source_id = data.get("source_id")
+        target_id = data.get("target_id")
+        if not source_id or not target_id:
+            return JsonResponse({"status": "error", "error": "출발지와 목적지 과정 노드가 지정되지 않았습니다."}, status=400)
+        
+        source = get_object_or_404(RoadmapNode, id=source_id)
+        target = get_object_or_404(RoadmapNode, id=target_id)
+        
+        if source == target:
+            return JsonResponse({"status": "error", "error": "자기 자신과 연결할 수 없습니다."}, status=400)
+            
+        source.next_nodes.add(target)
+        return JsonResponse({"status": "ok"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "error": str(e)}, status=500)
+
+@login_required
+@user_passes_test(is_admin)
+@require_POST
+def api_roadmap_disconnect(request):
+    try:
+        data = json.loads(request.body)
+        source_id = data.get("source_id")
+        target_id = data.get("target_id")
+        if not source_id or not target_id:
+            return JsonResponse({"status": "error", "error": "출발지와 목적지 과정 노드가 지정되지 않았습니다."}, status=400)
+            
+        source = get_object_or_404(RoadmapNode, id=source_id)
+        target = get_object_or_404(RoadmapNode, id=target_id)
+        
+        source.next_nodes.remove(target)
+        return JsonResponse({"status": "ok"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "error": str(e)}, status=500)
+
+@login_required
+@user_passes_test(is_admin)
+@require_POST
+def api_roadmap_track_save(request):
+    from .models import RoadmapTrack
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"status": "error", "error": "잘못된 데이터 요청입니다."}, status=400)
+
+    track_id = data.get("id")
+    title = data.get("title", "").strip()
+    badge = data.get("badge", "").strip()
+    color = data.get("color", "").strip() or "#3b82f6"
+    order = data.get("order", 0)
+
+    if not title:
+        return JsonResponse({"status": "error", "error": "트랙명은 필수 항목입니다."}, status=400)
+
+    try:
+        order = int(order)
+    except (ValueError, TypeError):
+        order = 0
+
+    try:
+        if track_id:
+            track = RoadmapTrack.objects.get(id=track_id)
+            track.title = title
+            track.badge = badge
+            track.color = color
+            track.order = order
+            track.save()
+        else:
+            track = RoadmapTrack.objects.create(
+                title=title,
+                badge=badge,
+                color=color,
+                order=order
+            )
+        return JsonResponse({"status": "ok"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "error": str(e)}, status=500)
+
+@login_required
+@user_passes_test(is_admin)
+@require_POST
+def api_roadmap_track_delete(request, track_id):
+    from .models import RoadmapTrack
+    track = get_object_or_404(RoadmapTrack, id=track_id)
+    try:
+        track.delete()
+        return JsonResponse({"status": "ok"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "error": str(e)}, status=500)
+
+def program_finder(request):
+    programs = LearningProgram.objects.filter(is_active=True)
+
+    db_programs = [
+        {
+            "id": p.id,
+            "name": p.name,
+            "description": (p.description or "")[:100],
+        }
+        for p in programs
+    ]
+
+    questions = []
+    for q in FinderQuestion.objects.filter(is_active=True).prefetch_related("options"):
+        options = [
+            {"text": opt.text, "value": opt.value}
+            for opt in q.options.filter(is_active=True)
+        ]
+        if options:
+            questions.append({
+                "indicator": q.indicator,
+                "title": q.title,
+                "options": options,
+            })
+
+    if not questions:
+        questions = [
+            {
+                "indicator": "STEP 01",
+                "title": "현재 학습 대상의 연령이나 학년은 어떻게 되나요?",
+                "options": [
+                    {"text": "👶 유아 (5세 ~ 7세)", "value": "kids"},
+                    {"text": "🎒 초등 저학년 (1 ~ 2학년)", "value": "elem_low"},
+                    {"text": "🏫 초등 고학년 (3 ~ 6학년)", "value": "elem_high"},
+                    {"text": "📖 중학생 또는 고등학생", "value": "secondary"},
+                ],
+            },
+            {
+                "indicator": "STEP 02",
+                "title": "코딩을 배워본 경험이 있으신가요?",
+                "options": [
+                    {"text": "✨ 완전히 처음 입문해요", "value": "none"},
+                    {"text": "🧩 블록 코딩(엔트리/스크래치 등) 경험이 있어요", "value": "block"},
+                    {"text": "💻 파이썬, C언어 등 프로그래밍 언어 경험이 있어요", "value": "text"},
+                ],
+            },
+            {
+                "indicator": "STEP 03",
+                "title": "학습을 통해 달성하고 싶은 가장 큰 목표는 무엇인가요?",
+                "options": [
+                    {"text": "🧠 사고력 향상과 컴퓨터 작동 원리 기초 이해", "value": "logic"},
+                    {"text": "🏆 정보올림피아드 등 알고리즘 대회 출전 및 입상", "value": "contest"},
+                    {"text": "🛠️ 실제 웹/앱 포트폴리오 제작 및 SW 자격증 취득", "value": "app_cert"},
+                ],
+            },
+        ]
+
+    recommendations = [
+        {
+            "title": rec.title,
+            "reason": rec.reason,
+            "age": rec.age,
+            "exp": rec.experience,
+            "goal": rec.goal,
+            "program_keyword": rec.program_keyword,
+            "priority": rec.priority,
+        }
+        for rec in FinderRecommendation.objects.filter(is_active=True)
+    ]
+
+    if not recommendations:
+        recommendations = [
+            {"title": "스크래치", "reason": "5~7세 아이들이 놀이 형태로 코딩의 개념을 습득하고, 순차적 구조와 논리적 생각을 키우기 아주 좋은 트랙입니다.", "age": "kids", "exp": "", "goal": "", "program_keyword": "스크래치", "priority": 0},
+            {"title": "엔트리 기초", "reason": "초등 저학년 눈높이에 맞춰 블록을 조립하며 애니메이션과 게임을 만들어보는 기초 코딩 입문 트랙입니다.", "age": "elem_low", "exp": "none", "goal": "", "program_keyword": "엔트리", "priority": 0},
+            {"title": "피지컬 로봇 코딩", "reason": "단순 블록 코딩을 넘어 직접 하드웨어 교구와 모터를 연결하고 조작하며 하드웨어 제어 능력을 함께 키우는 트랙입니다.", "age": "elem_low", "exp": "block", "goal": "", "program_keyword": "로봇", "priority": 1},
+            {"title": "C/C++", "reason": "알고리즘 대회 및 정보올림피아드 입상을 목적으로 C/C++ 기초 학습과 핵심적인 구조를 선행하는 고난도 트랙입니다.", "age": "elem_high", "exp": "", "goal": "contest", "program_keyword": "C/C++", "priority": 0},
+            {"title": "COS Pro", "reason": "기본 파이썬 문법을 바탕으로 SW 사고력을 증명할 수 있는 YBM 공인 자격증(COS Pro) 취득 트랙입니다.", "age": "elem_high", "exp": "", "goal": "app_cert", "program_keyword": "COS Pro", "priority": 1},
+            {"title": "파이썬 스타터", "reason": "초등 고학년 학생들이 처음으로 텍스트 코딩을 접할 때 거부감 없이 파이썬 언어의 기초 개념을 습득할 수 있는 입문 트랙입니다.", "age": "elem_high", "exp": "none", "goal": "logic", "program_keyword": "파이썬", "priority": 2},
+            {"title": "파이썬 베이직", "reason": "블록 코딩 지식을 기반으로 실제 파이썬 언어의 핵심 제어문과 문법을 탄탄하게 확장해나가는 실력 향상 트랙입니다.", "age": "elem_high", "exp": "block", "goal": "logic", "program_keyword": "파이썬", "priority": 3},
+            {"title": "올림피아드", "reason": "정보올림피아드 및 코딩테스트 통과를 위해 심화 자료구조, 수학적 논리 전개, 고난도 알고리즘 기출을 실전적으로 훈련하는 트랙입니다.", "age": "secondary", "exp": "", "goal": "contest", "program_keyword": "올림피아드", "priority": 0},
+            {"title": "정보처리기능사", "reason": "컴퓨터 전반에 걸친 이론과 프로그래밍 능력을 다지며 국가기술자격증(정보처리기능사) 취득을 단기에 공략하는 트랙입니다.", "age": "secondary", "exp": "", "goal": "app_cert", "program_keyword": "정보처리기능사", "priority": 1},
+            {"title": "파이썬", "reason": "텍스트 프로그래밍 언어의 표준인 파이썬을 학습하여 논리 구조와 데이터를 활용하는 능력을 완성하는 핵심 트랙입니다.", "age": "secondary", "exp": "", "goal": "logic", "program_keyword": "파이썬", "priority": 2},
+        ]
+
+    return render(request, "learning_program/finder.html", {
+        "programs": programs,
+        "db_programs_json": json.dumps(db_programs, ensure_ascii=False),
+        "finder_questions_json": json.dumps(questions, ensure_ascii=False),
+        "finder_recommendations_json": json.dumps(recommendations, ensure_ascii=False),
     })
 
 # --- (3) 수강 신청 ---
@@ -1305,7 +1668,8 @@ def student_course_apply(request, program_id):
 # --- (4) 코스 홈 (챕터 구성) ---
 def course_home(request, program_id):
     program = get_object_or_404(LearningProgram, id=program_id)
-    chapters = Chapter.objects.filter(program=program).order_by("number")
+    chapters = list(Chapter.objects.filter(program=program).order_by("number"))
+
     program_badge = get_program_completion_badge(program)
     if request.user.is_authenticated:
         program_badge_awarded = request.user.earned_badges.filter(badge=program_badge).exists()
@@ -1313,26 +1677,71 @@ def course_home(request, program_id):
     else:
         program_badge_awarded = False
         recent_badges = []
-    
-    # 챕터별 진도율 계산하여 챕터 객체에 주입
+
     for ch in chapters:
         total_items = Item.objects.filter(chapter=ch).count()
         if request.user.is_authenticated:
             completed_items = UserProgress.objects.filter(
-                user=request.user, 
-                item__chapter=ch, 
+                user=request.user,
+                item__chapter=ch,
                 completed=True
             ).count()
         else:
             completed_items = 0
         ch.progress = round((completed_items / total_items * 100)) if total_items > 0 else 0
-        
+
     return render(request, "learning_program/course_home.html", {
         "program": program,
         "chapters": chapters,
         "program_badge": program_badge,
         "program_badge_awarded": program_badge_awarded,
         "recent_badges": recent_badges,
+    })
+
+def course_curriculum_preview(request, program_id):
+    program = get_object_or_404(LearningProgram, id=program_id)
+    chapters = list(Chapter.objects.filter(program=program).order_by("number").prefetch_related('items'))
+
+    completed_item_ids = set()
+    if request.user.is_authenticated:
+        completed_item_ids = set(
+            UserProgress.objects.filter(
+                user=request.user,
+                item__chapter__program=program,
+                completed=True
+            ).values_list('item_id', flat=True)
+        )
+
+    level_groups = []
+    current_level = None
+    current_chapters = []
+    for ch in chapters:
+        match = re.match(r"^Lv(\d+)-", ch.title or "")
+        level = int(match.group(1)) if match else None
+        if level != current_level:
+            if current_chapters:
+                level_groups.append({
+                    "level": current_level,
+                    "label": f"LV{current_level}" if current_level else "기타",
+                    "chapters": current_chapters,
+                })
+            current_level = level
+            current_chapters = [ch]
+        else:
+            current_chapters.append(ch)
+
+    if current_chapters:
+        level_groups.append({
+            "level": current_level,
+            "label": f"LV{current_level}" if current_level else "기타",
+            "chapters": current_chapters,
+        })
+
+    return render(request, "learning_program/course_curriculum.html", {
+        "program": program,
+        "chapters": chapters,
+        "level_groups": level_groups,
+        "completed_item_ids": completed_item_ids,
     })
 
 # --- (5) 챕터 상세 (항목 목록) ---

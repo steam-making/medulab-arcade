@@ -672,7 +672,10 @@
                     <a href="{% url 'profile' %}" class="nav-link">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }} · 마이페이지</a>
                     <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
                     {% endif %}
-                    <a href="{% url 'logout' %}" class="nav-link">로그아웃</a>
+                    <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link" style="background: transparent; border: none; cursor: pointer;">로그아웃</button>
+                    </form>
                     {% else %}
                     <a href="{% url 'login' %}" class="nav-link">로그인</a>
                     <a href="{% url 'signup' %}" class="nav-link accent">회원가입</a>

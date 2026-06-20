@@ -10,6 +10,7 @@ from .models import (
     OlympiadAnswerSubmission,
     OlympiadSubQuestion,
     ProgramType,
+    RoadmapNode,
 )
 
 
@@ -30,6 +31,20 @@ class CourseForm(forms.ModelForm):
                 attrs={"class": "form-input", "placeholder": "과정 설명을 작성하세요", "rows": 4}
             ),
             "program_type": forms.Select(attrs={"class": "form-input"}),
+        }
+
+
+class RoadmapNodeForm(forms.ModelForm):
+    class Meta:
+        model = RoadmapNode
+        fields = ["roadmap_track", "roadmap_grade", "title", "subtitle", "link_url", "span_width"]
+        widgets = {
+            "roadmap_track": forms.Select(attrs={"class": "form-input"}),
+            "roadmap_grade": forms.Select(attrs={"class": "form-input"}),
+            "title": forms.TextInput(attrs={"class": "form-input", "placeholder": "과정명을 입력하세요"}),
+            "subtitle": forms.TextInput(attrs={"class": "form-input", "placeholder": "설명/부제목을 입력하세요"}),
+            "link_url": forms.TextInput(attrs={"class": "form-input", "placeholder": "연결 URL (선택)"}),
+            "span_width": forms.NumberInput(attrs={"class": "form-input", "min": 1, "max": 15}),
         }
 
 

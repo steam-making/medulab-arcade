@@ -1,0 +1,489 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}나에게 맞는 프로그램 찾기 - MEDULAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --dash-glass: rgba(255, 255, 255, 0.03);
+        --dash-border: rgba(255, 255, 255, 0.08);
+        --neon-green: #00ffb4;
+        --neon-blue: #3b82f6;
+        --neon-purple: #a855f7;
+    }
+
+    .main { padding-top: 40px; padding-bottom: 100px; }
+
+    .finder-container {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .finder-card {
+        background: var(--dash-glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--dash-border);
+        border-radius: 32px;
+        padding: 48px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        position: relative;
+        overflow: hidden;
+        min-height: 420px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    /* 진행도 표시 바 */
+    .progress-bar-container {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        margin-bottom: 40px;
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        width: 33.3%;
+        background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+        border-radius: inherit;
+        transition: width 0.4s ease;
+    }
+
+    .step-indicator {
+        font: 800 12px 'Orbitron', sans-serif;
+        color: var(--neon-blue);
+        letter-spacing: 1.5px;
+        margin-bottom: 12px;
+    }
+
+    .question-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: #fff;
+        line-height: 1.4;
+        margin-bottom: 32px;
+    }
+
+    .options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .option-button {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--dash-border);
+        border-radius: 18px;
+        padding: 20px 24px;
+        text-align: left;
+        color: var(--text-secondary);
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .option-button:hover {
+        background: rgba(59, 130, 246, 0.08);
+        border-color: rgba(59, 130, 246, 0.4);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
+    .option-button:active {
+        transform: translateY(0);
+    }
+
+    .option-icon {
+        font-size: 18px;
+        opacity: 0;
+        transition: opacity 0.2s, transform 0.2s;
+        transform: translateX(-10px);
+        color: var(--neon-blue);
+    }
+
+    .option-button:hover .option-icon {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    /* 결과 페이지 */
+    .result-container {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .result-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        background: rgba(0, 255, 180, 0.15);
+        color: var(--neon-green);
+        border: 1px solid rgba(0, 255, 180, 0.2);
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        margin-bottom: 20px;
+    }
+
+    .result-title {
+        font-size: 28px;
+        font-weight: 900;
+        color: #fff;
+        margin-bottom: 16px;
+    }
+
+    .result-desc {
+        font-size: 15px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 36px;
+        max-width: 480px;
+    }
+
+    /* 추천 프로그램 카드 */
+    .recommend-card {
+        width: 100%;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 36px;
+        text-align: left;
+    }
+
+    .rec-course-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 8px;
+    }
+
+    .rec-course-desc {
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .btn-finder {
+        flex: 1;
+        padding: 16px 20px;
+        border-radius: 16px;
+        font-weight: 800;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.25s ease;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+        color: #fff;
+        border: none;
+        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+    }
+    .btn-primary:hover {
+        filter: brightness(1.15);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--dash-border);
+        color: #fff;
+    }
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .back-btn-container {
+        max-width: 680px;
+        margin: 0 auto 24px;
+        padding: 0 20px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 700;
+        transition: color 0.2s;
+    }
+    .btn-back:hover {
+        color: #fff;
+    }
+
+    .finder-admin-tools {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .finder-admin-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.2s ease;
+    }
+
+    .finder-admin-btn:hover {
+        background: rgba(59, 130, 246, 0.14);
+        border-color: rgba(59, 130, 246, 0.38);
+        transform: translateY(-1px);
+    }
+
+    /* 페이드 애니메이션 */
+    .fade-switch {
+        animation: fadeSwitchEffect 0.3s ease-out;
+    }
+
+    @keyframes fadeSwitchEffect {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+    <div class="back-btn-container fade-in">
+        <a href="{% url 'student_course_list' %}" class="btn-back">
+            <span>←</span> 교육 프로그램 목록으로 돌아가기
+        </a>
+
+        {% if user.is_authenticated and user.is_staff %}
+        <div class="finder-admin-tools">
+            <a href="/admin/courses/finderquestion/" class="finder-admin-btn">⚙️ 질문 관리</a>
+            <a href="/admin/courses/finderrecommendation/" class="finder-admin-btn">🧭 추천 규칙 관리</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="finder-container fade-in">
+        <div class="finder-card">
+            <!-- 진행 상태 바 -->
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+
+            <!-- 동적 질문/결과 렌더링 영역 -->
+            <div id="finderBody" class="fade-switch">
+                <!-- Javascript를 통해 주입됨 -->
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const dbPrograms = JSON.parse('{{ db_programs_json|escapejs }}');
+    const questions = JSON.parse('{{ finder_questions_json|escapejs }}');
+    const recommendations = JSON.parse('{{ finder_recommendations_json|escapejs }}');
+
+    let currentStep = 0;
+    const answers = {};
+
+    function renderStep() {
+        const body = document.getElementById('finderBody');
+        const bar = document.getElementById('progressBar');
+        
+        // 진행률 바 갱신
+        bar.style.width = ((currentStep + 1) / questions.length * 100) + '%';
+
+        const q = questions[currentStep];
+
+        let html = `
+            <div>
+                <div class="step-indicator">${q.indicator}</div>
+                <h2 class="question-title">${q.title}</h2>
+                <div class="options-list">
+        `;
+
+        q.options.forEach((opt, idx) => {
+            html += `
+                <button class="option-button" onclick="selectOption('${opt.value}')">
+                    <span>${opt.text}</span>
+                    <span class="option-icon">→</span>
+                </button>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+            <div style="margin-top: 32px; display: flex; justify-content: flex-start;">
+                ${currentStep > 0 ? `<button class="btn-finder btn-secondary" style="flex:none; padding:10px 20px;" onclick="prevStep()">이전 단계</button>` : ''}
+            </div>
+        `;
+
+        body.innerHTML = html;
+        
+        // 애니메이션 트리거
+        body.classList.remove('fade-switch');
+        void body.offsetWidth; // reflow
+        body.classList.add('fade-switch');
+    }
+
+    function selectOption(value) {
+        // 답변 기록
+        if (currentStep === 0) answers.age = value;
+        else if (currentStep === 1) answers.exp = value;
+        else if (currentStep === 2) answers.goal = value;
+
+        if (currentStep < questions.length - 1) {
+            currentStep++;
+            renderStep();
+        } else {
+            showResult();
+        }
+    }
+
+    function prevStep() {
+        if (currentStep > 0) {
+            currentStep--;
+            renderStep();
+        }
+    }
+
+    // 추천 로직 및 결과 화면
+    function showResult() {
+        const body = document.getElementById('finderBody');
+        const bar = document.getElementById('progressBar');
+        bar.style.width = '100%';
+
+        const matchedRules = recommendations
+            .filter(rec => (!rec.age || rec.age === answers.age)
+                && (!rec.exp || rec.exp === answers.exp)
+                && (!rec.goal || rec.goal === answers.goal))
+            .sort((a, b) => {
+                const scoreA = (a.age ? 1 : 0) + (a.exp ? 1 : 0) + (a.goal ? 1 : 0);
+                const scoreB = (b.age ? 1 : 0) + (b.exp ? 1 : 0) + (b.goal ? 1 : 0);
+                if (scoreA !== scoreB) return scoreB - scoreA;
+                return (a.priority || 0) - (b.priority || 0);
+            });
+
+        const selectedRule = matchedRules[0] || {
+            title: '기초 코딩 스타터 과정',
+            reason: '블록코딩을 통해 코딩에 대한 재미를 붙이고 논리적인 사고력을 키울 수 있는 기초 다지기 트랙입니다.',
+            program_keyword: ''
+        };
+
+        const recTitle = selectedRule.title;
+        const recReason = selectedRule.reason;
+        const searchKeyword = (selectedRule.program_keyword || recTitle).toLowerCase();
+
+        // DB에 개설된 프로그램 중 추천 코스 제목이 포함된 코스 찾기 (검색)
+        let matchedProgram = null;
+        for (let i = 0; i < dbPrograms.length; i++) {
+            if (dbPrograms[i].name.toLowerCase().includes(searchKeyword) || 
+                searchKeyword.includes(dbPrograms[i].name.toLowerCase())) {
+                matchedProgram = dbPrograms[i];
+                break;
+            }
+        }
+
+        // 만약 완전 매치되는 게 없다면, 가장 유사한 트랙 이름으로 하나 검색
+        if (!matchedProgram && dbPrograms.length > 0) {
+            // 차선책으로 첫 번째 매칭 시도
+            matchedProgram = dbPrograms.find(p => p.name.includes("파이썬") || p.name.includes("올림피아드") || p.name.includes("C/C++"));
+        }
+
+        let matchedCourseHtml = "";
+        let actionButtonsHtml = "";
+
+        if (matchedProgram) {
+            matchedCourseHtml = `
+                <div class="recommend-card">
+                    <div class="rec-course-title">👉 추천 과정: ${matchedProgram.name}</div>
+                    <p class="rec-course-desc">${matchedProgram.description || recReason}</p>
+                </div>
+            `;
+            actionButtonsHtml = `
+                <a href="/courses/program/${matchedProgram.id}/curriculum/" class="btn-finder btn-primary">상세 커리큘럼 보기</a>
+                <a href="/courses/${matchedProgram.id}/" class="btn-finder btn-secondary">수강 신청 페이지로</a>
+            `;
+        } else {
+            // DB에 등록된 과정이 없을 때 기본 폴백
+            matchedCourseHtml = `
+                <div class="recommend-card">
+                    <div class="rec-course-title">👉 추천 분야: ${recTitle} 관련 과정</div>
+                    <p class="rec-course-desc">${recReason}</p>
+                </div>
+            `;
+            actionButtonsHtml = `
+                <a href="/courses/student/courses/" class="btn-finder btn-primary">전체 개설 과정 보러가기</a>
+                <button onclick="resetFinder()" class="btn-finder btn-secondary">다시 검사하기</button>
+            `;
+        }
+
+        body.innerHTML = `
+            <div class="result-container">
+                <span class="result-badge">매칭 진단 완료 ✨</span>
+                <h2 class="result-title">나에게 꼭 맞는 학습 프로그램을 찾았습니다!</h2>
+                <p class="result-desc">
+                    진단 결과를 토대로 설계된 학습 로드맵 제안입니다. 아래 추천 과정을 통해 코딩 잠재력을 발휘해 보세요.
+                </p>
+
+                ${matchedCourseHtml}
+
+                <div class="btn-group">
+                    ${actionButtonsHtml}
+                </div>
+                ${matchedProgram ? `<button onclick="resetFinder()" style="margin-top:20px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:13px; text-decoration:underline;">진단 다시 하기</button>` : ''}
+            </div>
+        `;
+
+        body.classList.remove('fade-switch');
+        void body.offsetWidth;
+        body.classList.add('fade-switch');
+    }
+
+    function resetFinder() {
+        currentStep = 0;
+        renderStep();
+    }
+
+    // 초기 실행
+    document.addEventListener('DOMContentLoaded', () => {
+        renderStep();
+    });
+</script>
+{% endblock %}

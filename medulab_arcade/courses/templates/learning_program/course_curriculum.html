@@ -1,0 +1,486 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}{{ program.name }} - 상세 커리큘럼{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --dash-glass: rgba(255, 255, 255, 0.03);
+        --dash-border: rgba(255, 255, 255, 0.08);
+        --neon-green: #00ffb4;
+        --neon-blue: #3b82f6;
+        --neon-purple: #a855f7;
+    }
+
+    .main { padding-top: 40px; padding-bottom: 100px; }
+
+    /* 커리큘럼 히어로 */
+    .course-hero {
+        max-width: 1000px;
+        margin: 0 auto 60px;
+        padding: 60px;
+        background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent),
+                    var(--dash-glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--dash-border);
+        border-radius: 40px;
+        display: flex;
+        align-items: center;
+        gap: 48px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .course-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -50px;
+        right: -50px;
+        width: 200px;
+        height: 200px;
+        background: var(--neon-blue);
+        filter: blur(100px);
+        opacity: 0.1;
+    }
+
+    .hero-img-box {
+        width: 160px;
+        height: 160px;
+        border-radius: 32px;
+        background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 64px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        flex-shrink: 0;
+    }
+
+    .hero-img-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: inherit;
+    }
+
+    .hero-body { flex: 1; }
+    .hero-label {
+        display: inline-block;
+        padding: 4px 12px;
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--neon-blue);
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+    }
+    .hero-title {
+        font: 900 38px 'Orbitron', sans-serif;
+        color: #fff;
+        margin-bottom: 12px;
+        letter-spacing: -1px;
+    }
+    .hero-desc {
+        color: var(--text-secondary);
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 500px;
+    }
+
+    /* 챕터 목록 */
+    .chapter-section {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        padding: 0 10px;
+    }
+    .section-head h2 {
+        font-size: 20px;
+        font-weight: 800;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .level-groups {
+        display: flex;
+        flex-direction: column;
+        gap: 36px;
+    }
+
+    .level-group {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        padding: 18px;
+    }
+
+    .level-group-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0;
+        width: 100%;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .level-group-head-right {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        margin-left: auto;
+    }
+
+    .level-toggle-icon {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 14px;
+        transition: transform 0.25s ease;
+    }
+
+    .level-group.is-open .level-toggle-icon {
+        transform: rotate(180deg);
+    }
+
+    .level-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.14);
+        border: 1px solid rgba(59, 130, 246, 0.26);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+    }
+
+    .level-group-body {
+        display: none;
+    }
+
+    .level-group.is-open .level-group-body {
+        display: block;
+    }
+
+    .chapter-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .chapter-card {
+        background: var(--dash-glass);
+        border: 1px solid var(--dash-border);
+        border-radius: 24px;
+        padding: 32px;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        position: relative;
+    }
+
+    .chapter-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(59, 130, 246, 0.3);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .chapter-card-header {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin-bottom: 20px;
+    }
+
+    .chapter-idx {
+        font: 700 32px 'Orbitron', sans-serif;
+        color: var(--neon-blue);
+        opacity: 0.8;
+        min-width: 50px;
+    }
+
+    .chapter-main { flex: 1; }
+    .chapter-name {
+        font-size: 20px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 6px;
+    }
+    .chapter-summary {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    /* 아이템 리스트 */
+    .chapter-items-preview {
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    
+    .item-list-title {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .preview-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .preview-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 14px;
+        color: var(--text-secondary);
+        padding: 12px 20px;
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .preview-item.is-completed {
+        border-color: rgba(0, 255, 180, 0.2);
+        background: rgba(0, 255, 180, 0.03);
+    }
+
+    .preview-item.is-completed .item-title {
+        text-decoration: line-through;
+        opacity: 0.6;
+    }
+
+    .item-number {
+        color: var(--neon-green);
+        font-weight: 800;
+        font-family: 'Orbitron', sans-serif;
+        min-width: 30px;
+    }
+
+    .item-title {
+        flex: 1;
+        font-weight: 600;
+    }
+
+    .item-tag {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        color: var(--text-muted);
+    }
+
+    /* 하위 문제 목록 */
+    .sub-questions-list {
+        list-style: none;
+        padding: 0;
+        margin: 4px 0 0 46px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .sub-question-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+        color: var(--text-muted);
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border-left: 2px solid var(--neon-blue);
+        border-radius: 0 8px 8px 0;
+    }
+
+    .sub-number {
+        color: var(--neon-blue);
+        font-weight: 700;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .back-btn-container {
+        max-width: 1000px;
+        margin: 0 auto 24px;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 700;
+        transition: color 0.2s;
+    }
+    .btn-back:hover {
+        color: #fff;
+    }
+
+    @media (max-width: 768px) {
+        .course-hero { flex-direction: column; text-align: center; padding: 40px 24px; }
+        .hero-desc { margin: 0 auto; }
+        .chapter-card { padding: 24px; }
+        .sub-questions-list { margin-left: 16px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+    <div class="back-btn-container fade-in">
+        <a href="{% url 'student_course_list' %}" class="btn-back">
+            <span>←</span> 교육 프로그램 목록으로 돌아가기
+        </a>
+    </div>
+
+    <div class="course-hero fade-in">
+        <div class="hero-img-box">
+            {% if program.image %}
+                <img src="{{ program.image.url }}" alt="">
+            {% else %}
+                🚀
+            {% endif %}
+        </div>
+        <div class="hero-body">
+            <span class="hero-label">COURSE PREVIEW</span>
+            <h1 class="hero-title">{{ program.name }}</h1>
+            
+            <div style="margin-top: 24px; padding: 24px; background: rgba(0, 0, 0, 0.2); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                <h3 style="color: #fff; font-size: 15px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span>📝</span> 과정 소개
+                </h3>
+                <p class="hero-desc" style="color: rgba(255, 255, 255, 0.85); font-size: 14px; line-height: 1.7; max-width: none;">{{ program.description|default:"이 프로그램의 상세 소개가 준비 중입니다." }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="chapter-section fade-in" style="animation-delay: 0.1s;">
+        <div class="section-head">
+            <h2><span>📚</span> 상세 커리큘럼 구성</h2>
+            <div style="font-size: 13px; color: var(--text-muted);">총 {{ chapters|length }}개의 단원</div>
+        </div>
+
+        <div class="level-groups">
+            {% for group in level_groups %}
+            <section class="level-group {% if forloop.first %}is-open{% endif %}" data-level-group>
+                <button type="button" class="level-group-head" data-level-toggle>
+                    <div class="level-badge">🧩 {{ group.label }}</div>
+                    <div class="level-group-head-right">
+                        <div style="font-size: 13px; color: var(--text-muted);">{{ group.chapters|length }}개 차시</div>
+                        <span class="level-toggle-icon">▼</span>
+                    </div>
+                </button>
+
+                <div class="level-group-body">
+                    <div class="chapter-list">
+                        {% for ch in group.chapters %}
+                        <div class="chapter-card">
+                            <div class="chapter-card-header">
+                                <div class="chapter-idx">{{ ch.number|stringformat:"02d" }}</div>
+                                <div class="chapter-main">
+                                    <h3 class="chapter-name">{{ ch.title }}</h3>
+                                    <p class="chapter-summary">{{ ch.content|default:"이 단원의 상세 소개가 준비 중입니다." }}</p>
+                                </div>
+                            </div>
+
+                            <div class="chapter-items-preview">
+                                <div class="item-list-title">
+                                    <span>📋</span> 단원 콘텐츠 구성
+                                </div>
+                                {% if ch.items.all %}
+                                <div class="preview-list">
+                                    {% for item in ch.items.all %}
+                                    <div>
+                                        <div class="preview-item {% if item.id in completed_item_ids %}is-completed{% endif %}">
+                                            <span class="item-number">#{{ item.number }}</span>
+                                            <span class="item-title">{{ item.title }}</span>
+                                            {% if item.id in completed_item_ids %}
+                                            <span class="completed-check" style="color: var(--neon-green); font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; background: rgba(0, 255, 180, 0.1); padding: 4px 8px; border-radius: 6px; margin-left: auto;">
+                                                ✔️ 완료
+                                            </span>
+                                            {% endif %}
+                                            <span class="item-tag" style="{% if not item.id in completed_item_ids %}margin-left: auto;{% endif %}">{{ item.get_item_type_display }}</span>
+                                        </div>
+
+                                        {% if item.item_type == 'olympiad' %}
+                                            {% with sqs=item.sub_questions.all %}
+                                            {% if sqs %}
+                                                <ul class="sub-questions-list">
+                                                    {% for sq in sqs %}
+                                                    <li class="sub-question-item">
+                                                        <span class="sub-number">{{ item.number }}-{{ sq.number }}</span>
+                                                        <span style="flex: 1;">{{ sq.question_text|truncatechars:80 }}</span>
+                                                    </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% endif %}
+                                            {% endwith %}
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div style="font-size: 13px; color: var(--text-muted); text-align: center; padding: 20px; background: rgba(0, 0, 0, 0.1); border-radius: 12px;">
+                                    단원에 등록된 학습 콘텐츠가 아직 없습니다.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+            {% empty %}
+            <div class="empty-state">
+                <div style="font-size: 40px; margin-bottom: 16px;">⏳</div>
+                <p>아직 등록된 챕터가 없습니다.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const groups = Array.from(document.querySelectorAll('[data-level-group]'));
+        groups.forEach((group) => {
+            const toggle = group.querySelector('[data-level-toggle]');
+            if (!toggle) return;
+            toggle.addEventListener('click', () => {
+                const isOpen = group.classList.contains('is-open');
+                groups.forEach((item) => item.classList.remove('is-open'));
+                if (!isOpen) {
+                    group.classList.add('is-open');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

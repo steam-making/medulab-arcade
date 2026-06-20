@@ -298,3 +298,150 @@ class HomeworkSubmission(models.Model):
 
     def __str__(self):
         return f"{self.assignment.title} - {self.student.username}"
+
+
+class RoadmapTrack(models.Model):
+    title = models.CharField("트랙명", max_length=100)
+    badge = models.CharField("배지 텍스트 (예: FOUNDATION)", max_length=50, blank=True)
+    color = models.CharField("대표 색상 (헥사코드)", max_length=50, default="#3b82f6", help_text="예: #3b82f6 또는 rgb값")
+    order = models.PositiveIntegerField("정렬 순서", default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = "로드맵 트랙"
+        verbose_name_plural = "로드맵 트랙 목록"
+
+    @property
+    def color_rgb(self):
+        # 헥사코드 #3b82f6 -> "59, 130, 246"
+        hex_val = self.color.lstrip('#')
+        try:
+            r = int(hex_val[0:2], 16)
+            g = int(hex_val[2:4], 16)
+            b = int(hex_val[4:6], 16)
+            return f"{r}, {g}, {b}"
+        except Exception:
+            return "59, 130, 246"
+
+    def __str__(self):
+        return self.title
+
+
+class RoadmapNode(models.Model):
+    GRADE_CHOICES = [
+        ("kids_5_7", "유아 5~7세"),
+        ("elem_1_2", "초등 1~2학년"),
+        ("elem_3_4", "초등 3~4학년"),
+        ("elem_5_6", "초등 5~6학년"),
+        ("mid_high", "중고등"),
+    ]
+    roadmap_track = models.ForeignKey(
+        RoadmapTrack,
+        on_delete=models.CASCADE,
+        related_name="nodes",
+        verbose_name="로드맵 트랙"
+    )
+    roadmap_grade = models.CharField("로드맵 학년", max_length=20, choices=GRADE_CHOICES)
+    title = models.CharField("과정명", max_length=100)
+    subtitle = models.CharField("과정 설명/소개", max_length=200, blank=True)
+    link_url = models.CharField("연결 링크(선택)", max_length=300, blank=True, help_text="예: /courses/program/1/curriculum/ 혹은 외부 URL")
+    span_width = models.PositiveSmallIntegerField(
+        "점유 칸 수 (학년 범위)",
+        default=1,
+        help_text="이 과정이 로드맵 상에서 가로로 몇 칸(학년)을 차지할지 지정합니다. (기본값: 1)"
+    )
+    next_nodes = models.ManyToManyField(
+        'self',
+        symmetrical=False,
+        blank=True,
+        related_name='prev_nodes',
+        verbose_name="다음 연결 과정들"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('roadmap_track', 'roadmap_grade')
+        ordering = ['roadmap_track', 'roadmap_grade']
+        verbose_name = "로드맵 노드"
+        verbose_name_plural = "로드맵 노드 목록"
+
+    def __str__(self):
+        return f"[{self.roadmap_track.title} - {self.get_roadmap_grade_display()}] {self.title}"
+
+
+class FinderQuestion(models.Model):
+    indicator = models.CharField("단계 표시", max_length=30, default="STEP 01")
+    title = models.CharField("질문", max_length=255)
+    order = models.PositiveIntegerField("정렬 순서", default=0)
+    is_active = models.BooleanField("활성화 여부", default=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name = "프로그램 찾기 질문"
+        verbose_name_plural = "프로그램 찾기 질문 목록"
+
+    def __str__(self):
+        return f"{self.indicator} - {self.title}"
+
+
+class FinderOption(models.Model):
+    AGE_CHOICES = [
+        ("kids", "유아 (5~7세)"),
+        ("elem_low", "초등 저학년 (1~2학년)"),
+        ("elem_high", "초등 고학년 (3~6학년)"),
+        ("secondary", "중고등"),
+    ]
+    EXPERIENCE_CHOICES = [
+        ("none", "완전 초심자"),
+        ("block", "블록 코딩 경험"),
+        ("text", "텍스트 코딩 경험"),
+    ]
+    GOAL_CHOICES = [
+        ("logic", "사고력/기초 이해"),
+        ("contest", "대회/올림피아드"),
+        ("app_cert", "포트폴리오/자격증"),
+    ]
+    VALUE_CHOICES = AGE_CHOICES + EXPERIENCE_CHOICES + GOAL_CHOICES
+
+    question = models.ForeignKey(FinderQuestion, on_delete=models.CASCADE, related_name="options", verbose_name="질문")
+    text = models.CharField("선택지 텍스트", max_length=255)
+    value = models.CharField("선택지 값", max_length=30, choices=VALUE_CHOICES)
+    order = models.PositiveIntegerField("정렬 순서", default=0)
+    is_active = models.BooleanField("활성화 여부", default=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name = "프로그램 찾기 선택지"
+        verbose_name_plural = "프로그램 찾기 선택지 목록"
+
+    def __str__(self):
+        return f"{self.question.indicator} - {self.text}"
+
+
+class FinderRecommendation(models.Model):
+    AGE_CHOICES = [("", "전체")] + FinderOption.AGE_CHOICES
+    EXPERIENCE_CHOICES = [("", "무관")] + FinderOption.EXPERIENCE_CHOICES
+    GOAL_CHOICES = [("", "무관")] + FinderOption.GOAL_CHOICES
+
+    title = models.CharField("추천 제목", max_length=120)
+    reason = models.TextField("추천 설명")
+    age = models.CharField("연령/학년 조건", max_length=30, choices=AGE_CHOICES, blank=True)
+    experience = models.CharField("경험 조건", max_length=30, choices=EXPERIENCE_CHOICES, blank=True)
+    goal = models.CharField("목표 조건", max_length=30, choices=GOAL_CHOICES, blank=True)
+    program_keyword = models.CharField(
+        "매칭 프로그램 키워드",
+        max_length=100,
+        blank=True,
+        help_text="개설 과정명에서 찾을 키워드. 비워두면 추천 제목으로 매칭합니다.",
+    )
+    priority = models.PositiveIntegerField("우선순위", default=0, help_text="같은 조건일 때 숫자가 낮을수록 먼저 적용됩니다.")
+    is_active = models.BooleanField("활성화 여부", default=True)
+
+    class Meta:
+        ordering = ["priority", "id"]
+        verbose_name = "프로그램 찾기 추천 규칙"
+        verbose_name_plural = "프로그램 찾기 추천 규칙 목록"
+
+    def __str__(self):
+        conditions = ", ".join(filter(None, [self.age, self.experience, self.goal])) or "기본"
+        return f"{self.title} ({conditions})"

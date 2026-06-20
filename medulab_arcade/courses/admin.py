@@ -1,6 +1,9 @@
 from django.contrib import admin
 from .models import (
     Chapter,
+    FinderOption,
+    FinderQuestion,
+    FinderRecommendation,
     Item,
     LearningEnrollment,
     LearningProgram,
@@ -25,6 +28,12 @@ class ChapterAdmin(admin.ModelAdmin):
     list_display = ['program', 'number', 'title']
     list_filter = ['program']
     inlines = [ItemInline]
+
+
+class FinderOptionInline(admin.TabularInline):
+    model = FinderOption
+    extra = 1
+    fields = ["order", "text", "value", "is_active"]
 
 class LearningProgramAdmin(admin.ModelAdmin):
     list_display = ['name', 'program_type', 'is_active', 'created_at']
@@ -61,6 +70,19 @@ class OlympiadAnswerSubmissionAdmin(admin.ModelAdmin):
     ]
     readonly_fields = ["submitted_at", "updated_at"]
 
+
+class FinderQuestionAdmin(admin.ModelAdmin):
+    list_display = ["indicator", "title", "order", "is_active"]
+    list_filter = ["is_active"]
+    search_fields = ["indicator", "title"]
+    inlines = [FinderOptionInline]
+
+
+class FinderRecommendationAdmin(admin.ModelAdmin):
+    list_display = ["title", "age", "experience", "goal", "program_keyword", "priority", "is_active"]
+    list_filter = ["is_active", "age", "experience", "goal"]
+    search_fields = ["title", "reason", "program_keyword"]
+
 admin.site.register(ProgramType)
 admin.site.register(LearningProgram, LearningProgramAdmin)
 admin.site.register(Chapter, ChapterAdmin)
@@ -69,3 +91,5 @@ admin.site.register(LearningEnrollment)
 admin.site.register(UserProgress)
 admin.site.register(OlympiadAnswerExample, OlympiadAnswerExampleAdmin)
 admin.site.register(OlympiadAnswerSubmission, OlympiadAnswerSubmissionAdmin)
+admin.site.register(FinderQuestion, FinderQuestionAdmin)
+admin.site.register(FinderRecommendation, FinderRecommendationAdmin)

@@ -598,9 +598,10 @@ class AwardForm(forms.ModelForm):
 
     class Meta:
         model = Award
-        fields = ['student_name', 'competition_type', 'division', 'award_name', 'organization', 'date_awarded', 'thumbnail', 'content']
+        fields = ['thumbnail', 'student_name', 'competition_year', 'competition_type', 'division', 'award_name', 'organization', 'date_awarded', 'content']
         widgets = {
             'student_name': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'competition_year': forms.NumberInput(attrs={'class': 'form-input', 'placeholder': '예: 2025', 'min': '2000', 'max': '2099', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
             'competition_type': forms.Select(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: #111827; color:white; border: 1px solid rgba(255,255,255,0.1);'}),
             'division': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '예: 초등부, 중등부, SW부문', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
             'award_name': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),

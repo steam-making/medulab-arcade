@@ -44,7 +44,14 @@
                     {{ field.label }}
                     {% if field.field.required %}<span style="color: #ef4444;">*</span>{% endif %}
                 </label>
-                {% if field.name == 'cert_info' or field.name == 'competition_type' %}
+                {% if field.name == 'thumbnail' and is_award_form %}
+                {{ field }}
+                <div style="margin-top: 10px; padding: 12px 16px; border-radius: 10px; background: rgba(184,134,11,0.12); border: 1px solid rgba(251,191,36,0.3); color: rgba(255,255,255,0.85); font-size: 13px; line-height: 1.6;">
+                    💡 <strong>상장 이미지를 먼저 올리면 자동 분석 버튼이 나타납니다.</strong><br>
+                    버튼을 누르면 학생이름·대회년도·대회종류·부문·상격·수여기관·수상일자가 자동으로 채워집니다.<br>
+                    <span style="color: rgba(255,255,255,0.55);">자동 입력 후 내용을 확인하고 수정해 주세요.</span>
+                </div>
+                {% elif field.name == 'cert_info' or field.name == 'competition_type' %}
                 <div id="{{ field.name }}-autocomplete" style="position: relative;">
                     <input
                         type="text"
@@ -347,6 +354,106 @@ document.addEventListener('DOMContentLoaded', function() {
         metaText: (item) => item.organization ? `주최/주관 ${item.organization}` : '',
         allowFreeText: true
     });
+
+    {% if is_award_form %}
+    // 상장 이미지 자동 분석
+    const thumbnailInput = document.getElementById('id_thumbnail');
+    if (thumbnailInput) {
+        const analyzeBtn = document.createElement('button');
+        analyzeBtn.type = 'button';
+        analyzeBtn.id = 'analyze-award-btn';
+        analyzeBtn.textContent = '🤖 상장 자동 분석';
+        analyzeBtn.style.cssText = 'display:none; margin-top:10px; padding:9px 18px; background:linear-gradient(90deg,#b8860b,#fbbf24); color:#1a1000; border:none; border-radius:8px; cursor:pointer; font-weight:700; font-size:14px;';
+        thumbnailInput.parentNode.insertBefore(analyzeBtn, thumbnailInput.nextSibling);
+
+        const statusEl = document.createElement('div');
+        statusEl.id = 'analyze-status';
+        statusEl.style.cssText = 'margin-top:8px; font-size:13px; color:rgba(255,255,255,0.7);';
+        analyzeBtn.parentNode.insertBefore(statusEl, analyzeBtn.nextSibling);
+
+        thumbnailInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                analyzeBtn.style.display = 'inline-block';
+                statusEl.textContent = '이미지가 선택됐습니다. 버튼을 눌러 자동 분석하세요.';
+            } else {
+                analyzeBtn.style.display = 'none';
+                statusEl.textContent = '';
+            }
+        });
+
+        analyzeBtn.addEventListener('click', function() {
+            const file = thumbnailInput.files[0];
+            if (!file) return;
+
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '⏳ 분석 중...';
+            statusEl.textContent = 'Gemini Vision이 상장을 분석하고 있습니다...';
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+            fetch('/api/analyze-award-image/', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(res => res.json())
+            .then(json => {
+                if (!json.success) {
+                    statusEl.textContent = '분석 실패: ' + (json.error || '알 수 없는 오류');
+                    return;
+                }
+                const d = json.data;
+                const filled = [];
+
+                if (d.student_name) {
+                    const el = document.getElementById('id_student_name');
+                    if (el && !el.value) { el.value = d.student_name; filled.push('학생이름'); }
+                }
+                if (d.competition_year) {
+                    const el = document.getElementById('id_competition_year');
+                    if (el && !el.value) { el.value = d.competition_year; filled.push('대회년도'); }
+                }
+                if (d.competition_type) {
+                    const searchInput = document.getElementById('competition_type-search');
+                    if (searchInput && !searchInput.value) {
+                        searchInput.value = d.competition_type;
+                        filled.push('대회종류');
+                    }
+                }
+                if (d.division) {
+                    const el = document.getElementById('id_division');
+                    if (el && !el.value) { el.value = d.division; filled.push('부문'); }
+                }
+                if (d.award_name) {
+                    const el = document.getElementById('id_award_name');
+                    if (el && !el.value) { el.value = d.award_name; filled.push('상격'); }
+                }
+                if (d.organization) {
+                    const el = document.getElementById('id_organization');
+                    if (el && !el.value) { el.value = d.organization; filled.push('수여기관'); }
+                }
+                if (d.date_awarded) {
+                    const el = document.getElementById('id_date_awarded');
+                    if (el && !el.value) { el.value = d.date_awarded; filled.push('수상일자'); }
+                }
+
+                if (filled.length > 0) {
+                    statusEl.innerHTML = '<span style="color:#fbbf24;">✅ 자동 입력 완료:</span> ' + filled.join(', ') + ' — 내용을 확인하고 수정 후 저장하세요.';
+                } else {
+                    statusEl.textContent = '분석했지만 추출된 항목이 없습니다. 직접 입력해 주세요.';
+                }
+            })
+            .catch(err => {
+                statusEl.textContent = '오류가 발생했습니다: ' + err.message;
+            })
+            .finally(() => {
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '🤖 상장 자동 분석';
+            });
+        });
+    }
+    {% endif %}
 });
 </script>
 {% endblock %}

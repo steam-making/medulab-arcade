@@ -482,6 +482,7 @@ class Award(models.Model):
         related_name='awards',
         verbose_name='대회종류'
     )
+    competition_year = models.PositiveSmallIntegerField('대회년도', blank=True, null=True)
     competition_name = models.CharField('대회명', max_length=100)
     division = models.CharField('부문', max_length=100, blank=True, null=True)
     award_name = models.CharField('상격 (예: 대상, 금상)', max_length=50)

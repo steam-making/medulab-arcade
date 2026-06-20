@@ -1187,6 +1187,92 @@ def search_competition_types(request):
     return JsonResponse({'competition_types': results})
 
 
+@login_required
+@require_POST
+def analyze_award_image(request):
+    """상장 이미지를 Gemini Vision으로 분석해 폼 필드값 반환"""
+    import base64
+    import json as _json
+    import os as _os
+
+    try:
+        import google.generativeai as genai
+    except ImportError:
+        return JsonResponse({'error': 'google-generativeai 패키지가 설치되지 않았습니다. pip install google-generativeai를 실행하세요.'}, status=500)
+
+    image_file = request.FILES.get('image')
+    if not image_file:
+        return JsonResponse({'error': '이미지가 없습니다.'}, status=400)
+
+    image_data = image_file.read()
+    mime_type = image_file.content_type or 'image/jpeg'
+    b64_data = base64.b64encode(image_data).decode('utf-8')
+
+    # os.environ에서 직접 읽기 (settings 래퍼 문제 우회)
+    api_keys = []
+    k = _os.environ.get('GEMINI_API_KEY', '')
+    if k:
+        api_keys.append(k)
+    for i in range(2, 21):
+        k = _os.environ.get(f'GEMINI_API_KEY_{i}', '')
+        if k:
+            api_keys.append(k)
+
+    if not api_keys:
+        return JsonResponse({'error': 'Gemini API 키가 설정되지 않았습니다. .env 파일에 GEMINI_API_KEY를 추가하세요.'}, status=500)
+
+    prompt = """이 이미지는 대회 수상 상장입니다. 상장에서 다음 항목들을 추출해서 JSON으로만 답변하세요.
+JSON 외에 다른 텍스트는 절대 포함하지 마세요.
+
+추출 항목:
+- student_name: 수상자 이름 (학생 이름, 없으면 "")
+- competition_year: 대회 연도 (4자리 숫자, 없으면 null)
+- competition_type: 대회명/대회종류 (예: "제15회 전국 로봇대회", 없으면 "")
+- division: 부문 (예: "초등부", "중등부", "SW부문", 없으면 "")
+- award_name: 상격 (예: "금상", "은상", "동상", "대상", "최우수상", "우수상", "장려상", 없으면 "")
+- organization: 수여기관/주최기관 (없으면 "")
+- date_awarded: 수상일자 (YYYY-MM-DD 형식, 없으면 "")
+
+응답 예시:
+{"student_name": "홍길동", "competition_year": 2025, "competition_type": "제15회 전국 코딩올림피아드", "division": "초등부", "award_name": "금상", "organization": "교육부", "date_awarded": "2025-11-15"}"""
+
+    last_error = None
+    # 모델 우선순위 목록 (할당량 초과 시 다음 모델로 fallback)
+    model_names = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-2.0-flash',
+        'gemini-1.5-pro',
+    ]
+
+    for api_key in api_keys:
+        for model_name in model_names:
+            try:
+                genai.configure(api_key=api_key)
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content([
+                    prompt,
+                    {'mime_type': mime_type, 'data': b64_data}
+                ])
+                raw = response.text.strip()
+                # ```json ... ``` 코드블록 제거
+                if raw.startswith('```'):
+                    lines = raw.split('\n')
+                    lines = [l for l in lines if not l.startswith('```')]
+                    raw = '\n'.join(lines).strip()
+                result = _json.loads(raw)
+                return JsonResponse({'success': True, 'data': result})
+            except Exception as e:
+                last_error = str(e)
+                # 할당량 초과(429)나 모델 없음(404)이면 다음 모델 시도, 그 외 에러는 다음 키로
+                err_str = str(e)
+                if '429' in err_str or '404' in err_str or 'not found' in err_str.lower() or 'quota' in err_str.lower():
+                    continue
+                break  # 다른 에러면 이 키의 나머지 모델 건너뜀
+
+    return JsonResponse({'error': f'분석 실패: {last_error}'}, status=500)
+
+
 def signup(request):
     """회원가입"""
     if request.method == 'POST':
@@ -1789,7 +1875,7 @@ def board_awards_create(request):
         messages.error(request, '저장하지 못했습니다. 아래 항목을 확인해 주세요.')
     else:
         form = AwardForm()
-    return render(request, 'arcade/board_form.html', {'form': form, 'title': '대회수상 글쓰기'})
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '대회수상 글쓰기', 'is_award_form': True})
 
 @user_passes_test(lambda u: u.is_staff)
 def board_cert_create(request):
@@ -1838,7 +1924,7 @@ def board_awards_update(request, pk):
         messages.error(request, '저장하지 못했습니다. 아래 항목을 확인해 주세요.')
     else:
         form = AwardForm(instance=award)
-    return render(request, 'arcade/board_form.html', {'form': form, 'title': '대회수상 수정'})
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '대회수상 수정', 'is_award_form': True})
 
 @user_passes_test(lambda u: u.is_staff)
 def board_awards_delete(request, pk):

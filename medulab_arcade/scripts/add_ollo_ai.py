@@ -1,6 +1,7 @@
 """
 로보티즈 올로AI 과정 데이터 입력 스크립트
-- LV1~LV5, 각 12차시, 총 60개 챕터
+- 챕터 구조: 제1장 Lv1 ~ 제5장 Lv5 (5개 챕터)
+- 각 챕터 하위에 1-1, 1-2 ... 형태로 12개 아이템
 - 사용법: python scripts/add_ollo_ai.py
 """
 
@@ -149,6 +150,12 @@ CURRICULUM = [
         "- 육식 공룡과 초식 공룡의 차이점을 학습합니다.\n- 벨로시랩터를 참고해 육식 공룡의 특징을 추가하고 나만의 공룡으로 만들어 동작해 봅니다."),
 ]
 
+# level별로 그룹화
+from collections import defaultdict
+levels = defaultdict(list)
+for level, number, title, content in CURRICULUM:
+    levels[level].append((number, title, content))
+
 conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()
 
@@ -175,33 +182,39 @@ else:
     program_id = cur.lastrowid
     print(f"[신규 과정 생성] program_id={program_id}")
 
-for idx, (level, number, title, content) in enumerate(CURRICULUM, 1):
-    chapter_title = f"Lv{level}-{number} {title}"
+total_items = 0
+for level in sorted(levels.keys()):
+    # 챕터: 제N장 LvN
+    chapter_title = f"제{level}장 Lv{level}"
     cur.execute(
         "INSERT INTO courses_chapter (number, title, content, program_id) VALUES (?, ?, ?, ?)",
-        (idx, chapter_title, content, program_id),
+        (level, chapter_title, "", program_id),
     )
     chapter_id = cur.lastrowid
-    cur.execute(
-        "INSERT INTO courses_item (number, [key], title, item_type, explain_html, hint, answer_code, "
-        "expected_output, chapter_id, example_input, due_date, question_image) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (
-            1,
-            f"lv{level}_{number:02d}",
-            chapter_title,
-            "project",
-            "",
-            content,
-            "",
-            "",
-            chapter_id,
-            "",
-            None,
-            None,
-        ),
-    )
+
+    for number, title, content in sorted(levels[level]):
+        item_title = f"{level}-{number} {title}"
+        cur.execute(
+            "INSERT INTO courses_item (number, [key], title, item_type, explain_html, hint, answer_code, "
+            "expected_output, chapter_id, example_input, due_date, question_image) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                number,
+                f"lv{level}_{number:02d}",
+                item_title,
+                "project",
+                "",
+                content,
+                "",
+                "",
+                chapter_id,
+                "",
+                None,
+                None,
+            ),
+        )
+        total_items += 1
 
 conn.commit()
 conn.close()
-print(f"완료: {len(CURRICULUM)}개 챕터 입력 (Lv1~Lv5 × 12차시)")
+print(f"완료: 챕터 {len(levels)}개 (제1장~제5장), 아이템 {total_items}개 입력")

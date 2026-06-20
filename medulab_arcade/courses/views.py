@@ -1350,6 +1350,11 @@ def student_course_list(request):
                         "label": "파이썬코딩",
                         "active": selected_program_type == "python-coding",
                     },
+                ],
+            })
+            program_filters.append({
+                "group_ids": [program_type.id],
+                "buttons": [
                     {
                         "value": "robot-coding",
                         "label": "로봇코딩",

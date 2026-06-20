@@ -1784,7 +1784,9 @@ def board_awards_create(request):
         form = AwardForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
+            messages.success(request, '대회수상이 저장되었습니다.')
             return redirect('board_awards')
+        messages.error(request, '저장하지 못했습니다. 아래 항목을 확인해 주세요.')
     else:
         form = AwardForm()
     return render(request, 'arcade/board_form.html', {'form': form, 'title': '대회수상 글쓰기'})
@@ -1831,7 +1833,9 @@ def board_awards_update(request, pk):
         form = AwardForm(request.POST, request.FILES, instance=award)
         if form.is_valid():
             form.save()
+            messages.success(request, '대회수상이 수정되었습니다.')
             return redirect('board_awards_detail', pk=award.pk)
+        messages.error(request, '저장하지 못했습니다. 아래 항목을 확인해 주세요.')
     else:
         form = AwardForm(instance=award)
     return render(request, 'arcade/board_form.html', {'form': form, 'title': '대회수상 수정'})

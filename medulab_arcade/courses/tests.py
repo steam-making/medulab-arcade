@@ -1,6 +1,8 @@
 import io
+import json
 import tempfile
 import zipfile
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -8,6 +10,7 @@ from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image
 
 from courses.management.commands.seed_ai_sw_olympiad_programs import (
@@ -503,3 +506,99 @@ class OlympiadAnswerSubmissionFeedbackTests(TestCase):
         self.assertEqual(submission.status, OlympiadAnswerSubmission.STATUS_SUBMITTED)
         progress = UserProgress.objects.get(user=self.student, item=self.item)
         self.assertTrue(progress.completed)
+
+
+class StudentCourseListTests(TestCase):
+    def setUp(self):
+        self.student = User.objects.create_user(username="course-student", password="pass")
+        self.student.profile.user_type = "medulab_member"
+        self.student.profile.is_approved = True
+        self.student.profile.save()
+
+        self.staff = User.objects.create_user(username="course-admin", password="pass", is_staff=True)
+
+        self.coding_type = ProgramType.objects.create(name="코딩", order=2)
+        self.contest_type = ProgramType.objects.create(name="대회 준비", order=3)
+        self.other_type = ProgramType.objects.create(name="창의융합", order=1)
+
+        self.recent_program = LearningProgram.objects.create(
+            name="최근 학습 과정",
+            program_type=self.coding_type,
+            is_active=True,
+        )
+        recent_chapter = Chapter.objects.create(program=self.recent_program, number=1, title="최근")
+        self.recent_item = Item.objects.create(
+            chapter=recent_chapter,
+            number=1,
+            key="recent-item",
+            title="최근 문제",
+        )
+
+        self.open_program = LearningProgram.objects.create(
+            name="미수강 과정",
+            program_type=self.other_type,
+            is_active=True,
+        )
+        open_chapter = Chapter.objects.create(program=self.open_program, number=1, title="미수강")
+        Item.objects.create(
+            chapter=open_chapter,
+            number=1,
+            key="open-item",
+            title="미수강 문제",
+        )
+
+        self.completed_program = LearningProgram.objects.create(
+            name="이수 완료 과정",
+            program_type=self.contest_type,
+            is_active=True,
+        )
+        completed_chapter = Chapter.objects.create(program=self.completed_program, number=1, title="완료")
+        self.completed_item = Item.objects.create(
+            chapter=completed_chapter,
+            number=1,
+            key="completed-item",
+            title="완료 문제",
+        )
+
+        LearningEnrollment.objects.create(user=self.student, program=self.recent_program)
+        LearningEnrollment.objects.create(user=self.student, program=self.completed_program)
+
+        UserProgress.objects.create(user=self.student, item=self.recent_item, completed=False)
+        completed_progress = UserProgress.objects.create(user=self.student, item=self.completed_item, completed=True)
+        UserProgress.objects.filter(user=self.student, item=self.recent_item).update(updated_at=timezone.now())
+        UserProgress.objects.filter(id=completed_progress.id).update(updated_at=timezone.now() - timedelta(days=3))
+
+    def test_student_course_list_orders_recent_learning_first_and_completed_last(self):
+        self.client.force_login(self.student)
+
+        response = self.client.get(reverse("student_course_list"))
+
+        self.assertEqual(response.status_code, 200)
+        program_names = [program.name for program in response.context["programs"]]
+        self.assertEqual(program_names, ["최근 학습 과정", "미수강 과정", "이수 완료 과정"])
+
+    def test_completed_filter_returns_only_completed_programs(self):
+        self.client.force_login(self.student)
+
+        response = self.client.get(reverse("student_course_list"), {"program_type": "completed"})
+
+        self.assertEqual(response.status_code, 200)
+        program_names = [program.name for program in response.context["programs"]]
+        self.assertEqual(program_names, ["이수 완료 과정"])
+
+    def test_staff_can_reorder_program_filters(self):
+        self.client.force_login(self.staff)
+
+        response = self.client.post(
+            reverse("api_program_types_reorder"),
+            data=json.dumps({"groups": [[self.coding_type.id], [self.contest_type.id], [self.other_type.id]]}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.coding_type.refresh_from_db()
+        self.contest_type.refresh_from_db()
+        self.other_type.refresh_from_db()
+        self.assertEqual(self.coding_type.order, 1)
+        self.assertEqual(self.contest_type.order, 2)
+        self.assertEqual(self.other_type.order, 3)

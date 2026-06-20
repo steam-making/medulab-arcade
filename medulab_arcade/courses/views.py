@@ -69,7 +69,7 @@ from .forms import (
     OlympiadSubQuestionForm,
     RoadmapNodeForm,
 )
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 
 PPT_EXAM_DURATION_SECONDS = 60 * 60
 PPT_SLIDE_XML_NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
@@ -1242,7 +1242,6 @@ def export_program_to_excel(request, program_id):
 def student_course_list(request):
     selected_program_type = request.GET.get("program_type", "").strip()
 
-    # 모든 활성 프로그램
     all_programs = LearningProgram.objects.filter(is_active=True).select_related("program_type")
 
     available_program_types = ProgramType.objects.filter(
@@ -1253,7 +1252,6 @@ def student_course_list(request):
     python_coding_filter = coding_type is not None
     robot_coding_filter = coding_type is not None
 
-    # "대회 대비"와 "대회 준비"를 동일 필터로 묶기 위해 대비 타입 ID 수집
     contest_prep_ids = list(
         ProgramType.objects.filter(name__in=["대회 대비", "대회 준비"]).values_list("id", flat=True)
     )
@@ -1271,27 +1269,128 @@ def student_course_list(request):
             Q(program_type=coding_type)
             & (Q(name__icontains="로봇") | Q(name__icontains="프로보") | Q(name__icontains="connect") | Q(name__icontains="커넥트") | Q(description__icontains="로봇") | Q(description__icontains="프로보") | Q(description__icontains="connect") | Q(description__icontains="커넥트"))
         )
+    elif selected_program_type == "completed":
+        pass
     elif selected_program_type.isdigit() and int(selected_program_type) in contest_prep_ids:
         all_programs = all_programs.filter(program_type_id__in=contest_prep_ids)
     elif selected_program_type.isdigit():
         all_programs = all_programs.filter(program_type_id=int(selected_program_type))
 
-    all_programs = all_programs.order_by("id")
-    
-    # 내가 수강 중인 프로그램 ID 목록
     if request.user.is_authenticated:
-        enrolled_ids = LearningEnrollment.objects.filter(user=request.user)\
-                                               .values_list("program_id", flat=True)
+        enrolled_map = {
+            enrollment.program_id: enrollment.enrolled_at
+            for enrollment in LearningEnrollment.objects.filter(user=request.user)
+        }
+        enrolled_ids = set(enrolled_map.keys())
+        progress_stats = {
+            row["item__chapter__program_id"]: row
+            for row in UserProgress.objects.filter(
+                user=request.user,
+                item__chapter__program__is_active=True,
+            ).values("item__chapter__program_id").annotate(
+                completed_items=Count("id", filter=Q(completed=True)),
+                recent_learning_at=Max("updated_at"),
+            )
+        }
+        total_items_by_program = {
+            row["chapter__program_id"]: row["total_items"]
+            for row in Item.objects.filter(chapter__program__is_active=True)
+            .values("chapter__program_id")
+            .annotate(total_items=Count("id"))
+        }
+        completed_program_ids = set()
+        recent_learning_map = {}
+        for program_id, enrolled_at in enrolled_map.items():
+            stats = progress_stats.get(program_id, {})
+            total_items = total_items_by_program.get(program_id, 0)
+            completed_items = stats.get("completed_items", 0)
+            if total_items > 0 and completed_items >= total_items:
+                completed_program_ids.add(program_id)
+            recent_learning_map[program_id] = stats.get("recent_learning_at") or enrolled_at
         profile = getattr(request.user, 'profile', None)
         can_apply = bool(profile and profile.is_full_member)
     else:
-        enrolled_ids = []
+        enrolled_ids = set()
+        completed_program_ids = set()
+        recent_learning_map = {}
         can_apply = False
-    
+
+    if selected_program_type == "completed":
+        all_programs = all_programs.filter(id__in=completed_program_ids)
+
+    programs = list(all_programs)
+    for program in programs:
+        program.is_enrolled = program.id in enrolled_ids
+        program.is_completed_course = program.id in completed_program_ids
+        program.recent_learning_at = recent_learning_map.get(program.id)
+        program.program_type_order = getattr(program.program_type, "order", 0) if program.program_type_id else 9999
+
+    def program_sort_key(program):
+        if program.is_completed_course:
+            rank = 2
+        elif program.is_enrolled:
+            rank = 0
+        else:
+            rank = 1
+        recent_learning_key = -program.recent_learning_at.timestamp() if program.recent_learning_at else float("inf")
+        return (rank, recent_learning_key, program.program_type_order, program.id)
+
+    programs.sort(key=program_sort_key)
+
+    program_filters = []
+    contest_filter_added = False
+    contest_type_map = {program_type.id: program_type for program_type in available_program_types}
+    for program_type in available_program_types:
+        if coding_type and program_type.id == coding_type.id:
+            program_filters.append({
+                "group_ids": [program_type.id],
+                "buttons": [
+                    {
+                        "value": "python-coding",
+                        "label": "파이썬코딩",
+                        "active": selected_program_type == "python-coding",
+                    },
+                    {
+                        "value": "robot-coding",
+                        "label": "로봇코딩",
+                        "active": selected_program_type == "robot-coding",
+                    },
+                ],
+            })
+            continue
+        if program_type.id in contest_prep_ids:
+            if contest_filter_added:
+                continue
+            grouped_types = [contest_type_map[type_id] for type_id in contest_prep_ids if type_id in contest_type_map]
+            group_ids = [pt.id for pt in grouped_types]
+            group_label = next((pt.name for pt in grouped_types if "준비" in pt.name), grouped_types[0].name)
+            program_filters.append({
+                "group_ids": group_ids,
+                "buttons": [
+                    {
+                        "value": str(group_ids[0]),
+                        "label": group_label,
+                        "active": selected_program_type.isdigit() and int(selected_program_type) in contest_prep_ids,
+                    }
+                ],
+            })
+            contest_filter_added = True
+            continue
+        program_filters.append({
+            "group_ids": [program_type.id],
+            "buttons": [
+                {
+                    "value": str(program_type.id),
+                    "label": program_type.name,
+                    "active": selected_program_type == str(program_type.id),
+                }
+            ],
+        })
+
     return render(request, "courses/student_course_list.html", {
-        "programs": all_programs,
+        "programs": programs,
         "enrolled_ids": enrolled_ids,
-        "program_types": available_program_types,
+        "program_filters": program_filters,
         "selected_program_type": selected_program_type,
         "show_python_coding_filter": python_coding_filter,
         "show_robot_coding_filter": robot_coding_filter,
@@ -3295,6 +3394,40 @@ def api_chapters_reorder(request, program_id):
         return JsonResponse({'status': 'ok'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+@user_passes_test(is_admin)
+def api_program_types_reorder(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    try:
+        data = json.loads(request.body)
+        groups = data.get("groups", [])
+        if not isinstance(groups, list) or not groups:
+            return JsonResponse({"error": "groups required"}, status=400)
+
+        normalized_groups = []
+        flat_ids = []
+        for group in groups:
+            if not isinstance(group, list) or not group:
+                return JsonResponse({"error": "invalid groups payload"}, status=400)
+            group_ids = [int(program_type_id) for program_type_id in group]
+            normalized_groups.append(group_ids)
+            flat_ids.extend(group_ids)
+
+        existing_ids = set(ProgramType.objects.filter(id__in=flat_ids).values_list("id", flat=True))
+        if existing_ids != set(flat_ids):
+            return JsonResponse({"error": "invalid program type id"}, status=400)
+
+        with transaction.atomic():
+            for order_index, group_ids in enumerate(normalized_groups, start=1):
+                ProgramType.objects.filter(id__in=group_ids).update(order=order_index)
+
+        return JsonResponse({"status": "ok"})
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JsonResponse({"error": "invalid payload"}, status=400)
+
 
 # --- (13) API: 아이템 일괄 이동 ---
 @login_required

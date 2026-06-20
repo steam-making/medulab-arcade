@@ -45,6 +45,9 @@
                             <div style="color: rgba(255,255,255,0.8); font-size: 13px; margin-bottom: 6px;">{{ award.competition_type.name|default:award.competition_name }}</div>
                             <div style="color: rgba(255,255,255,0.9); font-size: 16px; font-weight: bold; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{{ award.competition_name }}</div>
                             <div style="color: #f5c451; font-size: 24px; font-weight: 900; margin-bottom: 6px; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">{{ award.award_name }}</div>
+                            {% if award.division %}
+                            <div style="color: rgba(191,219,254,0.9); font-size: 13px; font-weight: 700; margin-bottom: 6px;">{{ award.division }}</div>
+                            {% endif %}
                             {% if award.organization %}
                             <div style="color: rgba(255,255,255,0.7); font-size: 13px; text-shadow: 0 1px 3px rgba(0,0,0,0.5);">{{ award.organization }}</div>
                             {% endif %}
@@ -54,6 +57,9 @@
                     <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                         <div>
                             <div style="display: inline-flex; align-items: center; gap: 6px; color: #fde68a; font-size: 12px; font-weight: 700; margin-bottom: 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.24); padding: 4px 10px; border-radius: 999px;">{{ award.competition_type.name|default:award.competition_name }}</div>
+                            {% if award.division %}
+                            <div style="display: inline-flex; align-items: center; gap: 6px; color: #bfdbfe; font-size: 12px; font-weight: 700; margin-bottom: 10px; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.24); padding: 4px 10px; border-radius: 999px;">{{ award.division }}</div>
+                            {% endif %}
                             <div style="color: #fff; font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
                                 <span style="font-size: 20px;">🧑‍🎓</span> {{ award.masked_name }}
                             </div>

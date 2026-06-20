@@ -483,6 +483,7 @@ class Award(models.Model):
         verbose_name='대회종류'
     )
     competition_name = models.CharField('대회명', max_length=100)
+    division = models.CharField('부문', max_length=100, blank=True, null=True)
     award_name = models.CharField('상격 (예: 대상, 금상)', max_length=50)
     organization = models.CharField('수여기관', max_length=100, blank=True, null=True)
     date_awarded = models.DateField('수상일자')

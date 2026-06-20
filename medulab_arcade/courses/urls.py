@@ -80,6 +80,7 @@ urlpatterns = [
     path('api/program/<int:program_id>/structure/', views.api_program_structure, name='api_program_structure'),
     path('api/users/search/', views.api_search_users, name='api_search_users'),
     path('api/program/<int:program_id>/chapters/reorder/', views.api_chapters_reorder, name='api_chapters_reorder'),
+    path('api/program-types/reorder/', views.api_program_types_reorder, name='api_program_types_reorder'),
     path('api/items/batch-move/', views.api_items_batch_move, name='api_items_batch_move'),
     path('api/program/<int:program_id>/items/reorder/', views.api_items_reorder, name='api_items_reorder'),
 ]

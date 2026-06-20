@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.validators import UnicodeUsernameValidator
@@ -593,12 +594,15 @@ class NoticeForm(forms.ModelForm):
         }
 
 class AwardForm(forms.ModelForm):
+    competition_type_search = forms.CharField(required=False, widget=forms.HiddenInput())
+
     class Meta:
         model = Award
-        fields = ['student_name', 'competition_type', 'award_name', 'organization', 'date_awarded', 'thumbnail', 'content']
+        fields = ['student_name', 'competition_type', 'division', 'award_name', 'organization', 'date_awarded', 'thumbnail', 'content']
         widgets = {
             'student_name': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
             'competition_type': forms.Select(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: #111827; color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'division': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '예: 초등부, 중등부, SW부문', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
             'award_name': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
             'organization': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '예: 교육부', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
             'date_awarded': forms.DateInput(attrs={'class': 'form-input', 'type': 'date', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
@@ -609,7 +613,41 @@ class AwardForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['competition_type'].queryset = CompetitionType.objects.all().order_by('order', 'name')
         self.fields['competition_type'].empty_label = '대회종류를 선택하세요'
-        self.fields['competition_type'].required = True
+        self.fields['competition_type'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        competition_type = cleaned_data.get('competition_type')
+        typed_name = (self.data.get('competition_type_search') or '').strip()
+        organization = (cleaned_data.get('organization') or '').strip()
+
+        if competition_type:
+            cleaned_data['competition_name'] = competition_type.name
+            return cleaned_data
+
+        if not typed_name:
+            raise ValidationError('대회종류를 선택하거나 새 대회종류명을 입력해 주세요.')
+
+        existing = CompetitionType.objects.filter(name__iexact=typed_name).order_by('order', 'name').first()
+        if existing:
+            cleaned_data['competition_type'] = existing
+            cleaned_data['competition_name'] = existing.name
+            return cleaned_data
+
+        cleaned_data['competition_type'] = CompetitionType.objects.create(
+            name=typed_name,
+            organization=organization or None,
+        )
+        cleaned_data['competition_name'] = typed_name
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.competition_type = self.cleaned_data.get('competition_type')
+        instance.competition_name = self.cleaned_data.get('competition_name') or instance.competition_name
+        if commit:
+            instance.save()
+        return instance
 
 
 class CertificationForm(forms.ModelForm):

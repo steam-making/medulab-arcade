@@ -7,10 +7,38 @@
     <h2 style="color: #fff; font-size: 28px; font-weight: 800; margin-bottom: 24px;">{{ title }}</h2>
     
     <div style="background: rgba(255,255,255,0.05); padding: 40px; border-radius: 16px;">
+        {% if messages %}
+            {% for message in messages %}
+            <div style="margin-bottom: 16px; padding: 14px 16px; border-radius: 12px; background: {% if message.tags == 'error' %}rgba(239,68,68,0.14){% else %}rgba(59,130,246,0.14){% endif %}; border: 1px solid {% if message.tags == 'error' %}rgba(239,68,68,0.35){% else %}rgba(59,130,246,0.35){% endif %}; color: #fff;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.non_field_errors or form.errors %}
+        <div style="margin-bottom: 20px; padding: 16px 18px; border-radius: 12px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.28); color: #fff;">
+            <div style="font-weight: 800; margin-bottom: 8px;">저장되지 않았습니다. 아래 내용을 확인해 주세요.</div>
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                <div style="font-size: 14px; margin-top: 4px;">- {{ error }}</div>
+                {% endfor %}
+            {% endif %}
+            {% for field in form %}
+                {% for error in field.errors %}
+                <div style="font-size: 14px; margin-top: 4px;">- {{ field.label }}: {{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            
+            {% for hidden in form.hidden_fields %}
+                {{ hidden }}
+            {% endfor %}
+             
             {% for field in form %}
+            {% if not field.is_hidden %}
             <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-muted); margin-bottom: 8px; font-weight: bold;">
                     {{ field.label }}
@@ -21,10 +49,11 @@
                     <input
                         type="text"
                         id="{{ field.name }}-search"
+                        name="{% if field.name == 'competition_type' %}competition_type_search{% endif %}"
                         class="form-input"
-                        placeholder="{% if field.name == 'cert_info' %}자격종류를 입력해 검색하고 선택하세요{% else %}대회종류를 입력해 검색하고 선택하세요{% endif %}"
+                        placeholder="{% if field.name == 'cert_info' %}자격종류를 입력해 검색하고 선택하세요{% else %}대회종류를 입력해 검색하거나 새 이름을 그대로 입력하세요{% endif %}"
                         autocomplete="off"
-                        value="{% if field.value and field.field.queryset %}{% for option in field.field.queryset %}{% if option.pk|stringformat:'s' == field.value|stringformat:'s' %}{{ option.name }}{% endif %}{% endfor %}{% endif %}"
+                        value="{% if field.name == 'competition_type' %}{{ form.data.competition_type_search|default_if_none:'' }}{% if not form.data.competition_type_search and field.value and field.field.queryset %}{% for option in field.field.queryset %}{% if option.pk|stringformat:'s' == field.value|stringformat:'s' %}{{ option.name }}{% endif %}{% endfor %}{% endif %}{% else %}{% if field.value and field.field.queryset %}{% for option in field.field.queryset %}{% if option.pk|stringformat:'s' == field.value|stringformat:'s' %}{{ option.name }}{% endif %}{% endfor %}{% endif %}{% endif %}"
                         style="width:100%; padding: 10px; margin-bottom: 10px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);"
                     >
                     <div id="{{ field.name }}-dropdown" style="display:none; position:absolute; left:0; right:0; top:calc(100% - 2px); background:#1e293b; border:1px solid rgba(255,255,255,0.1); border-radius:12px; box-shadow:0 12px 24px rgba(0,0,0,0.35); overflow:hidden; z-index:1000; max-height:260px; overflow-y:auto;"></div>
@@ -33,7 +62,7 @@
                     {{ field }}
                 </div>
                 <div id="{{ field.name }}-selected-hint" style="color: var(--text-muted); font-size: 12px; margin-top: 6px;">
-                    {% if field.name == 'cert_info' %}자격종류를 검색한 뒤 목록에서 선택하세요.{% else %}대회종류를 검색한 뒤 목록에서 선택하세요.{% endif %}
+                    {% if field.name == 'cert_info' %}자격종류를 검색한 뒤 목록에서 선택하세요.{% else %}대회종류를 검색해 선택하거나, 없으면 새 이름을 입력한 채 저장하세요.{% endif %}
                 </div>
                 {% else %}
                 {{ field }}
@@ -45,6 +74,7 @@
                 <div style="color: #ef4444; font-size: 13px; margin-top: 4px;">{{ field.errors }}</div>
                 {% endif %}
             </div>
+            {% endif %}
             {% endfor %}
             
             <div style="margin-top: 40px; display: flex; gap: 12px; justify-content: flex-end;">
@@ -246,6 +276,8 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('input', function() {
             if (!this.value.trim()) {
                 select.value = '';
+            } else if (config.allowFreeText) {
+                select.value = '';
             }
             runSearch(this.value);
         });
@@ -311,8 +343,9 @@ document.addEventListener('DOMContentLoaded', function() {
         apiUrl: '/api/search-competition-types/',
         responseKey: 'competition_types',
         icon: '🏁',
-        emptyHint: '대회종류를 검색한 뒤 목록에서 선택하세요.',
-        metaText: (item) => item.organization ? `주최/주관 ${item.organization}` : ''
+        emptyHint: '대회종류를 검색해 선택하거나, 없으면 새 이름을 입력한 채 저장하세요.',
+        metaText: (item) => item.organization ? `주최/주관 ${item.organization}` : '',
+        allowFreeText: true
     });
 });
 </script>

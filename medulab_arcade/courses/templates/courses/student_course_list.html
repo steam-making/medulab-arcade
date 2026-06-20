@@ -115,6 +115,57 @@
         box-shadow: 0 12px 28px rgba(59, 130, 246, 0.28);
     }
 
+    .filter-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .filter-group.is-draggable {
+        padding: 8px 10px;
+        border-radius: 22px;
+        border: 1px dashed rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.03);
+        transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    }
+
+    .filter-group.is-draggable.dragging {
+        opacity: 0.45;
+        transform: scale(0.98);
+    }
+
+    .filter-group.is-draggable.drag-over {
+        border-color: rgba(59, 130, 246, 0.55);
+        background: rgba(59, 130, 246, 0.09);
+    }
+
+    .drag-handle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(15, 23, 42, 0.85);
+        color: rgba(255, 255, 255, 0.72);
+        cursor: grab;
+        user-select: none;
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+
+    .admin-sort-note {
+        margin-top: 10px;
+        color: rgba(255, 255, 255, 0.65);
+        font-size: 12px;
+    }
+
     .course-card {
         background: var(--course-glass);
         backdrop-filter: blur(12px);
@@ -302,29 +353,38 @@
         </div>
     </div>
 
-    {% if program_types %}
+    {% if program_filters %}
     <section class="filter-section">
         <div class="filter-title">교육프로그램 필터</div>
-        <div class="filter-buttons">
+        <div class="filter-buttons" id="program-filter-buttons">
             <a href="{% url 'student_course_list' %}" class="filter-button {% if not selected_program_type %}active{% endif %}">전체</a>
-            {% for program_type in program_types %}
-                {% if program_type.name == "코딩" %}
-                    <a href="{% url 'student_course_list' %}?program_type=python-coding" class="filter-button {% if selected_program_type == 'python-coding' %}active{% endif %}">파이썬코딩</a>
-                    <a href="{% url 'student_course_list' %}?program_type=robot-coding" class="filter-button {% if selected_program_type == 'robot-coding' %}active{% endif %}">로봇코딩</a>
-                {% elif program_type.name == "대회 대비" %}
-                    {# "대회 대비"는 "대회 준비"로 통합 — 별도 버튼 미표시 #}
-                {% else %}
-                    <a href="{% url 'student_course_list' %}?program_type={{ program_type.id }}" class="filter-button {% if selected_program_type == program_type.id|stringformat:'s' %}active{% endif %}">{{ program_type.name }}</a>
-                {% endif %}
+            {% for filter_group in program_filters %}
+                <div
+                    class="filter-group {% if user.is_staff %}is-draggable{% endif %}"
+                    {% if user.is_staff %}data-order-ids="{{ filter_group.group_ids|join:',' }}"{% endif %}
+                >
+                    {% if user.is_staff %}
+                        <span class="drag-handle" draggable="true" title="드래그해서 필터 순서 변경">↕</span>
+                    {% endif %}
+                    {% for button in filter_group.buttons %}
+                        <a href="{% url 'student_course_list' %}?program_type={{ button.value }}" class="filter-button {% if button.active %}active{% endif %}">{{ button.label }}</a>
+                    {% endfor %}
+                </div>
             {% endfor %}
+            <a href="{% url 'student_course_list' %}?program_type=completed" class="filter-button {% if selected_program_type == 'completed' %}active{% endif %}">이수과정</a>
         </div>
+        {% if user.is_staff %}
+        <div class="admin-sort-note">관리자는 필터 묶음을 드래그해서 순서를 저장할 수 있습니다. `전체`는 맨 앞, `이수과정`은 맨 뒤에 고정됩니다.</div>
+        {% endif %}
     </section>
     {% endif %}
 
     <div class="course-grid">
         {% for p in programs %}
         <div class="course-card">
-            {% if p.id in enrolled_ids %}
+            {% if p.is_completed_course %}
+                <span class="status-badge">COMPLETED</span>
+            {% elif p.id in enrolled_ids %}
                 <span class="status-badge">LEARNING</span>
             {% endif %}
 
@@ -401,4 +461,90 @@
         {% endfor %}
     </div>
 </main>
+{% endblock %}
+
+{% block extra_js %}
+{% if user.is_staff %}
+<script>
+(() => {
+    const container = document.getElementById('program-filter-buttons');
+    if (!container) return;
+
+    const draggableGroups = () => Array.from(container.querySelectorAll('.filter-group[data-order-ids]'));
+    let draggingGroup = null;
+
+    const getCsrfToken = () => {
+        const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
+        return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+    };
+
+    const persistOrder = async () => {
+        const groups = draggableGroups().map((group) =>
+            (group.dataset.orderIds || '')
+                .split(',')
+                .map((value) => parseInt(value, 10))
+                .filter((value) => !Number.isNaN(value))
+        ).filter((group) => group.length);
+
+        if (!groups.length) return;
+
+        try {
+            const response = await fetch("{% url 'api_program_types_reorder' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                },
+                body: JSON.stringify({ groups }),
+            });
+            if (!response.ok) {
+                throw new Error('reorder failed');
+            }
+        } catch (error) {
+            window.alert('필터 순서 저장에 실패했습니다. 새로고침 후 다시 시도해 주세요.');
+        }
+    };
+
+    draggableGroups().forEach((group) => {
+        const handle = group.querySelector('.drag-handle');
+        if (!handle) return;
+
+        handle.addEventListener('dragstart', () => {
+            draggingGroup = group;
+            group.classList.add('dragging');
+        });
+
+        handle.addEventListener('dragend', () => {
+            group.classList.remove('dragging');
+            draggableGroups().forEach((item) => item.classList.remove('drag-over'));
+            draggingGroup = null;
+            persistOrder();
+        });
+
+        group.addEventListener('dragover', (event) => {
+            if (!draggingGroup || draggingGroup === group) return;
+            event.preventDefault();
+            group.classList.add('drag-over');
+        });
+
+        group.addEventListener('dragleave', () => {
+            group.classList.remove('drag-over');
+        });
+
+        group.addEventListener('drop', (event) => {
+            if (!draggingGroup || draggingGroup === group) return;
+            event.preventDefault();
+            group.classList.remove('drag-over');
+            const groupRect = group.getBoundingClientRect();
+            const insertBefore = event.clientX < groupRect.left + groupRect.width / 2;
+            if (insertBefore) {
+                container.insertBefore(draggingGroup, group);
+            } else {
+                container.insertBefore(draggingGroup, group.nextSibling);
+            }
+        });
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

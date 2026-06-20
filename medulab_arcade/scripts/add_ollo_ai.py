@@ -2,20 +2,28 @@
 로보티즈 올로AI 과정 데이터 입력 스크립트
 - 챕터 구조: 제1장 Lv1 ~ 제5장 Lv5 (5개 챕터)
 - 각 챕터 하위에 1-1, 1-2 ... 형태로 12개 아이템
-- 사용법: python scripts/add_ollo_ai.py
+- 사용법: python scripts/add_ollo_ai.py (프로젝트 루트에서 실행)
 """
 
-import sqlite3
+import os
+import sys
 from pathlib import Path
 
-DB_PATH = Path(r"E:\making_project\medulab_arcade\db.sqlite3")
+# Django 설정 초기화
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE_DIR))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "medulab_arcade.settings")
+
+import django
+django.setup()
+
+from courses.models import LearningProgram, Chapter, Item, ProgramType
 
 PROGRAM_NAME = "로봇코딩과정 로보티즈 올로AI"
 PROGRAM_DESC = (
     "로보티즈 올로AI 로봇을 활용해 탄성력·관성·모터 제어 등 과학 원리를 직접 조립·실험하며 "
     "배우는 로봇코딩 과정입니다. LV1부터 LV5까지 전체 커리큘럼을 반영했습니다."
 )
-PROGRAM_TYPE_ID = 1  # 로봇코딩 유형
 
 CURRICULUM = [
     # (level, number, title, content)
@@ -150,71 +158,66 @@ CURRICULUM = [
         "- 육식 공룡과 초식 공룡의 차이점을 학습합니다.\n- 벨로시랩터를 참고해 육식 공룡의 특징을 추가하고 나만의 공룡으로 만들어 동작해 봅니다."),
 ]
 
-# level별로 그룹화
-from collections import defaultdict
-levels = defaultdict(list)
-for level, number, title, content in CURRICULUM:
-    levels[level].append((number, title, content))
 
-conn = sqlite3.connect(DB_PATH)
-cur = conn.cursor()
+def get_or_create_program_type():
+    pt, _ = ProgramType.objects.get_or_create(
+        name="로봇코딩",
+    )
+    return pt
 
-cur.execute("SELECT id FROM courses_learningprogram WHERE name=?", (PROGRAM_NAME,))
-row = cur.fetchone()
-if row:
-    program_id = row[0]
-    cur.execute(
-        "UPDATE courses_learningprogram SET description=?, program_type_id=?, is_active=1 WHERE id=?",
-        (PROGRAM_DESC, PROGRAM_TYPE_ID, program_id),
-    )
-    cur.execute(
-        "DELETE FROM courses_item WHERE chapter_id IN (SELECT id FROM courses_chapter WHERE program_id=?)",
-        (program_id,),
-    )
-    cur.execute("DELETE FROM courses_chapter WHERE program_id=?", (program_id,))
-    print(f"[기존 과정 초기화] program_id={program_id}")
-else:
-    cur.execute(
-        "INSERT INTO courses_learningprogram (name, description, image, picture_zip, answer_zip, program_type_id, is_active, created_at) "
-        "VALUES (?, ?, null, null, null, ?, 1, datetime('now'))",
-        (PROGRAM_NAME, PROGRAM_DESC, PROGRAM_TYPE_ID),
-    )
-    program_id = cur.lastrowid
-    print(f"[신규 과정 생성] program_id={program_id}")
 
-total_items = 0
-for level in sorted(levels.keys()):
-    # 챕터: 제N장 LvN
-    chapter_title = f"제{level}장 Lv{level}"
-    cur.execute(
-        "INSERT INTO courses_chapter (number, title, content, program_id) VALUES (?, ?, ?, ?)",
-        (level, chapter_title, "", program_id),
-    )
-    chapter_id = cur.lastrowid
+def run():
+    pt = get_or_create_program_type()
 
-    for number, title, content in sorted(levels[level]):
-        item_title = f"{level}-{number} {title}"
-        cur.execute(
-            "INSERT INTO courses_item (number, [key], title, item_type, explain_html, hint, answer_code, "
-            "expected_output, chapter_id, example_input, due_date, question_image) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                number,
-                f"lv{level}_{number:02d}",
-                item_title,
-                "project",
-                "",
-                content,
-                "",
-                "",
-                chapter_id,
-                "",
-                None,
-                None,
-            ),
+    program, created = LearningProgram.objects.get_or_create(
+        name=PROGRAM_NAME,
+        defaults={
+            "description": PROGRAM_DESC,
+            "program_type": pt,
+            "is_active": True,
+        },
+    )
+    if not created:
+        program.description = PROGRAM_DESC
+        program.program_type = pt
+        program.is_active = True
+        program.save()
+        # 기존 챕터/아이템 삭제
+        program.chapters.all().delete()
+        print(f"[기존 과정 초기화] id={program.pk}")
+    else:
+        print(f"[신규 과정 생성] id={program.pk}")
+
+    from collections import defaultdict
+    levels = defaultdict(list)
+    for level, number, title, content in CURRICULUM:
+        levels[level].append((number, title, content))
+
+    total_items = 0
+    for level in sorted(levels.keys()):
+        chapter = Chapter.objects.create(
+            program=program,
+            number=level,
+            title=f"제{level}장 Lv{level}",
+            content="",
         )
-        total_items += 1
+        for number, title, content in sorted(levels[level]):
+            Item.objects.create(
+                chapter=chapter,
+                number=number,
+                key=f"lv{level}_{number:02d}",
+                title=f"{level}-{number} {title}",
+                item_type="project",
+                explain_html="",
+                hint=content,
+                answer_code="",
+                expected_output="",
+                example_input="",
+            )
+            total_items += 1
 
-conn.commit()
-conn.close()
-print(f"완료: 챕터 {len(levels)}개 (제1장~제5장), 아이템 {total_items}개 입력")
+    print(f"완료: 챕터 {len(levels)}개 (제1장~제5장), 아이템 {total_items}개 입력")
+
+
+if __name__ == "__main__":
+    run()

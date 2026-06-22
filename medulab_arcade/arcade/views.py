@@ -1695,6 +1695,8 @@ def timetable_view(request):
         'hour_labels': hour_labels,
         'grid_height': GRID_H,
         'total_entries': entries.count(),
+        'is_admin': request.user.is_staff,
+        'day_choices': [('1','월'),('2','화'),('3','수'),('4','목'),('5','금'),('6','토'),('0','일')],
     }
     return render(request, 'arcade/timetable.html', context)
 
@@ -1744,8 +1746,62 @@ def timetable_admin_delete(request, entry_id):
     entry = get_object_or_404(ScheduleEvent, pk=entry_id, event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC)
     title = entry.title
     entry.delete()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+        return JsonResponse({'status': 'ok'})
     messages.success(request, f'"{title}" 수업이 삭제되었습니다.')
     return redirect('timetable_admin_list')
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def timetable_admin_api_save(request):
+    """시간표 인라인 모달 저장 API"""
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'error': '잘못된 요청입니다.'}, status=400)
+
+    entry_id    = data.get('id')
+    title       = data.get('title', '').strip()
+    days_of_week= data.get('days_of_week', '').strip()
+    start_time  = data.get('start_time', '').strip()
+    end_time    = data.get('end_time', '').strip()
+    description = data.get('description', '').strip()
+    is_active   = bool(data.get('is_active', True))
+
+    if not title or not days_of_week or not start_time or not end_time:
+        return JsonResponse({'status': 'error', 'error': '수업명, 요일, 시간은 필수입니다.'}, status=400)
+
+    try:
+        from datetime import time as dtime
+        sh, sm = map(int, start_time.split(':'))
+        eh, em = map(int, end_time.split(':'))
+        s_time = dtime(sh, sm)
+        e_time = dtime(eh, em)
+        if s_time >= e_time:
+            return JsonResponse({'status': 'error', 'error': '종료 시간은 시작 시간보다 늦어야 합니다.'}, status=400)
+    except Exception:
+        return JsonResponse({'status': 'error', 'error': '시간 형식이 올바르지 않습니다.'}, status=400)
+
+    try:
+        if entry_id:
+            entry = get_object_or_404(ScheduleEvent, pk=int(entry_id), event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC)
+        else:
+            entry = ScheduleEvent(event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC)
+
+        entry.title        = title
+        entry.days_of_week = days_of_week
+        entry.start_time   = s_time
+        entry.end_time     = e_time
+        entry.description  = description
+        entry.is_active    = is_active
+        entry.start_date   = None
+        entry.end_date     = None
+        entry.save()
+        return JsonResponse({'status': 'ok', 'id': entry.id})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
 
 
 def badge_list(request):

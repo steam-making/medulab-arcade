@@ -12,7 +12,7 @@
 
     .timetable-header {
         text-align: center;
-        margin-bottom: 36px;
+        margin-bottom: 32px;
     }
 
     .timetable-header h1 {
@@ -26,15 +26,51 @@
     }
 
     .timetable-header p {
-        color: rgba(255,255,255,0.65);
+        color: rgba(255,255,255,0.6);
         font-size: 14px;
     }
 
+    /* 관리자 툴바 */
+    .admin-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .btn-admin {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-add {
+        background: #3b82f6;
+        color: #fff;
+    }
+    .btn-add:hover { filter: brightness(1.15); color: #fff; }
+
+    .btn-manage {
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: rgba(255,255,255,0.75);
+    }
+    .btn-manage:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+    /* 시간표 카드 */
     .timetable-card {
         background: rgba(10, 15, 28, 0.82);
         border: 1px solid rgba(255,255,255,0.12);
         border-radius: 24px;
-        padding: 28px 20px 28px;
+        padding: 28px 20px;
         backdrop-filter: blur(12px);
         overflow-x: auto;
     }
@@ -45,12 +81,13 @@
         position: relative;
     }
 
-    /* 시간 레이블 (y축) */
+    /* Y축 시간 레이블 */
     .time-axis {
         width: 52px;
         flex-shrink: 0;
         position: relative;
         height: {{ grid_height }}px;
+        margin-top: 38px;
     }
 
     .time-tick {
@@ -58,7 +95,7 @@
         left: 0;
         width: 100%;
         font-size: 11px;
-        color: rgba(255,255,255,0.35);
+        color: rgba(255,255,255,0.3);
         text-align: right;
         padding-right: 8px;
         transform: translateY(-7px);
@@ -73,24 +110,22 @@
         gap: 6px;
     }
 
-    .day-col {
-        display: flex;
-        flex-direction: column;
-    }
+    .day-col { display: flex; flex-direction: column; }
 
     .day-header {
         text-align: center;
         font-size: 13px;
         font-weight: 800;
-        color: rgba(255,255,255,0.75);
-        padding: 6px 0 10px;
+        color: rgba(255,255,255,0.7);
+        padding: 8px 0 10px;
         border-bottom: 1px solid rgba(255,255,255,0.08);
         margin-bottom: 4px;
         flex-shrink: 0;
-    }
-
-    .day-col.is-today .day-header {
-        color: #3b82f6;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
     }
 
     /* 수업 블록 컨테이너 */
@@ -99,12 +134,11 @@
         height: {{ grid_height }}px;
     }
 
-    /* 수평 시간 구분선 */
     .hour-line {
         position: absolute;
         left: 0;
         right: 0;
-        border-top: 1px dashed rgba(255,255,255,0.06);
+        border-top: 1px dashed rgba(255,255,255,0.055);
     }
 
     /* 수업 블록 */
@@ -114,7 +148,7 @@
         right: 2px;
         border-radius: 8px;
         padding: 5px 7px;
-        overflow: hidden;
+        overflow: visible;
         cursor: default;
         transition: transform 0.15s, box-shadow 0.15s;
         box-sizing: border-box;
@@ -122,11 +156,11 @@
 
     .class-block:hover {
         transform: scale(1.03);
-        z-index: 10;
+        z-index: 20;
         box-shadow: 0 4px 18px rgba(0,0,0,0.5);
     }
 
-    .class-block .cb-time {
+    .cb-time {
         font-size: 10px;
         font-weight: 700;
         opacity: 0.85;
@@ -136,7 +170,7 @@
         color: rgba(255,255,255,0.9);
     }
 
-    .class-block .cb-title {
+    .cb-title {
         font-size: 12px;
         font-weight: 800;
         color: #fff;
@@ -145,13 +179,183 @@
         margin-top: 2px;
     }
 
-    /* 빈 시간표 안내 */
+    /* 관리자 수업 블록 액션 버튼 */
+    .cb-actions {
+        display: none;
+        position: absolute;
+        top: -10px;
+        right: -4px;
+        gap: 3px;
+        z-index: 30;
+    }
+
+    .class-block:hover .cb-actions {
+        display: flex;
+    }
+
+    .cb-btn {
+        padding: 3px 7px;
+        border-radius: 5px;
+        font-size: 10px;
+        font-weight: 800;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    .cb-edit { background: #1e40af; color: #fff; }
+    .cb-edit:hover { background: #2563eb; color: #fff; }
+    .cb-del { background: #7f1d1d; color: #fff; }
+    .cb-del:hover { background: #dc2626; color: #fff; }
+
+    /* 숨김 처리된 수업 (비활성) */
+    .class-block.inactive {
+        opacity: 0.4;
+    }
+
     .timetable-empty {
         text-align: center;
         padding: 60px 20px;
-        color: rgba(255,255,255,0.4);
+        color: rgba(255,255,255,0.35);
         font-size: 15px;
     }
+
+    /* ────── 인라인 모달 ────── */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.75);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s;
+    }
+    .modal-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .modal-box {
+        background: rgba(14,20,36,0.98);
+        border: 1.5px solid rgba(255,255,255,0.14);
+        border-radius: 24px;
+        padding: 36px 32px;
+        width: 100%;
+        max-width: 480px;
+        box-shadow: 0 30px 70px rgba(0,0,0,0.7);
+        transform: translateY(16px);
+        transition: transform 0.25s cubic-bezier(0.23,1,0.32,1);
+    }
+    .modal-overlay.active .modal-box {
+        transform: translateY(0);
+    }
+    .modal-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 24px;
+    }
+    .mf-row { margin-bottom: 18px; }
+    .mf-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.5);
+        margin-bottom: 6px;
+    }
+    .mf-input {
+        width: 100%;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #fff;
+        font-size: 14px;
+        outline: none;
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+    }
+    .mf-input:focus { border-color: #3b82f6; }
+    .days-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+    }
+    .day-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.14);
+        background: rgba(255,255,255,0.04);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.65);
+        user-select: none;
+        transition: all 0.15s;
+    }
+    .day-chip input { display: none; }
+    .day-chip.selected {
+        background: rgba(59,130,246,0.2);
+        border-color: rgba(59,130,246,0.5);
+        color: #60a5fa;
+    }
+    .time-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .mf-error {
+        background: rgba(239,68,68,0.1);
+        border: 1px solid rgba(239,68,68,0.3);
+        border-radius: 8px;
+        padding: 10px 14px;
+        color: #fca5a5;
+        font-size: 12px;
+        margin-bottom: 14px;
+        display: none;
+    }
+    .mf-error.show { display: block; }
+    .modal-footer {
+        display: flex;
+        gap: 10px;
+        margin-top: 28px;
+    }
+    .btn-mf-save {
+        flex: 1;
+        padding: 13px;
+        border-radius: 12px;
+        background: #3b82f6;
+        color: #fff;
+        font-weight: 800;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-mf-save:hover { filter: brightness(1.12); }
+    .btn-mf-cancel {
+        padding: 13px 20px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.65);
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+    }
+    .btn-mf-cancel:hover { background: rgba(255,255,255,0.1); }
+    .active-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255,255,255,0.65);
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .active-toggle input { width: 16px; height: 16px; accent-color: #3b82f6; cursor: pointer; }
 </style>
 {% endblock %}
 
@@ -162,36 +366,53 @@
         <p>매주 정규 수업 일정입니다. 학원일정 캘린더에도 동일하게 반영됩니다.</p>
     </div>
 
+    {% if is_admin %}
+    <div class="admin-toolbar">
+        <button class="btn-admin btn-add" onclick="openAddModal()">+ 수업 추가</button>
+        <a href="{% url 'timetable_admin_list' %}" class="btn-admin btn-manage">📋 목록 관리</a>
+    </div>
+    {% endif %}
+
     {% if total_entries == 0 %}
     <div class="timetable-card">
-        <div class="timetable-empty">등록된 수업 시간표가 없습니다.</div>
+        <div class="timetable-empty">
+            등록된 수업이 없습니다.
+            {% if is_admin %}<br><button class="btn-admin btn-add" style="margin-top:16px;" onclick="openAddModal()">+ 첫 수업 추가</button>{% endif %}
+        </div>
     </div>
     {% else %}
     <div class="timetable-card">
         <div class="timetable-grid">
-            <!-- Y축 시간 레이블 -->
             <div class="time-axis">
                 {% for hl in hour_labels %}
                 <div class="time-tick" style="top: {{ hl.top }}px;">{{ hl.label }}</div>
                 {% endfor %}
             </div>
 
-            <!-- 요일별 컬럼 -->
             <div class="days-area">
                 {% for day in days %}
                 <div class="day-col">
                     <div class="day-header">{{ day.label }}</div>
                     <div class="day-body">
-                        <!-- 시간 구분선 -->
                         {% for hl in hour_labels %}
                         <div class="hour-line" style="top: {{ hl.top }}px;"></div>
                         {% endfor %}
 
-                        <!-- 수업 블록 -->
                         {% for ev in day.events %}
-                        <div class="class-block"
+                        <div class="class-block {% if not ev.entry.is_active %}inactive{% endif %}"
                              style="top: {{ ev.top }}px; height: {{ ev.height }}px; background: {{ ev.color }}22; border: 1.5px solid {{ ev.color }}88;"
                              title="{{ ev.entry.title }}{% if ev.entry.description %} — {{ ev.entry.description }}{% endif %}">
+
+                            {% if is_admin %}
+                            <div class="cb-actions">
+                                <button class="cb-btn cb-edit"
+                                    onclick="openEditModal({{ ev.entry.id }}, '{{ ev.entry.title|escapejs }}', '{{ ev.entry.days_of_week|escapejs }}', '{{ ev.entry.start_time|time:"H:i" }}', '{{ ev.entry.end_time|time:"H:i" }}', '{{ ev.entry.description|escapejs }}', {{ ev.entry.is_active|yesno:'true,false' }})">
+                                    수정
+                                </button>
+                                <button class="cb-btn cb-del" onclick="deleteEntry({{ ev.entry.id }}, '{{ ev.entry.title|escapejs }}')">삭제</button>
+                            </div>
+                            {% endif %}
+
                             <div class="cb-time">{{ ev.time_str }}</div>
                             <div class="cb-title">{{ ev.entry.title }}</div>
                         </div>
@@ -204,4 +425,183 @@
     </div>
     {% endif %}
 </div>
+
+{% if is_admin %}
+<!-- 수업 추가/수정 모달 -->
+<div class="modal-overlay" id="ttModal">
+    <div class="modal-box">
+        <div class="modal-title" id="ttModalTitle">수업 추가</div>
+        <div class="mf-error" id="ttError"></div>
+
+        <div class="mf-row">
+            <label class="mf-label">수업명 *</label>
+            <input type="text" id="ttTitle" class="mf-input" placeholder="예: 파이썬 기초반">
+        </div>
+
+        <div class="mf-row">
+            <label class="mf-label">수업 요일 *</label>
+            <div class="days-grid" id="ttDaysGrid">
+                {% for val, lbl in day_choices %}
+                <label class="day-chip" data-val="{{ val }}">
+                    <input type="checkbox" value="{{ val }}"> {{ lbl }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mf-row">
+            <label class="mf-label">수업 시간 *</label>
+            <div class="time-pair">
+                <div>
+                    <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-bottom:5px;">시작</div>
+                    <input type="time" id="ttStartTime" class="mf-input">
+                </div>
+                <div>
+                    <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-bottom:5px;">종료</div>
+                    <input type="time" id="ttEndTime" class="mf-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="mf-row">
+            <label class="mf-label">메모 / 설명</label>
+            <textarea id="ttDesc" class="mf-input" rows="2" placeholder="선택 사항"></textarea>
+        </div>
+
+        <div class="mf-row">
+            <label class="active-toggle">
+                <input type="checkbox" id="ttActive" checked> 시간표에 노출
+            </label>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-mf-cancel" onclick="closeModal()">취소</button>
+            <button class="btn-mf-save" onclick="saveEntry()">저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- 삭제 확인 폼 (hidden) -->
+<form id="deleteForm" method="post" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="_method" value="POST">
+</form>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if is_admin %}
+<script>
+const CSRF = "{{ csrf_token }}";
+const SAVE_URL = "{% url 'timetable_admin_api_save' %}";
+const DELETE_URL_BASE = "/";
+
+let currentEditId = null;
+
+const DAY_CHOICES = [
+    {val:'1', label:'월'}, {val:'2', label:'화'}, {val:'3', label:'수'},
+    {val:'4', label:'목'}, {val:'5', label:'금'}, {val:'6', label:'토'}, {val:'0', label:'일'}
+];
+
+// day-chip 클릭 토글
+document.querySelectorAll('.day-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+        chip.classList.toggle('selected');
+        chip.querySelector('input').checked = chip.classList.contains('selected');
+    });
+});
+
+function openAddModal() {
+    currentEditId = null;
+    document.getElementById('ttModalTitle').textContent = '+ 수업 추가';
+    document.getElementById('ttTitle').value = '';
+    document.getElementById('ttStartTime').value = '';
+    document.getElementById('ttEndTime').value = '';
+    document.getElementById('ttDesc').value = '';
+    document.getElementById('ttActive').checked = true;
+    document.querySelectorAll('.day-chip').forEach(c => {
+        c.classList.remove('selected');
+        c.querySelector('input').checked = false;
+    });
+    document.getElementById('ttError').classList.remove('show');
+    document.getElementById('ttModal').classList.add('active');
+}
+
+function openEditModal(id, title, days, startTime, endTime, desc, isActive) {
+    currentEditId = id;
+    document.getElementById('ttModalTitle').textContent = '✏️ 수업 수정';
+    document.getElementById('ttTitle').value = title;
+    document.getElementById('ttStartTime').value = startTime;
+    document.getElementById('ttEndTime').value = endTime;
+    document.getElementById('ttDesc').value = desc;
+    document.getElementById('ttActive').checked = isActive;
+
+    const selectedDays = days.split(',').map(d => d.trim());
+    document.querySelectorAll('.day-chip').forEach(c => {
+        const v = c.getAttribute('data-val');
+        const sel = selectedDays.includes(v);
+        c.classList.toggle('selected', sel);
+        c.querySelector('input').checked = sel;
+    });
+
+    document.getElementById('ttError').classList.remove('show');
+    document.getElementById('ttModal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('ttModal').classList.remove('active');
+}
+
+function saveEntry() {
+    const title = document.getElementById('ttTitle').value.trim();
+    const days = Array.from(document.querySelectorAll('.day-chip.selected')).map(c => c.getAttribute('data-val'));
+    const startTime = document.getElementById('ttStartTime').value;
+    const endTime = document.getElementById('ttEndTime').value;
+    const desc = document.getElementById('ttDesc').value.trim();
+    const isActive = document.getElementById('ttActive').checked;
+
+    const errEl = document.getElementById('ttError');
+
+    if (!title) { errEl.textContent = '수업명을 입력해주세요.'; errEl.classList.add('show'); return; }
+    if (days.length === 0) { errEl.textContent = '수업 요일을 하나 이상 선택해주세요.'; errEl.classList.add('show'); return; }
+    if (!startTime || !endTime) { errEl.textContent = '시작 시간과 종료 시간을 입력해주세요.'; errEl.classList.add('show'); return; }
+    if (startTime >= endTime) { errEl.textContent = '종료 시간은 시작 시간보다 늦어야 합니다.'; errEl.classList.add('show'); return; }
+
+    errEl.classList.remove('show');
+
+    fetch(SAVE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+            id: currentEditId,
+            title, days_of_week: days.join(','),
+            start_time: startTime, end_time: endTime,
+            description: desc, is_active: isActive
+        })
+    })
+    .then(r => r.json())
+    .then(r => {
+        if (r.status === 'ok') location.reload();
+        else { errEl.textContent = r.error || '저장 실패'; errEl.classList.add('show'); }
+    })
+    .catch(() => { errEl.textContent = '서버 연결 실패'; errEl.classList.add('show'); });
+}
+
+function deleteEntry(id, title) {
+    if (!confirm(`"${title}" 수업을 삭제할까요?`)) return;
+    fetch(`/admin-services/timetable/${id}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF }
+    })
+    .then(r => r.json())
+    .then(r => { if (r.status === 'ok') location.reload(); else alert(r.error || '삭제 실패'); })
+    .catch(() => alert('서버 연결 실패'));
+}
+
+// 모달 바깥 클릭 닫기
+document.getElementById('ttModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+</script>
+{% endif %}
 {% endblock %}

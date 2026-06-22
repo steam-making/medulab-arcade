@@ -11,6 +11,7 @@ urlpatterns = [
     path('admin-services/timetable/add/', views.timetable_admin_create, name='timetable_admin_create'),
     path('admin-services/timetable/<int:entry_id>/edit/', views.timetable_admin_edit, name='timetable_admin_edit'),
     path('admin-services/timetable/<int:entry_id>/delete/', views.timetable_admin_delete, name='timetable_admin_delete'),
+    path('admin-services/timetable/api/save/', views.timetable_admin_api_save, name='timetable_admin_api_save'),
     path('board/notice/', views.board_notice, name='board_notice'),
     path('board/notice/create/', views.board_notice_create, name='board_notice_create'),
     path('board/notice/<int:pk>/', views.board_notice_detail, name='board_notice_detail'),

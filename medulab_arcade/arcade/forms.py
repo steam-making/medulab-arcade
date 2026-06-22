@@ -584,6 +584,62 @@ class ScheduleEventForm(forms.ModelForm):
         }
 
 
+class TimetableForm(forms.ModelForm):
+    """학원시간표 전용 폼 (정규수업 유형 고정)"""
+    days_of_week = forms.MultipleChoiceField(
+        choices=[
+            ('1', '월'), ('2', '화'), ('3', '수'), ('4', '목'), ('5', '금'), ('6', '토'), ('0', '일')
+        ],
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'days-checkbox'}),
+        label='수업 요일',
+        required=True,
+    )
+
+    class Meta:
+        model = ScheduleEvent
+        fields = ['title', 'days_of_week', 'start_time', 'end_time', 'description', 'is_active']
+        widgets = {
+            'start_time': forms.TimeInput(attrs={'type': 'time'}, format='%H:%M'),
+            'end_time': forms.TimeInput(attrs={'type': 'time'}, format='%H:%M'),
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+        labels = {
+            'title': '수업명',
+            'start_time': '시작 시간',
+            'end_time': '종료 시간',
+            'description': '메모 / 설명',
+            'is_active': '시간표 노출 여부',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.days_of_week:
+            self.initial['days_of_week'] = self.instance.days_of_week.split(',')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        days = cleaned_data.get('days_of_week')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        if not days:
+            raise forms.ValidationError("수업 요일을 하나 이상 선택해주세요.")
+        if not start_time or not end_time:
+            raise forms.ValidationError("시작 시간과 종료 시간을 모두 입력해주세요.")
+        if start_time >= end_time:
+            raise forms.ValidationError("종료 시간은 시작 시간보다 늦어야 합니다.")
+        cleaned_data['days_of_week'] = ','.join(days)
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.event_type = ScheduleEvent.EVENT_TYPE_ACADEMIC
+        instance.start_date = None
+        instance.end_date = None
+        if commit:
+            instance.save()
+        return instance
+
+
 class NoticeForm(forms.ModelForm):
     class Meta:
         model = Notice

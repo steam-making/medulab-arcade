@@ -1,0 +1,100 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}시간표 관리 - MEDULAB 관리자{% endblock %}
+
+{% block content %}
+<div style="max-width: 960px; margin: 40px auto; padding: 0 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px;">
+        <h1 style="font-size: 24px; font-weight: 900; color: #fff;">🗓️ 시간표 관리</h1>
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'timetable' %}" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: #fff; font-weight: 700; text-decoration: none; font-size: 13px;">
+                🗓️ 시간표 보기
+            </a>
+            <a href="{% url 'timetable_admin_create' %}" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 10px; background: #3b82f6; color: #fff; font-weight: 700; text-decoration: none; font-size: 13px;">
+                + 수업 추가
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    {% for msg in messages %}
+    <div style="padding: 12px 18px; border-radius: 10px; margin-bottom: 16px; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; font-size: 14px;">
+        {{ msg }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div style="background: rgba(10,15,28,0.82); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; overflow: hidden; backdrop-filter: blur(12px);">
+        {% if entries %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <th style="padding: 14px 20px; text-align: left; font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.5); text-transform: uppercase;">수업명</th>
+                    <th style="padding: 14px 16px; text-align: center; font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.5);">요일</th>
+                    <th style="padding: 14px 16px; text-align: center; font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.5);">시간</th>
+                    <th style="padding: 14px 16px; text-align: center; font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.5);">노출</th>
+                    <th style="padding: 14px 20px; text-align: center; font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.5);">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                {% with days_map="0일,1월,2화,3수,4목,5금,6토" %}
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 14px 20px;">
+                        <div style="font-size: 14px; font-weight: 700; color: #fff;">{{ entry.title }}</div>
+                        {% if entry.description %}
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 3px;">{{ entry.description|truncatechars:50 }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 16px; text-align: center;">
+                        <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+                            {% if entry.days_of_week %}
+                            {% for d in entry.days_of_week.split %}
+                            {% with d=d|cut:"," %}
+                            {% if d == "1" %}<span style="padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3);">월</span>
+                            {% elif d == "2" %}<span style="padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3);">화</span>
+                            {% elif d == "3" %}<span style="padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3);">수</span>
+                            {% elif d == "4" %}<span style="padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3);">목</span>
+                            {% elif d == "5" %}<span style="padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; background: rgba(139,92,246,0.2); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3);">금</span>
+                            {% elif d == "6" %}<span style="padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; background: rgba(249,115,22,0.2); color: #fb923c; border: 1px solid rgba(249,115,22,0.3);">토</span>
+                            {% elif d == "0" %}<span style="padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; background: rgba(236,72,153,0.2); color: #f472b6; border: 1px solid rgba(236,72,153,0.3);">일</span>
+                            {% endif %}
+                            {% endwith %}
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td style="padding: 14px 16px; text-align: center; font-size: 13px; color: rgba(255,255,255,0.75); white-space: nowrap;">
+                        {% if entry.start_time and entry.end_time %}
+                        {{ entry.start_time|time:"H:i" }} ~ {{ entry.end_time|time:"H:i" }}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td style="padding: 14px 16px; text-align: center;">
+                        {% if entry.is_active %}
+                        <span style="padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3);">노출</span>
+                        {% else %}
+                        <span style="padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.08);">숨김</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 20px; text-align: center;">
+                        <div style="display: flex; gap: 8px; justify-content: center;">
+                            <a href="{% url 'timetable_admin_edit' entry.id %}" style="padding: 6px 14px; border-radius: 8px; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; font-size: 12px; font-weight: 700; text-decoration: none;">수정</a>
+                            <form method="post" action="{% url 'timetable_admin_delete' entry.id %}" onsubmit="return confirm('정말 삭제할까요?');" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" style="padding: 6px 14px; border-radius: 8px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #f87171; font-size: 12px; font-weight: 700; cursor: pointer;">삭제</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.35); font-size: 15px;">
+            등록된 시간표 수업이 없습니다. <a href="{% url 'timetable_admin_create' %}" style="color: #3b82f6; font-weight: 700;">첫 수업 추가하기 →</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

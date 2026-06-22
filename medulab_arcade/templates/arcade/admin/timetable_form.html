@@ -1,0 +1,240 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}{{ title }} - MEDULAB 관리자{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tt-form-wrap {
+        max-width: 600px;
+        margin: 40px auto 80px;
+        padding: 0 20px;
+    }
+
+    .tt-form-card {
+        background: rgba(10,15,28,0.88);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 24px;
+        padding: 36px 32px;
+        backdrop-filter: blur(12px);
+    }
+
+    .tt-form-title {
+        font-size: 22px;
+        font-weight: 900;
+        color: #fff;
+        margin-bottom: 28px;
+    }
+
+    .form-row {
+        margin-bottom: 20px;
+    }
+
+    .form-row label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.65);
+        margin-bottom: 8px;
+    }
+
+    .form-row input[type="text"],
+    .form-row input[type="time"],
+    .form-row textarea {
+        width: 100%;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 10px;
+        padding: 11px 14px;
+        color: #fff;
+        font-size: 14px;
+        outline: none;
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+    }
+
+    .form-row input:focus,
+    .form-row textarea:focus {
+        border-color: #3b82f6;
+    }
+
+    .days-checkbox-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .days-checkbox-wrap label {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.14);
+        background: rgba(255,255,255,0.04);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.7);
+        transition: all 0.2s;
+        margin-bottom: 0;
+    }
+
+    .days-checkbox-wrap input[type="checkbox"]:checked + span,
+    .days-checkbox-wrap label:has(input:checked) {
+        background: rgba(59,130,246,0.2);
+        border-color: rgba(59,130,246,0.5);
+        color: #60a5fa;
+    }
+
+    .days-checkbox-wrap input[type="checkbox"] {
+        accent-color: #3b82f6;
+        width: 14px;
+        height: 14px;
+    }
+
+    .active-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .active-toggle input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #3b82f6;
+        cursor: pointer;
+    }
+
+    .active-toggle span {
+        font-size: 14px;
+        color: rgba(255,255,255,0.7);
+    }
+
+    .form-errors {
+        background: rgba(239,68,68,0.1);
+        border: 1px solid rgba(239,68,68,0.3);
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        color: #fca5a5;
+        font-size: 13px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 32px;
+    }
+
+    .btn-save {
+        flex: 1;
+        padding: 14px;
+        border-radius: 12px;
+        background: #3b82f6;
+        color: #fff;
+        font-weight: 800;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+        transition: filter 0.2s;
+    }
+
+    .btn-save:hover { filter: brightness(1.15); }
+
+    .btn-cancel {
+        padding: 14px 24px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.12);
+        color: rgba(255,255,255,0.7);
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        text-align: center;
+    }
+
+    .btn-cancel:hover { background: rgba(255,255,255,0.1); }
+
+    .time-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tt-form-wrap fade-in">
+    <div class="tt-form-card">
+        <div class="tt-form-title">{{ title }}</div>
+
+        {% if form.non_field_errors %}
+        <div class="form-errors">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- 수업명 -->
+            <div class="form-row">
+                <label for="{{ form.title.id_for_label }}">{{ form.title.label }} *</label>
+                {{ form.title }}
+                {% if form.title.errors %}<div style="color:#f87171; font-size:12px; margin-top:4px;">{{ form.title.errors.0 }}</div>{% endif %}
+            </div>
+
+            <!-- 수업 요일 -->
+            <div class="form-row">
+                <label>{{ form.days_of_week.label }} *</label>
+                <div class="days-checkbox-wrap">
+                    {% for value, label in form.fields.days_of_week.choices %}
+                    <label>
+                        <input type="checkbox" name="days_of_week" value="{{ value }}"
+                            {% if value in form.days_of_week.value %}checked{% endif %}>
+                        {{ label }}
+                    </label>
+                    {% endfor %}
+                </div>
+                {% if form.days_of_week.errors %}<div style="color:#f87171; font-size:12px; margin-top:4px;">{{ form.days_of_week.errors.0 }}</div>{% endif %}
+            </div>
+
+            <!-- 시간 -->
+            <div class="form-row">
+                <label>수업 시간 *</label>
+                <div class="time-row">
+                    <div>
+                        <label for="{{ form.start_time.id_for_label }}" style="font-size:12px; color: rgba(255,255,255,0.45); margin-bottom:5px;">시작</label>
+                        {{ form.start_time }}
+                    </div>
+                    <div>
+                        <label for="{{ form.end_time.id_for_label }}" style="font-size:12px; color: rgba(255,255,255,0.45); margin-bottom:5px;">종료</label>
+                        {{ form.end_time }}
+                    </div>
+                </div>
+                {% if form.start_time.errors %}<div style="color:#f87171; font-size:12px; margin-top:4px;">{{ form.start_time.errors.0 }}</div>{% endif %}
+                {% if form.end_time.errors %}<div style="color:#f87171; font-size:12px; margin-top:4px;">{{ form.end_time.errors.0 }}</div>{% endif %}
+            </div>
+
+            <!-- 메모 -->
+            <div class="form-row">
+                <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                {{ form.description }}
+            </div>
+
+            <!-- 노출 여부 -->
+            <div class="form-row">
+                <div class="active-toggle">
+                    {{ form.is_active }}
+                    <span>{{ form.is_active.label }}</span>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'timetable_admin_list' %}" class="btn-cancel">취소</a>
+                <button type="submit" class="btn-save">저장</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

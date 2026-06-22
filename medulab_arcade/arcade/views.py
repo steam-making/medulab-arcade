@@ -26,7 +26,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
 from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType
-from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, UserProfileUpdateForm
+from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm
 from .holiday_utils import ensure_holidays
 
 
@@ -1630,6 +1630,122 @@ def schedule_admin_delete(request, event_id):
     except DatabaseError:
         messages.error(request, f'일정 "{title}"을 삭제할 수 없습니다.')
     return redirect('schedule_admin_list')
+
+
+# ────────────────────────────────────────────────
+# 학원 시간표 (사용자용 + 관리자 CRUD)
+# ────────────────────────────────────────────────
+
+def timetable_view(request):
+    """학원 시간표 - 요일별 주간 그리드"""
+    GRID_START = 8 * 60   # 08:00
+    GRID_END   = 22 * 60  # 22:00
+    GRID_H     = 840      # 840px = 14h × 60px
+
+    entries = ScheduleEvent.objects.filter(
+        event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC,
+        is_active=True
+    ).order_by('start_time', 'title')
+
+    DAY_LIST = [
+        {'key': '1', 'label': '월'},
+        {'key': '2', 'label': '화'},
+        {'key': '3', 'label': '수'},
+        {'key': '4', 'label': '목'},
+        {'key': '5', 'label': '금'},
+        {'key': '6', 'label': '토'},
+    ]
+
+    COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899']
+
+    for day in DAY_LIST:
+        day['events'] = []
+
+    # 수업별 고정 색상 매핑
+    all_ids = list(entries.values_list('id', flat=True))
+    color_map = {eid: COLORS[i % len(COLORS)] for i, eid in enumerate(all_ids)}
+
+    for entry in entries:
+        if not entry.days_of_week:
+            continue
+        for day_key in entry.days_of_week.split(','):
+            day_key = day_key.strip()
+            for day in DAY_LIST:
+                if day['key'] == day_key:
+                    if entry.start_time and entry.end_time:
+                        s = entry.start_time.hour * 60 + entry.start_time.minute
+                        e = entry.end_time.hour * 60 + entry.end_time.minute
+                        top    = max(0, round((s - GRID_START) * GRID_H / (GRID_END - GRID_START)))
+                        height = max(28, round((e - s) * GRID_H / (GRID_END - GRID_START)))
+                        day['events'].append({
+                            'entry': entry,
+                            'top': top,
+                            'height': height,
+                            'color': color_map[entry.id],
+                            'time_str': f"{entry.start_time.strftime('%H:%M')}~{entry.end_time.strftime('%H:%M')}",
+                        })
+
+    hour_labels = [
+        {'label': f'{h:02d}:00', 'top': round((h - 8) * GRID_H / 14)}
+        for h in range(8, 23)
+    ]
+
+    context = {
+        'days': DAY_LIST,
+        'hour_labels': hour_labels,
+        'grid_height': GRID_H,
+        'total_entries': entries.count(),
+    }
+    return render(request, 'arcade/timetable.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def timetable_admin_list(request):
+    entries = ScheduleEvent.objects.filter(
+        event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC
+    ).order_by('start_time', 'title')
+    return render(request, 'arcade/admin/timetable_list.html', {'entries': entries})
+
+
+@login_required
+@user_passes_test(staff_check)
+def timetable_admin_create(request):
+    if request.method == 'POST':
+        form = TimetableForm(request.POST)
+        if form.is_valid():
+            entry = form.save()
+            messages.success(request, f'"{entry.title}" 수업이 시간표에 추가되었습니다.')
+            return redirect('timetable_admin_list')
+    else:
+        form = TimetableForm()
+    return render(request, 'arcade/admin/timetable_form.html', {'form': form, 'title': '수업 추가'})
+
+
+@login_required
+@user_passes_test(staff_check)
+def timetable_admin_edit(request, entry_id):
+    entry = get_object_or_404(ScheduleEvent, pk=entry_id, event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC)
+    if request.method == 'POST':
+        form = TimetableForm(request.POST, instance=entry)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'"{entry.title}" 수업이 수정되었습니다.')
+            return redirect('timetable_admin_list')
+    else:
+        form = TimetableForm(instance=entry)
+    return render(request, 'arcade/admin/timetable_form.html', {'form': form, 'entry': entry, 'title': '수업 수정'})
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def timetable_admin_delete(request, entry_id):
+    entry = get_object_or_404(ScheduleEvent, pk=entry_id, event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC)
+    title = entry.title
+    entry.delete()
+    messages.success(request, f'"{title}" 수업이 삭제되었습니다.')
+    return redirect('timetable_admin_list')
 
 
 def badge_list(request):

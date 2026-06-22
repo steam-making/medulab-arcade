@@ -277,6 +277,31 @@
         letter-spacing: -0.1px;
     }
 
+    /* 드래그앤드롭 핸들 */
+    .drag-handle {
+        display: none;
+        cursor: grab;
+        color: rgba(255,255,255,0.25);
+        font-size: 14px;
+        line-height: 1;
+        margin-bottom: 6px;
+        transition: color 0.2s;
+        user-select: none;
+    }
+    .admin-mode .drag-handle {
+        display: block;
+    }
+    .drag-handle:hover {
+        color: rgba(255,255,255,0.7);
+    }
+    .sortable-ghost {
+        opacity: 0.35;
+        background: rgba(59,130,246,0.12) !important;
+    }
+    .sortable-drag {
+        opacity: 0.9;
+    }
+
     /* 과정 카드 기본 디자인 (트랙별 시인성 높은 기본 네온 테마 적용) */
     .course-node {
         border-radius: 18px;
@@ -815,7 +840,8 @@
                     {% for track in tracks %}
                     <tr class="track-row track-{{ track.track_id }}" style="--track-color: {{ track.color }}; --track-color-rgb: {{ track.color_rgb }};" data-track-id="{{ track.track_id }}" data-track-color="{{ track.color }}">
                         <!-- 트랙 정보 고정 열 -->
-                        <td class="track-label-cell">
+                        <td class="track-label-cell" data-track-id="{{ track.track_id }}">
+                            <span class="drag-handle" title="드래그하여 순서 변경">⠿</span>
                             {% if track.badge %}
                             <span class="track-badge">{{ track.badge }}</span>
                             {% endif %}
@@ -980,6 +1006,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
     const csrfToken = "{{ csrf_token }}";
     const isAdmin = {% if is_admin %}true{% else %}false{% endif %};
@@ -1101,13 +1128,46 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(drawConnections, 150); // 요소들의 배치가 완전히 끝나길 살짝 지연 대기
-        
+        setTimeout(drawConnections, 150);
+
         const wrapper = document.querySelector('.table-wrapper');
         if (wrapper) {
             wrapper.addEventListener('scroll', drawConnections);
         }
         window.addEventListener('resize', drawConnections);
+
+        // 관리자 트랙 행 드래그앤드롭 순서 변경
+        if (typeof isAdmin !== 'undefined' && isAdmin) {
+            const tbody = document.querySelector('.roadmap-table tbody');
+            if (tbody) {
+                Sortable.create(tbody, {
+                    handle: '.drag-handle',
+                    animation: 180,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    onEnd: function() {
+                        const rows = tbody.querySelectorAll('tr.track-row');
+                        const orderedIds = Array.from(rows).map(row => row.getAttribute('data-track-id'));
+                        fetch("{% url 'api_roadmap_track_reorder' %}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: JSON.stringify({ ordered_ids: orderedIds })
+                        })
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res.status !== 'ok') {
+                                alert('순서 저장 실패: ' + (res.error || '알 수 없는 오류'));
+                            }
+                            setTimeout(drawConnections, 100);
+                        })
+                        .catch(() => alert('서버 연결 실패'));
+                    }
+                });
+            }
+        }
     });
 
     // ----------------------------------------------------

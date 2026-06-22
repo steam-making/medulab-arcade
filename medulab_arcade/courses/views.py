@@ -1663,6 +1663,22 @@ def api_roadmap_track_delete(request, track_id):
     except Exception as e:
         return JsonResponse({"status": "error", "error": str(e)}, status=500)
 
+@login_required
+@user_passes_test(is_admin)
+@require_POST
+def api_roadmap_track_reorder(request):
+    from .models import RoadmapTrack
+    try:
+        data = json.loads(request.body)
+        ordered_ids = data.get("ordered_ids", [])
+        if not ordered_ids:
+            return JsonResponse({"status": "error", "error": "순서 데이터가 없습니다."}, status=400)
+        for idx, track_id in enumerate(ordered_ids):
+            RoadmapTrack.objects.filter(id=int(track_id)).update(order=idx)
+        return JsonResponse({"status": "ok"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "error": str(e)}, status=500)
+
 def program_finder(request):
     programs = LearningProgram.objects.filter(is_active=True)
 

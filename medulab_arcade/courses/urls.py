@@ -44,6 +44,7 @@ urlpatterns = [
     path('api/roadmap/disconnect/', views.api_roadmap_disconnect, name='api_roadmap_disconnect'),
     path('api/roadmap/track/save/', views.api_roadmap_track_save, name='api_roadmap_track_save'),
     path('api/roadmap/track/delete/<int:track_id>/', views.api_roadmap_track_delete, name='api_roadmap_track_delete'),
+    path('api/roadmap/track/reorder/', views.api_roadmap_track_reorder, name='api_roadmap_track_reorder'),
     path('student/homework/', views.student_homework_list, name='student_homework_list'),
     path('student/homework/<int:assignment_id>/submit/', views.student_homework_submit, name='student_homework_submit'),
     path('student/homework/submission/<int:submission_id>/action/', views.homework_submission_action, name='homework_submission_action'),

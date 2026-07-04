@@ -59,7 +59,12 @@
 <div class="admin-wrap">
     <div class="page-header">
         <h1 class="page-title">📅 일정 관리</h1>
-        <a href="{% url 'schedule_admin_create' %}" class="add-btn">+ 신규 일정 등록</a>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <button type="button" id="sync-aice-btn" class="add-btn" style="background: rgba(168, 85, 247, 0.12); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 0 4px 15px rgba(168, 85, 247, 0.1); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 12px 20px;">
+                🔄 AICE 일정 업데이트
+            </button>
+            <a href="{% url 'schedule_admin_create' %}" class="add-btn">+ 신규 일정 등록</a>
+        </div>
     </div>
 
     <form class="filter-bar" method="GET" id="filter-form">
@@ -177,4 +182,46 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('sync-aice-btn').addEventListener('click', function() {
+    if (!confirm('AICE 공식 홈페이지에서 최신 시험 일정을 파싱해 동기화할까요?')) {
+        return;
+    }
+    
+    const btn = this;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ 동기화 중...';
+    btn.style.opacity = '0.6';
+    
+    fetch("{% url 'api_sync_aice_schedule' %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/json"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        btn.style.opacity = '1';
+        if (data.status === 'success') {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('동기화 실패: ' + data.message);
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        btn.style.opacity = '1';
+        alert('네트워크 오류가 발생했습니다: ' + error);
+    });
+});
+</script>
 {% endblock %}

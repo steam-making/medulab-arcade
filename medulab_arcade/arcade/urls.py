@@ -75,6 +75,7 @@ urlpatterns = [
     # 일정 관리 (관리자 전용)
     path('admin-services/schedules/', views.schedule_admin_list, name='schedule_admin_list'),
     path('admin-services/schedules/add/', views.schedule_admin_create, name='schedule_admin_create'),
+    path('admin-services/schedules/sync-aice/', views.api_sync_aice_schedule, name='api_sync_aice_schedule'),
     path('admin-services/schedules/<int:event_id>/edit/', views.schedule_admin_edit, name='schedule_admin_edit'),
     path('admin-services/schedules/<int:event_id>/delete/', views.schedule_admin_delete, name='schedule_admin_delete'),
 

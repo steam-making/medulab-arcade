@@ -2366,4 +2366,34 @@ def api_submit_attendance(request):
     })
 
 
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def api_sync_aice_schedule(request):
+    """AICE 공식 시험 일정을 크롤링하여 DB에 동기화해 주는 관리자용 API"""
+    from django.core.management import call_command
+    import io
+    
+    out = io.StringIO()
+    try:
+        call_command('sync_aice_schedule', stdout=out, stderr=out)
+        output_log = out.getvalue()
+        
+        import re
+        match = re.search(r'새로 등록된 일정:\s*(\d+)개', output_log)
+        added_count = int(match.group(1)) if match else 0
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'AICE 시험 일정 동기화가 완료되었습니다. (새로 추가된 일정: {added_count}개)',
+            'log': output_log
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'동기화 작업 중 오류가 발생했습니다: {str(e)}'
+        })
+
+
+
 

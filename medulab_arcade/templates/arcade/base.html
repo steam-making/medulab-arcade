@@ -231,6 +231,96 @@
             box-shadow: 0 4px 20px rgba(0, 255, 180, 0.3);
         }
 
+        /* ---- 모바일 햄버거 메뉴 ---- */
+        .nav-toggle-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: all 0.2s;
+            z-index: 101;
+        }
+
+        .nav-menu-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+            justify-content: flex-end;
+        }
+
+        @media (max-width: 1100px) {
+            .nav-toggle-btn {
+                display: block;
+            }
+
+            .nav-menu-wrapper {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 68px;
+                left: 0;
+                right: 0;
+                background: rgba(8, 8, 15, 0.98);
+                backdrop-filter: blur(24px);
+                border-bottom: 1px solid var(--border);
+                padding: 24px;
+                gap: 20px;
+                align-items: stretch;
+                z-index: 100;
+                max-height: calc(100vh - 68px);
+                overflow-y: auto;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                animation: navSlideDown 0.3s ease forwards;
+            }
+
+            .nav-menu-wrapper.active {
+                display: flex;
+            }
+
+            .nav-menu-wrapper > div {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                width: 100%;
+                gap: 12px !important;
+            }
+
+            .nav-link, .nav-dropdown button {
+                width: 100% !important;
+                text-align: center !important;
+                justify-content: center !important;
+                padding: 12px !important;
+                font-size: 14px !important;
+            }
+
+            .nav-dropdown {
+                width: 100%;
+                position: relative;
+            }
+
+            .nav-dropdown .dropdown-content {
+                position: static !important;
+                width: 100% !important;
+                box-shadow: none !important;
+                background: rgba(255, 255, 255, 0.03) !important;
+                border: 1px solid var(--border) !important;
+                margin-top: 8px;
+                display: none;
+            }
+
+            .nav-dropdown.is-open .dropdown-content {
+                display: block !important;
+            }
+
+            @keyframes navSlideDown {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        }
+
         /* ---- 메인 ---- */
         .main {
             max-width: 1400px;
@@ -608,8 +698,11 @@
                 </div>
             </a>
 
+            <!-- 모바일 햄버거 토글 버튼 -->
+            <button class="nav-toggle-btn" id="nav-toggle-btn" aria-label="메뉴 토글">☰</button>
+
             <!-- 우측 메뉴 영역 (공용 메뉴 + 유저 메뉴) -->
-            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: nowrap; justify-content: flex-end; flex: 1;">
+            <div class="nav-menu-wrapper" id="nav-menu-wrapper">
                 
                 <!-- 주요 링크 그룹 -->
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; justify-content: flex-end;">
@@ -839,6 +932,30 @@
         }
             });
         });
+    </script>
+    <script>
+        /* ── 모바일 메뉴 토글 ── */
+        (function () {
+            const toggleBtn = document.getElementById('nav-toggle-btn');
+            const menuWrapper = document.getElementById('nav-menu-wrapper');
+            if (!toggleBtn || !menuWrapper) return;
+
+            toggleBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const isActive = menuWrapper.classList.toggle('active');
+                toggleBtn.classList.toggle('active');
+                toggleBtn.innerHTML = isActive ? '✕' : '☰';
+            });
+
+            // 바깥 영역 클릭 시 자동으로 닫히도록 처리
+            document.addEventListener('click', function (e) {
+                if (!menuWrapper.contains(e.target) && e.target !== toggleBtn) {
+                    menuWrapper.classList.remove('active');
+                    toggleBtn.classList.remove('active');
+                    toggleBtn.innerHTML = '☰';
+                }
+            });
+        })();
     </script>
     {% block extra_js %}{% endblock %}
 </body>

@@ -25,7 +25,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm
 from .holiday_utils import ensure_holidays
 
@@ -2221,3 +2221,60 @@ def board_certinfo_delete(request, pk):
         certinfo.delete()
         return redirect('board_certinfo')
     return render(request, 'arcade/board_confirm_delete.html', {'object': certinfo, 'title': '자격종류 삭제', 'cancel_url': reverse('board_certinfo_detail', args=[pk])})
+
+
+# --- 공모전 (Contest) 게시판 ---
+def board_contest(request):
+    contests = Contest.objects.filter(is_active=True).order_by('end_date', '-created_at')
+    return render(request, 'arcade/board_contest.html', {'contests': contests})
+
+def board_contest_detail(request, pk):
+    contest = get_object_or_404(Contest, pk=pk)
+    return render(request, 'arcade/board_contest_detail.html', {'contest': contest})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_contest_create(request):
+    from .forms import ContestForm
+    if request.method == 'POST':
+        form = ContestForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('board_contest')
+    else:
+        form = ContestForm()
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '공모전 추가'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_contest_update(request, pk):
+    from .forms import ContestForm
+    contest = get_object_or_404(Contest, pk=pk)
+    if request.method == 'POST':
+        form = ContestForm(request.POST, request.FILES, instance=contest)
+        if form.is_valid():
+            form.save()
+            return redirect('board_contest_detail', pk=contest.pk)
+    else:
+        form = ContestForm(instance=contest)
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '공모전 수정'})
+
+@user_passes_test(lambda u: u.is_staff)
+def board_contest_delete(request, pk):
+    contest = get_object_or_404(Contest, pk=pk)
+    if request.method == 'POST':
+        contest.delete()
+        return redirect('board_contest')
+    return render(request, 'arcade/board_confirm_delete.html', {'object': contest, 'title': '공모전 삭제', 'cancel_url': reverse('board_contest_detail', args=[pk])})
+
+
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def api_crawl_thinkcontest(request):
+    from .management.commands.crawl_contests import Command as CrawlCommand
+    try:
+        cmd = CrawlCommand()
+        added_count = cmd.crawl_and_save()
+        return JsonResponse({'status': 'success', 'added_count': added_count})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+

@@ -1,0 +1,259 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}{{ contest.title }} - 추천 공모전{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 24px;
+        padding: 40px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+    }
+
+    .detail-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 32px;
+        position: relative;
+    }
+
+    .detail-poster-wrap {
+        max-width: 320px;
+        margin: 0 auto 24px auto;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+
+    .detail-poster-img {
+        width: 100%;
+        display: block;
+        object-fit: contain;
+        border-radius: 12px;
+    }
+
+    .detail-title {
+        color: #ffffff;
+        font-size: 30px;
+        font-weight: 900;
+        margin: 0 0 16px 0;
+        line-height: 1.35;
+    }
+
+    .detail-badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .detail-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 16px;
+        border-radius: 999px;
+        font-size: 13.5px;
+        font-weight: 700;
+    }
+
+    .detail-badge.organizer {
+        background: rgba(124, 58, 237, 0.15);
+        border: 1px solid rgba(167, 139, 250, 0.3);
+        color: #ddd6fe;
+    }
+
+    .detail-badge.dday {
+        background: rgba(0, 255, 180, 0.15);
+        border: 1px solid rgba(0, 255, 180, 0.3);
+        color: #00ffb4;
+    }
+
+    .detail-badge.dday.imminent {
+        background: rgba(249, 115, 22, 0.15);
+        border: 1px solid rgba(249, 115, 22, 0.3);
+        color: #f97316;
+    }
+
+    .detail-badge.dday.closed {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 28px;
+    }
+
+    .detail-grid-item {
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 14px;
+        padding: 16px 20px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .grid-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.4);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .grid-value {
+        font-size: 15px;
+        font-weight: 700;
+        color: #ffffff;
+    }
+
+    .detail-content {
+        color: #e2e8f0;
+        line-height: 1.8;
+        font-size: 15.5px;
+        padding: 28px 32px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.02);
+        white-space: pre-wrap;
+    }
+
+    .detail-link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #00ffb4, #00b4ff);
+        color: #08080f;
+        padding: 12px 28px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 800;
+        font-size: 15px;
+        box-shadow: 0 8px 25px rgba(0, 255, 180, 0.25);
+        transition: all 0.3s ease;
+    }
+
+    .detail-link-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(0, 255, 180, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main" style="max-width: 900px; margin: 40px auto; padding: 20px;">
+    
+    <!-- 상단 내비게이션 바 -->
+    <div style="margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <a href="{% url 'board_contest' %}" style="color: rgba(255,255,255,0.6); text-decoration: none; padding: 8px 16px; background: rgba(255,255,255,0.05); border-radius: 8px; font-weight: 700; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">← 목록으로</a>
+        
+        {% if user.is_staff %}
+        <div style="display: flex; gap: 8px;">
+            <a href="{% url 'board_contest_update' contest.pk %}" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.25)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.15)'">수정</a>
+            <a href="{% url 'board_contest_delete' contest.pk %}" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.25)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'">삭제</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 상세 카드 영역 -->
+    <div class="detail-card">
+        
+        <div class="detail-header">
+            
+            <!-- 포스터 이미지 -->
+            {% if contest.thumbnail %}
+            <div class="detail-poster-wrap">
+                <img src="{{ contest.thumbnail.url }}" class="detail-poster-img" alt="공모전 포스터">
+            </div>
+            {% endif %}
+
+            <!-- 뱃지들 (주최, D-day) -->
+            <div class="detail-badge-row">
+                <div class="detail-badge organizer">🏢 {{ contest.organizer }}</div>
+                
+                {% if contest.d_day is not None %}
+                    {% if contest.d_day < 0 %}
+                        <div class="detail-badge dday closed">⏰ 접수마감</div>
+                    {% elif contest.d_day == 0 %}
+                        <div class="detail-badge dday imminent">⏰ D-Day (오늘마감)</div>
+                    {% elif contest.d_day <= 7 %}
+                        <div class="detail-badge dday imminent">⏰ 마감 임박 (D-{{ contest.d_day }})</div>
+                    {% else %}
+                        <div class="detail-badge dday">⏰ D-{{ contest.d_day }}</div>
+                    {% endif %}
+                {% else %}
+                    <div class="detail-badge dday" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: #fff;">⏰ 상시 모집</div>
+                {% endif %}
+            </div>
+
+            <!-- 제목 -->
+            <h3 class="detail-title">{{ contest.title }}</h3>
+
+            <!-- 카테고리 태그 -->
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                {% for cat in contest.category_list %}
+                <span style="font-size: 12px; font-weight: bold; padding: 4px 12px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.25);"># {{ cat }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 메타 정보 그리드 -->
+        <div class="detail-grid">
+            <div class="detail-grid-item">
+                <div class="grid-label">📅 접수 기간</div>
+                <div class="grid-value">
+                    {% if contest.start_date and contest.end_date %}
+                        {{ contest.start_date|date:"Y년 m월 d일" }} ~ {{ contest.end_date|date:"Y년 m월 d일" }}
+                    {% elif contest.end_date %}
+                        ~ {{ contest.end_date|date:"Y년 m월 d일" }}
+                    {% else %}
+                        상시 진행
+                    {% endif %}
+                </div>
+            </div>
+            <div class="detail-grid-item">
+                <div class="grid-label">👥 참가 대상</div>
+                <div class="grid-value">{{ contest.target_audience }}</div>
+            </div>
+            <div class="detail-grid-item">
+                <div class="grid-label">🏢 주최/주관</div>
+                <div class="grid-value">{{ contest.organizer }}</div>
+            </div>
+        </div>
+
+        <!-- 본문 설명 -->
+        {% if contest.description %}
+        <div>
+            <div style="font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">📝 공모전 상세 소개</div>
+            <div class="detail-content">{{ contest.description }}</div>
+        </div>
+        {% endif %}
+
+        <!-- 공식 링크 버튼 -->
+        {% if contest.link %}
+        <div style="text-align: center; margin-top: 16px;">
+            <a href="{{ contest.link }}" target="_blank" rel="noopener" class="detail-link-btn">
+                🔗 공식 홈페이지 바로가기
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

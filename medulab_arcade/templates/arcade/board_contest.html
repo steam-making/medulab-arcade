@@ -1,0 +1,347 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}추천 공모전 - 메듀랩 아케이드{% endblock %}
+
+{% block extra_css %}
+<style>
+    .contest-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+        gap: 30px;
+        margin-top: 24px;
+    }
+
+    .contest-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 24px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        position: relative;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .contest-card:hover {
+        transform: translateY(-8px);
+        border-color: rgba(0, 255, 180, 0.3);
+        box-shadow: 0 15px 35px rgba(0, 255, 180, 0.12), 0 0 1px rgba(0, 255, 180, 0.5);
+    }
+
+    .contest-thumbnail-area {
+        aspect-ratio: 16 / 10;
+        background: linear-gradient(135deg, #1e1b4b, #312e81, #4c1d95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .contest-thumbnail-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s ease;
+    }
+
+    .contest-card:hover .contest-thumbnail-img {
+        transform: scale(1.06);
+    }
+
+    .dday-badge {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        padding: 6px 14px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 800;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        z-index: 10;
+    }
+
+    .dday-badge.active {
+        background: rgba(0, 255, 180, 0.2);
+        color: #00ffb4;
+        border: 1px solid rgba(0, 255, 180, 0.4);
+        text-shadow: 0 0 6px rgba(0, 255, 180, 0.3);
+    }
+
+    .dday-badge.imminent {
+        background: rgba(249, 115, 22, 0.2);
+        color: #f97316;
+        border: 1px solid rgba(249, 115, 22, 0.4);
+    }
+
+    .dday-badge.closed {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .dday-badge.always {
+        background: rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .contest-info-area {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: 12px;
+    }
+
+    .contest-organizer {
+        font-size: 13px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .contest-title {
+        font-size: 19px;
+        font-weight: 800;
+        color: #ffffff;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        height: 53px;
+    }
+
+    .tag-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 4px;
+    }
+
+    .category-tag {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: rgba(168, 85, 247, 0.12);
+        color: #c084fc;
+        border: 1px solid rgba(168, 85, 247, 0.25);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13.5px;
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 600;
+    }
+
+    .meta-icon {
+        font-size: 15px;
+        opacity: 0.85;
+    }
+
+    .admin-actions {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        gap: 6px;
+        z-index: 20;
+    }
+
+    .admin-btn {
+        background: rgba(0, 0, 0, 0.75);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 700;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: all 0.2s;
+    }
+
+    .admin-btn.edit:hover {
+        background: rgba(59, 130, 246, 0.9);
+        border-color: #3b82f6;
+    }
+
+    .admin-btn.delete:hover {
+        background: rgba(239, 68, 68, 0.9);
+        border-color: #ef4444;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main" style="max-width: 1100px; margin: 40px auto; padding: 20px;">
+    
+    <!-- 헤더 영역 -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 24px; margin-bottom: 28px; gap: 16px; flex-wrap: wrap;">
+        <div>
+            <h2 style="color: #fff; font-size: 30px; font-weight: 900; margin: 0 0 8px 0; background: linear-gradient(90deg, #00ffb4, #00b4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🏆 추천 공모전</h2>
+            <p style="color: var(--text-muted); font-size: 14.5px; margin: 0; line-height: 1.5;">메듀랩 학생들이 도전하여 소프트웨어적 성장과 성취감을 맛볼 수 있는 IT·SW·AI·로봇·게임 분야 공모전 목록입니다.</p>
+        </div>
+        {% if user.is_staff %}
+        <div style="display: flex; gap: 10px;">
+            <button id="btnCrawl" style="background: linear-gradient(135deg, #10b981, #047857); color: white; padding: 10px 20px; border-radius: 10px; border: none; font-weight: bold; font-size: 14.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); cursor: pointer; transition: opacity 0.2s;">
+                🔄 씽굿 수집
+            </button>
+            <a href="{% url 'board_contest_create' %}" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 14.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);">
+                ✍️ 공모전 추가
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 카드 그리드 -->
+    <div class="contest-grid">
+        {% for contest in contests %}
+            <div class="contest-card-wrapper" style="position: relative;">
+                
+                <!-- 관리자용 빠른 수정/삭제 버튼 -->
+                {% if user.is_staff %}
+                <div class="admin-actions">
+                    <a href="{% url 'board_contest_update' contest.pk %}" class="admin-btn edit">수정</a>
+                    <a href="{% url 'board_contest_delete' contest.pk %}" class="admin-btn delete">삭제</a>
+                </div>
+                {% endif %}
+
+                <a href="{% url 'board_contest_detail' contest.pk %}" class="contest-card">
+                    
+                    <!-- 썸네일 & D-day 뱃지 -->
+                    <div class="contest-thumbnail-area">
+                        {% if contest.d_day is not None %}
+                            {% if contest.d_day < 0 %}
+                                <div class="dday-badge closed">마감</div>
+                            {% elif contest.d_day == 0 %}
+                                <div class="dday-badge imminent">D-Day</div>
+                            {% elif contest.d_day <= 7 %}
+                                <div class="dday-badge imminent">D-{{ contest.d_day }}</div>
+                            {% else %}
+                                <div class="dday-badge active">D-{{ contest.d_day }}</div>
+                            {% endif %}
+                        {% else %}
+                            <div class="dday-badge always">상시</div>
+                        {% endif %}
+
+                        {% if contest.thumbnail %}
+                            <img src="{{ contest.thumbnail.url }}" class="contest-thumbnail-img" alt="{{ contest.title }} 포스터">
+                        {% else %}
+                            <span style="font-size: 56px; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.3));">🏆</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- 카드 상세 텍스트 -->
+                    <div class="contest-info-area">
+                        <div class="contest-organizer">{{ contest.organizer }}</div>
+                        <h3 class="contest-title">{{ contest.title }}</h3>
+                        
+                        <!-- 카테고리 태그 -->
+                        <div class="tag-container">
+                            {% for cat in contest.category_list %}
+                                <span class="category-tag"># {{ cat }}</span>
+                            {% empty %}
+                                <span class="category-tag" style="background: rgba(255,255,255,0.05); color: var(--text-muted); border-color: transparent;"># 일반</span>
+                            {% endfor %}
+                        </div>
+
+                        <!-- 메타 정보 (기간, 대상) -->
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 12px;">
+                            <div class="meta-item">
+                                <span class="meta-icon">📅</span>
+                                <span>
+                                    {% if contest.start_date and contest.end_date %}
+                                        {{ contest.start_date|date:"Y.m.d" }} ~ {{ contest.end_date|date:"Y.m.d" }}
+                                    {% elif contest.end_date %}
+                                        ~ {{ contest.end_date|date:"Y.m.d" }} (마감일)
+                                    {% else %}
+                                        상시 진행
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-icon">👥</span>
+                                <span>{{ contest.target_audience }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% empty %}
+            <div style="grid-column: 1 / -1; text-align: center; padding: 80px 20px; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); border-radius: 20px; border: 1px dashed rgba(255, 255, 255, 0.1);">
+                <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                <div style="font-size: 16px; font-weight: 700; color: rgba(255, 255, 255, 0.8); margin-bottom: 6px;">등록된 추천 공모전이 없습니다.</div>
+                <p style="font-size: 13.5px; margin: 0; color: rgba(255, 255, 255, 0.4);">메듀랩 관리자가 준비 중입니다. 잠시만 기다려 주세요!</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnCrawl = document.getElementById('btnCrawl');
+    if (btnCrawl) {
+        btnCrawl.addEventListener('click', function() {
+            if (!confirm('씽굿(Think Contest)에서 새로운 IT/SW 분야 공모전을 수집하시겠습니까?\n(약 5~10초 소요되며 중복 데이터는 제외됩니다)')) {
+                return;
+            }
+            
+            // 로딩 상태 설정
+            const originalText = btnCrawl.innerHTML;
+            btnCrawl.disabled = true;
+            btnCrawl.style.opacity = '0.7';
+            btnCrawl.innerHTML = '<span class="spinner" style="display:inline-block; animation: spin 1s linear infinite; margin-right:6px;">🔄</span> 수집 중...';
+            
+            // Django CSRF 토큰
+            const csrfToken = '{{ csrf_token }}';
+            
+            fetch("{% url 'api_crawl_thinkcontest' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("서버 통신 실패 (상태 코드: " + res.status + ")");
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(`수집 완료!\n총 ${data.added_count}개의 새로운 추천 공모전이 정상적으로 데이터베이스에 추가되었습니다.`);
+                    window.location.reload();
+                } else {
+                    alert(`수집 중 오류 발생: ${data.message}`);
+                }
+            })
+            .catch(err => {
+                alert(`크롤러 실행 실패: ${err.message}`);
+            })
+            .finally(() => {
+                // 원상 복귀
+                btnCrawl.disabled = false;
+                btnCrawl.style.opacity = '1';
+                btnCrawl.innerHTML = originalText;
+            });
+        });
+    }
+});
+</script>
+<style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

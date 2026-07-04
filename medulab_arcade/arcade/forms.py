@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from .models import Badge, Project, ScheduleEvent, Tag, UserProfile, Notice, Award, Certification, CertInfo, CompetitionType
+from .models import Badge, Project, ScheduleEvent, Tag, UserProfile, Notice, Award, Certification, CertInfo, CompetitionType, Contest
 
 
 BADGE_CRITERIA_HELP = (
@@ -750,3 +750,20 @@ class CompetitionTypeForm(forms.ModelForm):
             'link': forms.URLInput(attrs={'class': 'form-input', 'placeholder': 'https://...', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
             'order': forms.NumberInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
         }
+
+
+class ContestForm(forms.ModelForm):
+    class Meta:
+        model = Contest
+        fields = ['title', 'organizer', 'category', 'target_audience', 'start_date', 'end_date', 'thumbnail', 'link', 'description', 'is_active']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'organizer': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'category': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '예: AI, 코딩, 로봇', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'target_audience': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '예: 초등 3~6학년, 청소년 누구나', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'start_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'end_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'link': forms.URLInput(attrs={'class': 'form-input', 'placeholder': 'https://...', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'description': forms.Textarea(attrs={'class': 'form-input', 'rows': 5, 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+        }
+

@@ -600,3 +600,43 @@ class CompetitionType(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Contest(models.Model):
+    title = models.CharField('공모전명', max_length=200)
+    organizer = models.CharField('주최/주관', max_length=100)
+    category = models.CharField('분야', max_length=100, help_text='AI, 게임, 코딩, 로봇, 소프트웨어 등 콤마(,)로 구분')
+    target_audience = models.CharField('참가 대상', max_length=100)
+    start_date = models.DateField('접수 시작일', null=True, blank=True)
+    end_date = models.DateField('접수 마감일', null=True, blank=True)
+    thumbnail = models.ImageField('포스터/대표 이미지', upload_to='contests/', blank=True, null=True)
+    link = models.URLField('관련 링크', blank=True, null=True)
+    description = models.TextField('공모전 소개 및 상세 설명', blank=True)
+    is_active = models.BooleanField('노출 여부', default=True)
+    created_at = models.DateTimeField('등록일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '추천 공모전'
+        verbose_name_plural = '추천 공모전'
+        ordering = ['end_date', '-created_at']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def d_day(self):
+        from django.utils import timezone
+        import datetime
+        if not self.end_date:
+            return None
+        today = timezone.localdate() if timezone.is_aware(timezone.now()) else datetime.date.today()
+        delta = self.end_date - today
+        return delta.days
+
+    @property
+    def category_list(self):
+        if not self.category:
+            return []
+        return [c.strip() for c in self.category.split(',') if c.strip()]
+
+

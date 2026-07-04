@@ -1,0 +1,556 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}📊 마이 리포트 - 메듀랩 아케이드{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-container {
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 0 20px;
+        animation: fadeIn 0.4s ease;
+    }
+
+    /* 상단 대시보드 타이틀 */
+    .report-header {
+        margin-bottom: 30px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 20px;
+    }
+    .report-header h2 {
+        font-size: 32px;
+        font-weight: 900;
+        background: linear-gradient(90deg, #10b981, #00b4ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 8px;
+    }
+    .report-header p {
+        color: var(--text-secondary);
+        font-size: 14.5px;
+    }
+
+    /* 요약 카드 그리드 */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 35px;
+    }
+    .summary-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        transition: all 0.3s;
+        backdrop-filter: blur(12px);
+    }
+    .summary-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(16, 185, 129, 0.3);
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.08);
+    }
+    .summary-icon {
+        font-size: 32px;
+        width: 60px;
+        height: 60px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .summary-info h4 {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    .summary-info .value {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 26px;
+        font-weight: 900;
+        color: #fff;
+    }
+
+    /* 잘림을 방지하기 위해 세로 배치 레이아웃 구조 채택 */
+    .report-content {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    /* 섹션 카드 */
+    .section-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 28px;
+        backdrop-filter: blur(12px);
+    }
+    .section-card h3 {
+        font-size: 18px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 0px; /* 타이틀 래퍼에 마진을 주므로 0으로 설정 */
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* --- 출석 체크 달력 헤더 --- */
+    .calendar-title-wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        gap: 16px;
+        flex-wrap: wrap;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        padding-bottom: 16px;
+    }
+    .calendar-month-btn {
+        font-size: 18px;
+        font-weight: 800;
+        color: #10b981;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(16, 185, 129, 0.08);
+        padding: 8px 16px;
+        border-radius: 10px;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        transition: all 0.2s;
+        user-select: none;
+    }
+    .calendar-month-btn:hover {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: #10b981;
+        box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+    }
+    .btn-attend {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 14.5px;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+    .btn-attend:hover {
+        transform: scale(1.03);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+    .btn-attend:disabled {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-muted);
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+
+    /* 토글 애니메이션 영역 */
+    .calendar-collapsible {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease-in-out;
+    }
+    .calendar-collapsible.show {
+        max-height: 800px; /* 달력 내용 높이 충분히 지정 */
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+        text-align: center;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+    .calendar-day-header {
+        font-weight: 700;
+        font-size: 12px;
+        color: var(--text-muted);
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border);
+    }
+    .calendar-day-header.sun { color: #ff6b6b; }
+    .calendar-day-header.sat { color: #60a5fa; }
+
+    .calendar-cell {
+        aspect-ratio: auto;
+        height: 38px; /* 높이를 명시적으로 고정해 모든 셀의 세로 크기를 일치시킴 */
+        padding: 4px 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.01);
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        position: relative;
+        font-family: 'Outfit', sans-serif;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    .calendar-cell.cal-empty {
+        background: transparent;
+        border-color: transparent;
+    }
+    .calendar-cell.today {
+        border-color: #10b981;
+        background: rgba(16, 185, 129, 0.05);
+    }
+    .calendar-cell.attended {
+        background: rgba(16, 185, 129, 0.12);
+        border-color: rgba(16, 185, 129, 0.25);
+        color: #10b981;
+    }
+    .attendance-stamp {
+        font-size: 11px;
+        margin-top: 0px;
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* --- 최근 7일 그래프 --- */
+    .chart-container {
+        position: relative;
+        width: 100%;
+        height: 180px;
+        margin-top: 15px;
+    }
+    .chart-bar-wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        height: 100%;
+        padding: 0 10px;
+    }
+    .chart-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+        height: 100%;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+    .chart-bar {
+        width: 26px;
+        border-radius: 6px 6px 0 0;
+        background: linear-gradient(to top, rgba(0, 180, 255, 0.1), #00b4ff);
+        box-shadow: 0 0 12px rgba(0, 180, 255, 0.25);
+        transition: height 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+    }
+    .chart-bar-value {
+        position: absolute;
+        top: -24px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: 'Outfit', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        color: #00b4ff;
+    }
+    .chart-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    /* --- 누적 배지 현황 --- */
+    .badge-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+    }
+    .badge-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 6px;
+    }
+    .badge-icon-wrap {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        border: 2px solid var(--border);
+        transition: all 0.3s;
+    }
+    .badge-item:hover .badge-icon-wrap {
+        transform: scale(1.1) rotate(10deg);
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+    }
+    .badge-name {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-secondary);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popIn {
+        from { transform: scale(0); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-container">
+    
+    <!-- 타이틀 헤더 -->
+    <div class="report-header">
+        <h2>📊 마이 리포트</h2>
+        <p>오늘의 코딩 학습 과정과 타자 연습 진척도, 그리고 누적 성장 통계를 한눈에 확인하세요.</p>
+    </div>
+
+    <!-- 오늘의 요약 성과 그리드 -->
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">⌨️</div>
+            <div class="summary-info">
+                <h4>오늘 타자 연습</h4>
+                <div class="value">{{ typing_count }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">회</span></div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon" style="background: rgba(0, 180, 255, 0.1); color: #00b4ff;">⚡</div>
+            <div class="summary-info">
+                <h4>오늘 최고 타속</h4>
+                <div class="value">{{ max_speed }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">WPM</span></div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;">🎯</div>
+            <div class="summary-info">
+                <h4>오늘 평균 정확도</h4>
+                <div class="value">{{ avg_accuracy }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">%</span></div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon" style="background: rgba(251, 146, 60, 0.1); color: #fb923c;">💻</div>
+            <div class="summary-info">
+                <h4>오늘 해결한 코딩</h4>
+                <div class="value">{{ coding_count }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">건</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 리스트 (세로 정렬로 변경하여 잘림 전면 방지) -->
+    <div class="report-content">
+        
+        <!-- 1. 출석 체크 달력 섹션 -->
+        <div class="section-card">
+            <div class="calendar-title-wrap">
+                <h3>📅 출석 현황</h3>
+                <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    
+                    <!-- 클릭하여 접기/펴기 가능한 월 타이틀 -->
+                    <div class="calendar-month-btn" id="btnToggleCalendar">
+                        <span>{{ month_name }}</span>
+                        <span id="toggleArrow" style="font-size: 11px; transition: transform 0.2s;">▼</span>
+                    </div>
+                    
+                    <!-- 이번 달 출석 횟수 -->
+                    <div style="font-size: 14px; font-weight: 700; color: var(--text-secondary); background: rgba(255,255,255,0.04); padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); white-space: nowrap;">
+                        이번 달 출석 횟수: <span style="color:#10b981; font-weight:800; font-family:'Outfit';">{{ attendance_dates|length }}</span>회
+                    </div>
+                    
+                    <!-- 오늘 출석체크 버튼 -->
+                    <div>
+                        {% if has_attended_today %}
+                        <button class="btn-attend" disabled>✅ 오늘 출석 완료</button>
+                        {% else %}
+                        <button class="btn-attend" id="btnAttend">✨ 오늘 출석체크</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 기본적으로 접혀있는 달력 그리드 영역 -->
+            <div class="calendar-collapsible" id="calendarCollapsible">
+                <div class="calendar-grid">
+                    <!-- 요일 헤더 -->
+                    <div class="calendar-day-header sun">일</div>
+                    <div class="calendar-day-header">월</div>
+                    <div class="calendar-day-header">화</div>
+                    <div class="calendar-day-header">수</div>
+                    <div class="calendar-day-header">목</div>
+                    <div class="calendar-day-header">금</div>
+                    <div class="calendar-day-header sat">토</div>
+
+                    <!-- 달력 날짜 루프 -->
+                    {% for week in month_days %}
+                        {% for day in week %}
+                            {% if day == 0 %}
+                                <div class="calendar-cell cal-empty"></div>
+                            {% else %}
+                                <div class="calendar-cell {% if day in attendance_dates %}attended{% endif %} {% if day == today.day %}today{% endif %}" id="day-{{ day }}">
+                                    <span>{{ day }}</span>
+                                    {% if day in attendance_dates %}
+                                    <span class="attendance-stamp">💚</span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 오늘의 코딩 학습 내역 -->
+        <div class="section-card">
+            <h3>💻 오늘의 코딩 학습 내역</h3>
+            <div style="margin-top: 16px;">
+                {% if today_progress_list %}
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    {% for prog in today_progress_list %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 12px 18px; border-radius: 12px; gap: 12px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <span style="font-size: 11px; color: var(--accent-purple); background: rgba(168, 85, 247, 0.1); padding: 2px 8px; border-radius: 6px; font-weight: 700; white-space: nowrap;">
+                                {{ prog.item.chapter.program.name }}
+                            </span>
+                            <span style="font-size: 13.5px; font-weight: 700; color: #fff;">
+                                {{ prog.item.chapter.number }}장 - {{ prog.item.title }}
+                            </span>
+                        </div>
+                        <div style="font-size: 12px; color: #10b981; font-weight: 700; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                            <span>완료</span> ✅
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 13.5px;">
+                    오늘 완료한 코딩 과정이 아직 없습니다. <br>
+                    <a href="{% url 'student_course_list' %}" style="color: var(--accent-purple); text-decoration: none; font-weight: 700; display: inline-block; margin-top: 8px;">🏫 교육프로그램 보러가기 &rarr;</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 3. 최근 7일 최고 타속 추이 그래프 -->
+        <div class="section-card">
+            <h3>📈 최근 7일 최고 타속</h3>
+            <div class="chart-container">
+                <div class="chart-bar-wrap">
+                    {% for bar in chart_data %}
+                    <div class="chart-col">
+                        <div class="chart-bar" style="height: {% widthratio bar.value 8 1.5 %}px;">
+                            {% if bar.value > 0 %}
+                            <span class="chart-bar-value">{{ bar.value }}</span>
+                            {% endif %}
+                        </div>
+                        <span class="chart-label">{{ bar.label }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 내 성장 요약 및 배지 현황 -->
+        <div class="section-card">
+            <h3>🏅 내 성장 요약</h3>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:10px;">
+                    <span style="color:var(--text-secondary); font-size:13.5px;">누적 타자연습 횟수</span>
+                    <span style="font-weight:700; font-family:'Outfit'; color:#fff;">{{ total_typing_count }} 회</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:10px;">
+                    <span style="color:var(--text-secondary); font-size:13.5px;">전체 최고 타속</span>
+                    <span style="font-weight:700; font-family:'Outfit'; color:#fff;">{{ global_max_speed }} WPM</span>
+                </div>
+                
+                <div style="margin-top:10px;">
+                    <span style="color:var(--text-secondary); font-size:13.5px; font-weight:700;">최근 획득한 배지</span>
+                    <div class="badge-list">
+                        {% for ub in earned_badges %}
+                        <div class="badge-item">
+                            <div class="badge-icon-wrap" style="background: {{ ub.badge.color }}15; border-color: {{ ub.badge.color }}50;">
+                                {{ ub.badge.icon }}
+                            </div>
+                            <span class="badge-name">{{ ub.badge.name }}</span>
+                        </div>
+                        {% empty %}
+                        <div style="grid-column:1/-1; text-align:center; font-size:12.5px; padding:15px; color:var(--text-muted);">
+                            아직 획득한 배지가 없습니다. 타자연습과 과제를 더 열심히 수행해보세요!
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. 출석체크 연동
+    const btnAttend = document.getElementById('btnAttend');
+    if (btnAttend) {
+        btnAttend.addEventListener('click', function() {
+            fetch("{% url 'api_submit_attendance' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("출석체크 통신 실패");
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    alert("출석 도장이 정상적으로 찍혔습니다! 💚");
+                    window.location.reload();
+                } else {
+                    alert("출석 처리 중 오류가 발생했습니다.");
+                }
+            })
+            .catch(err => {
+                alert("출석 체크 에러: " + err.message);
+            });
+        });
+    }
+
+    // 2. 달력 접기/펴기 토글 기능
+    const btnToggleCalendar = document.getElementById('btnToggleCalendar');
+    const calendarCollapsible = document.getElementById('calendarCollapsible');
+    const toggleArrow = document.getElementById('toggleArrow');
+
+    if (btnToggleCalendar && calendarCollapsible) {
+        btnToggleCalendar.addEventListener('click', function() {
+            const isOpen = calendarCollapsible.classList.contains('show');
+            if (isOpen) {
+                calendarCollapsible.classList.remove('show');
+                toggleArrow.style.transform = 'rotate(0deg)';
+            } else {
+                calendarCollapsible.classList.add('show');
+                toggleArrow.style.transform = 'rotate(180deg)';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

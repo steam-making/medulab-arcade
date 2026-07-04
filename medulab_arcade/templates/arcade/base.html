@@ -608,26 +608,13 @@
                 </div>
             </a>
 
-            <!-- 우측 메뉴 영역 (검색 + 공용 메뉴 + 유저 메뉴) -->
+            <!-- 우측 메뉴 영역 (공용 메뉴 + 유저 메뉴) -->
             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: nowrap; justify-content: flex-end; flex: 1;">
                 
-                <!-- 검색 및 주요 링크 그룹 -->
+                <!-- 주요 링크 그룹 -->
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; justify-content: flex-end;">
-                    <form class="search-box" style="flex: 0 1 200px; min-width: 140px;" method="GET" action="{% url 'home' %}">
-                        <span class="icon">🔍</span>
-                        <input type="text" name="q" placeholder="작품 검색..." value="{{ search_query|default:'' }}"
-                            autocomplete="off" style="padding: 8px 16px 8px 36px;">
-                    </form>
-
-                    <a href="{% url 'typing_home' %}" class="nav-link"
-                        style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); white-space: nowrap;">
-                        ⌨️ 타자연습
-                    </a>
-
-                    <a href="{% url 'student_course_list' %}" class="nav-link"
-                        style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); white-space: nowrap;">
-                        🏫 교육프로그램
-                    </a>
+                    
+                    <!-- 1. 공지/일정 -->
                     <div class="nav-dropdown">
                         <button class="nav-link dropdown-toggle"
                             style="background: rgba(20, 184, 166, 0.15); color: #14b8a6; border: 1px solid rgba(20, 184, 166, 0.3); white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 4px;">
@@ -644,6 +631,28 @@
                             <a href="{% url 'board_certinfo' %}">🎖️ 자격종류</a>
                         </div>
                     </div>
+
+                    <!-- 2. 타자연습 -->
+                    <a href="{% url 'typing_home' %}" class="nav-link"
+                        style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); white-space: nowrap;">
+                        ⌨️ 타자연습
+                    </a>
+
+                    <!-- 3. 교육프로그램 -->
+                    <a href="{% url 'student_course_list' %}" class="nav-link"
+                        style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); white-space: nowrap;">
+                        🏫 교육프로그램
+                    </a>
+
+                    <!-- 4. 마이 리포트 -->
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'my_report' %}" class="nav-link"
+                        style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); white-space: nowrap;">
+                        📊 마이 리포트
+                    </a>
+                    {% endif %}
+
+                    <!-- 5. 홈플레이 -->
                     <a href="{% url 'student_homework_list' %}" class="nav-link restriction-check"
                         style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); white-space: nowrap;">
                         🏠 홈플레이

@@ -191,8 +191,18 @@
     <!-- 히어로 -->
     <div class="hero fade-in">
         <h1>MEDULAB WORKS</h1>
-        <p>메듀랩 학생들이 창의력으로 빚어낸 놀라운 코딩 작품들을 만나보세요.</p>
+        <p style="margin-bottom: 24px;">메듀랩 학생들이 창의력으로 빚어낸 놀라운 코딩 작품들을 만나보세요.</p>
         
+        <!-- 검색 영역 -->
+        <form method="GET" action="{% url 'home' %}" style="max-width: 500px; margin: 0 auto 36px; position: relative;">
+            <span style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-muted);">🔍</span>
+            <input type="text" name="q" placeholder="관심 있는 작품의 제목이나 제작자를 검색해보세요..." value="{{ search_query|default:'' }}"
+                autocomplete="off" 
+                style="width: 100%; padding: 14px 20px 14px 48px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--home-border); border-radius: 16px; color: #fff; font-size: 15px; outline: none; transition: all 0.3s; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); font-family: 'Noto Sans KR', sans-serif;"
+                onfocus="this.style.borderColor='var(--accent-blue)'; this.style.boxShadow='0 0 15px rgba(59, 130, 246, 0.25)';"
+                onblur="this.style.borderColor='var(--home-border)'; this.style.boxShadow='0 8px 32px rgba(0, 0, 0, 0.2)';">
+        </form>
+
         <div class="stats">
             <div class="stat-item">
                 <span class="num" style="color:var(--accent-green);">{{ total_projects }}</span>

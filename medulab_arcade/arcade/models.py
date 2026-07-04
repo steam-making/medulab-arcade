@@ -640,3 +640,20 @@ class Contest(models.Model):
         return [c.strip() for c in self.category.split(',') if c.strip()]
 
 
+class Attendance(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances', verbose_name='학생')
+    date = models.DateField('출석일', default=timezone.localdate)
+    is_present = models.BooleanField('출석 여부', default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = '출석 기록'
+        verbose_name_plural = '출석 기록'
+        unique_together = ('user', 'date')
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date:%Y-%m-%d} 출석"
+
+
+

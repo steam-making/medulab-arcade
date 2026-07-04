@@ -2278,3 +2278,92 @@ def api_crawl_thinkcontest(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
+@login_required
+def my_report(request):
+    from django.utils import timezone
+    from datetime import timedelta
+    from typing_practice.models import TypingScore
+    from courses.models import UserProgress
+    from .models import Attendance, UserBadge
+    from django.db.models import Max, Avg
+
+    today = timezone.localdate()
+    
+    # 1. 오늘의 타자 성과 집계
+    today_scores = TypingScore.objects.filter(user=request.user, created_at__date=today)
+    typing_count = today_scores.count()
+    max_speed = today_scores.aggregate(Max('speed'))['speed__max'] or 0
+    avg_accuracy = today_scores.aggregate(Avg('accuracy'))['accuracy__avg'] or 0.0
+    avg_accuracy = round(avg_accuracy, 1)
+
+    # 2. 오늘의 코딩 학습 성과 집계
+    today_progress_qs = UserProgress.objects.filter(
+        user=request.user, completed=True, updated_at__date=today
+    ).select_related('item__chapter__program')
+    coding_count = today_progress_qs.count()
+
+    # 3. 출석 체크 집계 (이번 달)
+    current_year = today.year
+    current_month = today.month
+    attendances = Attendance.objects.filter(user=request.user, date__year=current_year, date__month=current_month)
+    attendance_dates = [att.date.day for att in attendances]
+    has_attended_today = Attendance.objects.filter(user=request.user, date=today).exists()
+
+    # 달력 생성을 위한 이번 달 날짜 정보
+    import calendar
+    cal = calendar.Calendar(firstweekday=6) # 일요일 시작
+    month_days = cal.monthdayscalendar(current_year, current_month)
+    month_name = f"{current_year}년 {current_month}월"
+
+    # 4. 최근 7일간 일일 최고 타속 추이 (그래프 데이터)
+    chart_data = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        day_max = TypingScore.objects.filter(user=request.user, created_at__date=day).aggregate(Max('speed'))['speed__max'] or 0
+        chart_data.append({
+            'label': day.strftime('%m/%d'),
+            'value': day_max
+        })
+
+    # 5. 과거 누적 통계
+    all_scores = TypingScore.objects.filter(user=request.user)
+    total_typing_count = all_scores.count()
+    global_max_speed = all_scores.aggregate(Max('speed'))['speed__max'] or 0
+    earned_badges = UserBadge.objects.filter(user=request.user).select_related('badge')[:6]
+
+    context = {
+        'today': today,
+        'typing_count': typing_count,
+        'max_speed': max_speed,
+        'avg_accuracy': avg_accuracy,
+        'coding_count': coding_count,
+        'today_progress_list': today_progress_qs,
+        'has_attended_today': has_attended_today,
+        'attendance_dates': attendance_dates,
+        'month_days': month_days,
+        'month_name': month_name,
+        'chart_data': chart_data,
+        'total_typing_count': total_typing_count,
+        'global_max_speed': global_max_speed,
+        'earned_badges': earned_badges,
+    }
+    return render(request, 'arcade/my_report.html', context)
+
+
+@login_required
+@require_POST
+def api_submit_attendance(request):
+    from django.utils import timezone
+    from .models import Attendance
+    
+    today = timezone.localdate()
+    attendance, created = Attendance.objects.get_or_create(user=request.user, date=today)
+    
+    return JsonResponse({
+        'status': 'success',
+        'created': created,
+        'date': today.strftime('%Y-%m-%d')
+    })
+
+
+

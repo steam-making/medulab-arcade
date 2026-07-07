@@ -1143,11 +1143,13 @@
             function initSessionTimer(isRefresh = false) {
                 clearInterval(timerIntervalId);
                 
-                let expireTime = sessionStorage.getItem('sessionExpireTime');
+                let expireTime = localStorage.getItem('sessionExpireTime');
+                console.log("[SessionTimer] Read expireTime from localStorage:", expireTime);
                 
                 if (!expireTime || isRefresh) {
                     expireTime = Date.now() + sessionDuration * 1000;
-                    sessionStorage.setItem('sessionExpireTime', expireTime);
+                    localStorage.setItem('sessionExpireTime', expireTime);
+                    console.log("[SessionTimer] Set new expireTime:", expireTime);
                 } else {
                     expireTime = parseInt(expireTime, 10);
                 }
@@ -1173,14 +1175,15 @@
 
                     if (sessionTimeRemaining <= 0) {
                         clearInterval(timerIntervalId);
-                        sessionStorage.removeItem('sessionExpireTime');
+                        localStorage.removeItem('sessionExpireTime');
+                        console.log("[SessionTimer] Time expired, logging out...");
                         doAutomaticLogout();
                     }
                 }, 1000);
             }
 
             function doAutomaticLogout() {
-                sessionStorage.removeItem('sessionExpireTime');
+                localStorage.removeItem('sessionExpireTime');
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = "{% url 'logout' %}";

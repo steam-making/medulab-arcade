@@ -35,6 +35,7 @@ urlpatterns = [
     path('api/contests/crawl-thinkcontest/', views.api_crawl_thinkcontest, name='api_crawl_thinkcontest'),
     path('my-report/', views.my_report, name='my_report'),
     path('api/attendance/submit/', views.api_submit_attendance, name='api_submit_attendance'),
+    path('api/session/refresh/', views.api_refresh_session, name='api_refresh_session'),
     path('board/cert/', views.board_cert, name='board_cert'),
     path('board/cert/create/', views.board_cert_create, name='board_cert_create'),
     path('board/cert/<int:pk>/', views.board_cert_detail, name='board_cert_detail'),

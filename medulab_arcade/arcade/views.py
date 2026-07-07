@@ -2395,5 +2395,16 @@ def api_sync_aice_schedule(request):
         })
 
 
+@login_required
+@require_POST
+def api_refresh_session(request):
+    """사용자가 세션 연장 버튼을 클릭할 때 호출되어 Django 세션을 갱신함"""
+    request.session.modified = True
+    return JsonResponse({
+        'status': 'success',
+        'message': '로그인 세션이 성공적으로 연장되었습니다.'
+    })
+
+
 
 

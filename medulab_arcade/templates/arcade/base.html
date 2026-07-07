@@ -321,6 +321,141 @@
             }
         }
 
+        /* ── 세션 만료 경고 모달 스타일 ── */
+        .session-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 8, 15, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .session-modal-content {
+            background: var(--bg-card);
+            border: 1px solid rgba(249, 115, 22, 0.4);
+            box-shadow: 0 0 25px rgba(249, 115, 22, 0.25), inset 0 0 10px rgba(249, 115, 22, 0.1);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 440px;
+            padding: 32px;
+            text-align: center;
+            animation: zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .session-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .session-modal-header h3 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff;
+            margin: 0;
+        }
+
+        .warning-icon {
+            font-size: 24px;
+            animation: pulse 1.2s infinite;
+        }
+
+        .session-modal-body p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+
+        .session-countdown-container {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin: 20px 0;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        #session-countdown-seconds {
+            font-size: 24px;
+            color: #ff5d6c;
+            font-family: 'JetBrains Mono', monospace;
+            margin-right: 2px;
+            display: inline-block;
+            animation: pulse 1s infinite;
+        }
+
+        .session-sub-text {
+            font-size: 12px !important;
+            color: var(--text-muted) !important;
+        }
+
+        .session-modal-footer {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .session-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            outline: none;
+        }
+
+        .session-btn-extend {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+            box-shadow: 0 4px 15px rgba(0, 255, 180, 0.2);
+        }
+
+        .session-btn-extend:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 180, 0.3);
+        }
+
+        .session-btn-logout {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .session-btn-logout:hover {
+            background: rgba(255, 93, 108, 0.1);
+            color: #ff5d6c;
+            border-color: rgba(255, 93, 108, 0.3);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
         /* ---- 메인 ---- */
         .main {
             max-width: 1400px;
@@ -957,6 +1092,114 @@
             });
         })();
     </script>
+    <!-- 세션 만료 경고 모달 -->
+    {% if user.is_authenticated %}
+    <div id="session-timeout-modal" class="session-modal-overlay" style="display: none;">
+        <div class="session-modal-content">
+            <div class="session-modal-header">
+                <span class="warning-icon">⚠️</span>
+                <h3>로그인 만료 경고</h3>
+            </div>
+            <div class="session-modal-body">
+                <p>장시간 활동이 감지되지 않아 2시간 만료 예정입니다.</p>
+                <div class="session-countdown-container">
+                    <span id="session-countdown-seconds">10</span>초 후 자동으로 로그아웃됩니다.
+                </div>
+                <p class="session-sub-text">로그인 상태를 계속 유지하시겠습니까?</p>
+            </div>
+            <div class="session-modal-footer">
+                <button type="button" id="session-extend-btn" class="session-btn session-btn-extend">로그인 연장</button>
+                <button type="button" id="session-logout-btn" class="session-btn session-btn-logout">즉시 로그아웃</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ── 로그인 세션 만료 2시간 자동 로그아웃 제어 ── */
+        (function () {
+            const warningSeconds = 10; 
+            const sessionDuration = 7200; // 2시간 (7200초)
+            const warningTimeMs = (sessionDuration - warningSeconds) * 1000; // 7190초 후 실행
+
+            let warningTimeoutId = null;
+            let countdownIntervalId = null;
+
+            const modal = document.getElementById('session-timeout-modal');
+            const countdownEl = document.getElementById('session-countdown-seconds');
+            const extendBtn = document.getElementById('session-extend-btn');
+            const logoutBtn = document.getElementById('session-logout-btn');
+
+            function startSessionTimer() {
+                clearTimeout(warningTimeoutId);
+                clearInterval(countdownIntervalId);
+                
+                if (modal) modal.style.display = 'none';
+                warningTimeoutId = setTimeout(showWarningModal, warningTimeMs);
+            }
+
+            function showWarningModal() {
+                if (modal) modal.style.display = 'flex';
+                
+                let remaining = warningSeconds;
+                if (countdownEl) countdownEl.innerText = remaining;
+
+                countdownIntervalId = setInterval(function() {
+                    remaining--;
+                    if (countdownEl) countdownEl.innerText = remaining;
+
+                    if (remaining <= 0) {
+                        clearInterval(countdownIntervalId);
+                        doAutomaticLogout();
+                    }
+                }, 1000);
+            }
+
+            function doAutomaticLogout() {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{% url 'logout' %}";
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = "{{ csrf_token }}";
+                
+                form.appendChild(csrfInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            function extendSession() {
+                fetch("{% url 'api_refresh_session' %}", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": "{{ csrf_token }}",
+                        "Content-Type": "application/json"
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        startSessionTimer();
+                    } else {
+                        alert('세션 연장 실패: ' + data.message);
+                        doAutomaticLogout();
+                    }
+                })
+                .catch(err => {
+                    console.error('세션 연장 에러:', err);
+                    doAutomaticLogout();
+                });
+            }
+
+            if (extendBtn) extendBtn.addEventListener('click', extendSession);
+            if (logoutBtn) logoutBtn.addEventListener('click', doAutomaticLogout);
+
+            startSessionTimer();
+        })();
+    </script>
+    {% endif %}
+
     {% block extra_js %}{% endblock %}
 </body>
 

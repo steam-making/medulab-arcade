@@ -1120,7 +1120,6 @@
             const sessionDuration = 7200; // 2시간 (7200초)
             const warningSeconds = 10; 
             
-            let sessionTimeRemaining = sessionDuration;
             let timerIntervalId = null;
 
             const modal = document.getElementById('session-timeout-modal');
@@ -1141,15 +1140,23 @@
                 return `${hh}:${mm}:${ss}`;
             }
 
-            function startSessionTimer() {
+            function initSessionTimer(isRefresh = false) {
                 clearInterval(timerIntervalId);
-                sessionTimeRemaining = sessionDuration;
                 
+                let expireTime = sessionStorage.getItem('sessionExpireTime');
+                
+                if (!expireTime || isRefresh) {
+                    expireTime = Date.now() + sessionDuration * 1000;
+                    sessionStorage.setItem('sessionExpireTime', expireTime);
+                } else {
+                    expireTime = parseInt(expireTime, 10);
+                }
+
                 if (modal) modal.style.display = 'none';
-                if (gnbLogoutBtn) gnbLogoutBtn.innerText = `로그아웃 (${formatTime(sessionTimeRemaining)})`;
 
                 timerIntervalId = setInterval(function() {
-                    sessionTimeRemaining--;
+                    const now = Date.now();
+                    const sessionTimeRemaining = Math.max(0, Math.floor((expireTime - now) / 1000));
                     
                     if (gnbLogoutBtn) {
                         gnbLogoutBtn.innerText = `로그아웃 (${formatTime(sessionTimeRemaining)})`;
@@ -1166,12 +1173,14 @@
 
                     if (sessionTimeRemaining <= 0) {
                         clearInterval(timerIntervalId);
+                        sessionStorage.removeItem('sessionExpireTime');
                         doAutomaticLogout();
                     }
                 }, 1000);
             }
 
             function doAutomaticLogout() {
+                sessionStorage.removeItem('sessionExpireTime');
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = "{% url 'logout' %}";
@@ -1197,7 +1206,7 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        startSessionTimer();
+                        initSessionTimer(true);
                     } else {
                         alert('세션 연장 실패: ' + data.message);
                         doAutomaticLogout();
@@ -1212,7 +1221,7 @@
             if (extendBtn) extendBtn.addEventListener('click', extendSession);
             if (logoutBtn) logoutBtn.addEventListener('click', doAutomaticLogout);
 
-            startSessionTimer();
+            initSessionTimer(false);
         })();
     </script>
     {% endif %}

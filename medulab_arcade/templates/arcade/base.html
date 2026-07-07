@@ -914,7 +914,7 @@
                     {% endif %}
                     <form action="{% url 'logout' %}" method="post" style="display: inline;">
                         {% csrf_token %}
-                        <button type="submit" class="nav-link" style="background: transparent; border: none; cursor: pointer;">로그아웃</button>
+                        <button type="submit" id="gnb-logout-btn" class="nav-link" style="background: transparent; border: none; cursor: pointer; white-space: nowrap;">로그아웃 (02:00:00)</button>
                     </form>
                     {% else %}
                     <a href="{% url 'login' %}" class="nav-link">로그인</a>
@@ -1117,38 +1117,55 @@
     <script>
         /* ── 로그인 세션 만료 2시간 자동 로그아웃 제어 ── */
         (function () {
-            const warningSeconds = 10; 
             const sessionDuration = 7200; // 2시간 (7200초)
-            const warningTimeMs = (sessionDuration - warningSeconds) * 1000; // 7190초 후 실행
-
-            let warningTimeoutId = null;
-            let countdownIntervalId = null;
+            const warningSeconds = 10; 
+            
+            let sessionTimeRemaining = sessionDuration;
+            let timerIntervalId = null;
 
             const modal = document.getElementById('session-timeout-modal');
             const countdownEl = document.getElementById('session-countdown-seconds');
             const extendBtn = document.getElementById('session-extend-btn');
             const logoutBtn = document.getElementById('session-logout-btn');
+            const gnbLogoutBtn = document.getElementById('gnb-logout-btn');
 
-            function startSessionTimer() {
-                clearTimeout(warningTimeoutId);
-                clearInterval(countdownIntervalId);
+            function formatTime(seconds) {
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = seconds % 60;
                 
-                if (modal) modal.style.display = 'none';
-                warningTimeoutId = setTimeout(showWarningModal, warningTimeMs);
+                const hh = h < 10 ? '0' + h : h;
+                const mm = m < 10 ? '0' + m : m;
+                const ss = s < 10 ? '0' + s : s;
+                
+                return `${hh}:${mm}:${ss}`;
             }
 
-            function showWarningModal() {
-                if (modal) modal.style.display = 'flex';
+            function startSessionTimer() {
+                clearInterval(timerIntervalId);
+                sessionTimeRemaining = sessionDuration;
                 
-                let remaining = warningSeconds;
-                if (countdownEl) countdownEl.innerText = remaining;
+                if (modal) modal.style.display = 'none';
+                if (gnbLogoutBtn) gnbLogoutBtn.innerText = `로그아웃 (${formatTime(sessionTimeRemaining)})`;
 
-                countdownIntervalId = setInterval(function() {
-                    remaining--;
-                    if (countdownEl) countdownEl.innerText = remaining;
+                timerIntervalId = setInterval(function() {
+                    sessionTimeRemaining--;
+                    
+                    if (gnbLogoutBtn) {
+                        gnbLogoutBtn.innerText = `로그아웃 (${formatTime(sessionTimeRemaining)})`;
+                    }
 
-                    if (remaining <= 0) {
-                        clearInterval(countdownIntervalId);
+                    if (sessionTimeRemaining <= warningSeconds) {
+                        if (modal && modal.style.display !== 'flex') {
+                            modal.style.display = 'flex';
+                        }
+                        if (countdownEl) {
+                            countdownEl.innerText = sessionTimeRemaining;
+                        }
+                    }
+
+                    if (sessionTimeRemaining <= 0) {
+                        clearInterval(timerIntervalId);
                         doAutomaticLogout();
                     }
                 }, 1000);

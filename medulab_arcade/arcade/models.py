@@ -8,6 +8,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
+from django.contrib.auth.signals import user_logged_in
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -656,4 +657,7 @@ class Attendance(models.Model):
         return f"{self.user.username} - {self.date:%Y-%m-%d} 출석"
 
 
-
+@receiver(user_logged_in)
+def auto_attendance_on_login(sender, request, user, **kwargs):
+    today = timezone.localdate()
+    Attendance.objects.get_or_create(user=user, date=today)

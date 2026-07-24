@@ -23,7 +23,19 @@ for _i in range(2, 21):
 # SECURITY WARNING: 배포 시 False로 변경하세요!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']  # 배포 시 도메인으로 변경
+ALLOWED_HOSTS = [
+    'medulab.steam-making.com',
+    'medulab.kr',
+    'www.medulab.kr',
+    '127.0.0.1',
+    'localhost',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://medulab.steam-making.com',
+    'https://medulab.kr',
+    'https://www.medulab.kr',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',

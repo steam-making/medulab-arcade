@@ -640,6 +640,18 @@
 
         <!-- 3. 타속 기록 그래프 -->
         <div class="section-card">
+            <!-- 요약 정보 바 -->
+            {% if typing_age_label %}
+            <div id="chartInfoBar" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px; font-size:12.5px; color:var(--text-muted);">
+                <span style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:3px 9px; color:#e0e0e0; font-weight:700;">{{ typing_age_label }}</span>
+                <span style="color:rgba(255,255,255,0.2);">|</span>
+                <span id="infoLang" style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2); border-radius:6px; padding:3px 9px; color:#6ee7b7; font-weight:700;"></span>
+                <span style="color:rgba(255,255,255,0.2);">|</span>
+                <span id="infoType" style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); border-radius:6px; padding:3px 9px; color:#93c5fd; font-weight:700;"></span>
+                <span style="color:rgba(255,255,255,0.2);">|</span>
+                <span id="infoTarget" style="color:#facc15; font-weight:800;"></span>
+            </div>
+            {% endif %}
             <!-- 헤더 행 -->
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                 <h3 style="margin:0;">📈 타속 기록</h3>
@@ -880,7 +892,23 @@ document.addEventListener('DOMContentLoaded', function() {
         return { labels: d.labels.slice(-RECENT), max: d.max.slice(-RECENT), avg: d.avg.slice(-RECENT) };
     }
 
-    function currentTarget() { return targets[currentLang] || null; }
+    const TYPE_LABELS = { word: '단어연습', short: '짧은글', long: '긴글' };
+    const LANG_LABELS = { ko: '한글', en: '영어' };
+
+    function currentTarget() {
+        return (targets[currentLang] && targets[currentLang][currentType]) || null;
+    }
+
+    function updateInfoBar() {
+        const lang = document.getElementById('infoLang');
+        const type = document.getElementById('infoType');
+        const tgt  = document.getElementById('infoTarget');
+        if (!lang) return;
+        lang.textContent = LANG_LABELS[currentLang] || currentLang;
+        type.textContent = TYPE_LABELS[currentType] || currentType;
+        const t = currentTarget();
+        tgt.textContent  = t ? `목표타수 ${t}타` : '목표타수 미설정';
+    }
 
     function makeTargetData(labels) {
         const t = currentTarget();
@@ -1012,10 +1040,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     document.querySelectorAll('.chart-type-btn').forEach(btn => {
-        btn.addEventListener('click', () => { currentType = btn.dataset.type; showAll = false; activateBtns(); refreshChart(); });
+        btn.addEventListener('click', () => { currentType = btn.dataset.type; showAll = false; activateBtns(); updateInfoBar(); refreshChart(); });
     });
     document.querySelectorAll('.chart-lang-btn').forEach(btn => {
-        btn.addEventListener('click', () => { currentLang = btn.dataset.lang; showAll = false; activateBtns(); refreshChart(); });
+        btn.addEventListener('click', () => { currentLang = btn.dataset.lang; showAll = false; activateBtns(); updateInfoBar(); refreshChart(); });
     });
 
     const btnRange = document.getElementById('btnChartRange');
@@ -1030,6 +1058,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 초기 탭 활성화
     activateBtns();
+    updateInfoBar();
     refreshChart();
 
 

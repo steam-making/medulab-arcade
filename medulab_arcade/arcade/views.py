@@ -2361,25 +2361,36 @@ def my_report(request):
     if last_language not in ('ko', 'en'):
         last_language = 'ko'
 
-    # 목표 타속 (로드맵 기준, 나이별 / 언어별)
-    # 한글: 타/분  |  영어: chars/min (같은 단위로 저장, 영어는 목표치가 낮음)
-    typing_targets = {}
+    # 목표 타속 (로드맵 기준) — [lang][type] 3중 구조
+    # 한글 로드맵: 단어→짧은글→긴글 순으로 난이도 상승, 긴글은 목표 낮게
+    # 영어: 한글의 약 50~60% 수준
+    TYPING_TARGET_TABLE = {
+        # (age_group): {ko: {word, short, long}, en: {word, short, long}}
+        'baby':   {'ko': {'word': 100, 'short':  80, 'long':  None}, 'en': {'word':  50, 'short':  40, 'long': None}},
+        'elem12': {'ko': {'word': 200, 'short': 150, 'long':  None}, 'en': {'word': 100, 'short':  80, 'long': None}},
+        'elem34': {'ko': {'word': 250, 'short': 200, 'long':  150},  'en': {'word': 130, 'short': 100, 'long':  80}},
+        'elem56': {'ko': {'word': 300, 'short': 300, 'long':  250},  'en': {'word': 160, 'short': 150, 'long': 120}},
+        'midhigh':{'ko': {'word': 400, 'short': 400, 'long':  350},  'en': {'word': 220, 'short': 200, 'long': 180}},
+    }
+    typing_targets = {}       # {lang: {type: speed}}
+    typing_age_label = ''     # "초5~6 (12~13세)"
     if profile.birth_date:
         age = today.year - profile.birth_date.year - (
             (today.month, today.day) < (profile.birth_date.month, profile.birth_date.day)
         )
         if age <= 7:
-            typing_targets = {'ko': 100, 'en': 50}
-        elif age <= 9:    # 초등 1~2
-            typing_targets = {'ko': 200, 'en': 100}
-        elif age <= 11:   # 초등 3~4
-            typing_targets = {'ko': 200, 'en': 150}
-        elif age <= 13:   # 초등 5~6
-            typing_targets = {'ko': 300, 'en': 200}
-        else:             # 중고등
-            typing_targets = {'ko': 400, 'en': 300}
+            grp, typing_age_label = 'baby',    '유아 (5~7세)'
+        elif age <= 9:
+            grp, typing_age_label = 'elem12',  '초1~2 (8~9세)'
+        elif age <= 11:
+            grp, typing_age_label = 'elem34',  '초3~4 (10~11세)'
+        elif age <= 13:
+            grp, typing_age_label = 'elem56',  '초5~6 (12~13세)'
+        else:
+            grp, typing_age_label = 'midhigh', '중·고등 (14세+)'
+        typing_targets = TYPING_TARGET_TABLE[grp]
     typing_targets_json = _json.dumps(typing_targets)
-    typing_target_speed = typing_targets.get('ko')  # 기존 호환
+    typing_target_speed = (typing_targets.get('ko') or {}).get('word')  # 기존 호환
 
     # 5. 과거 누적 통계
     all_scores = TypingScore.objects.filter(user=user)
@@ -2425,6 +2436,7 @@ def my_report(request):
         'last_language': last_language,
         'typing_targets_json': typing_targets_json,
         'typing_target_speed': typing_target_speed,
+        'typing_age_label': typing_age_label,
         'total_typing_count': total_typing_count,
         'global_max_speed': global_max_speed,
         # 프로필 통합

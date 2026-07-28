@@ -447,16 +447,24 @@
 
         <!-- 3. 타속 기록 그래프 -->
         <div class="section-card">
-            <h3>📈 타속 기록</h3>
-            <div style="display:flex; gap:16px; margin-bottom:10px; font-size:12px;">
-                <span style="display:flex; align-items:center; gap:5px;">
-                    <span style="display:inline-block; width:28px; height:3px; background:#3b82f6; border-radius:2px;"></span>
-                    평균 타속
-                </span>
-                <span style="display:flex; align-items:center; gap:5px;">
-                    <span style="display:inline-block; width:28px; height:3px; background:#ef4444; border-radius:2px;"></span>
-                    최고 타속
-                </span>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                <h3 style="margin:0;">📈 타속 기록</h3>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <div style="display:flex; gap:12px; font-size:12px;">
+                        <span style="display:flex; align-items:center; gap:5px;">
+                            <span style="display:inline-block; width:24px; height:3px; background:#3b82f6; border-radius:2px;"></span>평균
+                        </span>
+                        <span style="display:flex; align-items:center; gap:5px;">
+                            <span style="display:inline-block; width:24px; height:3px; background:#ef4444; border-radius:2px;"></span>최고
+                        </span>
+                    </div>
+                    {% if chart_data %}
+                    <button id="btnChartRange"
+                        style="font-size:12px; padding:4px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer;">
+                        전체 기간 보기
+                    </button>
+                    {% endif %}
+                </div>
             </div>
             <div style="position:relative; height:220px;">
                 {% if chart_data %}
@@ -515,42 +523,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 0. 타속 기록 차트 (Chart.js)
     const canvas = document.getElementById('typingChart');
     if (canvas) {
-        const labels = [{% for d in chart_data %}"{{ d.label }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-        const maxData = [{% for d in chart_data %}{{ d.max }}{% if not forloop.last %},{% endif %}{% endfor %}];
-        const avgData = [{% for d in chart_data %}{{ d.avg }}{% if not forloop.last %},{% endif %}{% endfor %}];
+        const allLabels = [{% for d in chart_data %}"{{ d.label }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+        const allMax   = [{% for d in chart_data %}{{ d.max }}{% if not forloop.last %},{% endif %}{% endfor %}];
+        const allAvg   = [{% for d in chart_data %}{{ d.avg }}{% if not forloop.last %},{% endif %}{% endfor %}];
 
-        new Chart(canvas, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: '평균 타속',
-                        data: avgData,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59,130,246,0.15)',
-                        borderWidth: 2,
-                        pointRadius: labels.length > 30 ? 2 : 4,
-                        pointBackgroundColor: '#3b82f6',
-                        fill: true,
-                        tension: 0.35,
-                        order: 2,
-                    },
-                    {
-                        label: '최고 타속',
-                        data: maxData,
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239,68,68,0.0)',
-                        borderWidth: 2.5,
-                        pointRadius: labels.length > 30 ? 2 : 4,
-                        pointBackgroundColor: '#ef4444',
-                        fill: false,
-                        tension: 0.35,
-                        order: 1,
-                    },
-                ]
-            },
-            options: {
+        const RECENT = 30;
+        let showAll = false;
+
+        function makeChartOptions(n) {
+            return {
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
@@ -570,12 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 scales: {
                     x: {
-                        ticks: {
-                            color: '#888',
-                            font: { size: 11 },
-                            maxTicksLimit: 14,
-                            maxRotation: 45,
-                        },
+                        ticks: { color: '#888', font: { size: 11 }, maxTicksLimit: 14, maxRotation: 45 },
                         grid: { color: 'rgba(255,255,255,0.04)' }
                     },
                     y: {
@@ -584,8 +560,71 @@ document.addEventListener('DOMContentLoaded', function() {
                         beginAtZero: false,
                     }
                 }
-            }
+            };
+        }
+
+        function getSlice() {
+            if (showAll || allLabels.length <= RECENT) return { labels: allLabels, max: allMax, avg: allAvg };
+            return { labels: allLabels.slice(-RECENT), max: allMax.slice(-RECENT), avg: allAvg.slice(-RECENT) };
+        }
+
+        function pointRadius(n) { return n > 30 ? 2 : 4; }
+
+        const { labels, max, avg } = getSlice();
+
+        const chart = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: '평균 타속',
+                        data: avg,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59,130,246,0.15)',
+                        borderWidth: 2,
+                        pointRadius: pointRadius(labels.length),
+                        pointBackgroundColor: '#3b82f6',
+                        fill: true,
+                        tension: 0.35,
+                        order: 2,
+                    },
+                    {
+                        label: '최고 타속',
+                        data: max,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239,68,68,0.0)',
+                        borderWidth: 2.5,
+                        pointRadius: pointRadius(labels.length),
+                        pointBackgroundColor: '#ef4444',
+                        fill: false,
+                        tension: 0.35,
+                        order: 1,
+                    },
+                ]
+            },
+            options: makeChartOptions(labels.length)
         });
+
+        const btnRange = document.getElementById('btnChartRange');
+        if (btnRange && allLabels.length > RECENT) {
+            btnRange.addEventListener('click', function () {
+                showAll = !showAll;
+                const s = getSlice();
+                chart.data.labels = s.labels;
+                chart.data.datasets[0].data = s.avg;
+                chart.data.datasets[0].pointRadius = pointRadius(s.labels.length);
+                chart.data.datasets[1].data = s.max;
+                chart.data.datasets[1].pointRadius = pointRadius(s.labels.length);
+                chart.update();
+                btnRange.textContent = showAll ? '최근 30회 보기' : '전체 기간 보기';
+                btnRange.style.background = showAll ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)';
+                btnRange.style.borderColor = showAll ? '#3b82f6' : 'rgba(255,255,255,0.15)';
+                btnRange.style.color = showAll ? '#93c5fd' : '#ccc';
+            });
+        } else if (btnRange) {
+            btnRange.style.display = 'none'; // 30회 이하면 버튼 숨김
+        }
     }
 
 

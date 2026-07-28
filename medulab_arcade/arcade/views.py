@@ -2359,6 +2359,12 @@ def my_report(request):
     badge_catalog = get_active_badges_with_user_state(user)
     badge_count = get_user_badge_count(user)
 
+    # 나이 계산
+    profile_age = None
+    if profile.birth_date:
+        born = profile.birth_date
+        profile_age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
     context = {
         'today': today,
         'typing_count': typing_count,
@@ -2381,6 +2387,7 @@ def my_report(request):
         'total_bookmarks': total_bookmarks_received,
         'badge_catalog': badge_catalog,
         'badge_count': badge_count,
+        'profile_age': profile_age,
     }
     return render(request, 'arcade/my_report.html', context)
 

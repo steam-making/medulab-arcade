@@ -411,7 +411,10 @@
                     </div>
                     <div class="profile-summary-item">
                         <span class="ps-label">생년월일</span>
-                        <span class="ps-val">{{ profile.birth_date|date:"Y.m.d"|default:"미등록" }}</span>
+                        <span class="ps-val">
+                            {{ profile.birth_date|date:"Y.m.d"|default:"미등록" }}
+                            {% if profile_age is not None %}<span style="font-size:12px; color:var(--text-muted); font-weight:500; margin-left:4px;">({{ profile_age }}세)</span>{% endif %}
+                        </span>
                     </div>
                     <div class="profile-summary-item">
                         <span class="ps-label">회원유형</span>

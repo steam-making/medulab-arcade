@@ -95,9 +95,15 @@
             position: sticky;
             top: 0;
             z-index: 100;
+        }
+        .nav::before {
+            content: '';
+            position: absolute;
+            inset: 0;
             background: rgba(8, 8, 15, 0.88);
             backdrop-filter: blur(24px);
             border-bottom: 1px solid var(--border);
+            z-index: -1;
         }
 
         .nav-inner {
@@ -284,37 +290,54 @@
             }
 
             .nav-menu-wrapper > div {
+                display: flex !important;
                 flex-direction: column !important;
                 align-items: stretch !important;
-                width: 100%;
-                gap: 12px !important;
+                justify-content: flex-start !important;
+                flex-wrap: wrap !important;
+                width: 100% !important;
+                gap: 8px !important;
+                flex-shrink: 0 !important;
             }
 
             .nav-link, .nav-dropdown button {
+                display: block !important;
                 width: 100% !important;
                 text-align: center !important;
                 justify-content: center !important;
-                padding: 12px !important;
-                font-size: 14px !important;
+                padding: 12px 16px !important;
+                font-size: 15px !important;
+                box-sizing: border-box !important;
+                white-space: normal !important;
             }
 
             .nav-dropdown {
-                width: 100%;
-                position: relative;
+                width: 100% !important;
+                display: block !important;
+                position: static !important;
             }
 
             .nav-dropdown .dropdown-content {
                 position: static !important;
+                display: none;
                 width: 100% !important;
                 box-shadow: none !important;
-                background: rgba(255, 255, 255, 0.03) !important;
-                border: 1px solid var(--border) !important;
-                margin-top: 8px;
-                display: none;
+                background: rgba(255, 255, 255, 0.04) !important;
+                border: 1px solid rgba(255,255,255,0.1) !important;
+                border-radius: 10px !important;
+                margin-top: 4px;
+                padding: 4px 0 !important;
+                animation: none !important;
             }
 
             .nav-dropdown.is-open .dropdown-content {
                 display: block !important;
+            }
+
+            .nav-dropdown .dropdown-content a {
+                padding: 11px 20px !important;
+                font-size: 14px !important;
+                text-align: left !important;
             }
 
             @keyframes navSlideDown {

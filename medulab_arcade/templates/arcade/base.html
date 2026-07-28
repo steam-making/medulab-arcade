@@ -260,19 +260,21 @@
             .nav-menu-wrapper {
                 display: none;
                 flex-direction: column;
-                position: absolute;
+                position: fixed;
                 top: 68px;
                 left: 0;
                 right: 0;
+                bottom: 0;
                 background: rgba(8, 8, 15, 0.98);
                 backdrop-filter: blur(24px);
                 border-bottom: 1px solid var(--border);
                 padding: 24px;
                 gap: 20px;
                 align-items: stretch;
-                z-index: 100;
-                max-height: calc(100vh - 68px);
+                z-index: 999;
                 overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
                 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
                 animation: navSlideDown 0.3s ease forwards;
             }
@@ -1039,6 +1041,19 @@
                             if (d !== dropdown) d.classList.remove('is-open');
                         });
                         dropdown.classList.toggle('is-open');
+                        // 모바일: 드롭다운 열리면 wrapper 스크롤로 내용 보이게
+                        if (dropdown.classList.contains('is-open')) {
+                            const wrapper = document.getElementById('nav-menu-wrapper');
+                            if (wrapper && window.innerWidth <= 1100) {
+                                setTimeout(() => {
+                                    const dropRect = dropdown.getBoundingClientRect();
+                                    const wrapRect = wrapper.getBoundingClientRect();
+                                    if (dropRect.bottom > wrapRect.bottom) {
+                                        wrapper.scrollTop += dropRect.bottom - wrapRect.bottom + 24;
+                                    }
+                                }, 50);
+                            }
+                        }
                     });
                 });
 

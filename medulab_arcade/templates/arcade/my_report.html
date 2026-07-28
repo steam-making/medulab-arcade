@@ -644,29 +644,24 @@
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                 <h3 style="margin:0;">📈 타속 기록</h3>
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <!-- 연습 유형 탭 버튼 -->
+                    <!-- 연습 유형 탭 -->
                     <div style="display:flex; gap:4px;">
-                        <button class="chart-type-btn" data-type="word"
-                            style="font-size:12px; padding:5px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">
-                            단어연습
-                        </button>
-                        <button class="chart-type-btn" data-type="short"
-                            style="font-size:12px; padding:5px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">
-                            짧은글
-                        </button>
-                        <button class="chart-type-btn" data-type="long"
-                            style="font-size:12px; padding:5px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">
-                            긴글
-                        </button>
+                        <button class="chart-type-btn" data-type="word"   style="font-size:12px; padding:5px 11px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">단어연습</button>
+                        <button class="chart-type-btn" data-type="short"  style="font-size:12px; padding:5px 11px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">짧은글</button>
+                        <button class="chart-type-btn" data-type="long"   style="font-size:12px; padding:5px 11px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">긴글</button>
+                    </div>
+                    <!-- 언어 탭 -->
+                    <div style="display:flex; gap:4px; border-left:1px solid rgba(255,255,255,0.1); padding-left:8px;">
+                        <button class="chart-lang-btn" data-lang="ko" style="font-size:12px; padding:5px 11px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">한글</button>
+                        <button class="chart-lang-btn" data-lang="en" style="font-size:12px; padding:5px 11px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">영어</button>
                     </div>
                     <!-- 범례 -->
-                    <div style="display:flex; gap:10px; font-size:12px; color:var(--text-muted);">
-                        <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block;width:20px;height:3px;background:#3b82f6;border-radius:2px;"></span>평균</span>
-                        <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block;width:20px;height:3px;background:#ef4444;border-radius:2px;"></span>최고</span>
-                        {% if typing_target_speed %}<span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block;width:20px;height:2px;background:#facc15;border-radius:2px;border-top:2px dashed #facc15;"></span>목표</span>{% endif %}
+                    <div style="display:flex; gap:10px; font-size:11px; color:var(--text-muted);">
+                        <span style="display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:18px;height:3px;background:#3b82f6;border-radius:2px;"></span>평균</span>
+                        <span style="display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:18px;height:3px;background:#ef4444;border-radius:2px;"></span>최고</span>
+                        {% if typing_target_speed %}<span style="display:flex;align-items:center;gap:3px;"><span style="display:inline-block;width:18px;height:2px;border-top:2px dashed #facc15;"></span>목표</span>{% endif %}
                     </div>
-                    <button id="btnChartRange"
-                        style="font-size:12px; padding:4px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer;">
+                    <button id="btnChartRange" style="font-size:12px; padding:4px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer;">
                         전체 기간 보기
                     </button>
                 </div>
@@ -850,39 +845,81 @@ document.addEventListener('DOMContentLoaded', function() {
 
 document.addEventListener('DOMContentLoaded', function() {
 
-    // 0. 타속 기록 차트 (Chart.js) — 유형별 탭 + 목표선
+    // 0. 타속 기록 차트 (Chart.js) — 유형×언어 탭 + 목표선 + 목표 레이블
     const canvas = document.getElementById('typingChart');
     const chartEmpty = document.getElementById('chartEmpty');
-    const targetSpeed = {{ typing_target_speed|default:"null" }};
-    const lastType = "{{ last_practice_type }}";
 
-    // 유형별 전체 데이터
-    const allData = {
-        word:  { labels:[{% for d in chart_data_by_type.word  %}"{{ d.label }}"{% if not forloop.last %},{% endif %}{% endfor %}], max:[{% for d in chart_data_by_type.word  %}{{ d.max }}{% if not forloop.last %},{% endif %}{% endfor %}], avg:[{% for d in chart_data_by_type.word  %}{{ d.avg }}{% if not forloop.last %},{% endif %}{% endfor %}] },
-        short: { labels:[{% for d in chart_data_by_type.short %}"{{ d.label }}"{% if not forloop.last %},{% endif %}{% endfor %}], max:[{% for d in chart_data_by_type.short %}{{ d.max }}{% if not forloop.last %},{% endif %}{% endfor %}], avg:[{% for d in chart_data_by_type.short %}{{ d.avg }}{% if not forloop.last %},{% endif %}{% endfor %}] },
-        long:  { labels:[{% for d in chart_data_by_type.long  %}"{{ d.label }}"{% if not forloop.last %},{% endif %}{% endfor %}], max:[{% for d in chart_data_by_type.long  %}{{ d.max }}{% if not forloop.last %},{% endif %}{% endfor %}], avg:[{% for d in chart_data_by_type.long  %}{{ d.avg }}{% if not forloop.last %},{% endif %}{% endfor %}] },
-    };
+    // 유형×언어별 데이터 (서버에서 JSON으로 전달)
+    const rawData = {{ chart_data_json|safe }};
+    // rawData[type][lang] = [{label, max, avg}, ...]
+    // flatten: allData[type][lang] = {labels:[], max:[], avg:[]}
+    const allData = {};
+    ['word','short','long'].forEach(t => {
+        allData[t] = {};
+        ['ko','en'].forEach(l => {
+            const rows = rawData[t] && rawData[t][l] ? rawData[t][l] : [];
+            allData[t][l] = {
+                labels: rows.map(r => r.label),
+                max:    rows.map(r => r.max),
+                avg:    rows.map(r => r.avg),
+            };
+        });
+    });
 
+    const targets = {{ typing_targets_json|safe }};   // {ko: N, en: N} or {}
     const RECENT = 30;
     let showAll = false;
-    let currentType = lastType;
+    let currentType = "{{ last_practice_type }}";
+    let currentLang = "{{ last_language }}";
 
     function pointRadius(n) { return n > 30 ? 2 : 4; }
 
-    function getSlice(type) {
-        const d = allData[type];
+    function getSlice() {
+        const d = allData[currentType][currentLang];
         if (showAll || d.labels.length <= RECENT) return d;
         return { labels: d.labels.slice(-RECENT), max: d.max.slice(-RECENT), avg: d.avg.slice(-RECENT) };
     }
 
+    function currentTarget() { return targets[currentLang] || null; }
+
     function makeTargetData(labels) {
-        if (!targetSpeed || !labels.length) return [];
-        return Array(labels.length).fill(targetSpeed);
+        const t = currentTarget();
+        return (t && labels.length) ? Array(labels.length).fill(t) : [];
     }
 
-    const initSlice = getSlice(currentType);
+    // 목표선 레이블을 캔버스 위에 직접 그리는 커스텀 플러그인
+    const targetLabelPlugin = {
+        id: 'targetLabel',
+        afterDraw(chart) {
+            const t = currentTarget();
+            if (!t) return;
+            const ds = chart.data.datasets[2];
+            if (!ds || !ds.data.length) return;
+            const yScale = chart.scales.y;
+            const xScale = chart.scales.x;
+            if (!yScale || !xScale) return;
+            const y = yScale.getPixelForValue(t);
+            const x = xScale.right;
+            const ctx = chart.ctx;
+            ctx.save();
+            ctx.font = 'bold 11px "Outfit", sans-serif';
+            const unit = currentLang === 'ko' ? '타' : 'cpm';
+            const text = `목표 ${t}${unit}`;
+            const tw = ctx.measureText(text).width;
+            ctx.fillStyle = 'rgba(20,20,40,0.75)';
+            ctx.fillRect(x - tw - 10, y - 15, tw + 8, 17);
+            ctx.fillStyle = '#facc15';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, x - 4, y - 6);
+            ctx.restore();
+        }
+    };
+
+    const initSlice = getSlice();
     const chart = new Chart(canvas, {
         type: 'line',
+        plugins: [targetLabelPlugin],
         data: {
             labels: initSlice.labels,
             datasets: [
@@ -927,31 +964,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     backgroundColor: 'rgba(15,15,30,0.92)',
                     titleColor: '#aaa', bodyColor: '#fff',
                     borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, padding: 10,
+                    filter: item => item.dataset.label !== '목표 타속',
                     callbacks: {
-                        label: ctx => ctx.dataset.label === '목표 타속'
-                            ? ` 목표: ${ctx.parsed.y} 타/분`
-                            : ` ${ctx.dataset.label}: ${ctx.parsed.y} 타/분`
+                        label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} 타/분`
                     }
                 }
             },
             scales: {
-                x: { ticks: { color:'#888', font:{size:11}, maxTicksLimit:14, maxRotation:45 }, grid:{ color:'rgba(255,255,255,0.04)' } },
-                y: { ticks: { color:'#888', font:{size:11} }, grid:{ color:'rgba(255,255,255,0.06)' }, beginAtZero: false }
-            }
+                x: { ticks:{ color:'#888', font:{size:11}, maxTicksLimit:14, maxRotation:45 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+                y: { ticks:{ color:'#888', font:{size:11} }, grid:{ color:'rgba(255,255,255,0.06)' }, beginAtZero: false }
+            },
+            layout: { padding: { right: 90 } }
         }
     });
 
-    function updateChartEmpty() {
-        const d = allData[currentType];
-        const isEmpty = !d.labels.length;
-        canvas.style.display = isEmpty ? 'none' : 'block';
-        chartEmpty.style.display = isEmpty ? 'flex' : 'none';
-    }
-
-    function switchType(type) {
-        currentType = type;
-        showAll = false;
-        const s = getSlice(type);
+    function refreshChart() {
+        const s = getSlice();
         chart.data.labels = s.labels;
         chart.data.datasets[0].data = s.avg;
         chart.data.datasets[0].pointRadius = pointRadius(s.labels.length);
@@ -960,46 +988,50 @@ document.addEventListener('DOMContentLoaded', function() {
         chart.data.datasets[2].data = makeTargetData(s.labels);
         chart.update();
 
-        const btnRange = document.getElementById('btnChartRange');
-        btnRange.textContent = '전체 기간 보기';
-        btnRange.style.background = 'rgba(255,255,255,0.06)';
-        btnRange.style.borderColor = 'rgba(255,255,255,0.15)';
-        btnRange.style.color = '#ccc';
-        btnRange.style.display = allData[type].labels.length > RECENT ? '' : 'none';
+        const isEmpty = !s.labels.length;
+        canvas.style.display = isEmpty ? 'none' : 'block';
+        chartEmpty.style.display = isEmpty ? 'flex' : 'none';
 
+        const btnRange = document.getElementById('btnChartRange');
+        const total = allData[currentType][currentLang].labels.length;
+        btnRange.style.display = total > RECENT ? '' : 'none';
+    }
+
+    function activateBtns() {
         document.querySelectorAll('.chart-type-btn').forEach(b => {
-            const active = b.dataset.type === type;
-            b.style.background = active ? 'rgba(59,130,246,0.25)' : 'rgba(255,255,255,0.06)';
-            b.style.borderColor = active ? '#3b82f6' : 'rgba(255,255,255,0.15)';
-            b.style.color = active ? '#93c5fd' : '#ccc';
+            const on = b.dataset.type === currentType;
+            b.style.background   = on ? 'rgba(59,130,246,0.25)' : 'rgba(255,255,255,0.06)';
+            b.style.borderColor  = on ? '#3b82f6' : 'rgba(255,255,255,0.15)';
+            b.style.color        = on ? '#93c5fd' : '#ccc';
         });
-        updateChartEmpty();
+        document.querySelectorAll('.chart-lang-btn').forEach(b => {
+            const on = b.dataset.lang === currentLang;
+            b.style.background   = on ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)';
+            b.style.borderColor  = on ? '#10b981' : 'rgba(255,255,255,0.15)';
+            b.style.color        = on ? '#6ee7b7' : '#ccc';
+        });
     }
 
     document.querySelectorAll('.chart-type-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchType(btn.dataset.type));
+        btn.addEventListener('click', () => { currentType = btn.dataset.type; showAll = false; activateBtns(); refreshChart(); });
+    });
+    document.querySelectorAll('.chart-lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => { currentLang = btn.dataset.lang; showAll = false; activateBtns(); refreshChart(); });
     });
 
-    // 전체/최근 30회 토글
     const btnRange = document.getElementById('btnChartRange');
     btnRange.addEventListener('click', function () {
         showAll = !showAll;
-        const s = getSlice(currentType);
-        chart.data.labels = s.labels;
-        chart.data.datasets[0].data = s.avg;
-        chart.data.datasets[0].pointRadius = pointRadius(s.labels.length);
-        chart.data.datasets[1].data = s.max;
-        chart.data.datasets[1].pointRadius = pointRadius(s.labels.length);
-        chart.data.datasets[2].data = makeTargetData(s.labels);
-        chart.update();
-        btnRange.textContent = showAll ? '최근 30회 보기' : '전체 기간 보기';
-        btnRange.style.background = showAll ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)';
+        refreshChart();
+        btnRange.textContent   = showAll ? '최근 30회 보기' : '전체 기간 보기';
+        btnRange.style.background  = showAll ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)';
         btnRange.style.borderColor = showAll ? '#3b82f6' : 'rgba(255,255,255,0.15)';
-        btnRange.style.color = showAll ? '#93c5fd' : '#ccc';
+        btnRange.style.color       = showAll ? '#93c5fd' : '#ccc';
     });
 
     // 초기 탭 활성화
-    switchType(currentType);
+    activateBtns();
+    refreshChart();
 
 
     // 1. 출석체크 연동

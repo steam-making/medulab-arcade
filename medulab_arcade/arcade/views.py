@@ -2329,46 +2329,57 @@ def my_report(request):
     month_days = cal.monthdayscalendar(current_year, current_month)
     month_name = f"{current_year}년 {current_month}월"
 
-    # 4. 날짜별 타속 기록 - 연습 유형별 분리
+    # 4. 날짜별 타속 기록 - 유형×언어별 분리
     CHART_TYPES = [('word', '단어연습'), ('short', '짧은글'), ('long', '긴글')]
-    chart_data_by_type = {}
-    for ptype, _ in CHART_TYPES:
-        daily = (
-            TypingScore.objects.filter(user=request.user, practice_type=ptype)
-            .annotate(date=TruncDate('created_at'))
-            .values('date')
-            .annotate(max_speed=Max('speed'), avg_speed=Avg('speed'))
-            .order_by('date')
-        )
-        chart_data_by_type[ptype] = [
-            {'label': s['date'].strftime('%m/%d'), 'max': s['max_speed'], 'avg': round(s['avg_speed'], 1)}
-            for s in daily
-        ]
-    # 전체 합산 (기존 호환)
-    chart_data = chart_data_by_type.get('word', [])
+    CHART_LANGS = ['ko', 'en']
+    import json as _json
 
-    # 마지막 연습 유형
+    chart_data_by_type_lang = {}
+    for ptype, _ in CHART_TYPES:
+        chart_data_by_type_lang[ptype] = {}
+        for lang in CHART_LANGS:
+            daily = (
+                TypingScore.objects.filter(user=request.user, practice_type=ptype, language=lang)
+                .annotate(date=TruncDate('created_at'))
+                .values('date')
+                .annotate(max_speed=Max('speed'), avg_speed=Avg('speed'))
+                .order_by('date')
+            )
+            chart_data_by_type_lang[ptype][lang] = [
+                {'label': s['date'].strftime('%m/%d'), 'max': s['max_speed'], 'avg': round(s['avg_speed'], 1)}
+                for s in daily
+            ]
+    chart_data_json = _json.dumps(chart_data_by_type_lang)
+    chart_data = chart_data_by_type_lang.get('word', {}).get('ko', [])  # 기존 호환
+
+    # 마지막 연습 유형·언어
     last_score = TypingScore.objects.filter(user=request.user).order_by('-created_at').first()
     last_practice_type = last_score.practice_type if last_score else 'word'
+    last_language = last_score.language if last_score else 'ko'
     if last_practice_type not in ('word', 'short', 'long'):
         last_practice_type = 'word'
+    if last_language not in ('ko', 'en'):
+        last_language = 'ko'
 
-    # 목표 타속 (로드맵 기준, 나이로 산출)
-    typing_target_speed = None
+    # 목표 타속 (로드맵 기준, 나이별 / 언어별)
+    # 한글: 타/분  |  영어: chars/min (같은 단위로 저장, 영어는 목표치가 낮음)
+    typing_targets = {}
     if profile.birth_date:
         age = today.year - profile.birth_date.year - (
             (today.month, today.day) < (profile.birth_date.month, profile.birth_date.day)
         )
         if age <= 7:
-            typing_target_speed = 100
+            typing_targets = {'ko': 100, 'en': 50}
         elif age <= 9:    # 초등 1~2
-            typing_target_speed = 200
+            typing_targets = {'ko': 200, 'en': 100}
         elif age <= 11:   # 초등 3~4
-            typing_target_speed = 200
+            typing_targets = {'ko': 200, 'en': 150}
         elif age <= 13:   # 초등 5~6
-            typing_target_speed = 300
+            typing_targets = {'ko': 300, 'en': 200}
         else:             # 중고등
-            typing_target_speed = 400
+            typing_targets = {'ko': 400, 'en': 300}
+    typing_targets_json = _json.dumps(typing_targets)
+    typing_target_speed = typing_targets.get('ko')  # 기존 호환
 
     # 5. 과거 누적 통계
     all_scores = TypingScore.objects.filter(user=user)
@@ -2409,8 +2420,10 @@ def my_report(request):
         'month_days': month_days,
         'month_name': month_name,
         'chart_data': chart_data,
-        'chart_data_by_type': chart_data_by_type,
+        'chart_data_json': chart_data_json,
         'last_practice_type': last_practice_type,
+        'last_language': last_language,
+        'typing_targets_json': typing_targets_json,
         'typing_target_speed': typing_target_speed,
         'total_typing_count': total_typing_count,
         'global_max_speed': global_max_speed,

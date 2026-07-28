@@ -308,6 +308,41 @@
         from { transform: scale(0); opacity: 0; }
         to { transform: scale(1); opacity: 1; }
     }
+
+    .info-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 10px 12px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.06);
+    }
+    .info-label-sm {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .info-val {
+        font-size: 14px;
+        color: #e0e0e0;
+        font-weight: 500;
+    }
+    #editMode input, #editMode select {
+        width: 100%;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        padding: 9px 12px;
+        color: #fff;
+        font-size: 13px;
+    }
+    #editMode input:focus, #editMode select:focus {
+        border-color: var(--accent-green);
+        outline: none;
+    }
 </style>
 {% endblock %}
 
@@ -354,7 +389,92 @@
 
     <!-- 메인 컨텐츠 리스트 (세로 정렬로 변경하여 잘림 전면 방지) -->
     <div class="report-content">
-        
+
+        <!-- 0. 내 정보 -->
+        <div class="section-card" id="profileSection">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+                <h3 style="margin:0;">👤 내 정보</h3>
+                <div style="display:flex; gap:8px;">
+                    <button id="btnEdit" onclick="enterEditMode()"
+                        style="padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; font-size:12px;">
+                        ✏️ 정보 수정
+                    </button>
+                    <button id="btnCancel" onclick="exitEditMode()" style="display:none; padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; font-size:12px;">
+                        취소
+                    </button>
+                </div>
+            </div>
+
+            <!-- 보기 모드 -->
+            <div id="viewMode">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; font-size:13.5px;">
+                    <div class="info-field">
+                        <span class="info-label-sm">이름</span>
+                        <span class="info-val">{{ profile.real_name|default:"미등록" }}</span>
+                    </div>
+                    <div class="info-field">
+                        <span class="info-label-sm">닉네임</span>
+                        <span class="info-val">{{ profile.nickname|default:"미등록" }}</span>
+                    </div>
+                    <div class="info-field">
+                        <span class="info-label-sm">아이디</span>
+                        <span class="info-val">{{ user.username }}</span>
+                    </div>
+                    <div class="info-field">
+                        <span class="info-label-sm">이메일</span>
+                        <span class="info-val">{{ user.email|default:"미등록" }}</span>
+                    </div>
+                    <div class="info-field">
+                        <span class="info-label-sm">전화번호</span>
+                        <span class="info-val">{{ profile.phone_number|default:"미등록" }}</span>
+                    </div>
+                    <div class="info-field">
+                        <span class="info-label-sm">생년월일</span>
+                        <span class="info-val">{{ profile.birth_date|date:"Y.m.d"|default:"미등록" }}</span>
+                    </div>
+                    <div class="info-field">
+                        <span class="info-label-sm">회원 유형</span>
+                        <span class="info-val">{{ profile.get_user_type_display }}</span>
+                    </div>
+                    <div class="info-field">
+                        <span class="info-label-sm">승인 상태</span>
+                        <span class="info-val" style="color:{% if profile.is_approved %}var(--accent-green){% else %}#ffc107{% endif %};">
+                            {% if profile.is_approved %}✅ 승인 완료{% else %}⏳ 승인 대기중{% endif %}
+                        </span>
+                    </div>
+                    <div class="info-field">
+                        <span class="info-label-sm">가입일</span>
+                        <span class="info-val">{{ user.date_joined|date:"Y년 m월 d일" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 수정 모드 -->
+            <div id="editMode" style="display:none;">
+                <form method="POST" id="profileForm">
+                    {% csrf_token %}
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                        {% for field in form %}
+                        <div style="{% if forloop.first %}grid-column:1/-1;{% endif %}">
+                            <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:5px;">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<div style="font-size:11px; color:var(--text-muted); margin-top:3px; line-height:1.4;">{{ field.help_text }}</div>{% endif %}
+                            {% if field.errors %}<div style="font-size:11px; color:#f87171; margin-top:3px;">{{ field.errors.0 }}</div>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:18px;">
+                        <button type="submit" style="flex:2; padding:12px; background:linear-gradient(135deg,var(--accent-green),var(--accent-blue)); border:none; border-radius:10px; color:#000; font-weight:800; cursor:pointer; font-size:14px;">
+                            💾 저장하기
+                        </button>
+                        <a href="{% url 'password_change' %}" style="flex:1; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#ccc; text-decoration:none; font-size:13px;">
+                            🔑 비밀번호 변경
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- 1. 출석 체크 달력 섹션 -->
         <div class="section-card">
             <div class="calendar-title-wrap">
@@ -532,63 +652,6 @@
             </div>
         </div>
 
-        <!-- 6. 프로필 정보 & 정보 수정 -->
-        <div class="section-card">
-            <h3>👤 내 정보</h3>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; font-size:13.5px;">
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                    <span style="font-size:11px; color:var(--text-muted);">이름</span>
-                    <span style="color:#fff;">{{ profile.real_name|default:"미등록" }}</span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                    <span style="font-size:11px; color:var(--text-muted);">아이디</span>
-                    <span style="color:#fff;">{{ user.username }}</span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                    <span style="font-size:11px; color:var(--text-muted);">회원 유형</span>
-                    <span style="color:#fff;">{{ profile.get_user_type_display }}</span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                    <span style="font-size:11px; color:var(--text-muted);">승인 상태</span>
-                    <span style="color:{% if profile.is_approved %}var(--accent-green){% else %}#ffc107{% endif %};">
-                        {% if profile.is_approved %}승인 완료{% else %}승인 대기중{% endif %}
-                    </span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                    <span style="font-size:11px; color:var(--text-muted);">이메일</span>
-                    <span style="color:#fff;">{{ user.email|default:"미등록" }}</span>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                    <span style="font-size:11px; color:var(--text-muted);">가입일</span>
-                    <span style="color:#fff;">{{ user.date_joined|date:"Y.m.d" }}</span>
-                </div>
-            </div>
-
-            <button id="btnToggleEdit" style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#ccc; cursor:pointer; font-size:13px; margin-bottom:0;">
-                ✏️ 정보 수정하기 ▾
-            </button>
-
-            <div id="editFormWrap" style="display:none; margin-top:16px;">
-                <form method="POST">
-                    {% csrf_token %}
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-                        {% for field in form %}
-                        <div style="{% if forloop.first %}grid-column:1/-1;{% endif %}">
-                            <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px;">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.help_text %}<div style="font-size:11px; color:var(--text-muted); margin-top:3px;">{{ field.help_text }}</div>{% endif %}
-                            {% if field.errors %}<div style="font-size:11px; color:#f87171; margin-top:3px;">{{ field.errors.0 }}</div>{% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div style="display:flex; gap:10px; margin-top:18px;">
-                        <button type="submit" style="flex:2; padding:12px; background:linear-gradient(135deg,var(--accent-green),var(--accent-blue)); border:none; border-radius:10px; color:#000; font-weight:800; cursor:pointer;">저장하기</button>
-                        <a href="{% url 'password_change' %}" style="flex:1; text-align:center; padding:12px; border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#ccc; text-decoration:none; font-size:13px;">비밀번호 변경</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-
     </div>
 
 </div>
@@ -736,21 +799,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 1-2. 정보 수정 토글
-    const btnToggleEdit = document.getElementById('btnToggleEdit');
-    const editFormWrap = document.getElementById('editFormWrap');
-    if (btnToggleEdit && editFormWrap) {
-        btnToggleEdit.addEventListener('click', function () {
-            const open = editFormWrap.style.display !== 'none';
-            editFormWrap.style.display = open ? 'none' : 'block';
-            btnToggleEdit.textContent = open ? '✏️ 정보 수정하기 ▾' : '✏️ 정보 수정 닫기 ▴';
-        });
-        // 폼 에러 있으면 자동으로 열기
-        {% if form.errors %}
-        editFormWrap.style.display = 'block';
-        btnToggleEdit.textContent = '✏️ 정보 수정 닫기 ▴';
-        {% endif %}
+    // 내 정보 인라인 편집 모드
+    function enterEditMode() {
+        document.getElementById('viewMode').style.display = 'none';
+        document.getElementById('editMode').style.display = 'block';
+        document.getElementById('btnEdit').style.display = 'none';
+        document.getElementById('btnCancel').style.display = 'inline-block';
     }
+    function exitEditMode() {
+        document.getElementById('editMode').style.display = 'none';
+        document.getElementById('viewMode').style.display = 'block';
+        document.getElementById('btnEdit').style.display = 'inline-block';
+        document.getElementById('btnCancel').style.display = 'none';
+    }
+    // 폼 에러 있으면 수정 모드로 자동 진입
+    {% if form.errors %}
+    enterEditMode();
+    {% endif %}
 
     // 2. 달력 접기/펴기 토글 기능
     const btnToggleCalendar = document.getElementById('btnToggleCalendar');

@@ -477,36 +477,115 @@
             </div>
         </div>
 
-        <!-- 3. 내 성장 요약 및 배지 현황 -->
+        <!-- 4. 내 성장 요약 -->
         <div class="section-card">
-            <h3>🏅 내 성장 요약</h3>
-            <div style="display:flex; flex-direction:column; gap:16px;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:10px;">
-                    <span style="color:var(--text-secondary); font-size:13.5px;">누적 타자연습 횟수</span>
-                    <span style="font-weight:700; font-family:'Outfit'; color:#fff;">{{ total_typing_count }} 회</span>
+            <h3>📊 내 성장 요약</h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:16px;">
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:center;">
+                    <div style="font-size:22px; font-weight:800; font-family:'Outfit'; color:#00b4ff;">{{ total_typing_count }}</div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">누적 타자연습</div>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:10px;">
-                    <span style="color:var(--text-secondary); font-size:13.5px;">전체 최고 타속</span>
-                    <span style="font-weight:700; font-family:'Outfit'; color:#fff;">{{ global_max_speed }} WPM</span>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:center;">
+                    <div style="font-size:22px; font-weight:800; font-family:'Outfit'; color:#f59e0b;">{{ global_max_speed }}</div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">최고 타속 (WPM)</div>
                 </div>
-                
-                <div style="margin-top:10px;">
-                    <span style="color:var(--text-secondary); font-size:13.5px; font-weight:700;">최근 획득한 배지</span>
-                    <div class="badge-list">
-                        {% for ub in earned_badges %}
-                        <div class="badge-item">
-                            <div class="badge-icon-wrap" style="background: {{ ub.badge.color }}15; border-color: {{ ub.badge.color }}50;">
-                                {{ ub.badge.icon }}
-                            </div>
-                            <span class="badge-name">{{ ub.badge.name }}</span>
-                        </div>
-                        {% empty %}
-                        <div style="grid-column:1/-1; text-align:center; font-size:12.5px; padding:15px; color:var(--text-muted);">
-                            아직 획득한 배지가 없습니다. 타자연습과 과제를 더 열심히 수행해보세요!
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:center;">
+                    <a href="{% url 'my_projects' %}" style="text-decoration:none;">
+                    <div style="font-size:22px; font-weight:800; font-family:'Outfit'; color:#a78bfa;">{{ my_projects_count }}</div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">내 작품</div>
+                    </a>
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:center;">
+                    <div style="font-size:22px; font-weight:800; font-family:'Outfit'; color:#f87171;">{{ total_likes }}</div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">받은 좋아요</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:center;">
+                    <div style="font-size:22px; font-weight:800; font-family:'Outfit'; color:#34d399;">{{ badge_count }}</div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">획득 배지</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. 배지 컬렉션 -->
+        <div class="section-card">
+            <h3>🏅 배지 컬렉션</h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px;">
+                {% for item in badge_catalog %}
+                <div style="padding:14px; border-radius:14px; border:1px solid {% if item.is_earned %}rgba(255,255,255,0.18){% else %}rgba(255,255,255,0.06){% endif %}; background:{% if item.is_earned %}rgba(255,255,255,0.07){% else %}rgba(255,255,255,0.03){% endif %}; {% if not item.is_earned %}opacity:0.55; filter:grayscale(80%);{% endif %} position:relative;">
+                    <div style="position:absolute; top:10px; right:10px; font-size:9px; font-weight:800; padding:3px 7px; border-radius:6px; {% if item.is_earned %}background:rgba(0,255,180,0.12); color:var(--accent-green);{% else %}background:rgba(255,255,255,0.07); color:var(--text-muted);{% endif %}">
+                        {% if item.is_earned %}획득{% else %}미획득{% endif %}
+                    </div>
+                    <div style="width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:10px; background:rgba(255,255,255,0.06); {% if item.is_earned %}box-shadow:0 0 12px {{ item.color }}40; border:1px solid {{ item.color }}60;{% endif %} color:{{ item.color }};">
+                        {{ item.icon }}
+                    </div>
+                    <div style="font-weight:800; font-size:13px; margin-bottom:4px; {% if item.is_earned %}color:{{ item.color }};{% else %}color:#fff;{% endif %}">{{ item.name }}</div>
+                    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">{{ item.description }}</div>
+                    {% if item.is_earned %}
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:6px;">{{ item.awarded_at|date:"Y.m.d" }} 획득</div>
+                    {% else %}
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:6px;">🔒 잠김</div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">등록된 배지가 없습니다.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 6. 프로필 정보 & 정보 수정 -->
+        <div class="section-card">
+            <h3>👤 내 정보</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; font-size:13.5px;">
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span style="font-size:11px; color:var(--text-muted);">이름</span>
+                    <span style="color:#fff;">{{ profile.real_name|default:"미등록" }}</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span style="font-size:11px; color:var(--text-muted);">아이디</span>
+                    <span style="color:#fff;">{{ user.username }}</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span style="font-size:11px; color:var(--text-muted);">회원 유형</span>
+                    <span style="color:#fff;">{{ profile.get_user_type_display }}</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span style="font-size:11px; color:var(--text-muted);">승인 상태</span>
+                    <span style="color:{% if profile.is_approved %}var(--accent-green){% else %}#ffc107{% endif %};">
+                        {% if profile.is_approved %}승인 완료{% else %}승인 대기중{% endif %}
+                    </span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span style="font-size:11px; color:var(--text-muted);">이메일</span>
+                    <span style="color:#fff;">{{ user.email|default:"미등록" }}</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span style="font-size:11px; color:var(--text-muted);">가입일</span>
+                    <span style="color:#fff;">{{ user.date_joined|date:"Y.m.d" }}</span>
+                </div>
+            </div>
+
+            <button id="btnToggleEdit" style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#ccc; cursor:pointer; font-size:13px; margin-bottom:0;">
+                ✏️ 정보 수정하기 ▾
+            </button>
+
+            <div id="editFormWrap" style="display:none; margin-top:16px;">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                        {% for field in form %}
+                        <div style="{% if forloop.first %}grid-column:1/-1;{% endif %}">
+                            <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px;">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<div style="font-size:11px; color:var(--text-muted); margin-top:3px;">{{ field.help_text }}</div>{% endif %}
+                            {% if field.errors %}<div style="font-size:11px; color:#f87171; margin-top:3px;">{{ field.errors.0 }}</div>{% endif %}
                         </div>
                         {% endfor %}
                     </div>
-                </div>
+                    <div style="display:flex; gap:10px; margin-top:18px;">
+                        <button type="submit" style="flex:2; padding:12px; background:linear-gradient(135deg,var(--accent-green),var(--accent-blue)); border:none; border-radius:10px; color:#000; font-weight:800; cursor:pointer;">저장하기</button>
+                        <a href="{% url 'password_change' %}" style="flex:1; text-align:center; padding:12px; border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#ccc; text-decoration:none; font-size:13px;">비밀번호 변경</a>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -655,6 +734,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert("출석 체크 에러: " + err.message);
             });
         });
+    }
+
+    // 1-2. 정보 수정 토글
+    const btnToggleEdit = document.getElementById('btnToggleEdit');
+    const editFormWrap = document.getElementById('editFormWrap');
+    if (btnToggleEdit && editFormWrap) {
+        btnToggleEdit.addEventListener('click', function () {
+            const open = editFormWrap.style.display !== 'none';
+            editFormWrap.style.display = open ? 'none' : 'block';
+            btnToggleEdit.textContent = open ? '✏️ 정보 수정하기 ▾' : '✏️ 정보 수정 닫기 ▴';
+        });
+        // 폼 에러 있으면 자동으로 열기
+        {% if form.errors %}
+        editFormWrap.style.display = 'block';
+        btnToggleEdit.textContent = '✏️ 정보 수정 닫기 ▴';
+        {% endif %}
     }
 
     // 2. 달력 접기/펴기 토글 기능

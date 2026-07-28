@@ -2288,6 +2288,19 @@ def my_report(request):
     from django.db.models import Max, Avg
     from django.db.models.functions import TruncDate
 
+    user = request.user
+    profile = user.profile
+
+    # 정보 수정 POST 처리
+    if request.method == 'POST':
+        form = UserProfileUpdateForm(request.POST, instance=profile, user=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '회원 정보가 성공적으로 수정되었습니다.')
+            return redirect('my_report')
+    else:
+        form = UserProfileUpdateForm(instance=profile, user=user)
+
     today = timezone.localdate()
 
     # 1. 오늘의 타자 성과 집계
@@ -2335,10 +2348,16 @@ def my_report(request):
     ]
 
     # 5. 과거 누적 통계
-    all_scores = TypingScore.objects.filter(user=request.user)
+    all_scores = TypingScore.objects.filter(user=user)
     total_typing_count = all_scores.count()
     global_max_speed = all_scores.aggregate(Max('speed'))['speed__max'] or 0
-    earned_badges = UserBadge.objects.filter(user=request.user).select_related('badge')[:6]
+
+    # 6. 프로필 / 작품 / 배지 통계
+    my_projects = Project.objects.filter(author=user)
+    total_likes_received = Like.objects.filter(project__author=user).count()
+    total_bookmarks_received = Bookmark.objects.filter(project__author=user).count()
+    badge_catalog = get_active_badges_with_user_state(user)
+    badge_count = get_user_badge_count(user)
 
     context = {
         'today': today,
@@ -2354,7 +2373,14 @@ def my_report(request):
         'chart_data': chart_data,
         'total_typing_count': total_typing_count,
         'global_max_speed': global_max_speed,
-        'earned_badges': earned_badges,
+        # 프로필 통합
+        'profile': profile,
+        'form': form,
+        'my_projects_count': my_projects.count(),
+        'total_likes': total_likes_received,
+        'total_bookmarks': total_bookmarks_received,
+        'badge_catalog': badge_catalog,
+        'badge_count': badge_count,
     }
     return render(request, 'arcade/my_report.html', context)
 

@@ -890,7 +890,7 @@
                 <div class="nav-links" style="flex-wrap: nowrap; flex-shrink: 0;">
                     {% if user.is_authenticated %}
                     {% if user.is_staff %}
-                    <a href="{% url 'profile' %}" class="nav-link accent-text">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }} · 마이페이지</a>
+                    <a href="{% url 'my_report' %}" class="nav-link accent-text">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }}</a>
                     <div class="nav-dropdown">
                         <button class="nav-link dropdown-toggle"
                             style="color: #60a5fa; border: none; background: rgba(255,255,255,0.06); cursor: pointer; display: flex; align-items: center; gap: 4px;">
@@ -909,7 +909,7 @@
                         </div>
                     </div>
                     {% else %}
-                    <a href="{% url 'profile' %}" class="nav-link">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }} · 마이페이지</a>
+                    <a href="{% url 'my_report' %}" class="nav-link">👤 {{ user.profile.nickname|default:user.profile.real_name|default:user.username }}</a>
                     <a href="{% url 'upload' %}" class="nav-link accent">📤 업로드</a>
                     {% endif %}
                     <form action="{% url 'logout' %}" method="post" style="display: inline;">

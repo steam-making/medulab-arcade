@@ -1064,19 +1064,6 @@
                             if (d !== dropdown) d.classList.remove('is-open');
                         });
                         dropdown.classList.toggle('is-open');
-                        // 모바일: 드롭다운 열리면 wrapper 스크롤로 내용 보이게
-                        if (dropdown.classList.contains('is-open')) {
-                            const wrapper = document.getElementById('nav-menu-wrapper');
-                            if (wrapper && window.innerWidth <= 1100) {
-                                setTimeout(() => {
-                                    const dropRect = dropdown.getBoundingClientRect();
-                                    const wrapRect = wrapper.getBoundingClientRect();
-                                    if (dropRect.bottom > wrapRect.bottom) {
-                                        wrapper.scrollTop += dropRect.bottom - wrapRect.bottom + 24;
-                                    }
-                                }, 50);
-                            }
-                        }
                     });
                 });
 
@@ -1125,6 +1112,8 @@
                 const isActive = menuWrapper.classList.toggle('active');
                 toggleBtn.classList.toggle('active');
                 toggleBtn.innerHTML = isActive ? '✕' : '☰';
+                // 메뉴 열릴 때 스크롤 항상 최상단으로
+                if (isActive) menuWrapper.scrollTop = 0;
             });
 
             // 바깥 영역 클릭 시 자동으로 닫히도록 처리

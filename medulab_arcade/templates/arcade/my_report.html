@@ -640,33 +640,42 @@
 
         <!-- 3. 타속 기록 그래프 -->
         <div class="section-card">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <!-- 헤더 행 -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                 <h3 style="margin:0;">📈 타속 기록</h3>
-                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <div style="display:flex; gap:12px; font-size:12px;">
-                        <span style="display:flex; align-items:center; gap:5px;">
-                            <span style="display:inline-block; width:24px; height:3px; background:#3b82f6; border-radius:2px;"></span>평균
-                        </span>
-                        <span style="display:flex; align-items:center; gap:5px;">
-                            <span style="display:inline-block; width:24px; height:3px; background:#ef4444; border-radius:2px;"></span>최고
-                        </span>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <!-- 연습 유형 탭 버튼 -->
+                    <div style="display:flex; gap:4px;">
+                        <button class="chart-type-btn" data-type="word"
+                            style="font-size:12px; padding:5px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">
+                            단어연습
+                        </button>
+                        <button class="chart-type-btn" data-type="short"
+                            style="font-size:12px; padding:5px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">
+                            짧은글
+                        </button>
+                        <button class="chart-type-btn" data-type="long"
+                            style="font-size:12px; padding:5px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; transition:all .2s;">
+                            긴글
+                        </button>
                     </div>
-                    {% if chart_data %}
+                    <!-- 범례 -->
+                    <div style="display:flex; gap:10px; font-size:12px; color:var(--text-muted);">
+                        <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block;width:20px;height:3px;background:#3b82f6;border-radius:2px;"></span>평균</span>
+                        <span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block;width:20px;height:3px;background:#ef4444;border-radius:2px;"></span>최고</span>
+                        {% if typing_target_speed %}<span style="display:flex; align-items:center; gap:4px;"><span style="display:inline-block;width:20px;height:2px;background:#facc15;border-radius:2px;border-top:2px dashed #facc15;"></span>목표</span>{% endif %}
+                    </div>
                     <button id="btnChartRange"
                         style="font-size:12px; padding:4px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer;">
                         전체 기간 보기
                     </button>
-                    {% endif %}
                 </div>
             </div>
             <div style="position:relative; height:220px;">
-                {% if chart_data %}
                 <canvas id="typingChart"></canvas>
-                {% else %}
-                <div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-muted); font-size:14px;">
-                    타자 기록이 없습니다
+                <div id="chartEmpty" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; color:var(--text-muted); font-size:14px;">
+                    해당 유형의 타자 기록이 없습니다
                 </div>
-                {% endif %}
             </div>
         </div>
 
@@ -841,112 +850,156 @@ document.addEventListener('DOMContentLoaded', function() {
 
 document.addEventListener('DOMContentLoaded', function() {
 
-    // 0. 타속 기록 차트 (Chart.js)
+    // 0. 타속 기록 차트 (Chart.js) — 유형별 탭 + 목표선
     const canvas = document.getElementById('typingChart');
-    if (canvas) {
-        const allLabels = [{% for d in chart_data %}"{{ d.label }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-        const allMax   = [{% for d in chart_data %}{{ d.max }}{% if not forloop.last %},{% endif %}{% endfor %}];
-        const allAvg   = [{% for d in chart_data %}{{ d.avg }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    const chartEmpty = document.getElementById('chartEmpty');
+    const targetSpeed = {{ typing_target_speed|default:"null" }};
+    const lastType = "{{ last_practice_type }}";
 
-        const RECENT = 30;
-        let showAll = false;
+    // 유형별 전체 데이터
+    const allData = {
+        word:  { labels:[{% for d in chart_data_by_type.word  %}"{{ d.label }}"{% if not forloop.last %},{% endif %}{% endfor %}], max:[{% for d in chart_data_by_type.word  %}{{ d.max }}{% if not forloop.last %},{% endif %}{% endfor %}], avg:[{% for d in chart_data_by_type.word  %}{{ d.avg }}{% if not forloop.last %},{% endif %}{% endfor %}] },
+        short: { labels:[{% for d in chart_data_by_type.short %}"{{ d.label }}"{% if not forloop.last %},{% endif %}{% endfor %}], max:[{% for d in chart_data_by_type.short %}{{ d.max }}{% if not forloop.last %},{% endif %}{% endfor %}], avg:[{% for d in chart_data_by_type.short %}{{ d.avg }}{% if not forloop.last %},{% endif %}{% endfor %}] },
+        long:  { labels:[{% for d in chart_data_by_type.long  %}"{{ d.label }}"{% if not forloop.last %},{% endif %}{% endfor %}], max:[{% for d in chart_data_by_type.long  %}{{ d.max }}{% if not forloop.last %},{% endif %}{% endfor %}], avg:[{% for d in chart_data_by_type.long  %}{{ d.avg }}{% if not forloop.last %},{% endif %}{% endfor %}] },
+    };
 
-        function makeChartOptions(n) {
-            return {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(15,15,30,0.92)',
-                        titleColor: '#aaa',
-                        bodyColor: '#fff',
-                        borderColor: 'rgba(255,255,255,0.08)',
-                        borderWidth: 1,
-                        padding: 10,
-                        callbacks: {
-                            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} WPM`
-                        }
-                    }
+    const RECENT = 30;
+    let showAll = false;
+    let currentType = lastType;
+
+    function pointRadius(n) { return n > 30 ? 2 : 4; }
+
+    function getSlice(type) {
+        const d = allData[type];
+        if (showAll || d.labels.length <= RECENT) return d;
+        return { labels: d.labels.slice(-RECENT), max: d.max.slice(-RECENT), avg: d.avg.slice(-RECENT) };
+    }
+
+    function makeTargetData(labels) {
+        if (!targetSpeed || !labels.length) return [];
+        return Array(labels.length).fill(targetSpeed);
+    }
+
+    const initSlice = getSlice(currentType);
+    const chart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: initSlice.labels,
+            datasets: [
+                {
+                    label: '평균 타속',
+                    data: initSlice.avg,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.15)',
+                    borderWidth: 2,
+                    pointRadius: pointRadius(initSlice.labels.length),
+                    pointBackgroundColor: '#3b82f6',
+                    fill: true, tension: 0.35, order: 2,
                 },
-                scales: {
-                    x: {
-                        ticks: { color: '#888', font: { size: 11 }, maxTicksLimit: 14, maxRotation: 45 },
-                        grid: { color: 'rgba(255,255,255,0.04)' }
-                    },
-                    y: {
-                        ticks: { color: '#888', font: { size: 11 } },
-                        grid: { color: 'rgba(255,255,255,0.06)' },
-                        beginAtZero: false,
+                {
+                    label: '최고 타속',
+                    data: initSlice.max,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239,68,68,0)',
+                    borderWidth: 2.5,
+                    pointRadius: pointRadius(initSlice.labels.length),
+                    pointBackgroundColor: '#ef4444',
+                    fill: false, tension: 0.35, order: 1,
+                },
+                {
+                    label: '목표 타속',
+                    data: makeTargetData(initSlice.labels),
+                    borderColor: '#facc15',
+                    borderWidth: 2,
+                    borderDash: [6, 4],
+                    pointRadius: 0,
+                    fill: false, tension: 0, order: 0,
+                },
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15,15,30,0.92)',
+                    titleColor: '#aaa', bodyColor: '#fff',
+                    borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, padding: 10,
+                    callbacks: {
+                        label: ctx => ctx.dataset.label === '목표 타속'
+                            ? ` 목표: ${ctx.parsed.y} 타/분`
+                            : ` ${ctx.dataset.label}: ${ctx.parsed.y} 타/분`
                     }
                 }
-            };
-        }
-
-        function getSlice() {
-            if (showAll || allLabels.length <= RECENT) return { labels: allLabels, max: allMax, avg: allAvg };
-            return { labels: allLabels.slice(-RECENT), max: allMax.slice(-RECENT), avg: allAvg.slice(-RECENT) };
-        }
-
-        function pointRadius(n) { return n > 30 ? 2 : 4; }
-
-        const { labels, max, avg } = getSlice();
-
-        const chart = new Chart(canvas, {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [
-                    {
-                        label: '평균 타속',
-                        data: avg,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59,130,246,0.15)',
-                        borderWidth: 2,
-                        pointRadius: pointRadius(labels.length),
-                        pointBackgroundColor: '#3b82f6',
-                        fill: true,
-                        tension: 0.35,
-                        order: 2,
-                    },
-                    {
-                        label: '최고 타속',
-                        data: max,
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239,68,68,0.0)',
-                        borderWidth: 2.5,
-                        pointRadius: pointRadius(labels.length),
-                        pointBackgroundColor: '#ef4444',
-                        fill: false,
-                        tension: 0.35,
-                        order: 1,
-                    },
-                ]
             },
-            options: makeChartOptions(labels.length)
-        });
+            scales: {
+                x: { ticks: { color:'#888', font:{size:11}, maxTicksLimit:14, maxRotation:45 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+                y: { ticks: { color:'#888', font:{size:11} }, grid:{ color:'rgba(255,255,255,0.06)' }, beginAtZero: false }
+            }
+        }
+    });
+
+    function updateChartEmpty() {
+        const d = allData[currentType];
+        const isEmpty = !d.labels.length;
+        canvas.style.display = isEmpty ? 'none' : 'block';
+        chartEmpty.style.display = isEmpty ? 'flex' : 'none';
+    }
+
+    function switchType(type) {
+        currentType = type;
+        showAll = false;
+        const s = getSlice(type);
+        chart.data.labels = s.labels;
+        chart.data.datasets[0].data = s.avg;
+        chart.data.datasets[0].pointRadius = pointRadius(s.labels.length);
+        chart.data.datasets[1].data = s.max;
+        chart.data.datasets[1].pointRadius = pointRadius(s.labels.length);
+        chart.data.datasets[2].data = makeTargetData(s.labels);
+        chart.update();
 
         const btnRange = document.getElementById('btnChartRange');
-        if (btnRange && allLabels.length > RECENT) {
-            btnRange.addEventListener('click', function () {
-                showAll = !showAll;
-                const s = getSlice();
-                chart.data.labels = s.labels;
-                chart.data.datasets[0].data = s.avg;
-                chart.data.datasets[0].pointRadius = pointRadius(s.labels.length);
-                chart.data.datasets[1].data = s.max;
-                chart.data.datasets[1].pointRadius = pointRadius(s.labels.length);
-                chart.update();
-                btnRange.textContent = showAll ? '최근 30회 보기' : '전체 기간 보기';
-                btnRange.style.background = showAll ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)';
-                btnRange.style.borderColor = showAll ? '#3b82f6' : 'rgba(255,255,255,0.15)';
-                btnRange.style.color = showAll ? '#93c5fd' : '#ccc';
-            });
-        } else if (btnRange) {
-            btnRange.style.display = 'none'; // 30회 이하면 버튼 숨김
-        }
+        btnRange.textContent = '전체 기간 보기';
+        btnRange.style.background = 'rgba(255,255,255,0.06)';
+        btnRange.style.borderColor = 'rgba(255,255,255,0.15)';
+        btnRange.style.color = '#ccc';
+        btnRange.style.display = allData[type].labels.length > RECENT ? '' : 'none';
+
+        document.querySelectorAll('.chart-type-btn').forEach(b => {
+            const active = b.dataset.type === type;
+            b.style.background = active ? 'rgba(59,130,246,0.25)' : 'rgba(255,255,255,0.06)';
+            b.style.borderColor = active ? '#3b82f6' : 'rgba(255,255,255,0.15)';
+            b.style.color = active ? '#93c5fd' : '#ccc';
+        });
+        updateChartEmpty();
     }
+
+    document.querySelectorAll('.chart-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchType(btn.dataset.type));
+    });
+
+    // 전체/최근 30회 토글
+    const btnRange = document.getElementById('btnChartRange');
+    btnRange.addEventListener('click', function () {
+        showAll = !showAll;
+        const s = getSlice(currentType);
+        chart.data.labels = s.labels;
+        chart.data.datasets[0].data = s.avg;
+        chart.data.datasets[0].pointRadius = pointRadius(s.labels.length);
+        chart.data.datasets[1].data = s.max;
+        chart.data.datasets[1].pointRadius = pointRadius(s.labels.length);
+        chart.data.datasets[2].data = makeTargetData(s.labels);
+        chart.update();
+        btnRange.textContent = showAll ? '최근 30회 보기' : '전체 기간 보기';
+        btnRange.style.background = showAll ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)';
+        btnRange.style.borderColor = showAll ? '#3b82f6' : 'rgba(255,255,255,0.15)';
+        btnRange.style.color = showAll ? '#93c5fd' : '#ccc';
+    });
+
+    // 초기 탭 활성화
+    switchType(currentType);
 
 
     // 1. 출석체크 연동

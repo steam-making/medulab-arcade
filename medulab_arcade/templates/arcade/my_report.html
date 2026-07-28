@@ -903,8 +903,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const ctx = chart.ctx;
             ctx.save();
             ctx.font = 'bold 11px "Outfit", sans-serif';
-            const unit = currentLang === 'ko' ? '타' : 'cpm';
-            const text = `목표 ${t}${unit}`;
+            const text = `목표 ${t}타`;
             const tw = ctx.measureText(text).width;
             ctx.fillStyle = 'rgba(20,20,40,0.75)';
             ctx.fillRect(x - tw - 10, y - 15, tw + 8, 17);

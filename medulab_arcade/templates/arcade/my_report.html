@@ -513,7 +513,7 @@
         </div>
     </div>
 
-    <!-- 오늘의 요약 성과 그리드 -->
+    <!-- 요약 성과 그리드 -->
     <div class="summary-grid">
         <div class="summary-card">
             <div class="summary-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">⌨️</div>
@@ -523,17 +523,24 @@
             </div>
         </div>
         <div class="summary-card">
-            <div class="summary-icon" style="background: rgba(0, 180, 255, 0.1); color: #00b4ff;">⚡</div>
+            <div class="summary-icon" style="background: rgba(0, 180, 255, 0.1); color: #00b4ff;">📝</div>
             <div class="summary-info">
-                <h4>오늘 최고 타속</h4>
-                <div class="value">{{ max_speed }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">WPM</span></div>
+                <h4>누적 타자연습</h4>
+                <div class="value">{{ total_typing_count }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">회</span></div>
             </div>
         </div>
         <div class="summary-card">
-            <div class="summary-icon" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;">🎯</div>
+            <div class="summary-icon" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8;">🇰🇷</div>
             <div class="summary-info">
-                <h4>오늘 평균 정확도</h4>
-                <div class="value">{{ avg_accuracy }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">%</span></div>
+                <h4>한글 짧은글 평균타속</h4>
+                <div class="value">{{ ko_avg_speed }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">타</span></div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">🇺🇸</div>
+            <div class="summary-info">
+                <h4>영어 짧은글 평균타속</h4>
+                <div class="value">{{ en_avg_speed }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">타</span></div>
             </div>
         </div>
         <div class="summary-card">
@@ -541,6 +548,43 @@
             <div class="summary-info">
                 <h4>오늘 해결한 코딩</h4>
                 <div class="value">{{ coding_count }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">건</span></div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon" style="background: rgba(167, 139, 250, 0.1); color: #a78bfa;">🖼️</div>
+            <div class="summary-info">
+                <h4>내 작품</h4>
+                <a href="{% url 'my_projects' %}" style="text-decoration:none;">
+                    <div class="value">{{ my_projects_count }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">개</span></div>
+                </a>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon" style="background: rgba(248, 113, 113, 0.1); color: #f87171;">❤️</div>
+            <div class="summary-info">
+                <h4>받은 좋아요</h4>
+                <div class="value">{{ total_likes }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">개</span></div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon" style="background: rgba(52, 211, 153, 0.1); color: #34d399;">🎖️</div>
+            <div class="summary-info">
+                <h4>획득 배지</h4>
+                <div class="value">{{ badge_count }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">개</span></div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">🎓</div>
+            <div class="summary-info">
+                <h4>취득 자격증</h4>
+                <div class="value">{{ cert_count }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">개</span></div>
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-icon" style="background: rgba(250, 204, 21, 0.1); color: #facc15;">🏆</div>
+            <div class="summary-info">
+                <h4>수상 이력</h4>
+                <div class="value">{{ award_count }} <span style="font-size:14px; font-weight:600; color:var(--text-muted);">건</span></div>
             </div>
         </div>
     </div>
@@ -682,65 +726,90 @@
             </div>
         </div>
 
-        <!-- 4. 내 성장 요약 -->
-        <div class="section-card">
-            <h3>📊 내 성장 요약</h3>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:16px;">
-                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:center;">
-                    <div style="font-size:22px; font-weight:800; font-family:'Outfit'; color:#00b4ff;">{{ total_typing_count }}</div>
-                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">누적 타자연습</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:center;">
-                    <div style="font-size:22px; font-weight:800; font-family:'Outfit'; color:#f59e0b;">{{ global_max_speed }}</div>
-                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">최고 타속 (WPM)</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:center;">
-                    <a href="{% url 'my_projects' %}" style="text-decoration:none;">
-                    <div style="font-size:22px; font-weight:800; font-family:'Outfit'; color:#a78bfa;">{{ my_projects_count }}</div>
-                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">내 작품</div>
-                    </a>
-                </div>
-                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:center;">
-                    <div style="font-size:22px; font-weight:800; font-family:'Outfit'; color:#f87171;">{{ total_likes }}</div>
-                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">받은 좋아요</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:center;">
-                    <div style="font-size:22px; font-weight:800; font-family:'Outfit'; color:#34d399;">{{ badge_count }}</div>
-                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">획득 배지</div>
-                </div>
-            </div>
-        </div>
-
         <!-- 5-A. 자격증 취득 컬렉션 -->
         <div class="section-card">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
                 <h3>🎓 자격증 취득 컬렉션</h3>
                 <a href="{% url 'board_cert' %}" style="font-size:12px; color:var(--text-muted); text-decoration:none; padding:5px 12px; border:1px solid var(--border); border-radius:8px; transition:color .2s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color=''">전체 보기 →</a>
             </div>
+
+            {% if not profile.real_name %}
+            <div style="text-align:center; padding:32px; color:var(--text-muted); font-size:13.5px;">
+                <span style="color:#ffc107;">⚠️ 내 정보에 실명을 등록하면 자동으로 연동됩니다.</span>
+            </div>
+            {% else %}
+
+            <!-- ① 취득한 자격증 -->
             {% if my_certs %}
-            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; margin-bottom:28px;">
                 {% for cert in my_certs %}
-                <div style="border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; background:rgba(255,255,255,0.03); display:flex; flex-direction:column; gap:8px; transition:all .25s;" onmouseover="this.style.borderColor='rgba(16,185,129,0.4)';this.style.background='rgba(16,185,129,0.05)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(255,255,255,0.03)'">
+                <div style="border:1px solid rgba(16,185,129,0.35); border-radius:16px; padding:16px; background:rgba(16,185,129,0.05); display:flex; flex-direction:column; gap:8px; transition:all .25s;" onmouseover="this.style.borderColor='rgba(16,185,129,0.6)';this.style.background='rgba(16,185,129,0.1)'" onmouseout="this.style.borderColor='rgba(16,185,129,0.35)';this.style.background='rgba(16,185,129,0.05)'">
                     {% if cert.thumbnail %}
-                    <img src="{{ cert.thumbnail.url }}" alt="{{ cert.cert_name }}" style="width:100%; height:90px; object-fit:contain; border-radius:10px; background:rgba(255,255,255,0.04); padding:6px;">
+                    <img src="{{ cert.thumbnail.url }}" alt="{{ cert.cert_name }}" style="width:100%; height:120px; object-fit:contain; border-radius:10px; background:rgba(255,255,255,0.04); padding:6px;">
+                    {% elif cert.cert_info and cert.cert_info.thumbnail %}
+                    <img src="{{ cert.cert_info.thumbnail.url }}" alt="{{ cert.cert_name }}" style="width:100%; height:120px; object-fit:contain; border-radius:10px; background:rgba(255,255,255,0.04); padding:6px;">
                     {% else %}
-                    <div style="width:100%; height:90px; border-radius:10px; background:rgba(16,185,129,0.08); display:flex; align-items:center; justify-content:center; font-size:36px;">🎓</div>
+                    <div style="width:100%; height:120px; border-radius:10px; background:rgba(16,185,129,0.1); display:flex; align-items:center; justify-content:center; font-size:48px;">🎓</div>
                     {% endif %}
                     <div style="font-weight:800; font-size:14px; color:#e0e0e0; line-height:1.3;">{{ cert.cert_name }}</div>
                     {% if cert.issuer %}<div style="font-size:12px; color:var(--text-muted);">{{ cert.issuer }}</div>{% endif %}
-                    <div style="font-size:12px; color:#10b981; font-weight:700;">{{ cert.date_acquired|date:"Y.m.d" }} 취득</div>
+                    <div style="font-size:12px; color:#10b981; font-weight:700;">✅ {{ cert.date_acquired|date:"Y.m.d" }} 취득</div>
                 </div>
                 {% endfor %}
             </div>
             {% else %}
-            <div style="text-align:center; padding:32px; color:var(--text-muted); font-size:13.5px;">
-                {% if profile.real_name %}
-                등록된 자격증이 없습니다.
-                {% else %}
-                <span style="color:#ffc107;">⚠️ 내 정보에 실명을 등록하면 자동으로 연동됩니다.</span>
-                {% endif %}
+            <p style="font-size:13px; color:var(--text-muted); margin:0 0 24px;">아직 취득한 자격증이 없습니다.</p>
+            {% endif %}
+
+            <!-- ② 추천 자격증 -->
+            {% if recommended_certs %}
+            <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:20px;">
+                <p style="font-size:13px; font-weight:800; color:var(--text-secondary); margin:0 0 14px;">🎯 추천 자격증 <span style="font-size:11px; font-weight:500; color:var(--text-muted);">— 현재 학년에 맞는 목표 자격증</span></p>
+                <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                    {% for rec in recommended_certs %}
+                    {% if rec.certinfo %}
+                    <a href="{% url 'board_certinfo_detail' rec.certinfo.pk %}" style="text-decoration:none;">
+                    {% endif %}
+                    <div style="display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); transition:all .2s;"
+                         onmouseover="this.style.background='rgba(255,255,255,0.07)';this.style.borderColor='rgba(255,255,255,0.2)'"
+                         onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.1)'">
+                        <!-- 카테고리 아이콘 -->
+                        <span style="font-size:18px;">
+                            {% if rec.category == 'ai' %}🤖
+                            {% elif rec.category == 'block_coding' %}🧩
+                            {% elif rec.category == 'python' %}🐍
+                            {% elif rec.category == 'robot' %}🦾
+                            {% elif rec.category == 'doc_work' %}📄
+                            {% else %}🎓{% endif %}
+                        </span>
+                        <div>
+                            <div style="font-size:13px; font-weight:800; color:#e0e0e0;">{{ rec.name }}</div>
+                            <div style="font-size:11px; color:var(--text-muted);">{{ rec.issuer }}</div>
+                        </div>
+                        <!-- 카테고리 색상 점 -->
+                        <span style="width:6px; height:6px; border-radius:50%; flex-shrink:0;
+                            {% if rec.category == 'ai' %}background:#a855f7;
+                            {% elif rec.category == 'block_coding' %}background:#f97316;
+                            {% elif rec.category == 'python' %}background:#3b82f6;
+                            {% elif rec.category == 'robot' %}background:#f59e0b;
+                            {% elif rec.category == 'doc_work' %}background:#14b8a6;
+                            {% endif %}"></span>
+                    </div>
+                    {% if rec.certinfo %}</a>{% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% elif my_certs and not recommended_certs and student_grade_key %}
+            <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:20px;">
+                <p style="font-size:13px; color:#10b981; font-weight:700;">🎉 이 학년의 추천 자격증을 모두 취득했습니다!</p>
+            </div>
+            {% elif not student_grade_key %}
+            <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">
+                생년월일을 등록하면 학년에 맞는 추천 자격증이 표시됩니다.
             </div>
             {% endif %}
+
+            {% endif %}{# end if profile.real_name #}
         </div>
 
         <!-- 5-B. 수상 이력 컬렉션 -->

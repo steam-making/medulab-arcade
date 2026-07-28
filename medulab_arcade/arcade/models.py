@@ -568,12 +568,29 @@ class Certification(models.Model):
 
 
 class CertInfo(models.Model):
+    CATEGORY_CHOICES = [
+        ('ai',           'AI'),
+        ('block_coding', '블록코딩'),
+        ('python',       '파이썬코딩'),
+        ('robot',        '로봇'),
+        ('doc_work',     '문서작업'),
+    ]
+    GRADE_KEYS = ['kids_5_7', 'elem_1_2', 'elem_3_4', 'elem_5_6', 'mid_high', 'adult']
+
     name = models.CharField('자격증명', max_length=100)
+    display_name = models.CharField('카드 표시명', max_length=150, blank=True, default='',
+        help_text='목록 카드에 표시할 이름 (비워두면 name 사용). 예) COS Entry 1~4급')
+    is_national_cert = models.BooleanField('국가공인 자격증', default=False)
     issuer = models.CharField('발급기관', max_length=100, blank=True, null=True)
     description = models.TextField('자격내용 및 소개', blank=True, null=True)
+    grade_info = models.JSONField('등급표 (JSON)', blank=True, null=True,
+        help_text='[{"grade":"3급","content":"평가내용","target":"추천대상"}, ...]')
     thumbnail = models.ImageField('대표 이미지(로고 등)', upload_to='certinfo/', blank=True, null=True)
     link = models.URLField('관련 링크', blank=True, null=True)
     order = models.IntegerField('정렬순서', default=0)
+    category = models.CharField('분류', max_length=20, choices=CATEGORY_CHOICES, blank=True, null=True)
+    target_grades = models.CharField('대상 학년(콤마구분)', max_length=200, blank=True, default='',
+        help_text='ex) elem_1_2,elem_3_4')
     created_at = models.DateTimeField('등록일', auto_now_add=True)
 
     class Meta:
@@ -583,6 +600,9 @@ class CertInfo(models.Model):
 
     def __str__(self):
         return self.name
+
+    def target_grade_list(self):
+        return [g.strip() for g in self.target_grades.split(',') if g.strip()]
 
 
 class CompetitionType(models.Model):

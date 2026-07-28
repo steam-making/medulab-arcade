@@ -727,16 +727,67 @@ class CertificationForm(forms.ModelForm):
 
 
 class CertInfoForm(forms.ModelForm):
+    _IS = 'width:100%; padding: 10px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'
+
+    CATEGORY_CHOICES = [
+        ('ai',           'AI'),
+        ('block_coding', '블록코딩'),
+        ('python',       '파이썬코딩'),
+        ('robot',        '로봇'),
+        ('doc_work',     '문서작업'),
+    ]
+    GRADE_CHOICES = [
+        ('kids_5_7', '유아·어린이 (5~7세)'),
+        ('elem_1_2', '초등 1~2학년'),
+        ('elem_3_4', '초등 3~4학년'),
+        ('elem_5_6', '초등 5~6학년'),
+        ('mid_high', '중·고등'),
+        ('adult',    '대학·일반'),
+    ]
+
+    categories_multi = forms.MultipleChoiceField(
+        choices=CATEGORY_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label='분류 (복수 선택 가능)',
+    )
+    grades_multi = forms.MultipleChoiceField(
+        choices=GRADE_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label='대상 학년',
+    )
+
     class Meta:
         model = CertInfo
-        fields = ['name', 'issuer', 'description', 'link', 'thumbnail', 'order']
+        fields = ['name', 'display_name', 'issuer', 'description', 'grade_info', 'link', 'thumbnail', 'order', 'is_national_cert']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
-            'issuer': forms.TextInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
-            'description': forms.Textarea(attrs={'class': 'form-input', 'rows': 5, 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
-            'link': forms.URLInput(attrs={'class': 'form-input', 'placeholder': 'https://...', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
-            'order': forms.NumberInput(attrs={'class': 'form-input', 'style': 'width:100%; padding: 10px; margin-bottom: 15px; border-radius:8px; background: rgba(255,255,255,0.05); color:white; border: 1px solid rgba(255,255,255,0.1);'}),
+            'name':         forms.TextInput(attrs={'style': 'width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1);'}),
+            'display_name': forms.TextInput(attrs={'placeholder': '예) COS Entry 1~4급', 'style': 'width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1);'}),
+            'issuer':       forms.TextInput(attrs={'style': 'width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1);'}),
+            'description':  forms.Textarea(attrs={'rows': 5, 'style': 'width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1);'}),
+            'grade_info':   forms.HiddenInput(),
+            'link':         forms.URLInput(attrs={'placeholder': 'https://...', 'style': 'width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1);'}),
+            'order':        forms.NumberInput(attrs={'style': 'width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1);'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields['categories_multi'].initial = [
+                c.strip() for c in (self.instance.category or '').split(',') if c.strip()
+            ]
+            self.fields['grades_multi'].initial = [
+                g.strip() for g in (self.instance.target_grades or '').split(',') if g.strip()
+            ]
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.category = ','.join(self.cleaned_data.get('categories_multi', []))
+        instance.target_grades = ','.join(self.cleaned_data.get('grades_multi', []))
+        if commit:
+            instance.save()
+        return instance
 
 
 class CompetitionTypeForm(forms.ModelForm):

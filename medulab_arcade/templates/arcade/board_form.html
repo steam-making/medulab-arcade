@@ -2,6 +2,31 @@
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+/* CheckboxSelectMultiple 다크 테마 스타일 */
+.multi-check-list { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.multi-check-list li { margin: 0; }
+.multi-check-list label {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.7);
+    font-size: 13px; font-weight: 600;
+    transition: all .18s; user-select: none;
+}
+.multi-check-list label:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.multi-check-list input[type="checkbox"] { display: none; }
+.multi-check-list input[type="checkbox"]:checked + span,
+.multi-check-list label:has(input:checked) {
+    background: rgba(59,130,246,0.22);
+    border-color: rgba(59,130,246,0.5);
+    color: #93c5fd;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div style="max-width: 800px; margin: 40px auto; padding: 20px;">
     <h2 style="color: #fff; font-size: 28px; font-weight: 800; margin-bottom: 24px;">{{ title }}</h2>
@@ -170,6 +195,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     setupAutocomplete('id_student_name', '/api/search-users/', '👤');
+
+    // CheckboxSelectMultiple → pill 스타일 적용
+    document.querySelectorAll('ul').forEach(ul => {
+        const checkboxes = ul.querySelectorAll('input[type="checkbox"]');
+        if (!checkboxes.length) return;
+        ul.classList.add('multi-check-list');
+        ul.querySelectorAll('label').forEach(label => {
+            const cb = label.querySelector('input[type="checkbox"]');
+            if (!cb) return;
+            const updateStyle = () => {
+                if (cb.checked) {
+                    label.style.background = 'rgba(59,130,246,0.22)';
+                    label.style.borderColor = 'rgba(59,130,246,0.5)';
+                    label.style.color = '#93c5fd';
+                } else {
+                    label.style.background = '';
+                    label.style.borderColor = '';
+                    label.style.color = '';
+                }
+            };
+            updateStyle();
+            cb.addEventListener('change', updateStyle);
+        });
+    });
 
     function setupSelectAutocomplete(config) {
         const searchInput = document.getElementById(config.searchInputId);

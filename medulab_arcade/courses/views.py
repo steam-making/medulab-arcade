@@ -1413,7 +1413,8 @@ def program_roadmap(request):
         ("elem_1_2", "초등 1~2학년"),
         ("elem_3_4", "초등 3~4학년"),
         ("elem_5_6", "초등 5~6학년"),
-        ("mid_high", "중고등"),
+        ("mid_high", "중·고등"),
+        ("adult", "대학·일반"),
     ]
     
     mapping = {track.id: {} for track in tracks_list}

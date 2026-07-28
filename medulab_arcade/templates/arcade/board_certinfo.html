@@ -2,46 +2,219 @@
 
 {% block title %}자격종류 - 메듀랩 아케이드{% endblock %}
 
+{% block extra_css %}
+<style>
+.cert-page { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+.cert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+.cert-title { color: #fff; font-size: 28px; font-weight: 800; margin: 0; }
+
+/* 카테고리 탭 */
+.cat-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+.cat-tab {
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    color: var(--text-secondary);
+    transition: all .2s;
+}
+.cat-tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.cat-tab.active { background: rgba(16,185,129,0.18); border-color: rgba(16,185,129,0.45); color: #10b981; }
+.cat-tab[data-cat="block_coding"].active { background: rgba(249,115,22,0.18); border-color: rgba(249,115,22,0.45); color: #f97316; }
+.cat-tab[data-cat="python"].active     { background: rgba(59,130,246,0.18); border-color: rgba(59,130,246,0.45); color: #3b82f6; }
+.cat-tab[data-cat="ai"].active         { background: rgba(168,85,247,0.18); border-color: rgba(168,85,247,0.45); color: #a855f7; }
+.cat-tab[data-cat="robot"].active      { background: rgba(245,158,11,0.18); border-color: rgba(245,158,11,0.45); color: #f59e0b; }
+.cat-tab[data-cat="doc_work"].active  { background: rgba(20,184,166,0.18); border-color: rgba(20,184,166,0.45); color: #14b8a6; }
+
+/* 카드 그리드 */
+.cert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.cert-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.07);
+    transition: transform .2s, background .2s;
+    position: relative;
+}
+.cert-card:hover { background: rgba(255,255,255,0.1); transform: translateY(-4px); }
+.cert-card a { text-decoration: none; color: inherit; display: block; }
+.cert-thumb {
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, #1e293b, #0f172a, #334155);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; box-sizing: border-box; position: relative;
+}
+.cert-thumb img { max-height: 55%; max-width: 100%; object-fit: contain; margin-bottom: 16px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); }
+.cert-thumb-icon { font-size: 48px; margin-bottom: 16px; }
+.cert-name { color: #cbd5e1; font-size: 18px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+.cert-issuer { color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 600; text-align: center; }
+
+/* 카테고리 배지 */
+.cat-badge {
+    position: absolute; top: 10px; left: 10px;
+    padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 800;
+}
+.cat-badge-block_coding { background: rgba(249,115,22,0.25); color: #f97316; border: 1px solid rgba(249,115,22,0.4); }
+.cat-badge-python       { background: rgba(59,130,246,0.25); color: #60a5fa; border: 1px solid rgba(59,130,246,0.4); }
+.cat-badge-ai           { background: rgba(168,85,247,0.25); color: #c084fc; border: 1px solid rgba(168,85,247,0.4); }
+.cat-badge-robot        { background: rgba(245,158,11,0.25); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
+.cat-badge-doc_work     { background: rgba(20,184,166,0.25); color: #2dd4bf; border: 1px solid rgba(20,184,166,0.4); }
+
+.national-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: linear-gradient(135deg, rgba(250,204,21,0.22), rgba(251,146,60,0.18));
+    color: #fbbf24; border: 1px solid rgba(250,204,21,0.45);
+    border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 900;
+    letter-spacing: 0.3px;
+}
+
+/* 관리자 버튼 */
+.admin-btns { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+.admin-btn {
+    background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px;
+    text-decoration: none; font-size: 12px; transition: background .2s;
+}
+.admin-btn:hover { background: rgba(59,130,246,0.9); }
+.admin-btn.del:hover { background: rgba(239,68,68,0.9); }
+
+/* 드래그앤드롭 (관리자) */
+.drag-handle {
+    position: absolute; bottom: 10px; right: 10px;
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    cursor: grab; color: rgba(255,255,255,0.4); font-size: 14px;
+    transition: all .2s; z-index: 10;
+    user-select: none;
+}
+.drag-handle:hover { background: rgba(255,255,255,0.18); color: #fff; }
+.cert-card.sortable-ghost { opacity: 0.35; border: 2px dashed rgba(168,85,247,0.6); }
+.cert-card.sortable-chosen { transform: scale(1.03); box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 100; }
+
+/* 저장 알림 */
+#reorder-toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #10b981; color: #fff; padding: 10px 20px;
+    border-radius: 10px; font-size: 14px; font-weight: 700;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s; z-index: 9999;
+}
+
+.empty-msg { grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted); background: rgba(255,255,255,0.05); border-radius: 16px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="max-width: 1000px; margin: 40px auto; padding: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h2 style="color: #fff; font-size: 28px; font-weight: 800; margin: 0;">🎖️ 자격종류 안내</h2>
-        {% if user.is_staff %}
-        <a href="{% url 'board_certinfo_create' %}" style="background: #3b82f6; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">✍️ 자격추가</a>
-        {% endif %}
-    </div>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;">
-        {% for certinfo in certinfos %}
-            <div style="background: rgba(255,255,255,0.05); border-radius: 16px; overflow: hidden; transition: transform 0.2s, background 0.2s; position: relative; border: 1px solid rgba(255,255,255,0.05);" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(-4px)';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.transform='translateY(0)';">
-                <a href="{% url 'board_certinfo_detail' certinfo.pk %}" style="text-decoration: none; color: inherit; display: block;">
-                    <div style="aspect-ratio: 4/3; background: linear-gradient(135deg, #1e293b, #0f172a, #334155); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; box-sizing: border-box;">
-                        {% if certinfo.thumbnail %}
-                        <img src="{{ certinfo.thumbnail.url }}" style="max-height: 55%; max-width: 100%; object-fit: contain; margin-bottom: 16px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));">
-                        {% else %}
-                        <span style="font-size: 48px; display: inline-block; margin-bottom: 16px;">📜</span>
-                        {% endif %}
-                        
-                        <div style="text-align: center;">
-                            <div style="color: #cbd5e1; font-size: 20px; font-weight: 800; margin-bottom: 6px;">{{ certinfo.display_name|default:certinfo.name }}</div>
-                            {% if certinfo.issuer %}
-                            <div style="color: rgba(255,255,255,0.6); font-size: 14px; font-weight: bold;">{{ certinfo.issuer }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </a>
-                {% if user.is_staff %}
-                <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 6px;">
-                    <a href="{% url 'board_certinfo_update' certinfo.pk %}" style="background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 12px; transition: background 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.9)';" onmouseout="this.style.background='rgba(0,0,0,0.7)';">수정</a>
-                    <a href="{% url 'board_certinfo_delete' certinfo.pk %}" style="background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 12px; transition: background 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.9)';" onmouseout="this.style.background='rgba(0,0,0,0.7)';">삭제</a>
-                </div>
-                {% endif %}
-            </div>
-        {% empty %}
-        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); background: rgba(255,255,255,0.05); border-radius: 16px;">
-            등록된 자격종류 정보가 없습니다.
+<div class="cert-page">
+    <div class="cert-header">
+        <h2 class="cert-title">🎖️ 자격종류 안내</h2>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            {% if user.is_staff %}
+            <span id="drag-tip" style="font-size:12px; color:var(--text-muted);">⠿ 드래그로 순서 변경 가능</span>
+            <a href="{% url 'board_certinfo_create' %}" style="background:#3b82f6; color:#fff; padding:8px 16px; border-radius:8px; text-decoration:none; font-weight:700; font-size:14px;">✍️ 자격추가</a>
+            {% endif %}
         </div>
+    </div>
+
+    <!-- 카테고리 탭 -->
+    <div class="cat-tabs">
+        {% for cat_key, cat_label in categories %}
+        <a href="?cat={{ cat_key }}" class="cat-tab {% if active_cat == cat_key %}active{% endif %}" data-cat="{{ cat_key }}">
+            {% if cat_key == 'all' %}📋
+            {% elif cat_key == 'ai' %}🤖
+            {% elif cat_key == 'block_coding' %}🧩
+            {% elif cat_key == 'python' %}🐍
+            {% elif cat_key == 'robot' %}🦾
+            {% elif cat_key == 'doc_work' %}📄
+            {% endif %}
+            {{ cat_label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- 카드 그리드 -->
+    <div class="cert-grid" id="certGrid">
+        {% for certinfo in certinfos %}
+        <div class="cert-card" data-pk="{{ certinfo.pk }}">
+            <a href="{% url 'board_certinfo_detail' certinfo.pk %}">
+                <div class="cert-thumb">
+                    {% if certinfo.category %}
+                    <div style="position:absolute; top:10px; left:10px; display:flex; flex-wrap:wrap; gap:4px;">
+                        {% if 'ai' in certinfo.category %}<span class="cat-badge cat-badge-ai" style="position:static;">AI</span>{% endif %}
+                        {% if 'block_coding' in certinfo.category %}<span class="cat-badge cat-badge-block_coding" style="position:static;">블록코딩</span>{% endif %}
+                        {% if 'python' in certinfo.category %}<span class="cat-badge cat-badge-python" style="position:static;">파이썬</span>{% endif %}
+                        {% if 'robot' in certinfo.category %}<span class="cat-badge cat-badge-robot" style="position:static;">로봇</span>{% endif %}
+                        {% if 'doc_work' in certinfo.category %}<span class="cat-badge cat-badge-doc_work" style="position:static;">문서작업</span>{% endif %}
+                    </div>
+                    {% endif %}
+                    {% if certinfo.thumbnail %}
+                    <img src="{{ certinfo.thumbnail.url }}" alt="{{ certinfo.name }}">
+                    {% else %}
+                    <span class="cert-thumb-icon">📜</span>
+                    {% endif %}
+                    {% if certinfo.is_national_cert %}
+                    <span class="national-badge">⭐ 국가공인</span>
+                    {% endif %}
+                    <div class="cert-name">{{ certinfo.display_name|default:certinfo.name }}</div>
+                    {% if certinfo.issuer %}<div class="cert-issuer">{{ certinfo.issuer }}</div>{% endif %}
+                </div>
+            </a>
+            {% if user.is_staff %}
+            <div class="admin-btns">
+                <a href="{% url 'board_certinfo_update' certinfo.pk %}" class="admin-btn">수정</a>
+                <a href="{% url 'board_certinfo_delete' certinfo.pk %}" class="admin-btn del">삭제</a>
+            </div>
+            <div class="drag-handle" title="드래그하여 순서 변경">⠿</div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="empty-msg">등록된 자격종류 정보가 없습니다.</div>
         {% endfor %}
     </div>
 </div>
+
+<div id="reorder-toast">✅ 순서 저장 완료</div>
+
+{% if user.is_staff %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+const REORDER_URL = "{% url 'board_certinfo_reorder' %}";
+const CSRF = "{{ csrf_token }}";
+
+const grid = document.getElementById('certGrid');
+const toast = document.getElementById('reorder-toast');
+
+function showToast(msg, ok) {
+    toast.textContent = (ok ? '✅ ' : '❌ ') + msg;
+    toast.style.background = ok ? '#10b981' : '#ef4444';
+    toast.style.opacity = '1';
+    setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+}
+
+Sortable.create(grid, {
+    handle: '.drag-handle',
+    animation: 180,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    onEnd: function() {
+        const ids = [...grid.querySelectorAll('.cert-card[data-pk]')]
+                        .map(el => parseInt(el.dataset.pk));
+        fetch(REORDER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF,
+            },
+            body: JSON.stringify({ ids }),
+        })
+        .then(r => r.json())
+        .then(d => showToast(d.ok ? '순서 저장 완료' : d.error, d.ok))
+        .catch(() => showToast('저장 실패', false));
+    },
+});
+</script>
+{% endif %}
 {% endblock %}

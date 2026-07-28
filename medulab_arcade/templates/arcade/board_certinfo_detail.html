@@ -1,53 +1,201 @@
 {% extends 'arcade/base.html' %}
 
-{% block title %}{{ certinfo.name }} - 자격종류{% endblock %}
+{% block title %}{{ certinfo.display_name|default:certinfo.name }} - 자격종류{% endblock %}
+
+{% block extra_css %}
+<style>
+.ci-wrap { max-width: 860px; margin: 40px auto; padding: 0 20px; }
+.ci-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden; }
+
+/* 헤더 */
+.ci-header {
+    display: flex; align-items: center; gap: 24px;
+    padding: 32px 36px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.02);
+    flex-wrap: wrap;
+}
+.ci-thumb-box {
+    flex-shrink: 0;
+    width: 110px; height: 110px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.ci-thumb-box img { width: 100%; height: 100%; object-fit: contain; padding: 10px; }
+.ci-thumb-icon { font-size: 52px; }
+.ci-meta { flex: 1; min-width: 200px; }
+.ci-name {
+    font-size: 26px; font-weight: 900; color: #fff;
+    margin: 0 0 8px;
+    line-height: 1.2;
+}
+.ci-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.ci-badge {
+    padding: 4px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;
+}
+.ci-badge-issuer { background: rgba(167,139,250,0.12); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.3); }
+.ci-badge-ai           { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+.ci-badge-block_coding { background: rgba(249,115,22,0.15); color: #f97316; border: 1px solid rgba(249,115,22,0.3); }
+.ci-badge-python       { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+.ci-badge-robot        { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+.ci-badge-doc_work     { background: rgba(20,184,166,0.15); color: #2dd4bf; border: 1px solid rgba(20,184,166,0.3); }
+
+/* 본문 */
+.ci-body { padding: 32px 36px; display: flex; flex-direction: column; gap: 28px; }
+
+/* 설명 */
+.ci-desc {
+    color: #cbd5e1; font-size: 15px; line-height: 1.85;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px; padding: 20px 24px;
+    border-left: 3px solid rgba(255,255,255,0.15);
+    white-space: pre-wrap;
+}
+
+/* 등급표 */
+.ci-grade-title {
+    font-size: 14px; font-weight: 800; color: var(--text-secondary);
+    margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
+}
+.grade-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.grade-table th {
+    padding: 10px 14px; text-align: left;
+    background: rgba(255,255,255,0.05);
+    color: var(--text-secondary); font-weight: 700; font-size: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.grade-table th:first-child { border-radius: 10px 0 0 0; width: 100px; }
+.grade-table th:last-child  { border-radius: 0 10px 0 0; }
+.grade-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    vertical-align: top; color: #ddd; line-height: 1.55;
+}
+.grade-table tr:last-child td { border-bottom: none; }
+.grade-table tr:hover td { background: rgba(255,255,255,0.025); }
+.grade-cell {
+    font-weight: 800; font-size: 13px;
+    white-space: nowrap;
+}
+
+/* 링크 버튼 */
+.ci-link-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(59,130,246,0.12); color: #93c5fd;
+    border: 1px solid rgba(59,130,246,0.3); border-radius: 999px;
+    padding: 4px 14px; font-size: 12px; font-weight: 700;
+    text-decoration: none; transition: all .2s;
+}
+.ci-link-btn:hover { background: rgba(59,130,246,0.22); }
+
+/* 관리자 버튼 */
+.admin-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.admin-btn-edit {
+    padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    text-decoration: none; background: rgba(59,130,246,0.15); color: #93c5fd;
+    border: 1px solid rgba(59,130,246,0.3); transition: background .2s;
+}
+.admin-btn-edit:hover { background: rgba(59,130,246,0.3); }
+.admin-btn-del {
+    padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    text-decoration: none; background: rgba(239,68,68,0.12); color: #f87171;
+    border: 1px solid rgba(239,68,68,0.3); transition: background .2s;
+}
+.admin-btn-del:hover { background: rgba(239,68,68,0.28); }
+</style>
+{% endblock %}
 
 {% block content %}
-<div style="max-width: 1000px; margin: 40px auto; padding: 20px;">
-    <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="color: #fff; font-size: 28px; font-weight: 800; margin: 0;">🎖️ 자격종류 안내</h2>
-        <a href="{% url 'board_certinfo' %}" style="color: var(--text-muted); text-decoration: none; padding: 8px 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">목록으로</a>
+<div class="ci-wrap">
+
+    <!-- 뒤로 + 관리자 -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+        <a href="{% url 'board_certinfo' %}" style="color:var(--text-muted); text-decoration:none; display:flex; align-items:center; gap:6px; font-size:13.5px;">
+            ← 자격종류 목록
+        </a>
+        {% if user.is_staff %}
+        <div class="admin-row">
+            <a href="{% url 'board_certinfo_update' certinfo.pk %}" class="admin-btn-edit">✏️ 수정</a>
+            <a href="{% url 'board_certinfo_delete' certinfo.pk %}" class="admin-btn-del">🗑 삭제</a>
+        </div>
+        {% endif %}
     </div>
 
-    <div style="background: rgba(255,255,255,0.05); padding: 40px; border-radius: 16px; display: flex; flex-direction: column; gap: 40px;">
-        
-        <!-- 헤더 섹션 -->
-        <div style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 40px; position: relative;">
-            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 100%; height: 100%; background: radial-gradient(circle at 50% 0%, rgba(20, 184, 166, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
-            
-            <div style="font-size: 64px; margin-bottom: 12px; filter: drop-shadow(0 0 15px rgba(20, 184, 166, 0.4)); animation: float-doc 3s infinite ease-in-out; display: inline-block;">📜</div>
-            <style>
-                @keyframes float-doc {
-                    0% { transform: translateY(0) rotate(0deg); }
-                    50% { transform: translateY(-8px) rotate(5deg); }
-                    100% { transform: translateY(0) rotate(0deg); }
-                }
-            </style>
-            
-            <h3 style="color: #2dd4bf; font-size: 44px; font-weight: 900; margin: 0 0 10px 0; letter-spacing: 2px; text-shadow: 0 0 20px rgba(20, 184, 166, 0.6);">{{ certinfo.name }}</h3>
-            
-            <div style="display: flex; justify-content: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
-                {% if certinfo.issuer %}
-                <span style="background: rgba(167,139,250,0.1); padding: 8px 20px; border-radius: 30px; color: #c4b5fd; font-size: 18px; font-weight: bold; border: 1px solid rgba(167,139,250,0.3); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">🏢 발급기관: {{ certinfo.issuer }}</span>
+    <div class="ci-card">
+
+        <!-- 헤더 -->
+        <div class="ci-header">
+            <div class="ci-thumb-box">
+                {% if certinfo.thumbnail %}
+                <img src="{{ certinfo.thumbnail.url }}" alt="{{ certinfo.name }}">
+                {% else %}
+                <span class="ci-thumb-icon">📜</span>
                 {% endif %}
+            </div>
+            <div class="ci-meta">
+                {% if certinfo.is_national_cert %}
+                <div style="margin-bottom:8px;">
+                    <span style="display:inline-flex; align-items:center; gap:5px; background:linear-gradient(135deg,rgba(250,204,21,0.22),rgba(251,146,60,0.18)); color:#fbbf24; border:1px solid rgba(250,204,21,0.5); border-radius:999px; padding:4px 12px; font-size:12px; font-weight:900; letter-spacing:0.5px;">⭐ 국가공인 자격증</span>
+                </div>
+                {% endif %}
+                <h2 class="ci-name">{{ certinfo.display_name|default:certinfo.name }}</h2>
+                <div class="ci-badges">
+                    {% if certinfo.issuer %}
+                    <span class="ci-badge ci-badge-issuer">🏢 {{ certinfo.issuer }}</span>
+                    {% endif %}
+                    {% if certinfo.category %}
+                        {% if 'ai' in certinfo.category %}<span class="ci-badge ci-badge-ai">🤖 AI</span>{% endif %}
+                        {% if 'block_coding' in certinfo.category %}<span class="ci-badge ci-badge-block_coding">🧩 블록코딩</span>{% endif %}
+                        {% if 'python' in certinfo.category %}<span class="ci-badge ci-badge-python">🐍 파이썬코딩</span>{% endif %}
+                        {% if 'robot' in certinfo.category %}<span class="ci-badge ci-badge-robot">🦾 로봇</span>{% endif %}
+                        {% if 'doc_work' in certinfo.category %}<span class="ci-badge ci-badge-doc_work">📄 문서작업</span>{% endif %}
+                    {% endif %}
+                </div>
                 {% if certinfo.link %}
-                <a href="{{ certinfo.link }}" target="_blank" style="background: rgba(59, 130, 246, 0.1); padding: 8px 20px; border-radius: 30px; color: #93c5fd; font-size: 18px; font-weight: bold; border: 1px solid rgba(59, 130, 246, 0.3); box-shadow: 0 4px 6px rgba(0,0,0,0.2); text-decoration: none;">🔗 관련 링크 바로가기</a>
+                <div style="margin-top:14px;">
+                    <a href="{{ certinfo.link }}" target="_blank" class="ci-link-btn">🔗 공식 사이트 바로가기</a>
+                </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- 이미지 섹션 -->
-        {% if certinfo.thumbnail %}
-        <div style="max-width: 500px; margin: 0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 20px; background: rgba(255,255,255,0.1);">
-            <img src="{{ certinfo.thumbnail.url }}" style="width: 100%; display: block; object-fit: contain;" alt="자격증/로고 사진">
+        <!-- 본문 -->
+        <div class="ci-body">
+
+            <!-- 설명 -->
+            {% if certinfo.description %}
+            <div class="ci-desc">{{ certinfo.description }}</div>
+            {% endif %}
+
+            <!-- 등급표 -->
+            {% if certinfo.grade_info %}
+            <div>
+                <p class="ci-grade-title">📋 등급별 안내</p>
+                <table class="grade-table">
+                    <thead>
+                        <tr>
+                            <th>등급</th>
+                            <th>평가 내용</th>
+                            <th>추천 대상</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in certinfo.grade_info %}
+                        <tr>
+                            <td class="grade-cell">{{ row.grade }}</td>
+                            <td>{{ row.content }}</td>
+                            <td style="white-space:nowrap; color:#a3e635;">{{ row.target }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
         </div>
-        {% endif %}
-
-        <!-- 내용 섹션 -->
-        {% if certinfo.description %}
-        <div style="color: #ddd; line-height: 1.8; font-size: 16px; padding: 20px 40px; background: rgba(0,0,0,0.2); border-radius: 12px; white-space: pre-wrap;">{{ certinfo.description }}</div>
-        {% endif %}
-
     </div>
 </div>
 {% endblock %}

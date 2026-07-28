@@ -46,6 +46,7 @@ urlpatterns = [
     path('board/certinfo/<int:pk>/', views.board_certinfo_detail, name='board_certinfo_detail'),
     path('board/certinfo/<int:pk>/update/', views.board_certinfo_update, name='board_certinfo_update'),
     path('board/certinfo/<int:pk>/delete/', views.board_certinfo_delete, name='board_certinfo_delete'),
+    path('board/certinfo/reorder/', views.board_certinfo_reorder, name='board_certinfo_reorder'),
     path('my-projects/', views.my_projects, name='my_projects'),
     path('project/<int:project_id>/preview/', views.project_preview, name='project_preview'),
     path('project/<int:project_id>/delete/', views.delete_project, name='delete_project'),

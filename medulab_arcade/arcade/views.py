@@ -18,7 +18,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.db import DatabaseError
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Case, When, Value, IntegerField
 from django.contrib.auth import login
 from django.contrib import messages
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -38,14 +38,8 @@ SCHEDULE_EVENT_COLORS = {
     ScheduleEvent.EVENT_TYPE_CERTIFICATION: '#a855f7',
 }
 
-AICE_FUTURE_PATTERN = re.compile(r'^AICE\s+FUTURE(?:\s+\d+급)?$', re.IGNORECASE)
-
-
 def get_certinfo_group_name(name):
-    normalized_name = re.sub(r'\s+', ' ', (name or '').strip())
-    if AICE_FUTURE_PATTERN.fullmatch(normalized_name):
-        return 'AICE FUTURE'
-    return normalized_name
+    return re.sub(r'\s+', ' ', (name or '').strip())
 
 
 def home(request):
@@ -2172,18 +2166,46 @@ def board_competition_type_delete(request, pk):
 
 # --- 자격종류 (CertInfo) 게시판 ---
 def board_certinfo(request):
-    certinfos = CertInfo.objects.all().order_by('order', 'name')
+    cat_order = Case(
+        When(category='ai',           then=Value(0)),
+        When(category='block_coding', then=Value(1)),
+        When(category='python',       then=Value(2)),
+        When(category='robot',        then=Value(3)),
+        When(category='doc_work',     then=Value(4)),
+        default=Value(9),
+        output_field=IntegerField(),
+    )
+    certinfos = CertInfo.objects.all().annotate(cat_order=cat_order).order_by('cat_order', 'order', 'name')
     grouped_certinfos = OrderedDict()
 
     for certinfo in certinfos:
         group_name = get_certinfo_group_name(certinfo.name)
-        certinfo.display_name = group_name
         existing = grouped_certinfos.get(group_name)
 
         if existing is None or (existing.name != group_name and certinfo.name == group_name):
             grouped_certinfos[group_name] = certinfo
 
-    return render(request, 'arcade/board_certinfo.html', {'certinfos': grouped_certinfos.values()})
+    categories = [
+        ('all',          '전체'),
+        ('ai',           'AI'),
+        ('block_coding', '블록코딩'),
+        ('python',       '파이썬코딩'),
+        ('robot',        '로봇'),
+        ('doc_work',     '문서작업'),
+    ]
+    active_cat = request.GET.get('cat', 'all')
+    all_items = list(grouped_certinfos.values())
+    if active_cat != 'all':
+        all_items = [
+            c for c in all_items
+            if active_cat in [x.strip() for x in (c.category or '').split(',')]
+        ]
+
+    return render(request, 'arcade/board_certinfo.html', {
+        'certinfos': all_items,
+        'categories': categories,
+        'active_cat': active_cat,
+    })
 
 def board_certinfo_detail(request, pk):
     certinfo = get_object_or_404(CertInfo, pk=pk)
@@ -2199,7 +2221,7 @@ def board_certinfo_create(request):
             return redirect('board_certinfo')
     else:
         form = CertInfoForm()
-    return render(request, 'arcade/board_form.html', {'form': form, 'title': '자격종류 글쓰기'})
+    return render(request, 'arcade/board_certinfo_form.html', {'form': form, 'title': '자격종류 추가'})
 
 @user_passes_test(lambda u: u.is_staff)
 def board_certinfo_update(request, pk):
@@ -2212,7 +2234,7 @@ def board_certinfo_update(request, pk):
             return redirect('board_certinfo_detail', pk=certinfo.pk)
     else:
         form = CertInfoForm(instance=certinfo)
-    return render(request, 'arcade/board_form.html', {'form': form, 'title': '자격종류 수정'})
+    return render(request, 'arcade/board_certinfo_form.html', {'form': form, 'title': '자격종류 수정'})
 
 @user_passes_test(lambda u: u.is_staff)
 def board_certinfo_delete(request, pk):
@@ -2221,6 +2243,23 @@ def board_certinfo_delete(request, pk):
         certinfo.delete()
         return redirect('board_certinfo')
     return render(request, 'arcade/board_confirm_delete.html', {'object': certinfo, 'title': '자격종류 삭제', 'cancel_url': reverse('board_certinfo_detail', args=[pk])})
+
+import json as _json_mod
+@user_passes_test(lambda u: u.is_staff)
+def board_certinfo_reorder(request):
+    if request.method != 'POST':
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['POST'])
+    try:
+        data = _json_mod.loads(request.body)
+        ids = data.get('ids', [])
+        for idx, pk in enumerate(ids):
+            CertInfo.objects.filter(pk=pk).update(order=idx * 10)
+        from django.http import JsonResponse
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        from django.http import JsonResponse
+        return JsonResponse({'ok': False, 'error': str(e)}, status=400)
 
 
 # --- 공모전 (Contest) 게시판 ---
@@ -2396,6 +2435,8 @@ def my_report(request):
     all_scores = TypingScore.objects.filter(user=user)
     total_typing_count = all_scores.count()
     global_max_speed = all_scores.aggregate(Max('speed'))['speed__max'] or 0
+    ko_avg_speed = round(all_scores.filter(language='ko', practice_type='short').aggregate(Avg('speed'))['speed__avg'] or 0)
+    en_avg_speed = round(all_scores.filter(language='en', practice_type='short').aggregate(Avg('speed'))['speed__avg'] or 0)
 
     # 6. 프로필 / 작품 / 배지 통계
     my_projects = Project.objects.filter(author=user)
@@ -2419,6 +2460,80 @@ def my_report(request):
         born = profile.birth_date
         profile_age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
+    # 8. 학년별 추천 자격증 (급수별 세분화)
+    def age_to_grade_key(age):
+        if age is None: return None
+        if age <= 7:  return 'kids_5_7'
+        if age <= 9:  return 'elem_1_2'
+        if age <= 11: return 'elem_3_4'
+        if age <= 13: return 'elem_5_6'
+        if age <= 19: return 'mid_high'
+        return 'adult'
+
+    # 급수별 추천 목록 (certinfo_name = CertInfo.name 매핑용)
+    _REC = {
+        'kids_5_7': [],
+        'elem_1_2': [
+            {'name': 'COS Entry 4급',        'category': 'block_coding', 'issuer': 'YBM',          'certinfo_name': 'COS Entry'},
+            {'name': 'COS Entry 3급',         'category': 'block_coding', 'issuer': 'YBM',          'certinfo_name': 'COS Entry'},
+            {'name': 'KAIT 코딩활용능력 3급', 'category': 'block_coding', 'issuer': 'KAIT',         'certinfo_name': 'KAIT 코딩활용능력'},
+        ],
+        'elem_3_4': [
+            {'name': 'COS Entry 2급',         'category': 'block_coding', 'issuer': 'YBM',          'certinfo_name': 'COS Entry'},
+            {'name': 'COS Entry 1급',         'category': 'block_coding', 'issuer': 'YBM',          'certinfo_name': 'COS Entry'},
+            {'name': 'KAIT 코딩활용능력 3급', 'category': 'block_coding', 'issuer': 'KAIT',         'certinfo_name': 'KAIT 코딩활용능력'},
+            {'name': 'KAIT 코딩활용능력 2급', 'category': 'block_coding', 'issuer': 'KAIT',         'certinfo_name': 'KAIT 코딩활용능력'},
+            {'name': 'AICE Future 3급',        'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Future'},
+            {'name': 'AICE Future 2급',        'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Future'},
+            {'name': 'ITQ',                    'category': 'doc_work',     'issuer': 'KPC',          'certinfo_name': 'ITQ'},
+        ],
+        'elem_5_6': [
+            {'name': 'COS Entry 1급',          'category': 'block_coding', 'issuer': 'YBM',          'certinfo_name': 'COS Entry'},
+            {'name': 'KAIT 코딩활용능력 2급',  'category': 'block_coding', 'issuer': 'KAIT',         'certinfo_name': 'KAIT 코딩활용능력'},
+            {'name': 'KAIT 코딩활용능력 1급',  'category': 'python',       'issuer': 'KAIT',         'certinfo_name': 'KAIT 코딩활용능력'},
+            {'name': 'COS Pro 3급',            'category': 'python',       'issuer': 'YBM',          'certinfo_name': 'COS Pro'},
+            {'name': 'AICE Future 2급',        'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Future'},
+            {'name': 'AICE Future 1급',        'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Future'},
+            {'name': 'AICE Junior',            'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Junior'},
+            {'name': 'ITQ',                    'category': 'doc_work',     'issuer': 'KPC',          'certinfo_name': 'ITQ'},
+        ],
+        'mid_high': [
+            {'name': 'KAIT 코딩활용능력 1급',  'category': 'python',       'issuer': 'KAIT',         'certinfo_name': 'KAIT 코딩활용능력'},
+            {'name': 'COS Pro 3급',            'category': 'python',       'issuer': 'YBM',          'certinfo_name': 'COS Pro'},
+            {'name': 'COS Pro 2급',            'category': 'python',       'issuer': 'YBM',          'certinfo_name': 'COS Pro'},
+            {'name': 'COS Pro 1급',            'category': 'python',       'issuer': 'YBM',          'certinfo_name': 'COS Pro'},
+            {'name': 'AICE Junior',            'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Junior'},
+            {'name': 'AICE Basic',             'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Basic'},
+            {'name': 'AICE Generative 2급',    'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Generative'},
+            {'name': 'AICE Generative 1급',    'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Generative'},
+        ],
+        'adult': [
+            {'name': 'COS Pro 1급',            'category': 'python',       'issuer': 'YBM',          'certinfo_name': 'COS Pro'},
+            {'name': 'AICE Generative 1급',    'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Generative'},
+            {'name': 'AICE Associate',         'category': 'ai',           'issuer': 'KT·한국경제신문', 'certinfo_name': 'AICE Associate'},
+        ],
+    }
+
+    student_grade_key = age_to_grade_key(profile_age)
+    earned_names = {c.cert_name for c in my_certs}
+    certinfo_lookup = {ci.name: ci for ci in CertInfo.objects.filter(category__isnull=False)}
+
+    recommended_certs = []
+    if student_grade_key:
+        # certinfo_name별 최고 등급만 남김 (목록 순서가 낮→높이므로 덮어쓰기)
+        best_per_family = {}
+        for rec in _REC.get(student_grade_key, []):
+            if rec['name'] not in earned_names:
+                best_per_family[rec['certinfo_name']] = rec
+        for rec in best_per_family.values():
+            ci = certinfo_lookup.get(rec['certinfo_name'])
+            recommended_certs.append({
+                'name': rec['name'],
+                'category': rec['category'],
+                'issuer': rec['issuer'],
+                'certinfo': ci,
+            })
+
     context = {
         'today': today,
         'typing_count': typing_count,
@@ -2439,6 +2554,8 @@ def my_report(request):
         'typing_age_label': typing_age_label,
         'total_typing_count': total_typing_count,
         'global_max_speed': global_max_speed,
+        'ko_avg_speed': ko_avg_speed,
+        'en_avg_speed': en_avg_speed,
         # 프로필 통합
         'profile': profile,
         'form': form,
@@ -2450,6 +2567,10 @@ def my_report(request):
         'profile_age': profile_age,
         'my_certs': my_certs,
         'my_awards': my_awards,
+        'cert_count': len(my_certs),
+        'award_count': len(my_awards),
+        'recommended_certs': recommended_certs,
+        'student_grade_key': student_grade_key,
     }
     return render(request, 'arcade/my_report.html', context)
 

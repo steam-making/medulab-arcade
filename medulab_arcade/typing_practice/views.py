@@ -743,12 +743,17 @@ def save_score(request):
 
             data = json.loads(request.body)
             language = data.get('lang', 'ko')
+            raw_speed = int(data.get('speed', 0))
+            raw_score = int(data.get('score', 0))
+            # 비정상 값 상한 처리 (최대 1500 타/분)
+            speed = min(raw_speed, 1500)
+            score = min(raw_score, speed * 10)
             typing_score = TypingScore.objects.create(
                 user=request.user,
                 practice_type=data.get('type', 'key'),
                 language=language,
-                score=data.get('score', 0),
-                speed=data.get('speed', 0),
+                score=score,
+                speed=speed,
                 accuracy=data.get('accuracy', 0.0)
             )
             merge_typing_unlock_progress(request.user, language, data.get('unlocks'))

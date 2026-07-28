@@ -866,11 +866,18 @@
                         ⌨️ 타자연습
                     </a>
 
-                    <!-- 3. 교육프로그램 -->
-                    <a href="{% url 'student_course_list' %}" class="nav-link"
-                        style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); white-space: nowrap;">
-                        🏫 교육프로그램
-                    </a>
+                    <!-- 3. 러닝센터 -->
+                    <div class="nav-dropdown">
+                        <button class="nav-link dropdown-toggle"
+                            style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            🏫 러닝센터 <span style="font-size: 10px;">▼</span>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="{% url 'student_course_list' %}">📚 교육프로그램</a>
+                            <a href="{% url 'program_roadmap' %}">🗺️ 프로그램 로드맵</a>
+                            <a href="{% url 'program_finder' %}">🔍 프로그램 찾기</a>
+                        </div>
+                    </div>
 
                     <!-- 4. 마이 리포트 -->
                     {% if user.is_authenticated %}

@@ -266,6 +266,9 @@
             .nav-menu-wrapper {
                 display: none;
                 flex-direction: column;
+                justify-content: flex-start !important;
+                align-items: stretch !important;
+                flex: none !important;
                 position: fixed;
                 top: 68px;
                 left: 0;
@@ -275,8 +278,7 @@
                 backdrop-filter: blur(24px);
                 border-bottom: 1px solid var(--border);
                 padding: 24px;
-                gap: 20px;
-                align-items: stretch;
+                gap: 12px;
                 z-index: 999;
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;

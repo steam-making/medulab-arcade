@@ -699,6 +699,79 @@
             </div>
         </div>
 
+        <!-- 5-A. 자격증 취득 컬렉션 -->
+        <div class="section-card">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
+                <h3>🎓 자격증 취득 컬렉션</h3>
+                <a href="{% url 'board_cert' %}" style="font-size:12px; color:var(--text-muted); text-decoration:none; padding:5px 12px; border:1px solid var(--border); border-radius:8px; transition:color .2s;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color=''">전체 보기 →</a>
+            </div>
+            {% if my_certs %}
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px;">
+                {% for cert in my_certs %}
+                <div style="border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px; background:rgba(255,255,255,0.03); display:flex; flex-direction:column; gap:8px; transition:all .25s;" onmouseover="this.style.borderColor='rgba(16,185,129,0.4)';this.style.background='rgba(16,185,129,0.05)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(255,255,255,0.03)'">
+                    {% if cert.thumbnail %}
+                    <img src="{{ cert.thumbnail.url }}" alt="{{ cert.cert_name }}" style="width:100%; height:90px; object-fit:contain; border-radius:10px; background:rgba(255,255,255,0.04); padding:6px;">
+                    {% else %}
+                    <div style="width:100%; height:90px; border-radius:10px; background:rgba(16,185,129,0.08); display:flex; align-items:center; justify-content:center; font-size:36px;">🎓</div>
+                    {% endif %}
+                    <div style="font-weight:800; font-size:14px; color:#e0e0e0; line-height:1.3;">{{ cert.cert_name }}</div>
+                    {% if cert.issuer %}<div style="font-size:12px; color:var(--text-muted);">{{ cert.issuer }}</div>{% endif %}
+                    <div style="font-size:12px; color:#10b981; font-weight:700;">{{ cert.date_acquired|date:"Y.m.d" }} 취득</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align:center; padding:32px; color:var(--text-muted); font-size:13.5px;">
+                {% if profile.real_name %}
+                등록된 자격증이 없습니다.
+                {% else %}
+                <span style="color:#ffc107;">⚠️ 내 정보에 실명을 등록하면 자동으로 연동됩니다.</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 5-B. 수상 이력 컬렉션 -->
+        <div class="section-card">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
+                <h3>🏆 수상 이력 컬렉션</h3>
+                <a href="{% url 'board_awards' %}" style="font-size:12px; color:var(--text-muted); text-decoration:none; padding:5px 12px; border:1px solid var(--border); border-radius:8px; transition:color .2s;" onmouseover="this.style.color='#f59e0b'" onmouseout="this.style.color=''">전체 보기 →</a>
+            </div>
+            {% if my_awards %}
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                {% for award in my_awards %}
+                <div style="display:flex; align-items:center; gap:14px; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px 16px; background:rgba(255,255,255,0.02); transition:all .25s;" onmouseover="this.style.borderColor='rgba(245,158,11,0.4)';this.style.background='rgba(245,158,11,0.04)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.background='rgba(255,255,255,0.02)'">
+                    {% if award.thumbnail %}
+                    <img src="{{ award.thumbnail.url }}" alt="{{ award.competition_name }}" style="width:56px; height:56px; object-fit:cover; border-radius:10px; flex-shrink:0;">
+                    {% else %}
+                    <div style="width:56px; height:56px; border-radius:10px; background:rgba(245,158,11,0.1); display:flex; align-items:center; justify-content:center; font-size:28px; flex-shrink:0;">🏆</div>
+                    {% endif %}
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+                            <span style="font-size:13px; font-weight:800; color:#f59e0b; background:rgba(245,158,11,0.12); padding:2px 10px; border-radius:6px;">{{ award.award_name }}</span>
+                            {% if award.competition_year %}<span style="font-size:11px; color:var(--text-muted);">{{ award.competition_year }}년</span>{% endif %}
+                        </div>
+                        <div style="font-size:14px; font-weight:700; color:#e0e0e0; margin-bottom:3px;">{{ award.competition_name }}</div>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            {% if award.division %}<span style="font-size:12px; color:var(--text-muted);">{{ award.division }}</span>{% endif %}
+                            {% if award.organization %}<span style="font-size:12px; color:var(--text-muted);">{{ award.organization }}</span>{% endif %}
+                            <span style="font-size:12px; color:var(--text-muted);">{{ award.date_awarded|date:"Y.m.d" }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align:center; padding:32px; color:var(--text-muted); font-size:13.5px;">
+                {% if profile.real_name %}
+                등록된 수상 이력이 없습니다.
+                {% else %}
+                <span style="color:#ffc107;">⚠️ 내 정보에 실명을 등록하면 자동으로 연동됩니다.</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
         <!-- 5. 배지 컬렉션 -->
         <div class="section-card">
             <h3>🏅 배지 컬렉션</h3>

@@ -2359,6 +2359,15 @@ def my_report(request):
     badge_catalog = get_active_badges_with_user_state(user)
     badge_count = get_user_badge_count(user)
 
+    # 7. 자격취득 / 수상이력 (학생 이름 매칭)
+    from .models import Certification, Award
+    my_certs = []
+    my_awards = []
+    real_name = profile.real_name if profile.real_name else None
+    if real_name:
+        my_certs = list(Certification.objects.filter(student_name=real_name).select_related('cert_info').order_by('-date_acquired'))
+        my_awards = list(Award.objects.filter(student_name=real_name).select_related('competition_type').order_by('-date_awarded'))
+
     # 나이 계산
     profile_age = None
     if profile.birth_date:
@@ -2388,6 +2397,8 @@ def my_report(request):
         'badge_catalog': badge_catalog,
         'badge_count': badge_count,
         'profile_age': profile_age,
+        'my_certs': my_certs,
+        'my_awards': my_awards,
     }
     return render(request, 'arcade/my_report.html', context)
 

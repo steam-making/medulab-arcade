@@ -2286,9 +2286,10 @@ def my_report(request):
     from courses.models import UserProgress
     from .models import Attendance, UserBadge
     from django.db.models import Max, Avg
+    from django.db.models.functions import TruncDate
 
     today = timezone.localdate()
-    
+
     # 1. 오늘의 타자 성과 집계
     today_scores = TypingScore.objects.filter(user=request.user, created_at__date=today)
     typing_count = today_scores.count()
@@ -2315,15 +2316,23 @@ def my_report(request):
     month_days = cal.monthdayscalendar(current_year, current_month)
     month_name = f"{current_year}년 {current_month}월"
 
-    # 4. 최근 7일간 일일 최고 타속 추이 (그래프 데이터)
-    chart_data = []
-    for i in range(6, -1, -1):
-        day = today - timedelta(days=i)
-        day_max = TypingScore.objects.filter(user=request.user, created_at__date=day).aggregate(Max('speed'))['speed__max'] or 0
-        chart_data.append({
-            'label': day.strftime('%m/%d'),
-            'value': day_max
-        })
+    # 4. 날짜별 타속 기록 (전체, 최고/평균)
+    daily_stats = (
+        TypingScore.objects
+        .filter(user=request.user)
+        .annotate(date=TruncDate('created_at'))
+        .values('date')
+        .annotate(max_speed=Max('speed'), avg_speed=Avg('speed'))
+        .order_by('date')
+    )
+    chart_data = [
+        {
+            'label': stat['date'].strftime('%m/%d'),
+            'max': stat['max_speed'],
+            'avg': round(stat['avg_speed'], 1),
+        }
+        for stat in daily_stats
+    ]
 
     # 5. 과거 누적 통계
     all_scores = TypingScore.objects.filter(user=request.user)

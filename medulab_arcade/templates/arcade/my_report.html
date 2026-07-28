@@ -445,22 +445,27 @@
             </div>
         </div>
 
-        <!-- 3. 최근 7일 최고 타속 추이 그래프 -->
+        <!-- 3. 타속 기록 그래프 -->
         <div class="section-card">
-            <h3>📈 최근 7일 최고 타속</h3>
-            <div class="chart-container">
-                <div class="chart-bar-wrap">
-                    {% for bar in chart_data %}
-                    <div class="chart-col">
-                        <div class="chart-bar" style="height: {% widthratio bar.value 8 1.5 %}px;">
-                            {% if bar.value > 0 %}
-                            <span class="chart-bar-value">{{ bar.value }}</span>
-                            {% endif %}
-                        </div>
-                        <span class="chart-label">{{ bar.label }}</span>
-                    </div>
-                    {% endfor %}
+            <h3>📈 타속 기록</h3>
+            <div style="display:flex; gap:16px; margin-bottom:10px; font-size:12px;">
+                <span style="display:flex; align-items:center; gap:5px;">
+                    <span style="display:inline-block; width:28px; height:3px; background:#3b82f6; border-radius:2px;"></span>
+                    평균 타속
+                </span>
+                <span style="display:flex; align-items:center; gap:5px;">
+                    <span style="display:inline-block; width:28px; height:3px; background:#ef4444; border-radius:2px;"></span>
+                    최고 타속
+                </span>
+            </div>
+            <div style="position:relative; height:220px;">
+                {% if chart_data %}
+                <canvas id="typingChart"></canvas>
+                {% else %}
+                <div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-muted); font-size:14px;">
+                    타자 기록이 없습니다
                 </div>
+                {% endif %}
             </div>
         </div>
 
@@ -503,8 +508,87 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+
+    // 0. 타속 기록 차트 (Chart.js)
+    const canvas = document.getElementById('typingChart');
+    if (canvas) {
+        const labels = [{% for d in chart_data %}"{{ d.label }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+        const maxData = [{% for d in chart_data %}{{ d.max }}{% if not forloop.last %},{% endif %}{% endfor %}];
+        const avgData = [{% for d in chart_data %}{{ d.avg }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+        new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '평균 타속',
+                        data: avgData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59,130,246,0.15)',
+                        borderWidth: 2,
+                        pointRadius: labels.length > 30 ? 2 : 4,
+                        pointBackgroundColor: '#3b82f6',
+                        fill: true,
+                        tension: 0.35,
+                        order: 2,
+                    },
+                    {
+                        label: '최고 타속',
+                        data: maxData,
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239,68,68,0.0)',
+                        borderWidth: 2.5,
+                        pointRadius: labels.length > 30 ? 2 : 4,
+                        pointBackgroundColor: '#ef4444',
+                        fill: false,
+                        tension: 0.35,
+                        order: 1,
+                    },
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15,15,30,0.92)',
+                        titleColor: '#aaa',
+                        bodyColor: '#fff',
+                        borderColor: 'rgba(255,255,255,0.08)',
+                        borderWidth: 1,
+                        padding: 10,
+                        callbacks: {
+                            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} WPM`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#888',
+                            font: { size: 11 },
+                            maxTicksLimit: 14,
+                            maxRotation: 45,
+                        },
+                        grid: { color: 'rgba(255,255,255,0.04)' }
+                    },
+                    y: {
+                        ticks: { color: '#888', font: { size: 11 } },
+                        grid: { color: 'rgba(255,255,255,0.06)' },
+                        beginAtZero: false,
+                    }
+                }
+            }
+        });
+    }
+
+
     // 1. 출석체크 연동
     const btnAttend = document.getElementById('btnAttend');
     if (btnAttend) {

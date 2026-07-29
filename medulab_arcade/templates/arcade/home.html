@@ -1,246 +1,485 @@
 {% extends 'arcade/base.html' %}
+{% load static %}
 
-{% block title %}메듀랩 - 타자연습, AI로봇코딩, 무료 온라인게임 만들며 배우는 융합교육{% endblock %}
+{% block title %}메듀랩 - AI·로봇·코딩 융합교육{% endblock %}
 
 {% block extra_css %}
 <style>
-    :root {
-        --home-glass: rgba(255, 255, 255, 0.03);
-        --home-border: rgba(255, 255, 255, 0.08);
-        --accent-green: #00ffb4;
-        --accent-blue: #3b82f6;
-    }
+:root {
+    --g: #00ffb4;
+    --b: #3b82f6;
+    --p: #a855f7;
+    --glass: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+}
 
-    .main { padding-bottom: 100px; }
+/* ── 히어로 ── */
+.lp-hero {
+    position: relative;
+    min-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 24px 60px;
+    overflow: hidden;
+}
 
-    /* 히어로 섹션 개편 */
-    .hero {
-        text-align: center;
-        padding: 100px 20px 80px;
-        position: relative;
-        overflow: hidden;
-    }
+.lp-hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 70% 50% at 20% 40%, rgba(59,130,246,.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 60%, rgba(168,85,247,.15) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 50% 90%, rgba(0,255,180,.10) 0%, transparent 60%);
+    pointer-events: none;
+}
 
-    .hero h1 {
-        font: 900 64px 'Orbitron', sans-serif;
-        margin-bottom: 20px;
-        background: linear-gradient(90deg, #fff, var(--accent-blue), var(--accent-green));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        letter-spacing: -2px;
-        filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.2));
-    }
+/* 부유 오브 */
+.lp-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: .35;
+    animation: orbFloat 8s ease-in-out infinite;
+    pointer-events: none;
+}
+.lp-orb1 { width:420px;height:420px;top:-100px;left:-120px;background:rgba(59,130,246,.5);animation-delay:0s; }
+.lp-orb2 { width:320px;height:320px;top:60px;right:-80px;background:rgba(168,85,247,.5);animation-delay:-3s; }
+.lp-orb3 { width:260px;height:260px;bottom:0;left:30%;background:rgba(0,255,180,.4);animation-delay:-6s; }
+@keyframes orbFloat {
+    0%,100%{transform:translateY(0) scale(1);}
+    50%{transform:translateY(-30px) scale(1.05);}
+}
 
-    .hero p {
-        color: var(--text-muted);
-        font-size: 18px;
-        max-width: 600px;
-        margin: 0 auto 32px;
-        font-weight: 500;
-    }
+.lp-badge {
+    display:inline-flex;align-items:center;gap:8px;
+    padding:6px 18px;border-radius:999px;
+    background:rgba(0,255,180,.1);border:1px solid rgba(0,255,180,.3);
+    color:var(--g);font-size:13px;font-weight:800;letter-spacing:.5px;
+    margin-bottom:28px;
+    animation: fadeDown .6s ease both;
+}
 
-    .hero .stats {
-        display: flex;
-        justify-content: center;
-        gap: 32px;
-        margin-top: 20px;
-    }
+.lp-title {
+    font:900 72px 'Orbitron',sans-serif;
+    line-height:1.05;margin-bottom:16px;
+    background:linear-gradient(135deg,#fff 0%,var(--b) 45%,var(--p) 75%,var(--g) 100%);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 30px rgba(59,130,246,.35));
+    animation:fadeDown .7s .1s ease both;
+}
+.lp-sub {
+    font-size:19px;color:rgba(255,255,255,.65);font-weight:500;
+    max-width:560px;margin:0 auto 20px;line-height:1.6;
+    animation:fadeDown .7s .2s ease both;
+}
+.lp-tags {
+    display:flex;justify-content:center;flex-wrap:wrap;gap:8px;
+    margin-bottom:40px;
+    animation:fadeDown .7s .3s ease both;
+}
+.lp-tag {
+    padding:5px 14px;border-radius:999px;font-size:13px;font-weight:700;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+    color:rgba(255,255,255,.7);
+}
 
-    .stats .stat-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-    }
+.lp-cta {
+    display:flex;justify-content:center;gap:14px;flex-wrap:wrap;
+    animation:fadeDown .7s .4s ease both;
+}
+.lp-btn-main {
+    padding:14px 32px;border-radius:14px;font-size:15px;font-weight:800;
+    background:linear-gradient(135deg,var(--b),var(--p));
+    color:#fff;border:none;text-decoration:none;cursor:pointer;
+    box-shadow:0 8px 24px rgba(59,130,246,.4);
+    transition:all .25s;display:inline-flex;align-items:center;gap:8px;
+}
+.lp-btn-main:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(59,130,246,.5);color:#fff;}
+.lp-btn-sub {
+    padding:14px 32px;border-radius:14px;font-size:15px;font-weight:800;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
+    color:#fff;text-decoration:none;
+    transition:all .25s;display:inline-flex;align-items:center;gap:8px;
+}
+.lp-btn-sub:hover{background:rgba(255,255,255,.13);transform:translateY(-3px);color:#fff;}
 
-    .stats .num {
-        font: 900 28px 'Orbitron', sans-serif;
-    }
+/* 통계 스트립 */
+.lp-stats {
+    display:flex;justify-content:center;gap:0;
+    max-width:700px;margin:48px auto 0;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+    border-radius:20px;overflow:hidden;
+    animation:fadeDown .7s .5s ease both;
+}
+.lp-stat {
+    flex:1;padding:20px 12px;text-align:center;
+    border-right:1px solid rgba(255,255,255,.07);
+}
+.lp-stat:last-child{border-right:none;}
+.lp-stat-num {
+    font:900 28px 'Orbitron',sans-serif;
+    background:linear-gradient(135deg,var(--g),var(--b));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    display:block;
+}
+.lp-stat-label {
+    font-size:11px;font-weight:800;color:rgba(255,255,255,.4);
+    letter-spacing:1px;text-transform:uppercase;margin-top:4px;display:block;
+}
 
-    .stats .label {
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        letter-spacing: 1px;
-    }
+/* ── 서비스 카드 ── */
+.lp-section {
+    max-width:1280px;margin:0 auto;padding:80px 24px;
+}
+.lp-section-label {
+    font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+    color:var(--g);margin-bottom:10px;
+}
+.lp-section-title {
+    font:900 36px 'Orbitron',sans-serif;color:#fff;
+    margin-bottom:8px;line-height:1.2;
+}
+.lp-section-desc {
+    color:rgba(255,255,255,.5);font-size:15px;margin-bottom:48px;
+}
 
-    /* 필터 버튼 */
-    .filters {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-bottom: 60px;
-        flex-wrap: wrap;
-        padding: 0 20px;
-    }
+.svc-grid {
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;
+}
+.svc-card {
+    position:relative;
+    padding:28px 24px;border-radius:20px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    text-decoration:none;
+    transition:all .3s;
+    overflow:hidden;
+    display:flex;flex-direction:column;gap:12px;
+}
+.svc-card::before {
+    content:'';position:absolute;inset:0;
+    background:var(--svc-glow,rgba(59,130,246,.1));
+    opacity:0;transition:opacity .3s;
+}
+.svc-card:hover{transform:translateY(-6px);border-color:rgba(255,255,255,.2);}
+.svc-card:hover::before{opacity:1;}
+.svc-icon {
+    font-size:36px;
+    width:60px;height:60px;display:flex;align-items:center;justify-content:center;
+    border-radius:16px;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+}
+.svc-name {font-size:17px;font-weight:900;color:#fff;}
+.svc-desc {font-size:13px;color:rgba(255,255,255,.5);line-height:1.55;}
+.svc-arrow {
+    margin-top:auto;font-size:13px;font-weight:800;
+    color:rgba(255,255,255,.3);transition:color .2s;
+}
+.svc-card:hover .svc-arrow{color:var(--g);}
 
-    .filter-btn {
-        padding: 10px 24px;
-        background: var(--home-glass);
-        border: 1px solid var(--home-border);
-        border-radius: 12px;
-        color: var(--text-secondary);
-        font-size: 14px;
-        font-weight: 700;
-        text-decoration: none;
-        transition: all 0.3s;
-        backdrop-filter: blur(10px);
-    }
+/* ── WORKS 섹션 탭 ── */
+.works-wrap { max-width:1280px;margin:0 auto;padding:0 24px 100px; }
 
-    .filter-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: var(--accent-blue);
-        color: #fff;
-        transform: translateY(-2px);
-    }
+.works-tab-bar {
+    display:flex;gap:8px;flex-wrap:wrap;
+    margin-bottom:32px;
+    padding-bottom:20px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+}
+.works-tab {
+    display:inline-flex;align-items:center;gap:7px;
+    padding:10px 20px;border-radius:12px;font-size:14px;font-weight:700;
+    border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.04);
+    color:rgba(255,255,255,.55);
+    text-decoration:none;
+    transition:all .2s;
+}
+.works-tab:hover{background:rgba(255,255,255,.09);color:#fff;border-color:rgba(255,255,255,.2);}
+.works-tab.active {
+    background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.45);
+    color:#93c5fd;
+}
 
-    .filter-btn.active {
-        background: var(--accent-blue);
-        color: #fff;
-        border-color: var(--accent-blue);
-        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
-    }
+.works-header {
+    display:flex;align-items:baseline;gap:16px;margin-bottom:8px;
+}
+.works-title {
+    font:900 40px 'Orbitron',sans-serif;
+    background:linear-gradient(90deg,#fff,rgba(255,255,255,.5));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.works-count {
+    font-size:14px;font-weight:700;
+    background:rgba(59,130,246,.18);border:1px solid rgba(59,130,246,.3);
+    color:#93c5fd;padding:3px 12px;border-radius:999px;
+}
 
-    /* 히어로 섹션 개편 */
+/* 검색 */
+.works-search-row {
+    display:flex;gap:12px;align-items:center;
+    margin-bottom:28px;flex-wrap:wrap;
+}
+.works-search {
+    flex:1;min-width:200px;position:relative;
+}
+.works-search input {
+    width:100%;padding:12px 18px 12px 44px;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.1);border-radius:12px;
+    color:#fff;font-size:14px;outline:none;
+    transition:all .2s;font-family:'Noto Sans KR',sans-serif;
+    box-sizing:border-box;
+}
+.works-search input:focus{border-color:rgba(59,130,246,.5);background:rgba(255,255,255,.07);}
+.works-search-icon {
+    position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    font-size:16px;color:rgba(255,255,255,.35);pointer-events:none;
+}
 
-    .card-inner-thumb {
-        padding: 24px;
-        z-index: 2;
-        background: linear-gradient(to bottom, transparent, rgba(8, 8, 15, 0.95));
-        margin-top: -60px;
-        position: relative;
-    }
+/* 필터 */
+.works-filters {
+    display:flex;gap:8px;flex-wrap:wrap;margin-bottom:36px;
+}
+.wf-btn {
+    padding:8px 18px;border-radius:10px;font-size:13px;font-weight:700;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+    color:rgba(255,255,255,.6);text-decoration:none;transition:all .2s;
+}
+.wf-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.wf-btn.active{background:var(--b);border-color:var(--b);color:#fff;
+    box-shadow:0 4px 14px rgba(59,130,246,.35);}
 
-    .card-inner {
-        padding: 50px 30px;
-        text-align: center;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
+/* 카드 그리드 */
+.card-inner-thumb{padding:24px;z-index:2;background:linear-gradient(to bottom,transparent,rgba(8,8,15,.95));margin-top:-60px;position:relative;}
+.card-inner{padding:50px 30px;text-align:center;flex:1;display:flex;flex-direction:column;justify-content:center;}
+.card-emoji{font-size:56px;margin-bottom:20px;transition:transform .4s ease;}
+.card:hover .card-emoji{transform:scale(1.2) rotate(10deg);}
+.card-title{font-size:20px;font-weight:800;color:#fff;margin-bottom:6px;}
+.card-author{font-size:13px;color:var(--text-muted);font-weight:600;}
+.card-tag{font-size:11px;color:rgba(255,255,255,.5);background:rgba(255,255,255,.05);padding:2px 8px;border-radius:6px;margin-right:4px;}
+.card-bar{position:absolute;bottom:0;left:0;right:0;height:4px;transform:scaleX(0);transform-origin:left;transition:transform .5s ease;}
+.card:hover .card-bar{transform:scaleX(1);}
+.card-badges{position:absolute;top:16px;right:16px;display:flex;gap:6px;z-index:10;}
+.card-badge{width:36px;height:36px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,.3);}
 
-    .card-emoji {
-        font-size: 56px;
-        margin-bottom: 20px;
-        transition: transform 0.4s ease;
-    }
-    .card:hover .card-emoji { transform: scale(1.2) rotate(10deg); }
+/* 애니메이션 */
+@keyframes fadeDown {
+    from{opacity:0;transform:translateY(-16px);}
+    to{opacity:1;transform:translateY(0);}
+}
+.fade-up {
+    opacity:0;transform:translateY(24px);
+    transition:opacity .6s ease, transform .6s ease;
+}
+.fade-up.visible{opacity:1;transform:translateY(0);}
 
-    .card-title {
-        font-size: 20px;
-        font-weight: 800;
-        color: #fff;
-        margin-bottom: 6px;
-    }
-
-    .card-author {
-        font-size: 13px;
-        color: var(--text-muted);
-        font-weight: 600;
-    }
-
-    .card-tag {
-        font-size: 11px;
-        color: rgba(255, 255, 255, 0.5);
-        background: rgba(255, 255, 255, 0.05);
-        padding: 2px 8px;
-        border-radius: 6px;
-        margin-right: 4px;
-    }
-
-    .card-bar {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        transform: scaleX(0);
-        transform-origin: left;
-        transition: transform 0.5s ease;
-    }
-    .card:hover .card-bar { transform: scaleX(1); }
-
-    .card-badges {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        display: flex;
-        gap: 6px;
-        z-index: 10;
-    }
-    .card-badge {
-        width: 36px;
-        height: 36px;
-        background: rgba(0,0,0,0.6);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
+/* 모바일 */
+@media(max-width:768px){
+    .lp-title{font-size:40px;}
+    .lp-stats{flex-wrap:wrap;}
+    .lp-stat{min-width:45%;}
+    .svc-grid{grid-template-columns:1fr 1fr;}
+    .works-title{font-size:28px;}
+    .works-tab-bar{gap:6px;}
+    .works-tab{padding:8px 14px;font-size:13px;}
+}
+@media(max-width:480px){
+    .lp-title{font-size:30px;}
+    .svc-grid{grid-template-columns:1fr;}
+    .lp-cta{flex-direction:column;align-items:center;}
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="main">
-    <!-- 히어로 -->
-    <div class="hero fade-in">
-        <h1>MEDULAB WORKS</h1>
-        <p style="margin-bottom: 24px;">메듀랩 학생들이 창의력으로 빚어낸 놀라운 코딩 작품들을 만나보세요.</p>
-        
-        <!-- 검색 영역 -->
-        <form method="GET" action="{% url 'home' %}" style="max-width: 500px; margin: 0 auto 36px; position: relative;">
-            <span style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-muted);">🔍</span>
-            <input type="text" name="q" placeholder="관심 있는 작품의 제목이나 제작자를 검색해보세요..." value="{{ search_query|default:'' }}"
-                autocomplete="off" 
-                style="width: 100%; padding: 14px 20px 14px 48px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--home-border); border-radius: 16px; color: #fff; font-size: 15px; outline: none; transition: all 0.3s; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); font-family: 'Noto Sans KR', sans-serif;"
-                onfocus="this.style.borderColor='var(--accent-blue)'; this.style.boxShadow='0 0 15px rgba(59, 130, 246, 0.25)';"
-                onblur="this.style.borderColor='var(--home-border)'; this.style.boxShadow='0 8px 32px rgba(0, 0, 0, 0.2)';">
-        </form>
 
-        <div class="stats">
-            <div class="stat-item">
-                <span class="num" style="color:var(--accent-green);">{{ total_projects }}</span>
-                <span class="label">PROJECTS</span>
+<!-- ══════════════════════════════════════
+     히어로
+══════════════════════════════════════ -->
+<section class="lp-hero">
+    <div class="lp-hero-bg"></div>
+    <div class="lp-orb lp-orb1"></div>
+    <div class="lp-orb lp-orb2"></div>
+    <div class="lp-orb lp-orb3"></div>
+
+    <div style="position:relative;z-index:2;">
+        <div class="lp-badge">🚀 AI · 로봇 · 코딩 융합교육</div>
+
+        <h1 class="lp-title">MEDULAB</h1>
+        <p class="lp-sub">상상을 코딩으로, 코딩을 현실로<br>AI·로봇·블록코딩·파이썬까지 한 곳에서</p>
+
+        <div class="lp-tags">
+            <span class="lp-tag">🤖 AI 자격증</span>
+            <span class="lp-tag">🧩 블록코딩</span>
+            <span class="lp-tag">🐍 파이썬코딩</span>
+            <span class="lp-tag">🦾 로봇</span>
+            <span class="lp-tag">⌨️ 타자연습</span>
+            <span class="lp-tag">🏆 대회수상</span>
+        </div>
+
+        <div class="lp-cta">
+            <a href="{% url 'typing_home' %}" class="lp-btn-main">⌨️ 타자연습 시작하기</a>
+            <a href="{% url 'board_certinfo' %}" class="lp-btn-sub">🎖️ 자격증 알아보기</a>
+        </div>
+
+        <div class="lp-stats">
+            <div class="lp-stat">
+                <span class="lp-stat-num">{{ total_projects }}</span>
+                <span class="lp-stat-label">학생 작품</span>
             </div>
-            <div class="stat-item">
-                <span class="num" style="color:var(--accent-blue);">{{ total_plays|default:0 }}</span>
-                <span class="label">PLAYS</span>
+            <div class="lp-stat">
+                <span class="lp-stat-num">{{ total_awards }}</span>
+                <span class="lp-stat-label">대회 수상</span>
+            </div>
+            <div class="lp-stat">
+                <span class="lp-stat-num">{{ total_certs }}</span>
+                <span class="lp-stat-label">자격증 취득</span>
+            </div>
+            <div class="lp-stat">
+                <span class="lp-stat-num">{{ total_plays|default:0 }}</span>
+                <span class="lp-stat-label">작품 플레이</span>
             </div>
         </div>
     </div>
+</section>
 
-    <!-- 카테고리 필터 -->
-    <div class="filters fade-in" style="animation-delay: 0.1s;">
-        <a href="{% url 'home' %}" class="filter-btn {% if not current_category %}active{% endif %}">전체 작품</a>
+<!-- ══════════════════════════════════════
+     서비스 바로가기
+══════════════════════════════════════ -->
+<section class="lp-section fade-up">
+    <div class="lp-section-label">SERVICES</div>
+    <h2 class="lp-section-title">무엇을 배우고 싶나요?</h2>
+    <p class="lp-section-desc">메듀랩의 다양한 교육 프로그램과 서비스를 바로 만나보세요.</p>
+
+    <div class="svc-grid">
+        <a href="{% url 'typing_home' %}" class="svc-card" style="--svc-glow:rgba(59,130,246,.12);">
+            <div class="svc-icon">⌨️</div>
+            <div class="svc-name">타자연습</div>
+            <div class="svc-desc">한글·영어 타자 속도를 키우고 실력을 기록해 보세요.</div>
+            <div class="svc-arrow">시작하기 →</div>
+        </a>
+        <a href="{% url 'student_course_list' %}" class="svc-card" style="--svc-glow:rgba(168,85,247,.12);">
+            <div class="svc-icon">🏫</div>
+            <div class="svc-name">러닝센터</div>
+            <div class="svc-desc">AI·로봇·코딩 교육 프로그램과 로드맵을 확인하세요.</div>
+            <div class="svc-arrow">프로그램 보기 →</div>
+        </a>
+        <a href="{% url 'board_certinfo' %}" class="svc-card" style="--svc-glow:rgba(0,255,180,.10);">
+            <div class="svc-icon">🎖️</div>
+            <div class="svc-name">자격종류</div>
+            <div class="svc-desc">AICE·COS·ITQ 등 취득 가능한 자격증을 알아보세요.</div>
+            <div class="svc-arrow">자격증 보기 →</div>
+        </a>
+        <a href="{% url 'board_awards' %}" class="svc-card" style="--svc-glow:rgba(250,204,21,.10);">
+            <div class="svc-icon">🏆</div>
+            <div class="svc-name">대회수상</div>
+            <div class="svc-desc">메듀랩 학생들의 빛나는 대회·공모전 수상 기록.</div>
+            <div class="svc-arrow">수상 보기 →</div>
+        </a>
+        <a href="{% url 'board_competition_type' %}" class="svc-card" style="--svc-glow:rgba(249,115,22,.10);">
+            <div class="svc-icon">🏁</div>
+            <div class="svc-name">대회종류</div>
+            <div class="svc-desc">참가할 수 있는 코딩·로봇·AI 대회를 미리 확인하세요.</div>
+            <div class="svc-arrow">대회 보기 →</div>
+        </a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'my_report' %}" class="svc-card" style="--svc-glow:rgba(16,185,129,.10);">
+            <div class="svc-icon">📊</div>
+            <div class="svc-name">마이 리포트</div>
+            <div class="svc-desc">내 타자 실력·자격·수상·배지 현황을 한눈에.</div>
+            <div class="svc-arrow">리포트 보기 →</div>
+        </a>
+        {% else %}
+        <a href="{% url 'board_cert' %}" class="svc-card" style="--svc-glow:rgba(16,185,129,.10);">
+            <div class="svc-icon">🏅</div>
+            <div class="svc-name">자격취득</div>
+            <div class="svc-desc">메듀랩 학생들의 자격증 취득 현황을 확인하세요.</div>
+            <div class="svc-arrow">취득현황 보기 →</div>
+        </a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     MEDULAB WORKS
+══════════════════════════════════════ -->
+<section class="works-wrap fade-up" id="works">
+
+    <!-- 탭 내비게이션 -->
+    <div class="works-tab-bar">
+        <a href="{% url 'home' %}" class="works-tab active">
+            🎨 학생 작품
+        </a>
+        <a href="{% url 'board_awards' %}" class="works-tab">
+            🏆 대회 수상
+        </a>
+        <a href="{% url 'board_cert' %}" class="works-tab">
+            🏅 자격 취득
+        </a>
+        <a href="{% url 'board_contest' %}" class="works-tab">
+            ✨ 추천 공모전
+        </a>
+        <a href="{% url 'board_certinfo' %}" class="works-tab">
+            🎖️ 자격종류
+        </a>
+    </div>
+
+    <!-- 헤더 -->
+    <div class="works-header">
+        <h2 class="works-title">MEDULAB WORKS</h2>
+        <span class="works-count">{{ total_projects }}개 작품</span>
+    </div>
+    <p style="color:rgba(255,255,255,.45);font-size:14px;margin-bottom:28px;">
+        메듀랩 학생들이 창의력으로 만들어낸 코딩 작품들을 만나보세요.
+    </p>
+
+    <!-- 검색 + 필터 -->
+    <div class="works-search-row">
+        <form method="GET" action="{% url 'home' %}#works" class="works-search">
+            <span class="works-search-icon">🔍</span>
+            <input type="text" name="q" placeholder="작품명 또는 제작자 검색..."
+                value="{{ search_query|default:'' }}"
+                autocomplete="off">
+        </form>
+    </div>
+
+    <div class="works-filters">
+        <a href="{% url 'home' %}#works" class="wf-btn {% if not current_category %}active{% endif %}">전체</a>
         {% for cat in categories %}
-        <a href="?category={{ cat.name }}" class="filter-btn {% if current_category == cat.name %}active{% endif %}">
-            <span style="margin-right:8px;">{{ cat.icon }}</span>{{ cat.name }}
+        <a href="?category={{ cat.name }}#works" class="wf-btn {% if current_category == cat.name %}active{% endif %}">
+            {{ cat.icon }} {{ cat.name }}
         </a>
         {% endfor %}
     </div>
 
     <!-- 작품 그리드 -->
-    <div class="grid fade-in" style="animation-delay: 0.2s;">
+    <div class="grid">
         {% for project in projects %}
             {% include 'arcade/components/project_card.html' with project=project %}
         {% empty %}
-        <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 100px; background: var(--home-glass); border-radius: 32px;">
-            <div style="font-size: 48px; margin-bottom: 20px;">🏜️</div>
-            <p style="color:var(--text-muted); font-size: 18px;">
-                {% if search_query %}
-                    "{{ search_query }}"에 대한 검색 결과가 없습니다.
-                {% else %}
-                    아직 등록된 작품이 없습니다.
-                {% endif %}
+        <div style="grid-column:1/-1;text-align:center;padding:80px 24px;background:rgba(255,255,255,.03);border-radius:24px;border:1px solid rgba(255,255,255,.07);">
+            <div style="font-size:48px;margin-bottom:16px;">🏜️</div>
+            <p style="color:rgba(255,255,255,.4);font-size:16px;">
+                {% if search_query %}"{{ search_query }}"에 대한 작품이 없습니다.
+                {% else %}아직 등록된 작품이 없습니다.{% endif %}
             </p>
         </div>
         {% endfor %}
     </div>
-</div>
+
+</section>
+
+<script>
+/* 스크롤 fade-up */
+const fadeEls = document.querySelectorAll('.fade-up');
+const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+}, {threshold: 0.08});
+fadeEls.forEach(el => io.observe(el));
+</script>
+
 {% endblock %}

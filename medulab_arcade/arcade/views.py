@@ -71,6 +71,10 @@ def home(request):
     total_plays = sum(p.play_count for p in Project.objects.filter(status='approved'))
     total_projects = Project.objects.filter(status='approved').count()
 
+    from arcade.models import Award, Certification
+    total_awards = Award.objects.count()
+    total_certs = Certification.objects.count()
+
     context = {
         'projects': projects,
         'categories': categories,
@@ -81,6 +85,8 @@ def home(request):
         'user_bookmarks': user_bookmarks,
         'total_plays': total_plays,
         'total_projects': total_projects,
+        'total_awards': total_awards,
+        'total_certs': total_certs,
     }
     return render(request, 'arcade/home.html', context)
 

@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나의 아바타 만들기 - AI점프업 꿈찾기 캠프</title>
+<style>
+  :root{
+    --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --yellow:#FFC93C;
+    --green:#3DDC97; --bg1:#FFF6FB; --ink:#2E2A4A; --orange:#FF9142;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Trebuchet MS','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:linear-gradient(150deg,#FFF6FB 0%, #F1F0FF 45%, #EAF7FF 100%);
+    color:var(--ink); padding:24px 16px 60px;
+  }
+  .wrap{max-width:820px; margin:0 auto;}
+  header{
+    text-align:center; padding:28px 20px; border-radius:24px;
+    background:linear-gradient(120deg,var(--pink),var(--purple));
+    color:#fff; box-shadow:0 10px 30px rgba(140,107,250,.35); margin-bottom:24px;
+  }
+  header .tag{font-size:14px; letter-spacing:1px; opacity:.9; font-weight:bold;}
+  header h1{margin:8px 0 6px; font-size:30px;}
+  header p{margin:0; font-size:15px; opacity:.95;}
+  .card{
+    background:#fff; border-radius:20px; padding:22px 22px 26px;
+    margin-bottom:18px; box-shadow:0 6px 18px rgba(46,42,74,.08);
+    border:2px solid rgba(140,107,250,.08);
+  }
+  .card h2{
+    font-size:18px; margin:0 0 4px; display:flex; align-items:center; gap:8px;
+  }
+  .card .desc{font-size:13px; color:#6a6486; margin:0 0 14px;}
+  .num{
+    display:inline-flex; width:26px; height:26px; border-radius:50%;
+    background:var(--purple); color:#fff; align-items:center; justify-content:center;
+    font-size:13px; font-weight:bold; flex:none;
+  }
+  input[type=text]{
+    width:100%; padding:12px 14px; border-radius:12px; border:2px solid #E7E3FA;
+    font-size:15px; outline:none; font-family:inherit;
+  }
+  input[type=text]:focus{border-color:var(--purple);}
+  .grade-select{
+    width:100%; padding:12px 14px; border-radius:12px; border:2px solid #E7E3FA;
+    font-size:15px; outline:none; font-family:inherit; margin-top:10px; background:#FBFAFF;
+    color:var(--ink); cursor:pointer;
+  }
+  .grade-select:focus{border-color:var(--purple);}
+  .custom-input{margin-top:12px;}
+  .custom-input label{display:block; font-size:12px; color:#8b84ab; margin-bottom:6px; font-weight:bold;}
+  .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  .chip{
+    padding:9px 14px; border-radius:999px; border:2px solid #E7E3FA; background:#FBFAFF;
+    cursor:pointer; font-size:14px; user-select:none; transition:.15s; font-weight:600;
+    color:#4a4568;
+  }
+  .chip:hover{border-color:var(--purple);}
+  .chip.selected{
+    background:var(--purple); border-color:var(--purple); color:#fff;
+    box-shadow:0 4px 10px rgba(140,107,250,.35);
+  }
+  .chip.selected.pink{background:var(--pink); border-color:var(--pink); box-shadow:0 4px 10px rgba(255,111,165,.35);}
+  .chip.selected.blue{background:var(--blue); border-color:var(--blue); box-shadow:0 4px 10px rgba(63,169,245,.35);}
+  .chip.selected.green{background:var(--green); border-color:var(--green); box-shadow:0 4px 10px rgba(61,220,151,.35);}
+  .hint{font-size:12px; color:#9a93b8; margin-top:8px;}
+  .suggest-row{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+  .suggest{
+    padding:6px 12px; border-radius:999px; background:#F1EEFF; color:var(--purple);
+    font-size:13px; cursor:pointer; font-weight:600; border:none;
+  }
+  .suggest:hover{background:var(--purple); color:#fff;}
+  .style-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-top:12px;}
+  .style-card{
+    border:2px solid #E7E3FA; border-radius:16px; padding:12px; text-align:center;
+    cursor:pointer; font-size:13px; font-weight:700; color:#4a4568; transition:.15s;
+    background:#FBFAFF;
+  }
+  .style-card:hover{border-color:var(--purple);}
+  .style-card.selected{border-color:var(--purple); background:#F1EEFF; box-shadow:0 6px 14px rgba(140,107,250,.25);}
+  .style-thumb{
+    width:100%; aspect-ratio:1/1; border-radius:12px; background:#fff; margin-bottom:8px;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    border:1px solid #EFEBFB;
+  }
+  .style-thumb svg{width:100%; height:100%;}
+  .color-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;}
+  .swatch{
+    width:34px; height:34px; border-radius:50%; cursor:pointer; border:3px solid transparent;
+    box-shadow:inset 0 0 0 2px rgba(0,0,0,.06);
+  }
+  .swatch.selected{border-color:var(--ink); transform:scale(1.12);}
+  .palette-row{
+    display:flex; align-items:center; gap:12px; margin-top:16px; padding-top:14px;
+    border-top:1px dashed #E7E3FA; flex-wrap:wrap;
+  }
+  .palette-label{font-size:13px; font-weight:700; color:#4a4568;}
+  input[type=color]{
+    width:48px; height:48px; border:none; border-radius:12px; cursor:pointer;
+    padding:0; background:none;
+  }
+  input[type=color]::-webkit-color-swatch-wrapper{padding:0; border-radius:12px;}
+  input[type=color]::-webkit-color-swatch{border:2px solid #E7E3FA; border-radius:12px;}
+  #colorPreviewText{font-size:13px; font-weight:700; color:#6a6486; background:#F8F7FF; padding:6px 12px; border-radius:999px;}
+  .make-btn{
+    display:block; width:100%; padding:16px; border:none; border-radius:16px;
+    background:linear-gradient(120deg,var(--blue),var(--purple)); color:#fff;
+    font-size:18px; font-weight:bold; cursor:pointer; box-shadow:0 8px 20px rgba(63,169,245,.35);
+    margin:6px 0 4px;
+  }
+  .make-btn:active{transform:translateY(1px);}
+  #result{display:none;}
+  .result-box{
+    background:#F8F7FF; border:2px dashed #C9BFFA; border-radius:16px; padding:16px;
+    font-size:14px; line-height:1.6; white-space:pre-wrap; margin-top:10px; position:relative;
+  }
+  .result-title{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .result-title span{font-weight:bold; color:var(--purple); font-size:14px;}
+  .copy-btn{
+    padding:6px 12px; border-radius:999px; border:none; background:var(--purple); color:#fff;
+    font-size:12px; cursor:pointer; font-weight:bold;
+  }
+  .copy-btn.copied{background:var(--green);}
+  .tip{
+    background:#FFF9E8; border:2px solid #FFE7A0; border-radius:14px; padding:14px 16px;
+    font-size:13px; margin-top:14px; color:#7a5c00; line-height:1.6;
+  }
+  footer{text-align:center; font-size:12px; color:#9a93b8; margin-top:20px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="tag">✨ AI점프업 꿈찾기 캠프 ✨</div>
+    <h1>나의 아바타 만들기</h1>
+    <p>질문에 답하면 나만의 아바타를 그려줄 ChatGPT 프롬프트가 완성돼요!</p>
+  </header>
+
+  <div class="card">
+    <h2><span class="num">1</span> 별명(이름)</h2>
+    <p class="desc">아바타에게 붙여줄 이름이나 별명을 적어주세요.</p>
+    <input type="text" id="nickname" placeholder="예: 반짝이, 별똥별, 홍길동">
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> 학교/학년</h2>
+    <p class="desc">다니고 있는 학교 이름을 적고, 학년을 선택해주세요.</p>
+    <input type="text" id="schoolName" placeholder="예: OO초등학교, OO중학교, OO고등학교">
+    <select id="gradeLevel" class="grade-select">
+      <option value="">학년을 선택하세요</option>
+      <optgroup label="초등학교">
+        <option value="초등학교 1학년">1학년</option>
+        <option value="초등학교 2학년">2학년</option>
+        <option value="초등학교 3학년">3학년</option>
+        <option value="초등학교 4학년">4학년</option>
+        <option value="초등학교 5학년">5학년</option>
+        <option value="초등학교 6학년">6학년</option>
+      </optgroup>
+      <optgroup label="중학교">
+        <option value="중학교 1학년">1학년</option>
+        <option value="중학교 2학년">2학년</option>
+        <option value="중학교 3학년">3학년</option>
+      </optgroup>
+      <optgroup label="고등학교">
+        <option value="고등학교 1학년">1학년</option>
+        <option value="고등학교 2학년">2학년</option>
+        <option value="고등학교 3학년">3학년</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span> 나의 성격은?</h2>
+    <p class="desc">나를 가장 잘 표현하는 성격을 3개까지 골라보세요. 원하는 보기가 없다면 직접 적어도 돼요.</p>
+    <div class="chip-row" id="personality-chips"></div>
+    <div class="hint">최대 3개 선택 가능</div>
+    <div class="custom-input">
+      <label for="personality-custom">✏️ 나만의 성격 직접 적기 (쉼표로 구분)</label>
+      <input type="text" id="personality-custom" placeholder="예: 엉뚱한, 겁이 없는">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">4</span> 나의 목표는?</h2>
+    <p class="desc">앞으로 이루고 싶은 목표를 적어보세요. 아래 보기를 눌러도 되고, 여러 개를 골라 이어붙여도 좋아요.</p>
+    <input type="text" id="goal" placeholder="예: 세상을 이롭게 하는 발명가 되기">
+    <div class="suggest-row" id="goal-suggestions"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span> 나의 꿈(직업)은?</h2>
+    <p class="desc">되고 싶은 직업을 적거나 아래에서 골라보세요.</p>
+    <input type="text" id="job" placeholder="예: 우주비행사, 게임 개발자, 요리사">
+    <div class="suggest-row" id="job-suggestions"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span> 관심 분야는?</h2>
+    <p class="desc">평소에 관심이 가는 분야를 골라보세요. (여러 개 가능, 없으면 직접 적어보세요)</p>
+    <div class="chip-row" id="interest-chips"></div>
+    <div class="custom-input">
+      <label for="interest-custom">✏️ 나만의 관심 분야 직접 적기 (쉼표로 구분)</label>
+      <input type="text" id="interest-custom" placeholder="예: 곤충 관찰, 별자리">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">7</span> 나의 특기는?</h2>
+    <p class="desc">내가 남들보다 잘하는 것을 골라보세요. (여러 개 가능, 없으면 직접 적어보세요)</p>
+    <div class="chip-row" id="specialty-chips"></div>
+    <div class="custom-input">
+      <label for="specialty-custom">✏️ 나만의 특기 직접 적기 (쉼표로 구분)</label>
+      <input type="text" id="specialty-custom" placeholder="예: 암기, 종이접기">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">8</span> 취미는?</h2>
+    <p class="desc">즐겨 하는 활동을 골라보세요. (여러 개 가능, 없으면 직접 적어보세요)</p>
+    <div class="chip-row" id="hobby-chips"></div>
+    <div class="custom-input">
+      <label for="hobby-custom">✏️ 나만의 취미 직접 적기 (쉼표로 구분)</label>
+      <input type="text" id="hobby-custom" placeholder="예: 레고 조립, 방탈출">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">9</span> 롤모델(존경하는 인물)</h2>
+    <p class="desc">닮고 싶은 사람이나 존경하는 인물이 있다면 적어보세요.</p>
+    <input type="text" id="rolemodel" placeholder="예: 우리 엄마, 아인슈타인, 좋아하는 운동선수">
+    <div class="suggest-row" id="rolemodel-suggestions"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">10</span> 나의 좌우명(한마디)</h2>
+    <p class="desc">내가 좋아하는 말이나 나를 표현하는 한마디를 적어보세요.</p>
+    <input type="text" id="motto" placeholder="예: 꿈은 이루어진다">
+    <div class="suggest-row" id="motto-suggestions"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">11</span> 좋아하는 동물/캐릭터</h2>
+    <p class="desc">아바타와 함께할 좋아하는 동물이나 캐릭터를 골라보세요. (여러 개 가능, 없으면 직접 적어보세요)</p>
+    <div class="chip-row" id="animal-chips"></div>
+    <div class="custom-input">
+      <label for="animal-custom">✏️ 나만의 동물/캐릭터 직접 적기 (쉼표로 구분)</label>
+      <input type="text" id="animal-custom" placeholder="예: 피카츄, 알파카">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">12</span> 아바타 그림 스타일</h2>
+    <p class="desc">예시 그림을 보고 마음에 드는 그림체를 선택해보세요.</p>
+    <div class="style-grid" id="style-grid"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">13</span> 좋아하는 색깔</h2>
+    <p class="desc">자주 쓰는 색을 빠르게 고르거나, 팔레트에서 원하는 색을 직접 선택해보세요.</p>
+    <div class="color-row" id="color-row"></div>
+    <div class="palette-row">
+      <label class="palette-label" for="colorPicker">🎨 팔레트에서 직접 고르기</label>
+      <input type="color" id="colorPicker" value="#8C6BFA">
+      <span id="colorPreviewText">#8C6BFA</span>
+    </div>
+  </div>
+
+  <button class="make-btn" id="makeBtn">🪄 나만의 아바타 프롬프트 만들기</button>
+
+  <div class="card" id="result">
+    <h2>🎉 완성된 프롬프트</h2>
+    <p class="desc">아래 프롬프트를 복사해서 ChatGPT(이미지 생성 기능)나 이미지 생성 AI에 붙여넣어 보세요!</p>
+
+    <div class="result-title"><span>🇺🇸 영어 프롬프트 (이미지 생성용 추천)</span><button class="copy-btn" id="copyEn">복사하기</button></div>
+    <div class="result-box" id="promptEn"></div>
+
+    <div class="result-title" style="margin-top:16px;"><span>🇰🇷 한국어 설명</span><button class="copy-btn" id="copyKo">복사하기</button></div>
+    <div class="result-box" id="promptKo"></div>
+
+    <div class="tip">
+      💡 <b>사용 팁</b><br>
+      1) 영어 프롬프트를 복사해서 ChatGPT에 붙여넣고 "이 프롬프트로 아바타 이미지를 만들어줘"라고 요청해보세요.<br>
+      2) 결과가 마음에 들지 않으면 색깔, 스타일, 성격 단어를 바꿔서 다시 만들어봐도 좋아요.<br>
+      3) 완성된 아바타는 캠프 활동지에 붙여서 친구들에게 소개해보세요!
+    </div>
+  </div>
+
+  <footer>AI점프업 꿈찾기 캠프 · 나의 아바타 만들기 활동지</footer>
+</div>
+
+<script>
+const personalityOptions = [
+  "밝고 긍정적인","차분하고 신중한","호기심 많은","리더십 있는","창의적인","배려심 많은",
+  "용감한","유쾌하고 재치있는","성실한","도전적인","꼼꼼한","활발한","다정한","끈기있는",
+  "독립적인","유머러스한","열정적인","공감을 잘하는"
+];
+const interestOptions = [
+  "과학/기술","예술/디자인","스포츠","음악","자연/동물","우주","게임","요리","여행","봉사/사회",
+  "역사","경제/창업","코딩/로봇","패션","영화/드라마","환경보호","글쓰기/문학","건축/공간디자인"
+];
+const hobbyOptions = [
+  "그림 그리기","독서","게임하기","운동하기","악기 연주","만들기(공작)","춤추기","영상 만들기",
+  "글쓰기","반려동물 돌보기","사진 찍기","보드게임","레고 조립","캠핑/야외활동","노래 부르기",
+  "퍼즐 맞추기","자전거 타기","요리하기"
+];
+const specialtyOptions = [
+  "그림 그리기","노래 부르기","춤/안무","운동/스포츠","글쓰기","암산/수학","컴퓨터/코딩",
+  "외국어","발표/말하기","손재주(만들기)","요리","악기 연주","기억력","관찰력",
+  "문제 해결","친구 사귀기(사교성)","정리정돈","리더십"
+];
+
+const styleOptions = [
+  { label:"픽셀아트", en:"cute pixel art style, retro video game character",
+    svg:`<svg viewBox="0 0 80 80"><rect width="80" height="80" fill="#F1EEFF"/>
+      <g shape-rendering="crispEdges">
+        <rect x="24" y="12" width="32" height="8" fill="var(--purple)"/>
+        <rect x="20" y="20" width="8" height="8" fill="var(--purple)"/>
+        <rect x="52" y="20" width="8" height="8" fill="var(--purple)"/>
+        <rect x="28" y="20" width="24" height="24" fill="#FFD9A0"/>
+        <rect x="28" y="28" width="6" height="6" fill="var(--ink)"/>
+        <rect x="46" y="28" width="6" height="6" fill="var(--ink)"/>
+        <rect x="34" y="40" width="12" height="4" fill="#C9694B"/>
+        <rect x="24" y="44" width="32" height="24" fill="var(--blue)"/>
+        <rect x="16" y="48" width="8" height="16" fill="var(--blue)"/>
+        <rect x="56" y="48" width="8" height="16" fill="var(--blue)"/>
+      </g></svg>`},
+  { label:"애니메이션/카툰", en:"colorful 2D cartoon/anime style illustration",
+    svg:`<svg viewBox="0 0 80 80"><rect width="80" height="80" fill="#FFF0F6"/>
+      <circle cx="40" cy="34" r="20" fill="#FFDCC2" stroke="var(--ink)" stroke-width="2.5"/>
+      <path d="M20 26 Q40 8 60 26" fill="var(--purple)" stroke="var(--ink)" stroke-width="2.5"/>
+      <ellipse cx="31" cy="36" rx="4.5" ry="6" fill="var(--ink)"/>
+      <ellipse cx="49" cy="36" rx="4.5" ry="6" fill="var(--ink)"/>
+      <circle cx="29.5" cy="33" r="1.4" fill="#fff"/>
+      <circle cx="47.5" cy="33" r="1.4" fill="#fff"/>
+      <path d="M32 46 Q40 52 48 46" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>
+      <ellipse cx="22" cy="42" rx="4" ry="3" fill="var(--pink)" opacity=".6"/>
+      <ellipse cx="58" cy="42" rx="4" ry="3" fill="var(--pink)" opacity=".6"/>
+      <path d="M18 66 Q40 50 62 66" fill="var(--blue)" stroke="var(--ink)" stroke-width="2.5"/>
+    </svg>`},
+  { label:"슈퍼히어로", en:"bold superhero comic book style with dynamic pose and cape",
+    svg:`<svg viewBox="0 0 80 80"><rect width="80" height="80" fill="#EAF7FF"/>
+      <circle cx="20" cy="14" r="2" fill="var(--orange)"/><circle cx="60" cy="18" r="2.4" fill="var(--orange)"/>
+      <circle cx="66" cy="50" r="1.8" fill="var(--orange)"/><circle cx="14" cy="52" r="2" fill="var(--orange)"/>
+      <path d="M40 60 L20 70 L26 44 Z" fill="var(--pink)"/>
+      <path d="M40 60 L60 70 L54 44 Z" fill="var(--pink)"/>
+      <circle cx="40" cy="34" r="18" fill="#FFDCC2" stroke="var(--ink)" stroke-width="2.5"/>
+      <path d="M24 30 L56 30 L52 22 L28 22 Z" fill="var(--blue)" stroke="var(--ink)" stroke-width="2"/>
+      <rect x="30" y="30" width="8" height="4" rx="2" fill="var(--ink)"/>
+      <rect x="42" y="30" width="8" height="4" rx="2" fill="var(--ink)"/>
+      <path d="M32 46 Q40 50 48 46" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M20 62 L60 62 L52 76 L28 76 Z" fill="var(--purple)"/>
+      <text x="40" y="72" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">S</text>
+    </svg>`},
+  { label:"판타지", en:"magical fantasy character illustration with sparkling aura",
+    svg:`<svg viewBox="0 0 80 80"><defs>
+      <radialGradient id="fantasyBg" cx="50%" cy="45%" r="60%">
+        <stop offset="0%" stop-color="#E6D9FF"/><stop offset="100%" stop-color="#FFF6FB"/>
+      </radialGradient></defs>
+      <rect width="80" height="80" fill="url(#fantasyBg)"/>
+      <path d="M40 8 L43 18 L53 18 L45 24 L48 34 L40 28 L32 34 L35 24 L27 18 L37 18 Z" fill="var(--yellow)"/>
+      <circle cx="16" cy="20" r="1.6" fill="var(--yellow)"/><circle cx="66" cy="26" r="1.6" fill="var(--yellow)"/>
+      <circle cx="62" cy="58" r="1.6" fill="var(--yellow)"/>
+      <circle cx="40" cy="42" r="17" fill="#FFE7CE" stroke="var(--purple)" stroke-width="2.5"/>
+      <path d="M22 40 Q40 16 58 40" fill="var(--purple)" opacity=".85"/>
+      <ellipse cx="33" cy="44" rx="3.5" ry="5" fill="var(--ink)"/>
+      <ellipse cx="47" cy="44" rx="3.5" ry="5" fill="var(--ink)"/>
+      <path d="M34 54 Q40 58 46 54" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M18 66 Q40 52 62 66" fill="var(--pink)" stroke="var(--purple)" stroke-width="2"/>
+    </svg>`},
+  { label:"수채화", en:"soft watercolor painting style portrait",
+    svg:`<svg viewBox="0 0 80 80"><defs>
+      <filter id="wc"><feGaussianBlur stdDeviation="1.4"/></filter></defs>
+      <rect width="80" height="80" fill="#FBFAFF"/>
+      <circle cx="30" cy="26" r="16" fill="var(--blue)" opacity=".35" filter="url(#wc)"/>
+      <circle cx="52" cy="30" r="18" fill="var(--pink)" opacity=".3" filter="url(#wc)"/>
+      <circle cx="42" cy="52" r="16" fill="var(--yellow)" opacity=".3" filter="url(#wc)"/>
+      <circle cx="40" cy="36" r="17" fill="#FFE9D6" opacity=".9" filter="url(#wc)"/>
+      <ellipse cx="33" cy="36" rx="3" ry="4.5" fill="var(--ink)" opacity=".7"/>
+      <ellipse cx="47" cy="36" rx="3" ry="4.5" fill="var(--ink)" opacity=".7"/>
+      <path d="M33 46 Q40 50 47 46" fill="none" stroke="var(--ink)" stroke-width="1.8" opacity=".7" stroke-linecap="round"/>
+      <path d="M20 68 Q40 54 60 68" fill="var(--purple)" opacity=".4" filter="url(#wc)"/>
+    </svg>`},
+  { label:"3D 카툰", en:"cute 3D animated movie style character, glossy Pixar-like rendering",
+    svg:`<svg viewBox="0 0 80 80"><defs>
+      <radialGradient id="d3face" cx="38%" cy="32%" r="70%">
+        <stop offset="0%" stop-color="#FFF3E6"/><stop offset="100%" stop-color="#FFCFA0"/>
+      </radialGradient>
+      <radialGradient id="d3body" cx="35%" cy="20%" r="80%">
+        <stop offset="0%" stop-color="#7FC8FF"/><stop offset="100%" stop-color="var(--blue)"/>
+      </radialGradient></defs>
+      <rect width="80" height="80" fill="#F1F0FF"/>
+      <ellipse cx="40" cy="70" rx="26" ry="14" fill="url(#d3body)"/>
+      <circle cx="40" cy="36" r="19" fill="url(#d3face)" stroke="#E8A876" stroke-width="1"/>
+      <ellipse cx="33" cy="37" rx="4" ry="5.5" fill="var(--ink)"/>
+      <ellipse cx="47" cy="37" rx="4" ry="5.5" fill="var(--ink)"/>
+      <circle cx="31.5" cy="34" r="1.5" fill="#fff"/>
+      <circle cx="45.5" cy="34" r="1.5" fill="#fff"/>
+      <path d="M33 47 Q40 52 47 47" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="30" cy="46" rx="20" ry="4" fill="#fff" opacity=".35"/>
+    </svg>`},
+  { label:"스티커/이모지", en:"flat sticker/emoji style illustration with bold white die-cut outline, simple shapes, vibrant flat colors",
+    svg:`<svg viewBox="0 0 80 80"><rect width="80" height="80" fill="#FFF6FB"/>
+      <circle cx="40" cy="42" r="30" fill="#fff"/>
+      <circle cx="40" cy="42" r="26" fill="var(--yellow)" stroke="var(--ink)" stroke-width="3"/>
+      <circle cx="30" cy="38" r="4.5" fill="var(--ink)"/>
+      <circle cx="50" cy="38" r="4.5" fill="var(--ink)"/>
+      <circle cx="30" cy="36.5" r="1.3" fill="#fff"/>
+      <circle cx="50" cy="36.5" r="1.3" fill="#fff"/>
+      <path d="M28 50 Q40 60 52 50" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="20" cy="48" r="4" fill="var(--pink)" opacity=".7"/>
+      <circle cx="60" cy="48" r="4" fill="var(--pink)" opacity=".7"/>
+      <path d="M58 16 l3 3 l-3 3 l-3-3 Z" fill="var(--blue)"/>
+    </svg>`},
+  { label:"지브리풍 감성", en:"warm hand-painted Studio-Ghibli-inspired anime style, soft watercolor background, gentle expressive eyes, nostalgic dreamy atmosphere",
+    svg:`<svg viewBox="0 0 80 80"><defs>
+      <linearGradient id="ghibliSky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#CFEFFF"/><stop offset="100%" stop-color="#FFF6E5"/>
+      </linearGradient>
+      <filter id="ghibliBlur"><feGaussianBlur stdDeviation="1"/></filter></defs>
+      <rect width="80" height="80" fill="url(#ghibliSky)"/>
+      <ellipse cx="20" cy="16" rx="10" ry="5" fill="#fff" opacity=".8" filter="url(#ghibliBlur)"/>
+      <ellipse cx="60" cy="24" rx="8" ry="4" fill="#fff" opacity=".7" filter="url(#ghibliBlur)"/>
+      <circle cx="40" cy="40" r="18" fill="#FFEFD9" stroke="#E8C79A" stroke-width="1.2"/>
+      <path d="M22 32 Q40 12 58 32 Q56 24 40 22 Q24 24 22 32Z" fill="#6B4A34"/>
+      <ellipse cx="32" cy="42" rx="3.2" ry="4.4" fill="#4A3B2A"/>
+      <ellipse cx="48" cy="42" rx="3.2" ry="4.4" fill="#4A3B2A"/>
+      <circle cx="30.5" cy="39.5" r="1" fill="#fff"/>
+      <circle cx="46.5" cy="39.5" r="1" fill="#fff"/>
+      <ellipse cx="26" cy="47" rx="3" ry="2" fill="var(--pink)" opacity=".4"/>
+      <ellipse cx="54" cy="47" rx="3" ry="2" fill="var(--pink)" opacity=".4"/>
+      <path d="M34 50 Q40 54 46 50" fill="none" stroke="#4A3B2A" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M18 68 Q40 54 62 68" fill="var(--green)" opacity=".7"/>
+    </svg>`},
+  { label:"팝아트", en:"bold pop art style with thick black outlines, halftone dot pattern background, vibrant high-contrast colors, comic book aesthetic",
+    svg:`<svg viewBox="0 0 80 80"><defs>
+      <pattern id="halftone" width="6" height="6" patternUnits="userSpaceOnUse">
+        <circle cx="3" cy="3" r="1.4" fill="var(--pink)"/>
+      </pattern></defs>
+      <rect width="80" height="80" fill="var(--yellow)"/>
+      <rect width="80" height="80" fill="url(#halftone)" opacity=".5"/>
+      <circle cx="40" cy="40" r="22" fill="#FFDCC2" stroke="var(--ink)" stroke-width="3"/>
+      <path d="M20 30 Q40 10 60 30" fill="var(--blue)" stroke="var(--ink)" stroke-width="3"/>
+      <ellipse cx="31" cy="40" rx="4" ry="5.5" fill="var(--ink)"/>
+      <ellipse cx="49" cy="40" rx="4" ry="5.5" fill="var(--ink)"/>
+      <path d="M30 54 Q40 60 50 54" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="22" cy="50" r="5" fill="var(--pink)" stroke="var(--ink)" stroke-width="1.5"/>
+    </svg>`},
+  { label:"클레이(점토)", en:"cute claymation/plasticine clay style character, soft matte texture, chubby rounded shapes, stop-motion animation look",
+    svg:`<svg viewBox="0 0 80 80"><defs>
+      <radialGradient id="clayFace" cx="35%" cy="30%" r="75%">
+        <stop offset="0%" stop-color="#FFE3B8"/><stop offset="100%" stop-color="#F5B97F"/>
+      </radialGradient>
+      <radialGradient id="clayBody" cx="35%" cy="20%" r="80%">
+        <stop offset="0%" stop-color="#9FE8C8"/><stop offset="100%" stop-color="var(--green)"/>
+      </radialGradient></defs>
+      <rect width="80" height="80" fill="#F1F0FF"/>
+      <ellipse cx="40" cy="70" rx="24" ry="13" fill="url(#clayBody)"/>
+      <circle cx="40" cy="38" r="20" fill="url(#clayFace)"/>
+      <ellipse cx="31" cy="40" rx="3.6" ry="3" fill="var(--ink)"/>
+      <ellipse cx="49" cy="40" rx="3.6" ry="3" fill="var(--ink)"/>
+      <ellipse cx="24" cy="42" rx="4" ry="3" fill="#FF9FA8" opacity=".6"/>
+      <ellipse cx="56" cy="42" rx="4" ry="3" fill="#FF9FA8" opacity=".6"/>
+      <path d="M32 50 Q40 55 48 50" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="28" cy="30" rx="10" ry="5" fill="#fff" opacity=".35"/>
+    </svg>`}
+];
+
+const jobOptions = [
+  "과학자","의사","간호사","수의사","선생님","유튜버/크리에이터","프로그래머","게임 개발자",
+  "운동선수","화가/디자이너","우주비행사","요리사","가수/음악가","배우","작가/소설가","건축가",
+  "변호사","경찰관","소방관","비행기 조종사","사업가(CEO)","패션 디자이너","애니메이터",
+  "로봇공학자","환경운동가","사회복지사","통역사/번역가","프로게이머","스포츠 감독/코치",
+  "박물관 큐레이터","심리상담사","동물 조련사","제빵사/파티시에"
+];
+function appendToInput(inputId, value){
+  const input = document.getElementById(inputId);
+  const current = input.value.trim();
+  if(!current){ input.value = value; return; }
+  const parts = current.split(',').map(p=>p.trim());
+  if(parts.includes(value)) return;
+  input.value = current + ', ' + value;
+}
+
+const goalOptions = [
+  "멋진 어른 되기","많은 사람 돕기","최고의 전문가 되기","세상을 바꾸는 사람 되기","꿈을 이루는 사람 되기",
+  "매일 성장하는 사람 되기","친구들에게 도움이 되는 사람 되기","포기하지 않는 사람 되기","정직하고 신뢰받는 사람 되기",
+  "새로운 것에 도전하는 사람 되기","나만의 재능을 키우는 사람 되기","건강하고 밝은 사람 되기","리더십 있는 사람 되기",
+  "세계를 무대로 활약하는 사람 되기","환경을 지키는 사람 되기","어려운 사람을 돕는 사람 되기","꾸준히 노력하는 사람 되기",
+  "창의적인 아이디어로 세상을 이롭게 하기","실력으로 인정받는 사람 되기","가족을 자랑스럽게 만드는 사람 되기",
+  "내가 좋아하는 일로 성공하기","다른 사람에게 영감을 주는 사람 되기","배움을 멈추지 않는 사람 되기","행복하게 사는 사람 되기"
+];
+const goalSuggestEl = document.getElementById('goal-suggestions');
+goalOptions.forEach(g=>{
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'suggest';
+  btn.textContent = g;
+  btn.onclick = ()=>{ appendToInput('goal', g); };
+  goalSuggestEl.appendChild(btn);
+});
+
+const jobSuggestEl = document.getElementById('job-suggestions');
+jobOptions.forEach(j=>{
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'suggest';
+  btn.textContent = j;
+  btn.onclick = ()=>{ appendToInput('job', j); };
+  jobSuggestEl.appendChild(btn);
+});
+
+const rolemodelOptions = [
+  "부모님","선생님","세종대왕","이순신 장군","유관순 열사","신사임당","장영실","허준",
+  "안중근 의사","김구","우장춘 박사","박세리","김연아","손흥민","박지성","방탄소년단(BTS)",
+  "유재석","백종원","이국종 교수","이태석 신부","스티브 잡스","일론 머스크","빌 게이츠",
+  "아인슈타인","마리 퀴리","레오나르도 다빈치","오프라 윈프리","넬슨 만델라","월트 디즈니",
+  "좋아하는 웹툰/애니 주인공"
+];
+const rolemodelSuggestEl = document.getElementById('rolemodel-suggestions');
+rolemodelOptions.forEach(r=>{
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'suggest';
+  btn.textContent = r;
+  btn.onclick = ()=>{ appendToInput('rolemodel', r); };
+  rolemodelSuggestEl.appendChild(btn);
+});
+
+const mottoOptions = [
+  "꿈은 이루어진다","포기하지 않으면 불가능은 없다","오늘도 한 걸음 더","실패는 성공의 어머니",
+  "할 수 있다!","작은 노력이 큰 변화를 만든다","나답게 빛나자","꾸준함이 답이다",
+  "천 리 길도 한 걸음부터","시작이 반이다","노력은 배신하지 않는다","실패를 두려워하지 말자",
+  "위기는 기회다","하늘은 스스로 돕는 자를 돕는다","끝까지 최선을 다하자",
+  "오늘의 나는 어제보다 낫다","작은 것부터 시작하자","실수해도 괜찮아, 다시 하면 돼",
+  "꿈을 향해 한 걸음씩","나는 특별하다","도전은 나를 성장시킨다","생각이 바뀌면 행동이 바뀐다"
+];
+const mottoSuggestEl = document.getElementById('motto-suggestions');
+mottoOptions.forEach(m=>{
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'suggest';
+  btn.textContent = m;
+  btn.onclick = ()=>{ appendToInput('motto', m); };
+  mottoSuggestEl.appendChild(btn);
+});
+
+const animalOptions = [
+  "강아지","고양이","사자","호랑이","곰","여우","토끼","부엉이",
+  "유니콘","용","팬더","돌고래","독수리","늑대","펭귄","공룡"
+];
+
+const colorOptions = [
+  {name:"핑크", hex:"#FF6FA5"}, {name:"보라", hex:"#8C6BFA"}, {name:"하늘", hex:"#3FA9F5"},
+  {name:"노랑", hex:"#FFC93C"}, {name:"초록", hex:"#3DDC97"}, {name:"주황", hex:"#FF9142"},
+  {name:"빨강", hex:"#FF5A5F"}, {name:"검정", hex:"#2E2A4A"}
+];
+
+function buildChips(containerId, options, maxSelect, colorClass){
+  const el = document.getElementById(containerId);
+  options.forEach(opt=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.textContent = opt;
+    chip.dataset.value = opt;
+    chip.onclick = ()=>{
+      if(chip.classList.contains('selected')){
+        chip.classList.remove('selected', colorClass||'');
+      } else {
+        if(maxSelect){
+          const selected = el.querySelectorAll('.selected');
+          if(selected.length >= maxSelect) return;
+        }
+        chip.classList.add('selected');
+        if(colorClass) chip.classList.add(colorClass);
+      }
+    };
+    el.appendChild(chip);
+  });
+}
+buildChips('personality-chips', personalityOptions, 3, 'pink');
+buildChips('interest-chips', interestOptions, null, 'blue');
+buildChips('specialty-chips', specialtyOptions, null, 'blue');
+buildChips('hobby-chips', hobbyOptions, null, 'green');
+buildChips('animal-chips', animalOptions, null, 'pink');
+
+const styleGrid = document.getElementById('style-grid');
+styleOptions.forEach(s=>{
+  const card = document.createElement('div');
+  card.className = 'style-card';
+  card.innerHTML = `<div class="style-thumb">${s.svg}</div><div>${s.label}</div>`;
+  card.dataset.en = s.en;
+  card.dataset.label = s.label;
+  card.onclick = ()=>{
+    document.querySelectorAll('.style-card').forEach(c=>c.classList.remove('selected'));
+    card.classList.add('selected');
+  };
+  styleGrid.appendChild(card);
+});
+
+const colorRow = document.getElementById('color-row');
+const colorPicker = document.getElementById('colorPicker');
+const colorPreviewText = document.getElementById('colorPreviewText');
+colorOptions.forEach(c=>{
+  const sw = document.createElement('div');
+  sw.className = 'swatch';
+  sw.style.background = c.hex;
+  sw.title = c.name;
+  sw.dataset.name = c.name;
+  sw.dataset.hex = c.hex;
+  sw.onclick = ()=>{
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+    sw.classList.add('selected');
+    colorPicker.value = c.hex;
+    colorPreviewText.textContent = `${c.hex} (${c.name})`;
+  };
+  colorRow.appendChild(sw);
+});
+colorPicker.oninput = ()=>{
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+  colorPreviewText.textContent = colorPicker.value;
+};
+
+function getSelected(containerId){
+  return Array.from(document.querySelectorAll('#'+containerId+' .selected')).map(el=>el.dataset.value);
+}
+function getCustomList(inputId){
+  const val = document.getElementById(inputId).value.trim();
+  if(!val) return [];
+  return val.split(',').map(v=>v.trim()).filter(Boolean);
+}
+function getCombined(containerId, customId){
+  return getSelected(containerId).concat(getCustomList(customId));
+}
+
+document.getElementById('makeBtn').onclick = ()=>{
+  const nickname = document.getElementById('nickname').value.trim() || "이 친구";
+  const schoolName = document.getElementById('schoolName').value.trim();
+  const gradeLevel = document.getElementById('gradeLevel').value;
+  const schoolGrade = [schoolName, gradeLevel].filter(Boolean).join(' ');
+  const goal = document.getElementById('goal').value.trim();
+  const job = document.getElementById('job').value.trim();
+  const personality = getCombined('personality-chips', 'personality-custom');
+  const interests = getCombined('interest-chips', 'interest-custom');
+  const specialties = getCombined('specialty-chips', 'specialty-custom');
+  const hobbies = getCombined('hobby-chips', 'hobby-custom');
+  const rolemodel = document.getElementById('rolemodel').value.trim();
+  const motto = document.getElementById('motto').value.trim();
+  const animals = getCombined('animal-chips', 'animal-custom');
+  const styleCard = document.querySelector('.style-card.selected');
+
+  const styleEn = styleCard ? styleCard.dataset.en : "colorful 2D cartoon/anime style illustration";
+  const styleLabel = styleCard ? styleCard.dataset.label : "애니메이션/카툰";
+
+  const colorHex = colorPicker.value;
+  const matchedPreset = colorOptions.find(c=>c.hex.toLowerCase()===colorHex.toLowerCase());
+  const colorName = matchedPreset ? matchedPreset.name : colorHex;
+
+  const personalityEnMap = {
+    "밝고 긍정적인":"bright and positive","차분하고 신중한":"calm and thoughtful","호기심 많은":"curious",
+    "리더십 있는":"confident with leadership energy","창의적인":"creative","배려심 많은":"kind and caring",
+    "용감한":"brave","유쾌하고 재치있는":"cheerful and witty","성실한":"diligent","도전적인":"adventurous",
+    "꼼꼼한":"meticulous","활발한":"energetic","다정한":"warm-hearted","끈기있는":"persistent",
+    "독립적인":"independent","유머러스한":"humorous","열정적인":"passionate","공감을 잘하는":"empathetic"
+  };
+  const interestEnMap = {
+    "과학/기술":"science and technology","예술/디자인":"art and design","스포츠":"sports","음악":"music",
+    "자연/동물":"nature and animals","우주":"outer space","게임":"video games","요리":"cooking",
+    "여행":"traveling","봉사/사회":"community service","역사":"history","경제/창업":"economics and entrepreneurship",
+    "코딩/로봇":"coding and robotics","패션":"fashion","영화/드라마":"movies and dramas",
+    "환경보호":"environmental protection","글쓰기/문학":"writing and literature","건축/공간디자인":"architecture and spatial design"
+  };
+  const hobbyEnMap = {
+    "그림 그리기":"drawing","독서":"reading books","게임하기":"playing games","운동하기":"exercising",
+    "악기 연주":"playing musical instruments","만들기(공작)":"crafting","춤추기":"dancing",
+    "영상 만들기":"making videos","글쓰기":"writing","반려동물 돌보기":"caring for pets",
+    "사진 찍기":"photography","보드게임":"board games","레고 조립":"building Lego sets",
+    "캠핑/야외활동":"camping and outdoor activities","노래 부르기":"singing","퍼즐 맞추기":"solving puzzles",
+    "자전거 타기":"cycling","요리하기":"cooking"
+  };
+  const specialtyEnMap = {
+    "그림 그리기":"drawing","노래 부르기":"singing","춤/안무":"dancing and choreography",
+    "운동/스포츠":"sports","글쓰기":"writing","암산/수학":"mental math","컴퓨터/코딩":"coding",
+    "외국어":"foreign languages","발표/말하기":"public speaking","손재주(만들기)":"handcrafting",
+    "요리":"cooking","악기 연주":"playing musical instruments","기억력":"a great memory",
+    "관찰력":"keen observation","문제 해결":"problem solving","친구 사귀기(사교성)":"making friends easily",
+    "정리정돈":"organizing things","리더십":"leadership"
+  };
+  const animalEnMap = {
+    "강아지":"puppy","고양이":"cat","사자":"lion","호랑이":"tiger","곰":"bear","여우":"fox",
+    "토끼":"rabbit","부엉이":"owl","유니콘":"unicorn","용":"dragon","팬더":"panda",
+    "돌고래":"dolphin","독수리":"eagle","늑대":"wolf","펭귄":"penguin","공룡":"dinosaur"
+  };
+
+  const persEn = personality.map(p=>personalityEnMap[p]||p).join(", ") || "cheerful";
+  const intEn = interests.map(i=>interestEnMap[i]||i).join(" and ") || "many things";
+  const specEn = specialties.map(s=>specialtyEnMap[s]||s).join(" and ") || "many skills";
+  const hobEn = hobbies.map(h=>hobbyEnMap[h]||h).join(" and ") || "creative activities";
+  const animalEn = animals.map(a=>animalEnMap[a]||a).join(" or ");
+
+  const jobPart = job ? `who dreams of becoming a ${job}` : "with a big dream for the future";
+  const rolemodelLine = rolemodel ? `\nRole model inspiration: the character embodies admirable qualities of ${rolemodel}.` : "";
+  const animalLine = animalEn ? `\nThe character has a cute companion or themed accessory inspired by a ${animalEn}.` : "";
+  const mottoLine = motto ? `\nOverall mood and pose reflect the spirit of the personal motto "${motto}" (express through expression and pose, not literal text).` : "";
+
+  const promptEn = `Create a full-body avatar character portrait representing a young student named "${nickname}"${gradeLevel ? `, a ${gradeLevel} student` : ""}.
+Style: ${styleEn}.
+Personality: the character looks ${persEn}.
+The character ${jobPart}.
+Include visual elements related to their interests in ${intEn}, special talents in ${specEn}, and hobbies such as ${hobEn}.${rolemodelLine}${animalLine}${mottoLine}
+Accent color: use ${colorHex} tones in clothing or background.
+The character should have an inspiring, friendly, and confident expression, standing in a simple themed background that hints at their dream job.
+Square image, vibrant colors, high quality digital illustration, no text or watermark.`;
+
+  const promptKo = `[아바타 설명]
+이름/별명: ${nickname}
+학교/학년: ${schoolGrade || "미작성"}
+그림 스타일: ${styleLabel}
+성격: ${personality.join(", ") || "미선택"}
+목표: ${goal || "미작성"}
+꿈(직업): ${job || "미작성"}
+관심 분야: ${interests.join(", ") || "미선택"}
+특기: ${specialties.join(", ") || "미선택"}
+취미: ${hobbies.join(", ") || "미선택"}
+롤모델: ${rolemodel || "미작성"}
+좌우명: ${motto || "미작성"}
+좋아하는 동물/캐릭터: ${animals.join(", ") || "미선택"}
+포인트 색깔: ${colorName}
+
+→ 위 내용을 반영해서 밝고 자신감 있는 표정의 전신 아바타 캐릭터를 그려주세요. 배경에는 꿈(직업)과 관련된 요소를 살짝 넣어주면 좋아요.`;
+
+  document.getElementById('promptEn').textContent = promptEn;
+  document.getElementById('promptKo').textContent = promptKo;
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({behavior:'smooth', block:'start'});
+};
+
+function setupCopy(btnId, boxId){
+  document.getElementById(btnId).onclick = ()=>{
+    const text = document.getElementById(boxId).textContent;
+    navigator.clipboard.writeText(text).then(()=>{
+      const btn = document.getElementById(btnId);
+      const original = btn.textContent;
+      btn.textContent = "복사됨! ✓";
+      btn.classList.add('copied');
+      setTimeout(()=>{ btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+    });
+  };
+}
+setupCopy('copyEn','promptEn');
+setupCopy('copyKo','promptKo');
+</script>
+</body>
+</html>

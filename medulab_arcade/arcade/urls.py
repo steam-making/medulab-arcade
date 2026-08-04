@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('tools/my-avatar/', views.my_avatar, name='my_avatar'),
     re_path(r'^play/(?P<slug>[-\w]+)/$', views.play, name='play'),
     path('upload/', views.upload, name='upload'),
     path('schedule/', views.schedule_view, name='schedule'),

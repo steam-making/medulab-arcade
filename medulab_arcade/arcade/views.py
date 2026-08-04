@@ -91,6 +91,10 @@ def home(request):
     return render(request, 'arcade/home.html', context)
 
 
+def my_avatar(request):
+    return render(request, 'arcade/my_avatar.html')
+
+
 def schedule_view(request):
     ensure_holidays()
     events = ScheduleEvent.objects.filter(is_active=True).order_by('start_date', 'start_time', 'title')

@@ -1,7 +1,7 @@
 {% extends 'arcade/base.html' %}
 {% load static %}
 
-{% block title %}AI 즐겨찾기 - 메듀랩{% endblock %}
+{% block title %}즐겨찾기 - 메듀랩{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -9,7 +9,7 @@
     background: linear-gradient(150deg, #0f0f1a 0%, #1a1a2e 50%, #0f0f1a 100%) !important;
   }
   .af-wrap {
-    max-width: 1000px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 40px 20px 80px;
   }
@@ -17,7 +17,7 @@
   /* ── 헤더 ── */
   .af-hero {
     text-align: center;
-    padding: 36px 20px 40px;
+    padding: 36px 20px 32px;
   }
   .af-hero .af-badge {
     display: inline-block;
@@ -44,6 +44,38 @@
     font-size: 15px;
     color: rgba(255,255,255,0.55);
     margin: 0;
+  }
+
+  /* ── 필터 버튼 ── */
+  .af-filters {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .af-filter-btn {
+    padding: 9px 22px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.65);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .af-filter-btn:hover {
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+  }
+  .af-filter-btn.active {
+    background: linear-gradient(135deg, #fbbf24, #f87171);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(251,191,36,0.3);
   }
 
   /* ── 카드 그리드 ── */
@@ -136,11 +168,17 @@
     opacity: 0.8;
   }
 
+  /* 카드 숨김 */
+  .af-card.hidden {
+    display: none;
+  }
+
   @media (max-width: 600px) {
     .af-hero h1 { font-size: 26px; }
     .af-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .af-thumb { font-size: 38px; }
-    .af-name { font-size: 14px; }
+    .af-name { font-size: 15px; }
+    .af-filter-btn { font-size: 13px; padding: 8px 16px; }
   }
   @media (max-width: 360px) {
     .af-grid { grid-template-columns: 1fr; }
@@ -151,14 +189,23 @@
 {% block content %}
 <div class="af-wrap">
   <div class="af-hero">
-    <div class="af-badge">⭐ AI Favorites</div>
-    <h1>AI 즐겨찾기</h1>
-    <p>클릭하면 새 창으로 바로 이동해요. AI와 함께 창의력을 펼쳐보세요!</p>
+    <div class="af-badge">⭐ Favorites</div>
+    <h1>즐겨찾기</h1>
+    <p>카테고리를 선택하고 유용한 사이트로 바로 이동해요!</p>
   </div>
 
-  <div class="af-grid">
+  <!-- 필터 버튼 -->
+  <div class="af-filters">
+    <button class="af-filter-btn active" data-filter="all">✨ 전체</button>
+    <button class="af-filter-btn" data-filter="ai">🤖 AI</button>
+    <button class="af-filter-btn" data-filter="block">🧩 블록코딩</button>
+    <button class="af-filter-btn" data-filter="python">🐍 파이썬</button>
+  </div>
 
-    <a href="https://www.autodraw.com" target="_blank" rel="noopener noreferrer" class="af-card"
+  <div class="af-grid" id="af-grid">
+
+    <!-- ===== AI ===== -->
+    <a href="https://www.autodraw.com" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="ai"
        style="--card-accent:rgba(251,191,36,0.4); --card-color:#fbbf24; --card-glow:rgba(251,191,36,0.06);">
       <div class="af-thumb">
         <div class="af-thumb-bg" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></div>
@@ -170,7 +217,7 @@
       <span class="af-link-tag">↗ autodraw.com</span>
     </a>
 
-    <a href="https://musiclab.chromeexperiments.com" target="_blank" rel="noopener noreferrer" class="af-card"
+    <a href="https://musiclab.chromeexperiments.com" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="ai"
        style="--card-accent:rgba(167,139,250,0.4); --card-color:#a78bfa; --card-glow:rgba(167,139,250,0.06);">
       <div class="af-thumb">
         <div class="af-thumb-bg" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);"></div>
@@ -182,7 +229,7 @@
       <span class="af-link-tag">↗ musiclab.chromeexperiments.com</span>
     </a>
 
-    <a href="https://quickdraw.withgoogle.com" target="_blank" rel="noopener noreferrer" class="af-card"
+    <a href="https://quickdraw.withgoogle.com" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="ai"
        style="--card-accent:rgba(52,211,153,0.4); --card-color:#34d399; --card-glow:rgba(52,211,153,0.06);">
       <div class="af-thumb">
         <div class="af-thumb-bg" style="background:linear-gradient(135deg,#34d399,#059669);"></div>
@@ -194,7 +241,7 @@
       <span class="af-link-tag">↗ quickdraw.withgoogle.com</span>
     </a>
 
-    <a href="https://teachablemachine.withgoogle.com" target="_blank" rel="noopener noreferrer" class="af-card"
+    <a href="https://teachablemachine.withgoogle.com" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="ai"
        style="--card-accent:rgba(96,165,250,0.4); --card-color:#60a5fa; --card-glow:rgba(96,165,250,0.06);">
       <div class="af-thumb">
         <div class="af-thumb-bg" style="background:linear-gradient(135deg,#60a5fa,#2563eb);"></div>
@@ -206,7 +253,7 @@
       <span class="af-link-tag">↗ teachablemachine.withgoogle.com</span>
     </a>
 
-    <a href="https://artsandculture.google.com/experiment/blob-opera/AAHWrBfvT" target="_blank" rel="noopener noreferrer" class="af-card"
+    <a href="https://artsandculture.google.com/experiment/blob-opera/AAHWrBfvT" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="ai"
        style="--card-accent:rgba(249,115,22,0.4); --card-color:#fb923c; --card-glow:rgba(249,115,22,0.06);">
       <div class="af-thumb">
         <div class="af-thumb-bg" style="background:linear-gradient(135deg,#fb923c,#ea580c);"></div>
@@ -218,7 +265,7 @@
       <span class="af-link-tag">↗ artsandculture.google.com</span>
     </a>
 
-    <a href="https://experiments.withgoogle.com/ai/ai-duet/view/" target="_blank" rel="noopener noreferrer" class="af-card"
+    <a href="https://experiments.withgoogle.com/ai/ai-duet/view/" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="ai"
        style="--card-accent:rgba(244,114,182,0.4); --card-color:#f472b6; --card-glow:rgba(244,114,182,0.06);">
       <div class="af-thumb">
         <div class="af-thumb-bg" style="background:linear-gradient(135deg,#f472b6,#db2777);"></div>
@@ -230,7 +277,7 @@
       <span class="af-link-tag">↗ experiments.withgoogle.com</span>
     </a>
 
-    <a href="https://semiconductor.withgoogle.com" target="_blank" rel="noopener noreferrer" class="af-card"
+    <a href="https://semiconductor.withgoogle.com" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="ai"
        style="--card-accent:rgba(45,212,191,0.4); --card-color:#2dd4bf; --card-glow:rgba(45,212,191,0.06);">
       <div class="af-thumb">
         <div class="af-thumb-bg" style="background:linear-gradient(135deg,#2dd4bf,#0d9488);"></div>
@@ -242,7 +289,7 @@
       <span class="af-link-tag">↗ semiconductor.withgoogle.com</span>
     </a>
 
-    <a href="https://scribblediffusion.com" target="_blank" rel="noopener noreferrer" class="af-card"
+    <a href="https://scribblediffusion.com" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="ai"
        style="--card-accent:rgba(192,132,252,0.4); --card-color:#c084fc; --card-glow:rgba(192,132,252,0.06);">
       <div class="af-thumb">
         <div class="af-thumb-bg" style="background:linear-gradient(135deg,#c084fc,#9333ea);"></div>
@@ -254,6 +301,153 @@
       <span class="af-link-tag">↗ scribblediffusion.com</span>
     </a>
 
+    <!-- ===== 블록코딩 ===== -->
+    <a href="https://playentry.org" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="block"
+       style="--card-accent:rgba(52,211,153,0.4); --card-color:#34d399; --card-glow:rgba(52,211,153,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#34d399,#059669);"></div>
+        <span class="af-emoji">🎯</span>
+      </div>
+      <div class="af-role">블록코딩</div>
+      <div class="af-name">엔트리</div>
+      <div class="af-desc">한국형 블록코딩, 나만의 작품과 게임을 만들어요</div>
+      <span class="af-link-tag">↗ playentry.org</span>
+    </a>
+
+    <a href="https://scratch.mit.edu" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="block"
+       style="--card-accent:rgba(251,191,36,0.4); --card-color:#fbbf24; --card-glow:rgba(251,191,36,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></div>
+        <span class="af-emoji">🐱</span>
+      </div>
+      <div class="af-role">블록코딩</div>
+      <div class="af-name">스크래치</div>
+      <div class="af-desc">MIT 블록코딩, 전 세계 친구들과 작품을 공유해요</div>
+      <span class="af-link-tag">↗ scratch.mit.edu</span>
+    </a>
+
+    <a href="https://mblock.makeblock.com" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="block"
+       style="--card-accent:rgba(96,165,250,0.4); --card-color:#60a5fa; --card-glow:rgba(96,165,250,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#60a5fa,#2563eb);"></div>
+        <span class="af-emoji">📦</span>
+      </div>
+      <div class="af-role">로봇코딩</div>
+      <div class="af-name">엠블럭</div>
+      <div class="af-desc">로봇·아두이노·마이크로비트를 블록으로 제어해요</div>
+      <span class="af-link-tag">↗ mblock.makeblock.com</span>
+    </a>
+
+    <a href="https://www.codiny.com" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="block"
+       style="--card-accent:rgba(167,139,250,0.4); --card-color:#a78bfa; --card-glow:rgba(167,139,250,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);"></div>
+        <span class="af-emoji">🤖</span>
+      </div>
+      <div class="af-role">AI 블록</div>
+      <div class="af-name">AI 코디니</div>
+      <div class="af-desc">AI를 블록코딩으로 쉽고 재미있게 배워요</div>
+      <span class="af-link-tag">↗ codiny.com</span>
+    </a>
+
+    <a href="https://code.org" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="block"
+       style="--card-accent:rgba(249,115,22,0.4); --card-color:#fb923c; --card-glow:rgba(249,115,22,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#fb923c,#ea580c);"></div>
+        <span class="af-emoji">🎮</span>
+      </div>
+      <div class="af-role">코딩 입문</div>
+      <div class="af-name">code.org</div>
+      <div class="af-desc">게임처럼 재미있게 코딩을 처음 배우는 곳</div>
+      <span class="af-link-tag">↗ code.org</span>
+    </a>
+
+    <!-- ===== 파이썬 ===== -->
+    <a href="https://dojang.io" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="python"
+       style="--card-accent:rgba(52,211,153,0.4); --card-color:#34d399; --card-glow:rgba(52,211,153,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#34d399,#059669);"></div>
+        <span class="af-emoji">📚</span>
+      </div>
+      <div class="af-role">파이썬 입문</div>
+      <div class="af-name">코딩도장</div>
+      <div class="af-desc">파이썬을 무료로 처음부터 배우는 온라인 교재</div>
+      <span class="af-link-tag">↗ dojang.io</span>
+    </a>
+
+    <a href="https://replit.com" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="python"
+       style="--card-accent:rgba(251,191,36,0.4); --card-color:#fbbf24; --card-glow:rgba(251,191,36,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></div>
+        <span class="af-emoji">💻</span>
+      </div>
+      <div class="af-role">온라인 에디터</div>
+      <div class="af-name">replit</div>
+      <div class="af-desc">설치 없이 브라우저에서 바로 파이썬 코딩해요</div>
+      <span class="af-link-tag">↗ replit.com</span>
+    </a>
+
+    <a href="https://colab.research.google.com" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="python"
+       style="--card-accent:rgba(96,165,250,0.4); --card-color:#60a5fa; --card-glow:rgba(96,165,250,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#60a5fa,#2563eb);"></div>
+        <span class="af-emoji">🔬</span>
+      </div>
+      <div class="af-role">AI 노트북</div>
+      <div class="af-name">구글 Colab</div>
+      <div class="af-desc">구글 AI 노트북으로 파이썬과 머신러닝을 배워요</div>
+      <span class="af-link-tag">↗ colab.research.google.com</span>
+    </a>
+
+    <a href="https://school.programmers.co.kr" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="python"
+       style="--card-accent:rgba(167,139,250,0.4); --card-color:#a78bfa; --card-glow:rgba(167,139,250,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);"></div>
+        <span class="af-emoji">🏆</span>
+      </div>
+      <div class="af-role">코딩 문제풀기</div>
+      <div class="af-name">프로그래머스</div>
+      <div class="af-desc">파이썬 문제를 풀면서 실력을 단계별로 키워요</div>
+      <span class="af-link-tag">↗ programmers.co.kr</span>
+    </a>
+
+    <a href="https://trinket.io/turtle" target="_blank" rel="noopener noreferrer" class="af-card" data-cat="python"
+       style="--card-accent:rgba(45,212,191,0.4); --card-color:#2dd4bf; --card-glow:rgba(45,212,191,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#2dd4bf,#0d9488);"></div>
+        <span class="af-emoji">🐢</span>
+      </div>
+      <div class="af-role">파이썬 그래픽</div>
+      <div class="af-name">거북이 코딩</div>
+      <div class="af-desc">파이썬 거북이로 도형·그림을 그리며 코딩해요</div>
+      <span class="af-link-tag">↗ trinket.io/turtle</span>
+    </a>
+
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const btns = document.querySelectorAll('.af-filter-btn');
+  const cards = document.querySelectorAll('.af-card');
+
+  btns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      btns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+
+      const filter = btn.dataset.filter;
+      cards.forEach(function (card) {
+        if (filter === 'all' || card.dataset.cat === filter) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    });
+  });
+})();
+</script>
 {% endblock %}

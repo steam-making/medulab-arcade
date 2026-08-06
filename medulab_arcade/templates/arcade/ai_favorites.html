@@ -1,0 +1,259 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}AI 즐겨찾기 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  body {
+    background: linear-gradient(150deg, #0f0f1a 0%, #1a1a2e 50%, #0f0f1a 100%) !important;
+  }
+  .af-wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* ── 헤더 ── */
+  .af-hero {
+    text-align: center;
+    padding: 36px 20px 40px;
+  }
+  .af-hero .af-badge {
+    display: inline-block;
+    background: linear-gradient(120deg, #f59e0b, #ef4444);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 5px 16px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .af-hero h1 {
+    font-size: 34px;
+    font-weight: 900;
+    margin: 0 0 10px;
+    background: linear-gradient(120deg, #fbbf24, #f87171, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .af-hero p {
+    font-size: 15px;
+    color: rgba(255,255,255,0.55);
+    margin: 0;
+  }
+
+  /* ── 카드 그리드 ── */
+  .af-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 18px;
+  }
+
+  .af-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 24px 18px 20px;
+    text-decoration: none;
+    display: block;
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s, border-color .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .af-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--card-glow, rgba(255,255,255,0.03));
+    opacity: 0;
+    transition: opacity .2s;
+    border-radius: 20px;
+  }
+  .af-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 0 1px var(--card-accent, rgba(255,255,255,0.15));
+    border-color: var(--card-accent, rgba(255,255,255,0.2));
+  }
+  .af-card:hover::before { opacity: 1; }
+
+  /* 썸네일 */
+  .af-thumb {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 52px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .af-thumb .af-thumb-bg {
+    position: absolute;
+    inset: 0;
+    opacity: 0.18;
+    border-radius: 12px;
+  }
+  .af-thumb .af-emoji {
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+  }
+
+  /* 텍스트 */
+  .af-role {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--card-color, #a78bfa);
+    margin-bottom: 4px;
+  }
+  .af-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .af-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .af-link-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--card-color, #a78bfa);
+    opacity: 0.8;
+  }
+
+  @media (max-width: 600px) {
+    .af-hero h1 { font-size: 26px; }
+    .af-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .af-thumb { font-size: 38px; }
+    .af-name { font-size: 14px; }
+  }
+  @media (max-width: 360px) {
+    .af-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="af-wrap">
+  <div class="af-hero">
+    <div class="af-badge">⭐ AI Favorites</div>
+    <h1>AI 즐겨찾기</h1>
+    <p>클릭하면 새 창으로 바로 이동해요. AI와 함께 창의력을 펼쳐보세요!</p>
+  </div>
+
+  <div class="af-grid">
+
+    <a href="https://www.autodraw.com" target="_blank" rel="noopener noreferrer" class="af-card"
+       style="--card-accent:rgba(251,191,36,0.4); --card-color:#fbbf24; --card-glow:rgba(251,191,36,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);"></div>
+        <span class="af-emoji">🎨</span>
+      </div>
+      <div class="af-role">AI 화가</div>
+      <div class="af-name">오토드로우</div>
+      <div class="af-desc">낙서를 그리면 AI가 깔끔한 그림으로 바꿔줘요</div>
+      <span class="af-link-tag">↗ autodraw.com</span>
+    </a>
+
+    <a href="https://musiclab.chromeexperiments.com" target="_blank" rel="noopener noreferrer" class="af-card"
+       style="--card-accent:rgba(167,139,250,0.4); --card-color:#a78bfa; --card-glow:rgba(167,139,250,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);"></div>
+        <span class="af-emoji">🎵</span>
+      </div>
+      <div class="af-role">AI 음악가</div>
+      <div class="af-name">크롬 뮤직랩</div>
+      <div class="af-desc">소리와 리듬을 시각적으로 탐험하는 음악 실험실</div>
+      <span class="af-link-tag">↗ musiclab.chromeexperiments.com</span>
+    </a>
+
+    <a href="https://quickdraw.withgoogle.com" target="_blank" rel="noopener noreferrer" class="af-card"
+       style="--card-accent:rgba(52,211,153,0.4); --card-color:#34d399; --card-glow:rgba(52,211,153,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#34d399,#059669);"></div>
+        <span class="af-emoji">🔍</span>
+      </div>
+      <div class="af-role">AI 탐정</div>
+      <div class="af-name">퀵드로우</div>
+      <div class="af-desc">20초 안에 그림을 그리면 AI가 맞혀요!</div>
+      <span class="af-link-tag">↗ quickdraw.withgoogle.com</span>
+    </a>
+
+    <a href="https://teachablemachine.withgoogle.com" target="_blank" rel="noopener noreferrer" class="af-card"
+       style="--card-accent:rgba(96,165,250,0.4); --card-color:#60a5fa; --card-glow:rgba(96,165,250,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#60a5fa,#2563eb);"></div>
+        <span class="af-emoji">🤖</span>
+      </div>
+      <div class="af-role">AI 선생님</div>
+      <div class="af-name">티처블 머신</div>
+      <div class="af-desc">코딩 없이 나만의 AI 모델을 직접 학습시켜요</div>
+      <span class="af-link-tag">↗ teachablemachine.withgoogle.com</span>
+    </a>
+
+    <a href="https://artsandculture.google.com/experiment/blob-opera/AAHWrBfvT" target="_blank" rel="noopener noreferrer" class="af-card"
+       style="--card-accent:rgba(249,115,22,0.4); --card-color:#fb923c; --card-glow:rgba(249,115,22,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#fb923c,#ea580c);"></div>
+        <span class="af-emoji">🎭</span>
+      </div>
+      <div class="af-role">AI 가수</div>
+      <div class="af-name">블롭 오페라</div>
+      <div class="af-desc">귀여운 캐릭터와 함께 4성부 오페라를 불러요</div>
+      <span class="af-link-tag">↗ artsandculture.google.com</span>
+    </a>
+
+    <a href="https://experiments.withgoogle.com/ai/ai-duet/view/" target="_blank" rel="noopener noreferrer" class="af-card"
+       style="--card-accent:rgba(244,114,182,0.4); --card-color:#f472b6; --card-glow:rgba(244,114,182,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#f472b6,#db2777);"></div>
+        <span class="af-emoji">🎹</span>
+      </div>
+      <div class="af-role">AI 피아니스트</div>
+      <div class="af-name">AI 듀엣</div>
+      <div class="af-desc">내가 한 음을 치면 AI가 이어서 연주해줘요</div>
+      <span class="af-link-tag">↗ experiments.withgoogle.com</span>
+    </a>
+
+    <a href="https://semiconductor.withgoogle.com" target="_blank" rel="noopener noreferrer" class="af-card"
+       style="--card-accent:rgba(45,212,191,0.4); --card-color:#2dd4bf; --card-glow:rgba(45,212,191,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#2dd4bf,#0d9488);"></div>
+        <span class="af-emoji">🎼</span>
+      </div>
+      <div class="af-role">AI 지휘자</div>
+      <div class="af-name">세미컨덕터</div>
+      <div class="af-desc">손동작으로 AI 오케스트라를 지휘해요</div>
+      <span class="af-link-tag">↗ semiconductor.withgoogle.com</span>
+    </a>
+
+    <a href="https://scribblediffusion.com" target="_blank" rel="noopener noreferrer" class="af-card"
+       style="--card-accent:rgba(192,132,252,0.4); --card-color:#c084fc; --card-glow:rgba(192,132,252,0.06);">
+      <div class="af-thumb">
+        <div class="af-thumb-bg" style="background:linear-gradient(135deg,#c084fc,#9333ea);"></div>
+        <span class="af-emoji">🖌️</span>
+      </div>
+      <div class="af-role">AI 스케치</div>
+      <div class="af-name">스크리블 디퓨전</div>
+      <div class="af-desc">낙서를 멋진 AI 그림으로 바꿔줘요</div>
+      <span class="af-link-tag">↗ scribblediffusion.com</span>
+    </a>
+
+  </div>
+</div>
+{% endblock %}

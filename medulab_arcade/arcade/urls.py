@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('tools/ai-prompts/', views.ai_prompts, name='ai_prompts'),
+    path('tools/ai-favorites/', views.ai_favorites, name='ai_favorites'),
     path('tools/login-helper/', views.login_helper, name='login_helper'),
     path('api/login-helper/unlock/', views.api_login_helper_unlock, name='api_login_helper_unlock'),
     path('api/login-helper/lock/', views.api_login_helper_lock, name='api_login_helper_lock'),

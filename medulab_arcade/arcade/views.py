@@ -95,6 +95,10 @@ def ai_prompts(request):
     return render(request, 'arcade/ai_prompts.html')
 
 
+def ai_favorites(request):
+    return render(request, 'arcade/ai_favorites.html')
+
+
 def login_helper(request):
     from django.core.cache import cache
     expiry_ts = cache.get('lh_unlock_expiry')

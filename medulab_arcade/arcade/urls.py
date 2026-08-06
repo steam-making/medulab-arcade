@@ -4,6 +4,9 @@ from . import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('tools/ai-prompts/', views.ai_prompts, name='ai_prompts'),
+    path('tools/login-helper/', views.login_helper, name='login_helper'),
+    path('api/login-helper/unlock/', views.api_login_helper_unlock, name='api_login_helper_unlock'),
+    path('api/login-helper/lock/', views.api_login_helper_lock, name='api_login_helper_lock'),
     path('tools/my-avatar/', views.my_avatar, name='my_avatar'),
     path('api/avatar-draft/save/', views.api_avatar_draft_save, name='api_avatar_draft_save'),
     re_path(r'^play/(?P<slug>[-\w]+)/$', views.play, name='play'),

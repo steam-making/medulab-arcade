@@ -95,6 +95,62 @@ def ai_prompts(request):
     return render(request, 'arcade/ai_prompts.html')
 
 
+def login_helper(request):
+    from django.core.cache import cache
+    expiry_ts = cache.get('lh_unlock_expiry')
+    now_ts = timezone.now().timestamp()
+    is_unlocked = bool(expiry_ts and expiry_ts > now_ts)
+    remaining_minutes = int((expiry_ts - now_ts) / 60) if is_unlocked else 0
+    return render(request, 'arcade/login_helper.html', {
+        'is_unlocked': is_unlocked,
+        'remaining_minutes': remaining_minutes,
+    })
+
+
+@require_POST
+def api_login_helper_lock(request):
+    from django.core.cache import cache
+    from django.conf import settings as django_settings
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'ok': False}, status=400)
+    correct_pw = getattr(django_settings, 'LOGIN_HELPER_PASSWORD', 'medu2025!')
+    if data.get('password', '') != correct_pw:
+        return JsonResponse({'ok': False, 'error': '비밀번호가 틀렸습니다'}, status=403)
+    cache.delete('lh_unlock_expiry')
+    return JsonResponse({'ok': True})
+
+
+@require_POST
+def api_login_helper_unlock(request):
+    from django.core.cache import cache
+    from django.conf import settings as django_settings
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'ok': False, 'error': '잘못된 요청'}, status=400)
+
+    password = data.get('password', '')
+    hours = int(data.get('hours', 3))
+    hours = min(max(hours, 1), 24)
+
+    correct_pw = getattr(django_settings, 'LOGIN_HELPER_PASSWORD', 'medu2025!')
+    if password != correct_pw:
+        return JsonResponse({'ok': False, 'error': '비밀번호가 틀렸습니다'}, status=403)
+
+    now_ts = timezone.now().timestamp()
+    if data.get('extend'):
+        current_expiry = cache.get('lh_unlock_expiry') or now_ts
+        expiry_ts = max(current_expiry, now_ts) + hours * 3600
+    else:
+        expiry_ts = now_ts + hours * 3600
+
+    timeout = int(expiry_ts - now_ts) + 300
+    cache.set('lh_unlock_expiry', expiry_ts, timeout)
+    return JsonResponse({'ok': True, 'hours': hours})
+
+
 def my_avatar(request):
     from .models import AvatarDraft
     draft_data = {}

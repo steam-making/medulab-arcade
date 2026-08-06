@@ -1,0 +1,467 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}캠프 로그인 도우미 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  body { background: #f4f6fb !important; color: #1f2430 !important; }
+
+  /* ── 공통 래퍼 ── */
+  .lh-wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 60px; }
+  .lh-wrap h1 { text-align:center; font-size:26px; margin-bottom:4px; color:#1f2430 !important; }
+  .lh-subtitle { text-align:center; color:#6b7280; margin-bottom:24px; font-size:13px; line-height:1.6; }
+
+  /* ── 상태 배너 ── */
+  .lh-status-bar {
+    display:flex; align-items:center; justify-content:space-between;
+    background:#fff; border-radius:14px; padding:12px 18px;
+    box-shadow:0 2px 8px rgba(0,0,0,.07); margin-bottom:20px;
+    font-size:13px; gap:10px;
+  }
+  .lh-status-bar .lh-status-dot {
+    width:10px; height:10px; border-radius:50%; flex:none;
+  }
+  .lh-status-bar .lh-status-dot.on  { background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.2); }
+  .lh-status-bar .lh-status-dot.off { background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.2); }
+  .lh-status-bar .lh-status-text { flex:1; color:#374151; font-weight:600; }
+  .lh-status-bar .lh-timer { font-size:13px; color:#6b7280; font-variant-numeric:tabular-nums; }
+  .lh-status-btn {
+    padding:7px 14px; border:none; border-radius:8px;
+    font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .lh-status-btn.extend { background:#dbeafe; color:#1d4ed8; }
+  .lh-status-btn.extend:hover { background:#bfdbfe; }
+  .lh-status-btn.lock-now { background:#fee2e2; color:#b91c1c; }
+  .lh-status-btn.lock-now:hover { background:#fecaca; }
+  .lh-status-btn.unlock { background:#f3f4f6; color:#374151; }
+  .lh-status-btn.unlock:hover { background:#e5e7eb; }
+
+  /* ── 탭 ── */
+  .lh-tabs { display:flex; gap:10px; margin-bottom:20px; }
+  .lh-tab {
+    flex:1; padding:14px; border:none; border-radius:14px;
+    background:#e5e9f2; color:#6b7280; font-size:15px; font-weight:700; cursor:pointer;
+    transition:all .15s;
+  }
+  .lh-tab.active[data-platform="google"]   { background:#4285F4; color:#fff; }
+  .lh-tab.active[data-platform="microsoft"]{ background:#00A4EF; color:#fff; }
+  .lh-tab.active[data-platform="canva"]    { background:#7D2AE8; color:#fff; }
+
+  /* ── 번호 그리드 ── */
+  .lh-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr));
+    gap:10px; margin-bottom:20px;
+  }
+  .lh-num-btn {
+    padding:18px 0; font-size:20px; font-weight:700; border:none;
+    border-radius:12px; background:#fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.08); cursor:pointer; color:#1f2430;
+    transition:transform .1s, box-shadow .1s;
+  }
+  .lh-num-btn:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(0,0,0,.12); }
+  .lh-num-btn.selected { outline:3px solid #f5a623; }
+
+  /* ── 상세 패널 ── */
+  .lh-panel { background:#fff; border-radius:16px; padding:24px; box-shadow:0 2px 10px rgba(0,0,0,.08); }
+  .lh-panel.hidden { display:none; }
+  .lh-panel h2 { margin-top:0; font-size:20px; color:#1f2430 !important; }
+  .lh-field { margin-bottom:16px; }
+  .lh-field label { display:block; font-size:13px; color:#6b7280; margin-bottom:6px; font-weight:600; }
+  .lh-field-row { display:flex; gap:8px; }
+  .lh-field-row input {
+    flex:1; padding:14px; font-size:18px; border:1px solid #d7dce5;
+    border-radius:10px; background:#fafbfd; color:#1f2430;
+  }
+  .lh-field-row button {
+    padding:0 20px; border:none; border-radius:10px;
+    background:#333c4d; color:#fff; font-size:15px; font-weight:600; cursor:pointer;
+  }
+  .lh-field-row button:hover { background:#1f2430; }
+  #lhTogglePwBtn { padding:0 16px !important; background:#e5e9f2 !important; color:#1f2430 !important; font-size:18px !important; }
+  #lhTogglePwBtn:hover { background:#d7dce5 !important; }
+  .lh-open-btn {
+    width:100%; padding:16px; border:none; border-radius:12px;
+    font-size:17px; font-weight:700; color:#fff; cursor:pointer; margin-top:4px;
+  }
+  #lhOpenLoginBtn.google    { background:#4285F4; }
+  #lhOpenLoginBtn.microsoft { background:#00A4EF; }
+  .lh-hint { text-align:center; color:#6b7280; font-size:13px; margin-top:12px; margin-bottom:0; line-height:1.6; }
+  .lh-footnote { text-align:center; color:#9aa2b1; font-size:12px; margin-top:28px; }
+
+  /* ── 잠금 모달 (접속 불가) ── */
+  .lh-lock-overlay {
+    position:fixed; inset:0; background:rgba(15,15,30,.72);
+    display:flex; align-items:center; justify-content:center;
+    z-index:1000; padding:20px;
+  }
+  .lh-lock-overlay.hidden { display:none; }
+  .lh-lock-box {
+    background:#fff; border-radius:24px; padding:36px 32px;
+    max-width:420px; width:100%; text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  .lh-lock-icon { font-size:52px; margin-bottom:12px; }
+  .lh-lock-box h2 { font-size:22px; margin:0 0 8px; color:#1f2430; }
+  .lh-lock-box p  { font-size:14px; color:#6b7280; margin:0 0 24px; line-height:1.6; }
+  .lh-lock-admin-btn {
+    background:#f3f4f6; border:none; border-radius:10px;
+    padding:10px 20px; font-size:13px; font-weight:700; color:#374151;
+    cursor:pointer; margin-top:8px;
+  }
+  .lh-lock-admin-btn:hover { background:#e5e7eb; }
+
+  /* ── 잠금 해제 모달 ── */
+  .lh-unlock-overlay {
+    position:fixed; inset:0; background:rgba(15,15,30,.72);
+    display:flex; align-items:center; justify-content:center;
+    z-index:1100; padding:20px;
+  }
+  .lh-unlock-overlay.hidden { display:none; }
+  .lh-unlock-box {
+    background:#fff; border-radius:24px; padding:32px;
+    max-width:380px; width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  .lh-unlock-box h3 { margin:0 0 20px; font-size:18px; color:#1f2430; text-align:center; }
+  .lh-unlock-field { margin-bottom:14px; }
+  .lh-unlock-field label { display:block; font-size:12px; color:#6b7280; font-weight:600; margin-bottom:6px; }
+  .lh-unlock-field input, .lh-unlock-field select {
+    width:100%; padding:12px 14px; border:1.5px solid #d7dce5; border-radius:10px;
+    font-size:15px; background:#fafbfd; color:#1f2430; outline:none;
+    font-family:inherit;
+  }
+  .lh-unlock-field input:focus, .lh-unlock-field select:focus { border-color:#4285F4; }
+  .lh-unlock-err { font-size:12px; color:#ef4444; margin-top:4px; display:none; }
+  .lh-unlock-btns { display:flex; gap:8px; margin-top:18px; }
+  .lh-unlock-submit {
+    flex:1; padding:13px; border:none; border-radius:10px;
+    background:#4285F4; color:#fff; font-size:15px; font-weight:700; cursor:pointer;
+  }
+  .lh-unlock-submit:hover { background:#2b6de0; }
+  .lh-unlock-cancel {
+    padding:13px 18px; border:1.5px solid #d7dce5; border-radius:10px;
+    background:#fff; color:#6b7280; font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .lh-unlock-cancel:hover { background:#f3f4f6; }
+
+  /* ── 토스트 ── */
+  .lh-toast {
+    position:fixed; left:50%; bottom:32px;
+    transform:translateX(-50%) translateY(20px);
+    background:#1f2430; color:#fff; padding:12px 22px;
+    border-radius:30px; font-size:14px; opacity:0;
+    pointer-events:none; transition:all .2s; z-index:9999;
+  }
+  .lh-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media(max-width:480px){
+    .lh-lock-box, .lh-unlock-box { padding:24px 18px; }
+    .lh-tabs .lh-tab { font-size:13px; padding:11px 6px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lh-wrap">
+  <h1>🔑 캠프 로그인 도우미</h1>
+  <p class="lh-subtitle">번호 클릭 → 새 탭으로 로그인 페이지가 열리며 아이디 자동 복사<br>→ 아이디 칸에 Ctrl+V → 비밀번호 복사 버튼 → 비밀번호 칸에 Ctrl+V</p>
+
+  <!-- 상태 배너 -->
+  <div class="lh-status-bar">
+    <span class="lh-status-dot {% if is_unlocked %}on{% else %}off{% endif %}"></span>
+    <span class="lh-status-text">
+      {% if is_unlocked %}접속 허용 중{% else %}잠금 상태{% endif %}
+    </span>
+    {% if is_unlocked %}
+    <span class="lh-timer" id="lhTimer">남은 시간 계산 중...</span>
+    <button class="lh-status-btn extend" id="lhExtendBtn">⏱ 해제시간 추가</button>
+    <button class="lh-status-btn lock-now" id="lhLockNowBtn">🔒 잠금하기</button>
+    {% else %}
+    <button class="lh-status-btn unlock" id="lhAdminToggleBtn">🔓 관리자 잠금 해제</button>
+    {% endif %}
+  </div>
+
+  <div class="lh-tabs">
+    <button class="lh-tab active" data-platform="google">Google 계정 (1~49)</button>
+    <button class="lh-tab" data-platform="microsoft">Microsoft 계정 (1~10)</button>
+    <button class="lh-tab" data-platform="canva">Canva</button>
+  </div>
+
+  <div id="lhNumberGrid" class="lh-grid"></div>
+
+  <div id="lhDetailPanel" class="lh-panel hidden">
+    <h2 id="lhPanelTitle"></h2>
+    <div class="lh-field">
+      <label>아이디 (이메일)</label>
+      <div class="lh-field-row">
+        <input id="lhEmailField" readonly>
+        <button onclick="lhCopyField('lhEmailField')">복사</button>
+      </div>
+    </div>
+    <div class="lh-field">
+      <label>비밀번호</label>
+      <div class="lh-field-row">
+        <input id="lhPasswordField" readonly type="password">
+        <button type="button" id="lhTogglePwBtn" onclick="lhTogglePassword()">👁</button>
+        <button onclick="lhCopyField('lhPasswordField')">복사</button>
+      </div>
+    </div>
+    <button id="lhOpenLoginBtn" class="lh-open-btn">① 로그인 탭 열기 (아이디 자동 복사됨)</button>
+    <p class="lh-hint">
+      ① 누르면 새 탭으로 로그인 페이지가 열리고 아이디가 자동 복사돼요 → 아이디 칸에 Ctrl+V<br>
+      ② 위에서 비밀번호 "복사"를 누른 뒤 → 비밀번호 칸에 Ctrl+V<br>
+      새 탭이 안 뜨면 브라우저 팝업 차단 아이콘을 눌러 허용해 주세요.
+    </p>
+  </div>
+
+  <p class="lh-footnote">캠프 종료 후에는 관리자 콘솔에서 계정 비밀번호를 재설정하는 것을 권장합니다.</p>
+</div>
+
+<!-- ── 접속 불가 모달 ── -->
+<div class="lh-lock-overlay {% if is_unlocked %}hidden{% endif %}" id="lhLockOverlay">
+  <div class="lh-lock-box">
+    <div class="lh-lock-icon">🔒</div>
+    <h2>접속이 제한된 페이지입니다</h2>
+    <p>캠프 진행 시 관리자가 잠금을 해제해야 이용할 수 있습니다.<br>관리자에게 문의해 주세요.</p>
+    <button class="lh-lock-admin-btn" id="lhLockAdminBtn">🔓 관리자 잠금 해제</button>
+  </div>
+</div>
+
+<!-- ── 잠금 해제 모달 ── -->
+<div class="lh-unlock-overlay hidden" id="lhUnlockOverlay">
+  <div class="lh-unlock-box" id="lhUnlockBox">
+    <h3>🔓 잠금 해제</h3>
+    <div class="lh-unlock-field">
+      <label>관리자 비밀번호</label>
+      <input type="password" id="lhUnlockPw" placeholder="비밀번호 입력" autocomplete="off">
+      <div class="lh-unlock-err" id="lhUnlockErr">비밀번호가 틀렸습니다.</div>
+    </div>
+    <div class="lh-unlock-field">
+      <label>허용 시간</label>
+      <select id="lhUnlockHours">
+        <option value="1">1시간</option>
+        <option value="2">2시간</option>
+        <option value="3" selected>3시간 (기본)</option>
+        <option value="4">4시간</option>
+        <option value="6">6시간</option>
+        <option value="8">8시간</option>
+        <option value="24">하루 (24시간)</option>
+      </select>
+    </div>
+    <div class="lh-unlock-btns">
+      <button class="lh-unlock-cancel" id="lhUnlockCancelBtn">취소</button>
+      <button class="lh-unlock-submit" id="lhUnlockSubmitBtn">잠금 해제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 잠금하기 확인 모달 ── -->
+<div class="lh-unlock-overlay hidden" id="lhLockConfirmOverlay">
+  <div class="lh-unlock-box">
+    <h3>🔒 잠금하기</h3>
+    <div class="lh-unlock-field">
+      <label>관리자 비밀번호 확인</label>
+      <input type="password" id="lhLockConfirmPw" placeholder="비밀번호 입력" autocomplete="off">
+      <div class="lh-unlock-err" id="lhLockConfirmErr">비밀번호가 틀렸습니다.</div>
+    </div>
+    <div class="lh-unlock-btns">
+      <button class="lh-unlock-cancel" id="lhLockConfirmCancelBtn">취소</button>
+      <button class="lh-unlock-submit" id="lhLockConfirmSubmitBtn" style="background:#ef4444;">잠금하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="lhToast" class="lh-toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const LH_IS_UNLOCKED   = {{ is_unlocked|yesno:"true,false" }};
+  const LH_REMAINING_MIN = {{ remaining_minutes }};
+  const LH_UNLOCK_URL    = "{% url 'api_login_helper_unlock' %}";
+  const LH_LOCK_URL      = "{% url 'api_login_helper_lock' %}";
+  const LH_CSRF          = '{{ csrf_token }}';
+
+  /* ── 타이머 ── */
+  let lhSecondsLeft = LH_REMAINING_MIN * 60;
+  function lhUpdateTimer() {
+    const el = document.getElementById('lhTimer');
+    if (!el) return;
+    if (lhSecondsLeft <= 0) { location.reload(); return; }
+    const h = Math.floor(lhSecondsLeft / 3600);
+    const m = Math.floor((lhSecondsLeft % 3600) / 60);
+    const s = lhSecondsLeft % 60;
+    el.textContent = `남은 시간 ${h ? h + '시간 ' : ''}${m}분 ${String(s).padStart(2,'0')}초`;
+    lhSecondsLeft--;
+  }
+  if (LH_IS_UNLOCKED) {
+    lhUpdateTimer();
+    setInterval(lhUpdateTimer, 1000);
+  }
+
+  /* ── 잠금 해제 모달 열기/닫기 ── */
+  let lhExtendMode = false;
+
+  function lhOpenUnlockModal(extend = false) {
+    lhExtendMode = extend;
+    document.getElementById('lhUnlockBox').querySelector('h3').textContent =
+      extend ? '⏱ 해제 시간 추가' : '🔓 잠금 해제';
+    document.getElementById('lhUnlockPw').value = '';
+    document.getElementById('lhUnlockErr').style.display = 'none';
+    document.getElementById('lhUnlockOverlay').classList.remove('hidden');
+    setTimeout(() => document.getElementById('lhUnlockPw').focus(), 50);
+  }
+  function lhCloseUnlockModal() {
+    document.getElementById('lhUnlockOverlay').classList.add('hidden');
+  }
+
+  document.getElementById('lhAdminToggleBtn')?.addEventListener('click', lhOpenUnlockModal);
+  document.getElementById('lhLockAdminBtn')?.addEventListener('click', lhOpenUnlockModal);
+  document.getElementById('lhUnlockCancelBtn').onclick = lhCloseUnlockModal;
+
+  /* ── 해제시간 추가 ── */
+  document.getElementById('lhExtendBtn')?.addEventListener('click', () => lhOpenUnlockModal(true));
+
+  /* ── 잠금하기 ── */
+  document.getElementById('lhLockNowBtn')?.addEventListener('click', () => {
+    document.getElementById('lhLockConfirmOverlay').classList.remove('hidden');
+    setTimeout(() => document.getElementById('lhLockConfirmPw').focus(), 50);
+  });
+  document.getElementById('lhLockConfirmCancelBtn')?.addEventListener('click', () => {
+    document.getElementById('lhLockConfirmOverlay').classList.add('hidden');
+  });
+  document.getElementById('lhLockConfirmSubmitBtn')?.addEventListener('click', async () => {
+    const pw  = document.getElementById('lhLockConfirmPw').value;
+    const err = document.getElementById('lhLockConfirmErr');
+    err.style.display = 'none';
+    const res  = await fetch(LH_LOCK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': LH_CSRF },
+      body: JSON.stringify({ password: pw })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      lhShowToast('🔒 잠금 완료!');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      err.style.display = 'block';
+      document.getElementById('lhLockConfirmPw').value = '';
+      document.getElementById('lhLockConfirmPw').focus();
+    }
+  });
+  document.getElementById('lhLockConfirmPw')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('lhLockConfirmSubmitBtn').click();
+  });
+
+  /* ── 잠금 해제 제출 ── */
+  async function lhSubmitUnlock() {
+    const pw    = document.getElementById('lhUnlockPw').value;
+    const hours = parseInt(document.getElementById('lhUnlockHours').value);
+    const errEl = document.getElementById('lhUnlockErr');
+    errEl.style.display = 'none';
+
+    const res = await fetch(LH_UNLOCK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': LH_CSRF },
+      body: JSON.stringify({ password: pw, hours, extend: lhExtendMode })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      lhShowToast(`✅ ${hours}시간 동안 접속이 허용됩니다!`);
+      setTimeout(() => location.reload(), 900);
+    } else {
+      errEl.style.display = 'block';
+      document.getElementById('lhUnlockPw').value = '';
+      document.getElementById('lhUnlockPw').focus();
+    }
+  }
+  document.getElementById('lhUnlockSubmitBtn').onclick = lhSubmitUnlock;
+  document.getElementById('lhUnlockPw').addEventListener('keydown', e => {
+    if (e.key === 'Enter') lhSubmitUnlock();
+  });
+
+  /* ── 도구 기능 (잠금 해제 시만 동작) ── */
+  const LH_DOMAINS    = { google: 'medu.p-e.kr', microsoft: 'steam-making.com' };
+  const LH_RANGES     = { google: 49, microsoft: 10 };
+  const LH_PASSWORD   = 'md12345*';
+  const LH_LOGIN_URLS = {
+    google:    'https://accounts.google.com/signin/v2/identifier?hl=ko',
+    microsoft: 'https://login.microsoftonline.com/'
+  };
+  const LH_CANVA_URL = 'https://www.canva.com/brand/join?token=Uaz0Z83cNGN8NM-ANlrG8w&brandingVariant=edu&invitationDestinationType=group';
+  let lhPlatform = 'google';
+
+  function lhPad(n){ return String(n).padStart(4,'0'); }
+
+  function lhRenderGrid() {
+    const grid = document.getElementById('lhNumberGrid');
+    grid.innerHTML = '';
+    document.getElementById('lhDetailPanel').classList.add('hidden');
+    if (!LH_IS_UNLOCKED) return;
+
+    if (lhPlatform === 'canva') {
+      const btn = document.createElement('button');
+      btn.className = 'lh-num-btn';
+      btn.textContent = '교실1';
+      btn.onclick = () => window.open(LH_CANVA_URL, '_blank', 'noopener,noreferrer');
+      grid.appendChild(btn);
+      return;
+    }
+    for (let i = 1; i <= LH_RANGES[lhPlatform]; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'lh-num-btn';
+      btn.textContent = i;
+      btn.onclick = () => lhShowDetail(i, btn);
+      grid.appendChild(btn);
+    }
+  }
+
+  function lhShowDetail(num, btnEl) {
+    document.querySelectorAll('.lh-num-btn').forEach(b => b.classList.remove('selected'));
+    btnEl.classList.add('selected');
+    const email = `medu${lhPad(num)}@${LH_DOMAINS[lhPlatform]}`;
+    document.getElementById('lhPanelTitle').textContent =
+      `${num}번 학생 계정 (${lhPlatform === 'google' ? 'Google' : 'Microsoft'})`;
+    document.getElementById('lhEmailField').value = email;
+    const pw = document.getElementById('lhPasswordField');
+    pw.value = LH_PASSWORD; pw.type = 'password';
+    document.getElementById('lhTogglePwBtn').textContent = '👁';
+    const openBtn = document.getElementById('lhOpenLoginBtn');
+    openBtn.className = 'lh-open-btn ' + lhPlatform;
+    openBtn.onclick = () => { lhCopyText(email); lhShowToast('이메일 복사됨! 아이디 칸에 Ctrl+V'); window.open(LH_LOGIN_URLS[lhPlatform], '_blank', 'noopener,noreferrer'); };
+    document.getElementById('lhDetailPanel').classList.remove('hidden');
+  }
+
+  function lhCopyText(text) {
+    const tmp = document.createElement('textarea');
+    tmp.value = text; tmp.style.cssText = 'position:fixed;opacity:0;';
+    document.body.appendChild(tmp); tmp.select(); tmp.setSelectionRange(0,99999);
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(tmp);
+  }
+  function lhTogglePassword() {
+    const pw = document.getElementById('lhPasswordField');
+    const btn = document.getElementById('lhTogglePwBtn');
+    if (pw.type === 'password') { pw.type='text'; btn.textContent='🙈'; }
+    else { pw.type='password'; btn.textContent='👁'; }
+  }
+  function lhCopyField(id) { lhCopyText(document.getElementById(id).value); lhShowToast('복사되었습니다!'); }
+  function lhShowToast(msg) {
+    const t = document.getElementById('lhToast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  document.querySelectorAll('.lh-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.lh-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      lhPlatform = tab.dataset.platform;
+      lhRenderGrid();
+    });
+  });
+
+  lhRenderGrid();
+</script>
+{% endblock %}

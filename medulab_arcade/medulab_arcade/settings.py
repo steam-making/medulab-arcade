@@ -13,6 +13,9 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = 'django-insecure-change-this-in-production-medulab-2026'
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+
+# 로그인 도우미 잠금 해제 비밀번호 (.env의 LOGIN_HELPER_PASSWORD 로 재정의 가능)
+LOGIN_HELPER_PASSWORD = os.environ.get('LOGIN_HELPER_PASSWORD', 'medu2025!')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 # 추가 Gemini API 키 (GEMINI_API_KEY_2, GEMINI_API_KEY_3 ... 최대 20개)
 for _i in range(2, 21):

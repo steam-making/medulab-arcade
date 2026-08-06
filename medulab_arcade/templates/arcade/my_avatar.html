@@ -1,48 +1,50 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>나의 아바타 만들기 - AI점프업 꿈찾기 캠프</title>
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}나의 아바타 만들기 - AI점프업 꿈찾기 캠프{% endblock %}
+
+{% block extra_css %}
 <style>
   :root{
     --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --yellow:#FFC93C;
-    --green:#3DDC97; --bg1:#FFF6FB; --ink:#2E2A4A; --orange:#FF9142;
+    --green:#3DDC97; --ink:#2E2A4A; --orange:#FF9142;
   }
-  *{box-sizing:border-box;}
   body{
-    margin:0; font-family:'Trebuchet MS','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
-    background:linear-gradient(150deg,#FFF6FB 0%, #F1F0FF 45%, #EAF7FF 100%);
-    color:var(--ink); padding:24px 16px 60px;
+    background:linear-gradient(150deg,#FFF6FB 0%, #F1F0FF 45%, #EAF7FF 100%) !important;
+    color:var(--ink);
   }
-  .wrap{max-width:820px; margin:0 auto;}
-  header{
+  .avatar-wrap{max-width:820px; margin:0 auto; padding:24px 16px 60px;}
+  .avatar-header{
     text-align:center; padding:28px 20px; border-radius:24px;
     background:linear-gradient(120deg,var(--pink),var(--purple));
     color:#fff; box-shadow:0 10px 30px rgba(140,107,250,.35); margin-bottom:24px;
   }
-  header .tag{font-size:14px; letter-spacing:1px; opacity:.9; font-weight:bold;}
-  header h1{margin:8px 0 6px; font-size:30px;}
-  header p{margin:0; font-size:15px; opacity:.95;}
-  .card{
+  .avatar-header .tag{font-size:14px; letter-spacing:1px; opacity:.9; font-weight:bold;}
+  .avatar-header h1{margin:8px 0 6px; font-size:30px;}
+  .avatar-header p{margin:0; font-size:15px; opacity:.95;}
+  .avatar-card{
     background:#fff; border-radius:20px; padding:22px 22px 26px;
     margin-bottom:18px; box-shadow:0 6px 18px rgba(46,42,74,.08);
     border:2px solid rgba(140,107,250,.08);
+    display:block !important; aspect-ratio:unset !important;
+    overflow:visible !important; color:var(--ink) !important;
   }
-  .card h2{
+  .avatar-card h2{
     font-size:18px; margin:0 0 4px; display:flex; align-items:center; gap:8px;
+    color:var(--ink) !important;
   }
-  .card .desc{font-size:13px; color:#6a6486; margin:0 0 14px;}
+  .avatar-card .desc{font-size:13px; color:#6a6486 !important; margin:0 0 14px;}
+  .avatar-card p, .avatar-card label, .avatar-card .hint{color:var(--ink) !important;}
   .num{
     display:inline-flex; width:26px; height:26px; border-radius:50%;
     background:var(--purple); color:#fff; align-items:center; justify-content:center;
     font-size:13px; font-weight:bold; flex:none;
   }
-  input[type=text]{
+  .avatar-wrap input[type=text]{
     width:100%; padding:12px 14px; border-radius:12px; border:2px solid #E7E3FA;
     font-size:15px; outline:none; font-family:inherit;
   }
-  input[type=text]:focus{border-color:var(--purple);}
+  .avatar-wrap input[type=text]:focus{border-color:var(--purple);}
   .grade-select{
     width:100%; padding:12px 14px; border-radius:12px; border:2px solid #E7E3FA;
     font-size:15px; outline:none; font-family:inherit; margin-top:10px; background:#FBFAFF;
@@ -97,12 +99,12 @@
     border-top:1px dashed #E7E3FA; flex-wrap:wrap;
   }
   .palette-label{font-size:13px; font-weight:700; color:#4a4568;}
-  input[type=color]{
+  .avatar-wrap input[type=color]{
     width:48px; height:48px; border:none; border-radius:12px; cursor:pointer;
     padding:0; background:none;
   }
-  input[type=color]::-webkit-color-swatch-wrapper{padding:0; border-radius:12px;}
-  input[type=color]::-webkit-color-swatch{border:2px solid #E7E3FA; border-radius:12px;}
+  .avatar-wrap input[type=color]::-webkit-color-swatch-wrapper{padding:0; border-radius:12px;}
+  .avatar-wrap input[type=color]::-webkit-color-swatch{border:2px solid #E7E3FA; border-radius:12px;}
   #colorPreviewText{font-size:13px; font-weight:700; color:#6a6486; background:#F8F7FF; padding:6px 12px; border-radius:999px;}
   .make-btn{
     display:block; width:100%; padding:16px; border:none; border-radius:16px;
@@ -111,41 +113,79 @@
     margin:6px 0 4px;
   }
   .make-btn:active{transform:translateY(1px);}
-  #result{display:none;}
+  #result{display:none; overflow:visible !important; height:auto !important; max-height:none !important; aspect-ratio:unset !important;}
   .result-box{
-    background:#F8F7FF; border:2px dashed #C9BFFA; border-radius:16px; padding:16px;
-    font-size:14px; line-height:1.6; white-space:pre-wrap; margin-top:10px; position:relative;
+    background:#F8F7FF !important; border:2px dashed #C9BFFA; border-radius:16px; padding:16px;
+    font-size:14px; line-height:1.6; white-space:pre-wrap; margin-top:10px;
+    color:#2E2A4A !important;
+    overflow:visible !important; height:auto !important; max-height:none !important;
   }
   .result-title{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
-  .result-title span{font-weight:bold; color:var(--purple); font-size:14px;}
+  .result-title span{font-weight:bold; color:var(--purple) !important; font-size:14px;}
   .copy-btn{
-    padding:6px 12px; border-radius:999px; border:none; background:var(--purple); color:#fff;
+    padding:6px 12px; border-radius:999px; border:none; background:var(--purple); color:#fff !important;
     font-size:12px; cursor:pointer; font-weight:bold;
   }
   .copy-btn.copied{background:var(--green);}
   .tip{
-    background:#FFF9E8; border:2px solid #FFE7A0; border-radius:14px; padding:14px 16px;
-    font-size:13px; margin-top:14px; color:#7a5c00; line-height:1.6;
+    background:#FFF9E8 !important; border:2px solid #FFE7A0; border-radius:14px; padding:14px 16px;
+    font-size:13px; margin-top:14px; color:#7a5c00 !important; line-height:1.6;
   }
-  footer{text-align:center; font-size:12px; color:#9a93b8; margin-top:20px;}
+  #result h2{color:var(--ink) !important;}
+  #result p, #result .desc{color:#6a6486 !important;}
+  .avatar-footer{text-align:center; font-size:12px; color:#9a93b8; margin-top:20px;}
+  .save-bar{
+    display:flex; align-items:center; justify-content:flex-end; gap:8px;
+    padding:10px 14px;
+    background:rgba(255,246,251,0.92);
+    backdrop-filter:blur(12px);
+    border-radius:16px;
+    border:1px solid rgba(140,107,250,0.15);
+    box-shadow:0 4px 16px rgba(140,107,250,0.1);
+    margin-bottom:16px;
+    position:sticky; top:72px; z-index:50;
+  }
+  .save-btn, .load-btn{
+    padding:9px 18px; border-radius:10px; font-size:13px; font-weight:bold;
+    cursor:pointer; transition:.15s; white-space:nowrap;
+  }
+  .save-btn{
+    border:2px solid var(--purple); background:#fff; color:var(--purple);
+  }
+  .save-btn:hover{background:var(--purple); color:#fff;}
+  .load-btn{
+    border:2px solid var(--blue); background:#fff; color:var(--blue);
+  }
+  .load-btn:hover:not(:disabled){background:var(--blue); color:#fff;}
+  .load-btn:disabled{
+    border-color:#ddd; color:#bbb; cursor:not-allowed; background:#f8f8f8;
+  }
+  .save-status{font-size:12px; color:#9a93b8; margin-right:auto;}
 </style>
-</head>
-<body>
-<div class="wrap">
+{% endblock %}
 
-  <header>
+{% block content %}
+<div class="avatar-wrap">
+
+  <div class="avatar-header">
     <div class="tag">✨ AI점프업 꿈찾기 캠프 ✨</div>
     <h1>나의 아바타 만들기</h1>
     <p>질문에 답하면 나만의 아바타를 그려줄 ChatGPT 프롬프트가 완성돼요!</p>
-  </header>
+  </div>
 
-  <div class="card">
+  <div class="save-bar">
+    <span id="saveStatus" class="save-status"></span>
+    <button class="load-btn" id="loadBtn" disabled>📂 불러오기</button>
+    <button class="save-btn" id="saveBtn">💾 임시저장</button>
+  </div>
+
+  <div class="avatar-card">
     <h2><span class="num">1</span> 별명(이름)</h2>
     <p class="desc">아바타에게 붙여줄 이름이나 별명을 적어주세요.</p>
     <input type="text" id="nickname" placeholder="예: 반짝이, 별똥별, 홍길동">
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">2</span> 학교/학년</h2>
     <p class="desc">다니고 있는 학교 이름을 적고, 학년을 선택해주세요.</p>
     <input type="text" id="schoolName" placeholder="예: OO초등학교, OO중학교, OO고등학교">
@@ -172,7 +212,7 @@
     </select>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">3</span> 나의 성격은?</h2>
     <p class="desc">나를 가장 잘 표현하는 성격을 3개까지 골라보세요. 원하는 보기가 없다면 직접 적어도 돼요.</p>
     <div class="chip-row" id="personality-chips"></div>
@@ -183,21 +223,21 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">4</span> 나의 목표는?</h2>
     <p class="desc">앞으로 이루고 싶은 목표를 적어보세요. 아래 보기를 눌러도 되고, 여러 개를 골라 이어붙여도 좋아요.</p>
     <input type="text" id="goal" placeholder="예: 세상을 이롭게 하는 발명가 되기">
     <div class="suggest-row" id="goal-suggestions"></div>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">5</span> 나의 꿈(직업)은?</h2>
     <p class="desc">되고 싶은 직업을 적거나 아래에서 골라보세요.</p>
     <input type="text" id="job" placeholder="예: 우주비행사, 게임 개발자, 요리사">
     <div class="suggest-row" id="job-suggestions"></div>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">6</span> 관심 분야는?</h2>
     <p class="desc">평소에 관심이 가는 분야를 골라보세요. (여러 개 가능, 없으면 직접 적어보세요)</p>
     <div class="chip-row" id="interest-chips"></div>
@@ -207,7 +247,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">7</span> 나의 특기는?</h2>
     <p class="desc">내가 남들보다 잘하는 것을 골라보세요. (여러 개 가능, 없으면 직접 적어보세요)</p>
     <div class="chip-row" id="specialty-chips"></div>
@@ -217,7 +257,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">8</span> 취미는?</h2>
     <p class="desc">즐겨 하는 활동을 골라보세요. (여러 개 가능, 없으면 직접 적어보세요)</p>
     <div class="chip-row" id="hobby-chips"></div>
@@ -227,21 +267,21 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">9</span> 롤모델(존경하는 인물)</h2>
     <p class="desc">닮고 싶은 사람이나 존경하는 인물이 있다면 적어보세요.</p>
     <input type="text" id="rolemodel" placeholder="예: 우리 엄마, 아인슈타인, 좋아하는 운동선수">
     <div class="suggest-row" id="rolemodel-suggestions"></div>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">10</span> 나의 좌우명(한마디)</h2>
     <p class="desc">내가 좋아하는 말이나 나를 표현하는 한마디를 적어보세요.</p>
     <input type="text" id="motto" placeholder="예: 꿈은 이루어진다">
     <div class="suggest-row" id="motto-suggestions"></div>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">11</span> 좋아하는 동물/캐릭터</h2>
     <p class="desc">아바타와 함께할 좋아하는 동물이나 캐릭터를 골라보세요. (여러 개 가능, 없으면 직접 적어보세요)</p>
     <div class="chip-row" id="animal-chips"></div>
@@ -251,13 +291,13 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">12</span> 아바타 그림 스타일</h2>
     <p class="desc">예시 그림을 보고 마음에 드는 그림체를 선택해보세요.</p>
     <div class="style-grid" id="style-grid"></div>
   </div>
 
-  <div class="card">
+  <div class="avatar-card">
     <h2><span class="num">13</span> 좋아하는 색깔</h2>
     <p class="desc">자주 쓰는 색을 빠르게 고르거나, 팔레트에서 원하는 색을 직접 선택해보세요.</p>
     <div class="color-row" id="color-row"></div>
@@ -288,9 +328,11 @@
     </div>
   </div>
 
-  <footer>AI점프업 꿈찾기 캠프 · 나의 아바타 만들기 활동지</footer>
+  <div class="avatar-footer">AI점프업 꿈찾기 캠프 · 나의 아바타 만들기 활동지</div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 const personalityOptions = [
   "밝고 긍정적인","차분하고 신중한","호기심 많은","리더십 있는","창의적인","배려심 많은",
@@ -693,16 +735,38 @@ document.getElementById('makeBtn').onclick = ()=>{
     "토끼":"rabbit","부엉이":"owl","유니콘":"unicorn","용":"dragon","팬더":"panda",
     "돌고래":"dolphin","독수리":"eagle","늑대":"wolf","펭귄":"penguin","공룡":"dinosaur"
   };
+  const characterDescMap = {
+    "아이언맨":"a red and gold high-tech armored robot companion",
+    "스파이더맨":"a red and blue agile masked hero figure",
+    "배트맨":"a dark caped figure with a bat-shaped emblem",
+    "슈퍼맨":"a caped hero with a red and blue suit and S-shield emblem",
+    "캡틴아메리카":"a shield-wielding hero in blue star-spangled armor",
+    "캡틴 아메리카":"a shield-wielding hero in blue star-spangled armor",
+    "헐크":"a massive green-skinned powerful figure",
+    "블랙팬서":"a sleek black-suited agile figure with panther motifs",
+    "토르":"a long-haired warrior holding a magical glowing hammer",
+    "원더우먼":"a golden-armored warrior with a glowing lasso",
+    "피카츄":"a small round yellow electric creature with lightning bolt tail",
+    "도라에몽":"a round blue robotic cat with a pouch on its belly",
+    "나루토":"a spiky-haired ninja in an orange outfit",
+    "루피":"a straw-hat-wearing cheerful adventurer",
+    "미키마우스":"a cheerful round-eared cartoon character in red shorts",
+    "포켓몬":"a colorful pocket-sized creature companion",
+    "미니언즈":"a small yellow goggle-wearing minion figure",
+    "베이맥스":"a round white inflatable healthcare robot",
+    "버즈라이트이어":"a space ranger in white and purple suit",
+    "우디":"a cowboy figure in plaid shirt and hat"
+  };
 
   const persEn = personality.map(p=>personalityEnMap[p]||p).join(", ") || "cheerful";
   const intEn = interests.map(i=>interestEnMap[i]||i).join(" and ") || "many things";
   const specEn = specialties.map(s=>specialtyEnMap[s]||s).join(" and ") || "many skills";
   const hobEn = hobbies.map(h=>hobbyEnMap[h]||h).join(" and ") || "creative activities";
-  const animalEn = animals.map(a=>animalEnMap[a]||a).join(" or ");
+  const animalEn = animals.map(a=>characterDescMap[a]||animalEnMap[a]||a).join(", ");
 
   const jobPart = job ? `who dreams of becoming a ${job}` : "with a big dream for the future";
   const rolemodelLine = rolemodel ? `\nRole model inspiration: the character embodies admirable qualities of ${rolemodel}.` : "";
-  const animalLine = animalEn ? `\nThe character has a cute companion or themed accessory inspired by a ${animalEn}.` : "";
+  const animalLine = animalEn ? `\nThe character has a cute companion or themed accessory: ${animalEn}.` : "";
   const mottoLine = motto ? `\nOverall mood and pose reflect the spirit of the personal motto "${motto}" (express through expression and pose, not literal text).` : "";
 
   const promptEn = `Create a full-body avatar character portrait representing a young student named "${nickname}"${gradeLevel ? `, a ${gradeLevel} student` : ""}.
@@ -751,6 +815,153 @@ function setupCopy(btnId, boxId){
 }
 setupCopy('copyEn','promptEn');
 setupCopy('copyKo','promptKo');
+
+/* ── 임시저장 ── */
+const IS_LOGGED_IN = {{ user_authenticated|yesno:"true,false" }};
+const SAVE_URL = "{% url 'api_avatar_draft_save' %}";
+const CSRF_TOKEN = '{{ csrf_token }}';
+const STORAGE_KEY = 'avatarDraft_v1';
+
+function collectFormState() {
+  return {
+    nickname: document.getElementById('nickname').value,
+    schoolName: document.getElementById('schoolName').value,
+    gradeLevel: document.getElementById('gradeLevel').value,
+    goal: document.getElementById('goal').value,
+    job: document.getElementById('job').value,
+    rolemodel: document.getElementById('rolemodel').value,
+    motto: document.getElementById('motto').value,
+    personalityCustom: document.getElementById('personality-custom').value,
+    interestCustom: document.getElementById('interest-custom').value,
+    specialtyCustom: document.getElementById('specialty-custom').value,
+    hobbyCustom: document.getElementById('hobby-custom').value,
+    animalCustom: document.getElementById('animal-custom').value,
+    personalityChips: getSelected('personality-chips'),
+    interestChips: getSelected('interest-chips'),
+    specialtyChips: getSelected('specialty-chips'),
+    hobbyChips: getSelected('hobby-chips'),
+    animalChips: getSelected('animal-chips'),
+    styleLabel: (document.querySelector('.style-card.selected') || {}).dataset?.label || '',
+    colorHex: document.getElementById('colorPicker').value,
+  };
+}
+
+function restoreFormState(s) {
+  if (!s || !Object.keys(s).length) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+  set('nickname', s.nickname);
+  set('schoolName', s.schoolName);
+  set('gradeLevel', s.gradeLevel);
+  set('goal', s.goal);
+  set('job', s.job);
+  set('rolemodel', s.rolemodel);
+  set('motto', s.motto);
+  set('personality-custom', s.personalityCustom);
+  set('interest-custom', s.interestCustom);
+  set('specialty-custom', s.specialtyCustom);
+  set('hobby-custom', s.hobbyCustom);
+  set('animal-custom', s.animalCustom);
+
+  const restoreChips = (containerId, values) => {
+    if (!values || !values.length) return;
+    document.querySelectorAll('#' + containerId + ' .chip').forEach(chip => {
+      if (values.includes(chip.dataset.value)) chip.click();
+    });
+  };
+  restoreChips('personality-chips', s.personalityChips);
+  restoreChips('interest-chips', s.interestChips);
+  restoreChips('specialty-chips', s.specialtyChips);
+  restoreChips('hobby-chips', s.hobbyChips);
+  restoreChips('animal-chips', s.animalChips);
+
+  if (s.styleLabel) {
+    document.querySelectorAll('.style-card').forEach(card => {
+      if (card.dataset.label === s.styleLabel) card.click();
+    });
+  }
+  if (s.colorHex) {
+    document.getElementById('colorPicker').value = s.colorHex;
+    document.getElementById('colorPreviewText').textContent = s.colorHex;
+  }
+}
+
+function setStatus(msg, ok) {
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg;
+  el.style.color = ok ? '#3DDC97' : '#9a93b8';
+}
+
+const loadBtn = document.getElementById('loadBtn');
+
+function hasSavedData() {
+  const dbData = {{ draft_data }};
+  if (dbData && Object.keys(dbData).length) return true;
+  return !!localStorage.getItem(STORAGE_KEY);
+}
+
+function enableLoadBtn() {
+  if (hasSavedData()) loadBtn.disabled = false;
+}
+
+document.getElementById('saveBtn').onclick = async () => {
+  const state = collectFormState();
+  if (IS_LOGGED_IN) {
+    try {
+      const res = await fetch(SAVE_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+        body: JSON.stringify(state),
+      });
+      if (res.ok) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        setStatus('✓ 저장됨 (로그인 계정)', true);
+        loadBtn.disabled = false;
+      } else {
+        setStatus('저장 실패', false);
+      }
+    } catch {
+      setStatus('저장 실패', false);
+    }
+  } else {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    setStatus('✓ 브라우저에 임시저장됨', true);
+    loadBtn.disabled = false;
+  }
+};
+
+loadBtn.onclick = () => {
+  const dbData = {{ draft_data }};
+  if (dbData && Object.keys(dbData).length) {
+    restoreFormState(dbData);
+    setStatus('✓ 저장된 내용을 불러왔어요', true);
+  } else {
+    const local = localStorage.getItem(STORAGE_KEY);
+    if (local) {
+      try {
+        restoreFormState(JSON.parse(local));
+        setStatus('✓ 브라우저 저장 내용을 불러왔어요', true);
+      } catch { setStatus('불러오기 실패', false); }
+    }
+  }
+};
+
+/* 페이지 로드 시: 저장 데이터 있으면 불러오기 버튼 활성화 + 자동 복원 */
+(function initRestore() {
+  const dbData = {{ draft_data }};
+  if (dbData && Object.keys(dbData).length) {
+    loadBtn.disabled = false;
+    restoreFormState(dbData);
+    setStatus('이전에 저장한 내용을 불러왔어요', true);
+  } else {
+    const local = localStorage.getItem(STORAGE_KEY);
+    if (local) {
+      try {
+        loadBtn.disabled = false;
+        restoreFormState(JSON.parse(local));
+        setStatus('브라우저 임시저장 내용을 불러왔어요', true);
+      } catch {}
+    }
+  }
+})();
 </script>
-</body>
-</html>
+{% endblock %}

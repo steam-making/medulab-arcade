@@ -1,0 +1,122 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}AI 프롬프트 생성기 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --yellow:#FFC93C;
+    --green:#3DDC97; --ink:#2E2A4A; --orange:#FF9142;
+  }
+  body {
+    background: linear-gradient(150deg, #FFF6FB 0%, #F1F0FF 45%, #EAF7FF 100%) !important;
+    color: var(--ink);
+  }
+  .ap-wrap { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  .ap-hero {
+    text-align: center; padding: 36px 20px 28px; margin-bottom: 36px;
+  }
+  .ap-hero .badge {
+    display: inline-block; background: linear-gradient(120deg, var(--pink), var(--purple));
+    color: #fff; font-size: 13px; font-weight: bold; letter-spacing: 1px;
+    padding: 5px 16px; border-radius: 999px; margin-bottom: 16px;
+  }
+  .ap-hero h1 {
+    font-size: 32px; font-weight: 900; margin: 0 0 10px;
+    background: linear-gradient(120deg, var(--purple), var(--blue));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .ap-hero p { font-size: 15px; color: #6a6486; margin: 0; }
+
+  .ap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+  }
+
+  .ap-card {
+    background: #fff; border-radius: 24px; padding: 28px 22px;
+    box-shadow: 0 6px 24px rgba(140,107,250,0.10);
+    border: 2px solid rgba(140,107,250,0.08);
+    text-decoration: none; color: var(--ink) !important;
+    display: block !important; aspect-ratio: unset !important;
+    transition: transform .2s, box-shadow .2s;
+    position: relative; overflow: visible !important;
+  }
+  .ap-card:hover { transform: translateY(-6px); box-shadow: 0 16px 36px rgba(140,107,250,0.18); }
+  .ap-card.coming-soon { opacity: .65; cursor: default; pointer-events: none; }
+
+  .ap-card-icon {
+    width: 56px; height: 56px; border-radius: 18px; display: flex;
+    align-items: center; justify-content: center; font-size: 28px;
+    margin-bottom: 16px;
+  }
+  .ap-card h2 {
+    font-size: 18px; font-weight: 800; margin: 0 0 6px; color: var(--ink) !important;
+  }
+  .ap-card p {
+    font-size: 13px; color: #7a7498 !important; margin: 0 0 16px; line-height: 1.55;
+  }
+  .ap-card .ap-tag {
+    display: inline-block; font-size: 11px; font-weight: bold;
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .ap-card .ap-tag.active { background: #F1EEFF; color: var(--purple); }
+  .ap-card .ap-tag.soon { background: #f5f5f5; color: #aaa; }
+
+  .icon-avatar { background: linear-gradient(135deg, #F1EEFF, #E0D5FF); }
+  .icon-team   { background: linear-gradient(135deg, #E8F8FF, #CCE9FF); }
+  .icon-prob   { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); }
+  .icon-story  { background: linear-gradient(135deg, #E8FFF5, #C8F5E0); }
+
+  @media (max-width: 600px) {
+    .ap-hero h1 { font-size: 24px; }
+    .ap-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ap-wrap">
+  <div class="ap-hero">
+    <div class="badge">✨ MEDULAB AI TOOLS</div>
+    <h1>AI 프롬프트 생성기</h1>
+    <p>원하는 도구를 선택하면 ChatGPT에 바로 붙여넣을 수 있는 프롬프트를 만들어 드려요!</p>
+  </div>
+
+  <div class="ap-grid">
+
+    <a href="{% url 'my_avatar' %}" class="ap-card">
+      <div class="ap-card-icon icon-avatar">🤖</div>
+      <h2>AI 아바타 만들기</h2>
+      <p>나의 성격·꿈·취미를 입력하면 나만의 아바타 이미지 프롬프트가 완성돼요.</p>
+      <span class="ap-tag active">이용 가능</span>
+    </a>
+
+    <div class="ap-card coming-soon">
+      <div class="ap-card-icon icon-team">🔤</div>
+      <h2>조이름 만들기</h2>
+      <p>팀의 특징과 키워드를 입력하면 멋진 조이름 후보를 만들어 드려요.</p>
+      <span class="ap-tag soon">준비 중</span>
+    </div>
+
+    <div class="ap-card coming-soon">
+      <div class="ap-card-icon icon-prob">🔍</div>
+      <h2>생활속 문제 찾기</h2>
+      <p>주제나 상황을 입력하면 생활 속 불편함을 발견하는 AI 탐구 질문을 만들어 드려요.</p>
+      <span class="ap-tag soon">준비 중</span>
+    </div>
+
+    <div class="ap-card coming-soon">
+      <div class="ap-card-icon icon-story">📖</div>
+      <h2>나만의 이야기 만들기</h2>
+      <p>주인공·배경·사건을 고르면 짧은 창작 스토리 프롬프트가 완성돼요.</p>
+      <span class="ap-tag soon">준비 중</span>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

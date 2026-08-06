@@ -91,8 +91,35 @@ def home(request):
     return render(request, 'arcade/home.html', context)
 
 
+def ai_prompts(request):
+    return render(request, 'arcade/ai_prompts.html')
+
+
 def my_avatar(request):
-    return render(request, 'arcade/my_avatar.html')
+    from .models import AvatarDraft
+    draft_data = {}
+    if request.user.is_authenticated:
+        try:
+            draft_data = request.user.avatar_draft.data
+        except AvatarDraft.DoesNotExist:
+            pass
+    return render(request, 'arcade/my_avatar.html', {
+        'draft_data': json.dumps(draft_data),
+        'user_authenticated': request.user.is_authenticated,
+    })
+
+
+@require_POST
+def api_avatar_draft_save(request):
+    from .models import AvatarDraft
+    if not request.user.is_authenticated:
+        return JsonResponse({'ok': False, 'error': 'login required'}, status=401)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
+    AvatarDraft.objects.update_or_create(user=request.user, defaults={'data': data})
+    return JsonResponse({'ok': True})
 
 
 def schedule_view(request):

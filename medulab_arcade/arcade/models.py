@@ -677,6 +677,19 @@ class Attendance(models.Model):
         return f"{self.user.username} - {self.date:%Y-%m-%d} 출석"
 
 
+class AvatarDraft(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='avatar_draft')
+    data = models.JSONField(default=dict)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '아바타 임시저장'
+        verbose_name_plural = '아바타 임시저장'
+
+    def __str__(self):
+        return f"{self.user.username} 아바타 초안"
+
+
 @receiver(user_logged_in)
 def auto_attendance_on_login(sender, request, user, **kwargs):
     today = timezone.localdate()

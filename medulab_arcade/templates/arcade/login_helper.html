@@ -110,6 +110,12 @@
     cursor:pointer; margin-top:8px;
   }
   .lh-lock-admin-btn:hover { background:#e5e7eb; }
+  .lh-lock-close-btn {
+    position:absolute; top:14px; right:16px;
+    background:none; border:none; font-size:20px; color:#9ca3af;
+    cursor:pointer; line-height:1; padding:4px;
+  }
+  .lh-lock-close-btn:hover { color:#374151; }
 
   /* ── 잠금 해제 모달 ── */
   .lh-unlock-overlay {
@@ -220,7 +226,8 @@
 
 <!-- ── 접속 불가 모달 ── -->
 <div class="lh-lock-overlay {% if is_unlocked %}hidden{% endif %}" id="lhLockOverlay">
-  <div class="lh-lock-box">
+  <div class="lh-lock-box" style="position:relative;">
+    <button class="lh-lock-close-btn" id="lhLockCloseBtn" title="닫기">✕</button>
     <div class="lh-lock-icon">🔒</div>
     <h2>접속이 제한된 페이지입니다</h2>
     <p>캠프 진행 시 관리자가 잠금을 해제해야 이용할 수 있습니다.<br>관리자에게 문의해 주세요.</p>
@@ -316,6 +323,9 @@
     document.getElementById('lhUnlockOverlay').classList.add('hidden');
   }
 
+  document.getElementById('lhLockCloseBtn')?.addEventListener('click', () => {
+    document.getElementById('lhLockOverlay').classList.add('hidden');
+  });
   document.getElementById('lhAdminToggleBtn')?.addEventListener('click', lhOpenUnlockModal);
   document.getElementById('lhLockAdminBtn')?.addEventListener('click', lhOpenUnlockModal);
   document.getElementById('lhUnlockCancelBtn').onclick = lhCloseUnlockModal;

@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.utils import timezone
-from .models import Badge, Bookmark, Category, Like, Project, ScheduleAttachment, ScheduleEvent, UserBadge, UserProfile, Notice, Award, Certification, CertInfo, CompetitionType
+from .models import Badge, Bookmark, Category, Like, Project, ScheduleAttachment, ScheduleEvent, UserBadge, UserProfile, Notice, Award, Certification, CertInfo, CompetitionType, NavItem
 
 
 BADGE_CRITERIA_HELP = (
@@ -192,4 +192,13 @@ class CompetitionTypeAdmin(admin.ModelAdmin):
     list_filter = ('organization',)
     search_fields = ('name', 'organization', 'description')
     list_editable = ('order',)
+
+
+@admin.register(NavItem)
+class NavItemAdmin(admin.ModelAdmin):
+    list_display = ('section', 'emoji', 'name', 'url_name', 'url_extra', 'order', 'is_active', 'is_accent', 'new_tab')
+    list_display_links = ('name',)
+    list_editable = ('order', 'is_active', 'is_accent', 'new_tab')
+    list_filter = ('section', 'is_active')
+    ordering = ('section', 'order')
 

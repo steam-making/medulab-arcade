@@ -877,14 +877,13 @@
                             📢 공지/일정 <span style="font-size: 10px;">▼</span>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{% url 'board_notice' %}">📢 공지사항</a>
-                            <a href="{% url 'schedule' %}">📅 학원일정</a>
-                            <a href="{% url 'timetable' %}">🗓️ 학원시간표</a>
-                            <a href="{% url 'board_contest' %}">✨ 추천 공모전</a>
-                            <a href="{% url 'board_awards' %}">🏆 대회수상</a>
-                            <a href="{% url 'board_competition_type' %}">🏁 대회종류</a>
-                            <a href="{% url 'board_cert' %}">🏅 자격취득</a>
-                            <a href="{% url 'board_certinfo' %}">🎖️ 자격종류</a>
+                            {% for item in nav_notices %}
+                            <a href="{% url item.url_name %}{{ item.url_extra }}"
+                               {% if item.new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
+                               {% if item.is_accent %}class="accent-text"{% endif %}>
+                               {{ item.emoji }} {{ item.name }}
+                            </a>
+                            {% endfor %}
                         </div>
                     </div>
 
@@ -901,13 +900,13 @@
                             🏫 러닝센터 <span style="font-size: 10px;">▼</span>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{% url 'student_course_list' %}">📚 교육프로그램</a>
-                            <a href="{% url 'program_roadmap' %}">🗺️ 프로그램 로드맵</a>
-                            <a href="{% url 'program_finder' %}">🔍 프로그램 찾기</a>
-                            <a href="{% url 'home' %}#works">🎨 학생 작품 갤러리</a>
-                            <a href="{% url 'ai_prompts' %}" class="accent-text">✨ AI 프롬프트 생성기</a>
-                            <a href="{% url 'ai_favorites' %}">⭐ AI 즐겨찾기</a>
-                            <a href="{% url 'login_helper' %}">🔑 로그인 도우미</a>
+                            {% for item in nav_learning %}
+                            <a href="{% url item.url_name %}{{ item.url_extra }}"
+                               {% if item.new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
+                               {% if item.is_accent %}class="accent-text"{% endif %}>
+                               {{ item.emoji }} {{ item.name }}
+                            </a>
+                            {% endfor %}
                         </div>
                     </div>
 

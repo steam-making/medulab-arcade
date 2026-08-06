@@ -694,3 +694,42 @@ class AvatarDraft(models.Model):
 def auto_attendance_on_login(sender, request, user, **kwargs):
     today = timezone.localdate()
     Attendance.objects.get_or_create(user=user, date=today)
+
+
+class NavItem(models.Model):
+    SECTION_NOTICES = 'notices'
+    SECTION_LEARNING = 'learning'
+    SECTION_CHOICES = [
+        (SECTION_NOTICES, '공지/일정'),
+        (SECTION_LEARNING, '러닝센터'),
+    ]
+
+    section = models.CharField('섹션', max_length=20, choices=SECTION_CHOICES)
+    emoji = models.CharField('이모지', max_length=10, default='')
+    name = models.CharField('메뉴 이름', max_length=50)
+    url_name = models.CharField('URL 이름', max_length=100, blank=True,
+                                help_text='Django URL 이름 (예: board_notice, ai_favorites)')
+    url_extra = models.CharField('URL 추가', max_length=200, blank=True,
+                                 help_text='URL 뒤에 붙일 내용 (예: #works)')
+    order = models.IntegerField('순서', default=0)
+    is_active = models.BooleanField('활성화', default=True)
+    is_accent = models.BooleanField('강조색 (노란색)', default=False)
+    new_tab = models.BooleanField('새 탭으로 열기', default=False)
+
+    class Meta:
+        verbose_name = '네비게이션 메뉴'
+        verbose_name_plural = '네비게이션 메뉴'
+        ordering = ['section', 'order', 'id']
+
+    def __str__(self):
+        return f'[{self.get_section_display()}] {self.emoji} {self.name}'
+
+
+from django.db.models.signals import post_delete
+
+def _clear_nav_cache(sender, **kwargs):
+    from django.core.cache import cache
+    cache.delete('nav_items_qs')
+
+post_save.connect(_clear_nav_cache, sender=NavItem)
+post_delete.connect(_clear_nav_cache, sender=NavItem)

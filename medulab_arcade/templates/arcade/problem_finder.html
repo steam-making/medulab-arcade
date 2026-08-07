@@ -11,7 +11,7 @@
   }
   body { background:linear-gradient(150deg,#FFFBF0 0%,#FFF3E0 60%,#FFFFF0 100%) !important; color:var(--ink); }
 
-  .pf-wrap { max-width:780px; margin:0 auto; padding:36px 20px 80px; }
+  .pf-wrap { max-width:820px; margin:0 auto; padding:36px 20px 80px; }
   .pf-back { display:inline-flex; align-items:center; gap:6px; color:var(--orange); font-weight:700; font-size:14px; text-decoration:none; margin-bottom:20px; }
   .pf-back:hover { text-decoration:underline; }
 
@@ -22,7 +22,7 @@
   .pf-hero p { font-size:14px; color:#8a7060; margin:0; line-height:1.7; }
 
   /* Progress bar */
-  .pf-progress { display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:28px; }
+  .pf-progress { display:flex; align-items:center; justify-content:center; margin-bottom:28px; }
   .pf-prog-step { display:flex; flex-direction:column; align-items:center; gap:5px; }
   .pf-prog-dot { width:34px; height:34px; border-radius:50%; border:2px solid #ddd; background:#fff; color:#bbb; font-size:14px; font-weight:800; display:flex; align-items:center; justify-content:center; transition:all .3s; }
   .pf-prog-step span { font-size:11px; font-weight:600; color:#bbb; white-space:nowrap; transition:color .3s; }
@@ -32,86 +32,130 @@
   .pf-prog-step.done span { color:var(--teal); }
   .pf-prog-line { width:40px; height:2px; background:#ddd; margin-bottom:22px; flex-shrink:0; transition:background .3s; }
   .pf-prog-line.done { background:var(--teal); }
-  @media(max-width:480px) { .pf-prog-line { width:20px; } .pf-prog-step span { font-size:10px; } }
+  @media(max-width:480px) { .pf-prog-line { width:16px; } .pf-prog-step span { font-size:9px; } }
 
   /* Steps */
   .pf-step { display:none; }
   .pf-step.active { display:block; animation:pfFadeIn .25s ease; }
   @keyframes pfFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 
-  /* Section box */
-  .pf-section { background:#fff; border-radius:20px; padding:26px 28px; margin-bottom:18px; box-shadow:0 4px 20px rgba(255,145,66,.09); }
-  .pf-section-title { font-size:18px; font-weight:900; color:var(--ink); margin-bottom:6px; }
-  .pf-section-sub { font-size:13px; color:#9a7a60; margin-bottom:20px; line-height:1.6; }
+  /* Card box */
+  .pf-card { background:#fff; border-radius:20px; padding:26px 28px; margin-bottom:16px; box-shadow:0 4px 20px rgba(255,145,66,.09); }
+  .pf-card-title { font-size:18px; font-weight:900; color:var(--ink); margin-bottom:5px; }
+  .pf-card-sub { font-size:13px; color:#9a7a60; margin-bottom:20px; line-height:1.6; }
+  .pf-card-label { font-size:13px; font-weight:800; color:var(--ink); margin:18px 0 10px; }
 
-  /* Step 1: Area cards */
+  /* ───── Step 1: 영역 ───── */
   .pf-area-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
-  @media(max-width:580px) { .pf-area-grid { grid-template-columns:repeat(2,1fr); gap:8px; } }
-  .pf-area-card { border-radius:14px; padding:16px 10px; text-align:center; border:2px solid #f0e8dc; background:#FFFAF5; cursor:pointer; transition:all .18s; }
+  @media(max-width:580px) { .pf-area-grid { grid-template-columns:repeat(2,1fr); } }
+  .pf-area-card { border-radius:14px; padding:16px 8px; text-align:center; border:2px solid #f0e8dc; background:#FFFAF5; cursor:pointer; transition:all .18s; }
   .pf-area-card:hover { border-color:var(--orange); background:#FFF3E0; }
-  .pf-area-card.active { border-color:var(--orange); background:var(--orange); }
+  .pf-area-card.active { border-color:var(--orange); background:var(--orange); color:#fff; }
   .pf-area-card .ac-emoji { font-size:24px; display:block; margin-bottom:6px; }
-  .pf-area-card .ac-label { font-size:12px; font-weight:700; color:#7a5a3a; line-height:1.3; }
+  .pf-area-card .ac-label { font-size:11px; font-weight:700; color:#7a5a3a; line-height:1.3; }
   .pf-area-card.active .ac-label { color:#fff; }
 
-  /* Step 2: Experience chips */
-  .pf-exp-grid { display:flex; flex-direction:column; gap:10px; }
-  .pf-exp-chip { padding:14px 20px; border:2px solid #eee; border-radius:14px; background:#fafafa; color:#6a6a6a; font-size:14px; font-weight:700; cursor:pointer; transition:all .18s; text-align:left; display:flex; align-items:center; gap:10px; }
-  .pf-exp-chip:hover { border-color:var(--orange); background:#FFF3E0; color:var(--orange); }
+  /* Sub-area chips */
+  .pf-sub-section { margin-top:20px; padding-top:20px; border-top:2px dashed rgba(255,145,66,.2); animation:pfFadeIn .25s ease; }
+  .pf-sub-label { font-size:12px; font-weight:700; color:#9a7060; margin-bottom:10px; letter-spacing:.3px; }
+  .pf-chip-row { display:flex; flex-wrap:wrap; gap:8px; }
+  .pf-sub-chip { padding:7px 14px; border:2px solid #f0e8dc; border-radius:999px; font-size:12px; font-weight:700; color:#7a5a3a; cursor:pointer; background:#FFFAF5; transition:all .15s; }
+  .pf-sub-chip:hover { border-color:var(--orange); background:#FFF3E0; }
+  .pf-sub-chip.active { border-color:var(--orange); background:var(--orange); color:#fff; }
+
+  /* Example problems */
+  .pf-examples-box { margin-top:16px; background:#FFF8F0; border-radius:14px; padding:16px 18px; }
+  .pf-examples-title { font-size:12px; font-weight:700; color:var(--orange); margin-bottom:10px; }
+  .pf-example-item { display:flex; align-items:flex-start; gap:8px; padding:7px 10px; border-radius:10px; cursor:pointer; transition:background .15s; font-size:13px; color:#6a4a30; line-height:1.5; border:1px solid transparent; margin-bottom:6px; }
+  .pf-example-item:last-child { margin-bottom:0; }
+  .pf-example-item:hover { background:#FFE8CC; border-color:#FFD0A0; }
+  .pf-example-item.selected { background:#FFE8CC; border-color:var(--orange); color:var(--ink); }
+  .pf-example-item::before { content:'💬'; font-size:12px; flex-shrink:0; margin-top:2px; }
+
+  /* ───── Step 2: 불편 유형 + 빈도 ───── */
+  .pf-exp-list { display:flex; flex-direction:column; gap:9px; }
+  .pf-exp-chip { padding:13px 18px; border:2px solid #eee; border-radius:14px; background:#fafafa; color:#6a6a6a; font-size:14px; font-weight:700; cursor:pointer; transition:all .18s; text-align:left; display:flex; align-items:center; gap:10px; }
+  .pf-exp-chip:hover { border-color:var(--orange); background:#FFF3E0; color:#7a4a20; }
   .pf-exp-chip.active { border-color:var(--orange); background:#FFF3E0; color:var(--orange); }
   .pf-exp-chip.active::after { content:'✓'; margin-left:auto; font-size:16px; color:var(--orange); }
   .pf-exp-emoji { font-size:20px; flex-shrink:0; }
 
-  /* Step 3: Situation input */
-  .pf-situation-wrap { }
-  .pf-situation-wrap textarea { width:100%; box-sizing:border-box; padding:16px; border:2px solid #FFE0B2; border-radius:14px; font-size:15px; color:var(--ink); line-height:1.7; resize:vertical; min-height:100px; transition:border-color .2s; background:#FFFAF5; }
-  .pf-situation-wrap textarea:focus { outline:none; border-color:var(--orange); }
-  .pf-situation-wrap textarea::placeholder { color:#c8a880; }
-  .pf-situation-hint { font-size:12px; color:#b09070; margin-top:8px; line-height:1.6; }
+  .pf-freq-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  @media(max-width:500px) { .pf-freq-grid { grid-template-columns:repeat(2,1fr); } }
+  .pf-freq-btn { padding:10px 6px; border:2px solid #eee; border-radius:12px; background:#fafafa; font-size:12px; font-weight:700; color:#6a6a6a; cursor:pointer; text-align:center; transition:all .15s; }
+  .pf-freq-btn .freq-icon { font-size:18px; display:block; margin-bottom:4px; }
+  .pf-freq-btn:hover { border-color:var(--orange); background:#FFF3E0; }
+  .pf-freq-btn.active { border-color:var(--orange); background:var(--orange); color:#fff; }
 
-  /* Step 4: Results */
-  /* Problem definition card */
-  .pf-def-card { background:linear-gradient(135deg,#FF9142,#FFC93C); border-radius:20px; padding:24px 24px; color:#fff; margin-bottom:16px; }
-  .pf-def-title { font-size:13px; font-weight:700; opacity:.85; margin-bottom:10px; letter-spacing:.5px; }
-  .pf-def-sentence { font-size:17px; font-weight:900; line-height:1.6; margin-bottom:18px; background:rgba(255,255,255,.15); border-radius:12px; padding:14px 16px; }
-  .pf-def-rows { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  @media(max-width:480px) { .pf-def-rows { grid-template-columns:1fr; } }
-  .pf-def-row { background:rgba(255,255,255,.18); border-radius:10px; padding:10px 14px; font-size:13px; }
-  .pf-def-row .dr-icon { font-size:15px; } .pf-def-row .dr-key { font-weight:700; opacity:.9; } .pf-def-row .dr-val { display:block; font-size:14px; font-weight:800; margin-top:2px; }
+  /* ───── Step 3: 상황 입력 ───── */
+  .pf-textarea { width:100%; box-sizing:border-box; padding:16px; border:2px solid #FFE0B2; border-radius:14px; font-size:15px; color:var(--ink); line-height:1.7; resize:vertical; min-height:90px; transition:border-color .2s; background:#FFFAF5; }
+  .pf-textarea:focus { outline:none; border-color:var(--orange); }
+  .pf-textarea::placeholder { color:#c8a880; }
+  .pf-textarea-hint { font-size:12px; color:#b09070; margin-top:7px; line-height:1.6; }
+
+  .pf-affected-grid { display:flex; flex-wrap:wrap; gap:8px; }
+  .pf-affected-btn { padding:9px 16px; border:2px solid #eee; border-radius:999px; font-size:13px; font-weight:700; color:#6a6a6a; cursor:pointer; background:#fafafa; transition:all .15s; }
+  .pf-affected-btn:hover { border-color:var(--orange); background:#FFF3E0; }
+  .pf-affected-btn.active { border-color:var(--orange); background:var(--orange); color:#fff; }
+
+  .pf-severity-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  @media(max-width:460px) { .pf-severity-grid { grid-template-columns:1fr 1fr; } }
+  .pf-severity-btn { padding:10px 8px; border:2px solid #eee; border-radius:12px; background:#fafafa; font-size:12px; font-weight:700; color:#6a6a6a; cursor:pointer; text-align:center; transition:all .15s; line-height:1.4; }
+  .pf-severity-btn:hover { border-color:var(--orange); background:#FFF3E0; }
+  .pf-severity-btn.active { border-color:var(--orange); background:var(--orange); color:#fff; }
+
+  /* ───── Step 4: 분석 ───── */
+  .pf-result-hero { background:linear-gradient(135deg,#FF9142 0%,#FFC93C 100%); border-radius:20px; padding:24px 26px; color:#fff; margin-bottom:16px; }
+  .pf-result-hero-label { font-size:12px; font-weight:700; opacity:.8; margin-bottom:8px; letter-spacing:.5px; }
+  .pf-result-sentence { font-size:18px; font-weight:900; line-height:1.6; background:rgba(255,255,255,.18); border-radius:12px; padding:14px 16px; margin-bottom:18px; }
+
+  .pf-5w1h-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  @media(max-width:480px) { .pf-5w1h-grid { grid-template-columns:1fr; } }
+  .pf-5w1h-cell { background:rgba(255,255,255,.18); border-radius:10px; padding:10px 14px; }
+  .pf-5w1h-cell .wh-key { font-size:11px; font-weight:700; opacity:.85; }
+  .pf-5w1h-cell .wh-val { display:block; font-size:14px; font-weight:800; margin-top:3px; }
 
   /* Score card */
-  .pf-score-card { background:#fff; border-radius:20px; padding:24px 24px; margin-bottom:16px; box-shadow:0 4px 20px rgba(255,145,66,.09); }
-  .pf-score-title { font-size:15px; font-weight:800; color:var(--ink); margin-bottom:16px; }
-  .pf-score-rows { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+  .pf-score-card { background:#fff; border-radius:20px; padding:22px 26px; margin-bottom:16px; box-shadow:0 4px 20px rgba(255,145,66,.09); }
+  .pf-score-title { font-size:15px; font-weight:800; color:var(--ink); margin-bottom:14px; }
+  .pf-score-rows { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
   .pf-score-row { display:flex; align-items:center; gap:10px; }
-  .pf-score-label { font-size:13px; font-weight:700; color:#7a6050; width:90px; flex-shrink:0; }
-  .pf-score-stars { font-size:18px; letter-spacing:1px; flex:1; }
-  .pf-score-desc { font-size:12px; color:#9a8070; flex-shrink:0; }
-  .pf-score-total { border-top:2px solid #f0e8dc; padding-top:16px; display:flex; align-items:center; gap:14px; }
-  .pf-score-total-num { font-size:28px; font-weight:900; color:var(--orange); line-height:1; }
-  .pf-score-total-max { font-size:14px; color:#b09070; margin-top:4px; }
-  .pf-score-msg { font-size:15px; font-weight:800; color:var(--ink); flex:1; line-height:1.4; }
+  .pf-score-lbl { font-size:13px; font-weight:700; color:#7a6050; width:90px; flex-shrink:0; }
+  .pf-score-stars { font-size:18px; letter-spacing:1px; flex:1; color:var(--amber); }
+  .pf-score-desc { font-size:12px; color:#9a8070; }
+  .pf-score-total { border-top:2px solid #f0e8dc; padding-top:14px; display:flex; align-items:center; gap:16px; }
+  .pf-score-num { font-size:32px; font-weight:900; color:var(--orange); line-height:1; }
+  .pf-score-max { font-size:13px; color:#b09070; margin-top:3px; }
+  .pf-score-msg { font-size:14px; font-weight:800; color:var(--ink); flex:1; line-height:1.5; }
 
-  /* ChatGPT prompt */
-  .pf-prompt-section { background:#fff; border-radius:20px; padding:24px 28px; box-shadow:0 4px 20px rgba(255,145,66,.09); border:2px dashed rgba(255,145,66,.3); margin-bottom:16px; }
-  .pf-prompt-header span { font-size:16px; font-weight:800; color:var(--ink); display:block; margin-bottom:4px; }
-  .pf-prompt-header small { color:#b09070; font-size:13px; }
-  .pf-prompt-box { background:#FFFAF5; border-radius:12px; padding:14px 16px; font-size:13px; line-height:1.8; color:#6a5040; white-space:pre-wrap; margin:12px 0; border:1px solid #FFE0B2; word-break:break-all; }
-  .pf-copy-btn { padding:11px 28px; background:linear-gradient(120deg,var(--orange),var(--pink)); color:#fff; border:none; border-radius:999px; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(255,145,66,.3); transition:transform .2s; }
+  /* Explore questions */
+  .pf-explore-card { background:#fff; border-radius:20px; padding:22px 26px; margin-bottom:16px; box-shadow:0 4px 20px rgba(255,145,66,.09); }
+  .pf-explore-title { font-size:15px; font-weight:800; color:var(--ink); margin-bottom:14px; }
+  .pf-explore-item { display:flex; gap:12px; align-items:flex-start; padding:12px 14px; background:#FFF8F0; border-radius:12px; margin-bottom:8px; }
+  .pf-explore-item:last-child { margin-bottom:0; }
+  .pf-explore-num { width:24px; height:24px; border-radius:50%; background:var(--orange); color:#fff; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+  .pf-explore-q { font-size:13px; color:#5a3a20; line-height:1.6; }
+
+  /* Prompt section */
+  .pf-prompt-section { background:#fff; border-radius:20px; padding:22px 26px; box-shadow:0 4px 20px rgba(255,145,66,.09); border:2px dashed rgba(255,145,66,.3); margin-bottom:16px; }
+  .pf-prompt-header { margin-bottom:12px; }
+  .pf-prompt-header span { font-size:16px; font-weight:800; color:var(--ink); display:block; margin-bottom:3px; }
+  .pf-prompt-header small { color:#b09070; font-size:12px; }
+  .pf-prompt-box { background:#FFFAF5; border-radius:12px; padding:14px 16px; font-size:13px; line-height:1.8; color:#6a5040; white-space:pre-wrap; margin:0 0 14px; border:1px solid #FFE0B2; word-break:break-all; }
+  .pf-btn-row { display:flex; gap:10px; flex-wrap:wrap; }
+  .pf-copy-btn { padding:11px 26px; background:linear-gradient(120deg,var(--orange),var(--pink)); color:#fff; border:none; border-radius:999px; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(255,145,66,.3); transition:transform .2s; }
   .pf-copy-btn:hover { transform:translateY(-2px); }
-
-  /* Reset button */
-  .pf-reset-btn { padding:11px 28px; background:#f0e8dc; color:#8a6040; border:none; border-radius:999px; font-size:14px; font-weight:700; cursor:pointer; transition:background .2s; }
+  .pf-reset-btn { padding:11px 22px; background:#f0e8dc; color:#8a6040; border:none; border-radius:999px; font-size:13px; font-weight:700; cursor:pointer; transition:background .2s; }
   .pf-reset-btn:hover { background:#ffe0b2; }
 
   /* Navigation */
-  .pf-nav { display:flex; justify-content:space-between; align-items:center; margin-top:20px; gap:12px; }
-  .pf-prev-btn { padding:14px 32px; background:#f0e8dc; color:#7a5030; border:none; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; transition:background .2s; }
+  .pf-nav { display:flex; justify-content:space-between; align-items:center; margin-top:20px; }
+  .pf-prev-btn { padding:14px 30px; background:#f0e8dc; color:#7a5030; border:none; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; transition:background .2s; }
   .pf-prev-btn:hover { background:#ffe0b2; }
-  .pf-next-btn { padding:14px 40px; background:linear-gradient(120deg,var(--orange),var(--amber)); color:#fff; border:none; border-radius:999px; font-size:16px; font-weight:900; cursor:pointer; box-shadow:0 6px 24px rgba(255,145,66,.35); transition:transform .2s, box-shadow .2s; margin-left:auto; }
+  .pf-next-btn { padding:14px 38px; background:linear-gradient(120deg,var(--orange),var(--amber)); color:#fff; border:none; border-radius:999px; font-size:16px; font-weight:900; cursor:pointer; box-shadow:0 6px 24px rgba(255,145,66,.35); transition:transform .2s, box-shadow .2s; margin-left:auto; }
   .pf-next-btn:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(255,145,66,.45); }
 
-  .pf-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#1f2430; color:#fff; padding:12px 24px; border-radius:999px; font-size:14px; font-weight:600; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .pf-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#1f2430; color:#fff; padding:12px 22px; border-radius:999px; font-size:14px; font-weight:600; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
   .pf-toast.show { opacity:1; }
 </style>
 {% endblock %}
@@ -123,73 +167,85 @@
   <div class="pf-hero">
     <div class="badge">🔍 AI TOOLS</div>
     <h1>생활속 문제 찾기</h1>
-    <p>일상 속 불편함을 4단계로 탐구해서<br>해결할 가치 있는 문제를 발견해요!</p>
+    <p>4단계로 탐구해서 해결할 가치 있는 생활 속 문제를 발견해요!<br>선택할수록 분석이 더 정확해져요 😊</p>
   </div>
 
   <!-- 진행 표시 -->
   <div class="pf-progress">
-    <div class="pf-prog-step active" id="pfProg1">
-      <div class="pf-prog-dot">1</div>
-      <span>영역 선택</span>
-    </div>
+    <div class="pf-prog-step active" id="pfProg1"><div class="pf-prog-dot">1</div><span>영역 선택</span></div>
     <div class="pf-prog-line" id="pfLine1"></div>
-    <div class="pf-prog-step" id="pfProg2">
-      <div class="pf-prog-dot">2</div>
-      <span>불편 선택</span>
-    </div>
+    <div class="pf-prog-step" id="pfProg2"><div class="pf-prog-dot">2</div><span>불편 유형</span></div>
     <div class="pf-prog-line" id="pfLine2"></div>
-    <div class="pf-prog-step" id="pfProg3">
-      <div class="pf-prog-dot">3</div>
-      <span>상황 입력</span>
-    </div>
+    <div class="pf-prog-step" id="pfProg3"><div class="pf-prog-dot">3</div><span>상황 입력</span></div>
     <div class="pf-prog-line" id="pfLine3"></div>
-    <div class="pf-prog-step" id="pfProg4">
-      <div class="pf-prog-dot">4</div>
-      <span>문제 분석</span>
-    </div>
+    <div class="pf-prog-step" id="pfProg4"><div class="pf-prog-dot">4</div><span>문제 분석</span></div>
   </div>
 
-  <!-- ① 영역 선택 -->
+  <!-- ①  영역 선택 -->
   <div id="pfStep1" class="pf-step active">
-    <div class="pf-section">
-      <div class="pf-section-title">어디에서 문제를 찾아볼까요?</div>
-      <div class="pf-section-sub">생활 속 어느 영역에서 불편함이나 문제를 발견하고 싶은지 선택하세요.</div>
+    <div class="pf-card">
+      <div class="pf-card-title">어디에서 문제를 찾아볼까요?</div>
+      <div class="pf-card-sub">생활 속 어느 영역에서 불편함을 발견하고 싶은지 선택하세요.</div>
       <div class="pf-area-grid" id="pfAreaGrid"></div>
+
+      <!-- 선택 후 표시 -->
+      <div id="pfSubSection" class="pf-sub-section" style="display:none">
+        <div class="pf-sub-label">📌 더 구체적으로 선택해보세요 (선택 사항)</div>
+        <div id="pfSubChips" class="pf-chip-row" style="margin-bottom:18px"></div>
+
+        <div class="pf-examples-box">
+          <div class="pf-examples-title">💡 이런 문제를 찾을 수 있어요 — 클릭하면 Step 3에 자동 입력돼요!</div>
+          <div id="pfExamples"></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- ② 불편 경험 선택 -->
+  <!-- ② 불편 유형 + 빈도 -->
   <div id="pfStep2" class="pf-step">
-    <div class="pf-section">
-      <div class="pf-section-title">최근 이런 경험이 있었나요?</div>
-      <div class="pf-section-sub">해당되는 것을 모두 선택하세요 (복수 선택 가능). 여러 개를 고를수록 분석이 풍부해져요!</div>
-      <div class="pf-exp-grid" id="pfExpGrid"></div>
+    <div class="pf-card">
+      <div class="pf-card-title">어떤 불편함이었나요?</div>
+      <div class="pf-card-sub">해당하는 것을 모두 선택하세요. 여러 개 선택할수록 분석이 풍부해져요!</div>
+      <div class="pf-exp-list" id="pfExpList"></div>
+
+      <div class="pf-card-label">⏱️ 이런 상황이 얼마나 자주 있나요?</div>
+      <div class="pf-freq-grid" id="pfFreqGrid"></div>
     </div>
   </div>
 
-  <!-- ③ 상황 입력 -->
+  <!-- ③ 상황 상세 입력 -->
   <div id="pfStep3" class="pf-step">
-    <div class="pf-section">
-      <div class="pf-section-title">어떤 상황이었나요?</div>
-      <div class="pf-section-sub">있는 그대로 짧게 적어도 충분해요. 불편했던 순간을 떠올리며 적어보세요! 😊</div>
-      <div class="pf-situation-wrap">
-        <textarea id="pfSituation" rows="4"
-          placeholder="예: 급식 줄이 너무 길어서 먹을 시간이 없었어요&#10;예: 숙제가 있는지 자꾸 깜빡해요&#10;예: 비 올 때 버스 정류장이 좁아서 비를 맞아요"></textarea>
-      </div>
-      <div class="pf-situation-hint">
-        💡 어디서 → 언제 → 무엇이 불편했는지 순서로 적으면 더 좋아요!<br>
-        예: "학교 급식실에서 점심시간에 줄이 너무 길어요"
-      </div>
+    <div class="pf-card">
+      <div class="pf-card-title">상황을 자세히 알려주세요</div>
+      <div class="pf-card-sub">짧게 적어도 충분해요. 불편했던 순간을 떠올리며 적어보세요 😊</div>
+
+      <!-- Q1: 상황 -->
+      <div class="pf-card-label">① 어떤 상황이었나요?</div>
+      <textarea id="pfSituation" class="pf-textarea" rows="3"
+        placeholder="예: 점심시간에 급식실에서 줄이 너무 길어서 밥 먹을 시간이 없어요&#10;예: 버스 정류장에 지붕이 없어서 비 오는 날 다 젖어요"></textarea>
+      <div class="pf-textarea-hint">💡 어디서 → 언제 → 무엇이 불편했는지 순서로 적으면 더 좋아요!</div>
+
+      <!-- Q2: 영향 대상 -->
+      <div class="pf-card-label">② 주로 누가 이 문제를 경험하나요?</div>
+      <div class="pf-affected-grid" id="pfAffectedGrid"></div>
+
+      <!-- Q3: 심각도 -->
+      <div class="pf-card-label">③ 이 문제가 계속 해결되지 않으면 어떻게 될까요?</div>
+      <div class="pf-severity-grid" id="pfSeverityGrid"></div>
+
+      <!-- Q4: 현재 해결책 -->
+      <div class="pf-card-label">④ 지금 이 문제를 해결하는 방법이 있나요?</div>
+      <div class="pf-affected-grid" id="pfSolutionGrid"></div>
     </div>
   </div>
 
-  <!-- ④ 문제 분석 결과 -->
+  <!-- ④ 분석 결과 -->
   <div id="pfStep4" class="pf-step">
-    <!-- 문제 정의 카드 -->
-    <div class="pf-def-card">
-      <div class="pf-def-title">📋 내가 발견한 생활 속 문제</div>
-      <div class="pf-def-sentence" id="pfDefSentence"></div>
-      <div class="pf-def-rows" id="pfDefRows"></div>
+    <!-- 문제 정의 -->
+    <div class="pf-result-hero">
+      <div class="pf-result-hero-label">📋 내가 발견한 생활 속 문제</div>
+      <div class="pf-result-sentence" id="pfSentence"></div>
+      <div class="pf-5w1h-grid" id="pf5W1H"></div>
     </div>
 
     <!-- 점수 평가 -->
@@ -198,22 +254,28 @@
       <div class="pf-score-rows" id="pfScoreRows"></div>
       <div class="pf-score-total">
         <div>
-          <div class="pf-score-total-num" id="pfTotalScore"></div>
-          <div class="pf-score-total-max">/ 20점</div>
+          <div class="pf-score-num" id="pfTotalScore"></div>
+          <div class="pf-score-max">/ 20점</div>
         </div>
         <div class="pf-score-msg" id="pfScoreMsg"></div>
       </div>
     </div>
 
+    <!-- 더 탐구할 질문 -->
+    <div class="pf-explore-card">
+      <div class="pf-explore-title">💡 더 깊이 탐구해볼 질문</div>
+      <div id="pfExploreQs"></div>
+    </div>
+
     <!-- ChatGPT 프롬프트 -->
     <div class="pf-prompt-section">
       <div class="pf-prompt-header">
-        <span>💬 AI로 이 문제 더 깊이 탐구하기</span>
+        <span>💬 AI로 이 문제 심층 분석하기</span>
         <small>아래 프롬프트를 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
       </div>
       <div id="pfPromptBox" class="pf-prompt-box"></div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="pf-copy-btn" onclick="pfCopyPrompt()">📋 프롬프트 복사하기</button>
+      <div class="pf-btn-row">
+        <button class="pf-copy-btn" onclick="pfCopyPrompt()">📋 프롬프트 복사</button>
         <button class="pf-reset-btn" onclick="pfReset()">🔄 새 문제 찾기</button>
       </div>
     </div>
@@ -225,6 +287,7 @@
     <button id="pfNextBtn" class="pf-next-btn" onclick="pfNext()">다음 →</button>
   </div>
 </div>
+
 <div id="pfToast" class="pf-toast"></div>
 {% endblock %}
 
@@ -232,256 +295,396 @@
 <script>
 /* ── 데이터 ── */
 const PF_AREAS = [
-  { id:'school',  emoji:'🏫', label:'학교/공부',     target:'학생',    place:'학교' },
-  { id:'home',    emoji:'🏠', label:'집/가족',       target:'가족',    place:'집' },
-  { id:'transit', emoji:'🚌', label:'이동/교통',     target:'이용자',  place:'대중교통' },
-  { id:'food',    emoji:'🍽️', label:'식사/건강',    target:'사람들',  place:'식당/급식' },
-  { id:'shop',    emoji:'🛒', label:'쇼핑/소비',     target:'소비자',  place:'마트/가게' },
-  { id:'social',  emoji:'👫', label:'친구/소통',     target:'학생들',  place:'학교/SNS' },
-  { id:'digital', emoji:'📱', label:'스마트폰/디지털', target:'사용자', place:'스마트폰' },
-  { id:'env',     emoji:'🌿', label:'환경/쓰레기',   target:'지역주민', place:'생활환경' },
-  { id:'safety',  emoji:'⚠️', label:'안전',         target:'누구나',  place:'주변 환경' },
-  { id:'hobby',   emoji:'🎨', label:'취미/여가',     target:'나',      place:'취미 공간' },
+  { id:'school',  emoji:'🏫', label:'학교/공부',      target:'학생',    place:'학교' },
+  { id:'home',    emoji:'🏠', label:'집/가족',        target:'가족',    place:'집' },
+  { id:'transit', emoji:'🚌', label:'이동/교통',      target:'이용자',  place:'대중교통' },
+  { id:'food',    emoji:'🍽️', label:'식사/건강',     target:'사람들',  place:'식당/급식' },
+  { id:'shop',    emoji:'🛒', label:'쇼핑/소비',      target:'소비자',  place:'마트/가게' },
+  { id:'social',  emoji:'👫', label:'친구/소통',      target:'학생들',  place:'학교/SNS' },
+  { id:'digital', emoji:'📱', label:'스마트폰/디지털', target:'사용자',  place:'스마트폰' },
+  { id:'env',     emoji:'🌿', label:'환경/쓰레기',    target:'지역주민', place:'생활환경' },
+  { id:'safety',  emoji:'⚠️', label:'안전',          target:'누구나',  place:'주변 환경' },
+  { id:'hobby',   emoji:'🎨', label:'취미/여가',      target:'나',      place:'취미 공간' },
 ];
+
+const PF_SUB_AREAS = {
+  school:  ['🍱 급식실','📖 교실/수업','⏸️ 쉬는시간','🚻 화장실','🚶 통학길','📚 도서관','🏃 체육/운동장'],
+  home:    ['🍳 주방','🧹 청소','💻 공부방','🌡️ 건강관리','📦 택배/쇼핑','🗑️ 쓰레기배출'],
+  transit: ['🚌 버스','🚇 지하철/전철','🚶 횡단보도','☔ 비/눈 날씨','🅿️ 주차/자전거','🚊 정류장/역사'],
+  food:    ['🍽️ 식당/카페','🏫 학교급식','🛵 배달음식','♻️ 음식물쓰레기','🥗 건강한식단','🧃 음료/간식'],
+  shop:    ['🛒 마트/슈퍼','🏪 편의점','💻 온라인쇼핑','📦 배송/반품','🏷️ 가격/할인','♻️ 포장재'],
+  social:  ['💬 친구 대화','📱 SNS/메신저','🤝 팀 프로젝트','📅 약속 잡기','🤷 갈등/오해','🎉 모임/행사'],
+  digital: ['📱 스마트폰 사용','💻 앱/사이트','🔋 배터리/충전','📡 인터넷/와이파이','🔒 개인정보','🎮 게임'],
+  env:     ['🗑️ 분리수거','⚡ 에너지절약','💧 물 낭비','🔊 소음/공해','🌳 공원/녹지','♻️ 일회용품'],
+  safety:  ['🚶 보행자 안전','🔥 화재/재난','⚠️ 낙하물','🦠 위생/청결','💊 의료/건강','🌙 야간 안전'],
+  hobby:   ['🎨 미술/공예','🎵 음악/악기','⚽ 운동/스포츠','📖 독서','🎮 게임/온라인','✈️ 여행/나들이'],
+};
+
+const PF_EXAMPLES = {
+  school:  ['점심시간에 급식 줄이 길어서 먹을 시간이 없어요','교실 뒷자리에서는 칠판이 잘 안 보여요','비 오는 날 학교까지 이동하다가 다 젖어요','숙제나 준비물을 자꾸 깜빡해요','쉬는 시간에 화장실 줄이 길어서 못 가요','체육시간에 공을 나눠쓰다 보니 순서 다툼이 생겨요'],
+  home:    ['쓰레기 버리는 날을 자주 잊어버려요','택배가 왔는데 아무도 없어서 다시 가져가요','냉장고에 뭐가 있는지 모르고 장을 봐서 겹쳐 사요','약 먹는 시간을 자꾸 깜빡해요','가족 일정을 모두가 공유하기 어려워요','분리수거 방법이 헷갈려서 잘못 버리는 경우가 많아요'],
+  transit: ['버스 정류장에 지붕이 없어서 비 오는 날 비를 맞아요','버스가 언제 오는지 실시간으로 알기 어려워요','출퇴근 시간에 버스/지하철이 너무 혼잡해요','횡단보도 신호가 짧아서 뛰어야 건널 수 있어요','지하철역 계단이 많아서 짐 들 때 힘들어요','정류장 안내판이 오래되어 정확하지 않아요'],
+  food:    ['음식점에 줄이 길어서 대기 시간이 너무 길어요','음식 알레르기 정보를 확인하기 어려워요','배달 음식 포장재 쓰레기가 너무 많이 나와요','건강에 좋은 음식을 쉽게 찾기 어려워요','잔반을 줄이고 싶지만 어떻게 해야 할지 모르겠어요','급식에서 먹기 싫은 반찬이 나와도 선택할 수 없어요'],
+  shop:    ['마트에서 원하는 제품 위치를 찾기 어려워요','유통기한이 지난 식품을 실수로 구입해요','온라인 쇼핑 후 반품 과정이 복잡하고 불편해요','포장재 쓰레기가 너무 많이 나와요','행사/할인 정보를 놓치는 경우가 많아요','품절 상품인지 미리 알 수 없어서 헛걸음해요'],
+  social:  ['친구들과 약속 시간·장소 정하기가 복잡해요','단체 채팅방에서 중요한 메시지를 놓쳐요','팀 프로젝트에서 역할 분담이 어려워요','SNS에서 잘못된 정보가 빠르게 퍼져요','친구들과 갈등이 생겼을 때 해결 방법을 모르겠어요','발표 자료를 함께 편집하기가 불편해요'],
+  digital: ['스마트폰 배터리가 항상 부족해요','비밀번호를 자꾸 잊어버려요','광고가 너무 많이 나와서 불편해요','화상통화 품질이 좋지 않아 수업이 힘들어요','앱이 너무 많아서 어떤 걸 써야 할지 모르겠어요','개인정보 설정하는 방법을 모르겠어요'],
+  env:     ['분리수거 방법이 복잡하고 헷갈려요','학교나 공원에 쓰레기통이 부족해요','에너지를 아끼고 싶은데 어디서부터 해야 할지 모르겠어요','길거리에 버려진 쓰레기가 보기 싫어요','일회용품을 줄이고 싶지만 대안이 없어요','음식물 쓰레기를 어떻게 줄여야 할지 모르겠어요'],
+  safety:  ['학교 앞 횡단보도가 위험해요','화재 발생 시 대피 방법을 잘 모르겠어요','손을 씻기가 귀찮아서 자꾸 빠뜨려요','낡은 놀이터 기구가 있어서 다칠 수 있어요','야간에 골목길이 어두워서 무서워요','비 오는 날 학교 복도가 미끄러워요'],
+  hobby:   ['그림 그리고 싶은데 재료가 너무 비싸요','악기 연습할 공간이 없어요','운동하고 싶은데 시설이 너무 멀어요','도서관 책을 반납해야 하는데 자꾸 잊어요','같은 취미를 가진 친구를 만나기 어려워요','취미용품을 보관할 공간이 없어요'],
+};
 
 const PF_EXPS = [
-  { id:'wait',    emoji:'⏳', label:'기다려야 했다',           freq:4, inconv:3 },
-  { id:'find',    emoji:'🔍', label:'찾기 어려웠다',            freq:3, inconv:3 },
-  { id:'tedious', emoji:'😩', label:'귀찮고 번거로웠다',        freq:4, inconv:3 },
-  { id:'forget',  emoji:'🤦', label:'자주 깜빡하거나 실수했다', freq:5, inconv:4 },
-  { id:'danger',  emoji:'⚠️', label:'위험하다고 느꼈다',        freq:2, inconv:5 },
-  { id:'waste',   emoji:'♻️', label:'낭비된다고 느꼈다',        freq:4, inconv:3 },
-  { id:'complex', emoji:'🤷', label:'복잡해서 이해하기 어려웠다', freq:3, inconv:4 },
+  { id:'wait',    emoji:'⏳', label:'기다려야 했다 (줄, 대기)',      freq:4, inconv:3 },
+  { id:'find',    emoji:'🔍', label:'찾기 어려웠다 (정보, 위치)',     freq:3, inconv:3 },
+  { id:'tedious', emoji:'😩', label:'귀찮고 번거로웠다 (복잡한 절차)', freq:4, inconv:3 },
+  { id:'forget',  emoji:'🤦', label:'자주 깜빡하거나 실수했다',       freq:5, inconv:4 },
+  { id:'danger',  emoji:'⚠️', label:'위험하다고 느꼈다',             freq:2, inconv:5 },
+  { id:'waste',   emoji:'♻️', label:'낭비된다고 느꼈다 (시간, 자원)', freq:4, inconv:3 },
+  { id:'complex', emoji:'🤷', label:'복잡해서 이해하기 어려웠다',      freq:3, inconv:4 },
+  { id:'gap',     emoji:'🕳️', label:'없어서 불편했다 (시설, 서비스 부족)', freq:3, inconv:4 },
 ];
 
-const IMPROVE_MAP = { wait:4, find:4, tedious:5, forget:5, danger:3, waste:4, complex:4 };
-const CAUSE_MAP   = {
-  wait:    '같은 시간에 많은 사람이 한 공간에 몰리기 때문',
-  find:    '정보나 물건의 위치가 명확하지 않기 때문',
-  tedious: '더 효율적인 방법이 아직 도입되지 않았기 때문',
-  forget:  '별도로 기억해야 할 정보가 너무 많기 때문',
-  danger:  '안전 설비나 안내가 부족하기 때문',
-  waste:   '자원을 더 효율적으로 사용할 방법이 없기 때문',
-  complex: '과정이나 규칙이 너무 복잡하게 설계되어 있기 때문',
-};
-const DISCOMFORT_MAP = {
-  wait:'긴 대기', find:'탐색 어려움', tedious:'번거로운 과정',
-  forget:'실수/망각', danger:'안전 위협', waste:'자원 낭비', complex:'복잡함'
-};
+const PF_FREQS = [
+  { id:'daily',   icon:'🔁', label:'매일', multiplier:1.2 },
+  { id:'weekly',  icon:'📅', label:'주 2-3번', multiplier:1.0 },
+  { id:'monthly', icon:'🗓️', label:'한 달에 한 번', multiplier:0.85 },
+  { id:'rarely',  icon:'🔄', label:'가끔 있어요', multiplier:0.7 },
+];
 
+const PF_AFFECTED = [
+  { id:'me',       label:'나 혼자', scale:1 },
+  { id:'class',    label:'우리 학급', scale:2 },
+  { id:'school',   label:'학교 전체', scale:3 },
+  { id:'regional', label:'지역 주민', scale:4 },
+  { id:'everyone', label:'많은 사람들', scale:5 },
+];
+
+const PF_SEVERITY = [
+  { id:'minor',    label:'🌀 그냥 불편한 정도' },
+  { id:'waste',    label:'⏰ 시간이나 돈 낭비' },
+  { id:'stress',   label:'😤 스트레스/불쾌함 증가' },
+  { id:'health',   label:'🤒 건강에 영향' },
+  { id:'safety',   label:'⚠️ 안전 위험 가능성' },
+  { id:'social',   label:'👥 여러 사람 피해' },
+];
+
+const PF_SOLUTIONS = [
+  { id:'none',       label:'❌ 해결책이 전혀 없어요' },
+  { id:'bad',        label:'😕 있지만 불편해요' },
+  { id:'partial',    label:'🔧 부분적으로만 해결돼요' },
+  { id:'workaround', label:'🤔 억지로 참고 있어요' },
+];
+
+const CAUSE_MAP = {
+  wait:'같은 시간에 많은 사람이 한 공간에 몰리기 때문에', find:'정보나 물건의 위치가 명확하지 않기 때문에', tedious:'더 효율적인 방법이 아직 도입되지 않았기 때문에', forget:'별도로 기억해야 할 것들이 너무 많기 때문에', danger:'안전 설비나 안내가 부족하기 때문에', waste:'더 효율적으로 사용할 방법이 없기 때문에', complex:'과정이나 규칙이 너무 복잡하게 설계되어 있기 때문에', gap:'관련 시설이나 서비스가 아직 갖춰지지 않았기 때문에',
+};
+const DISCOMFORT_MAP = { wait:'긴 대기', find:'탐색 어려움', tedious:'번거로운 과정', forget:'실수/망각', danger:'안전 위협', waste:'자원 낭비', complex:'복잡함', gap:'시설/서비스 부족' };
+const IMPROVE_MAP = { wait:4, find:4, tedious:5, forget:5, danger:3, waste:4, complex:4, gap:4 };
 const AREA_EMPATHY = { school:5, home:3, transit:4, food:3, shop:3, social:3, digital:4, env:4, safety:4, hobby:2 };
 
-const PLACE_KEYWORDS = {
-  '급식':'급식실','교실':'교실','도서관':'도서관','화장실':'화장실','운동장':'운동장',
-  '버스':'버스','지하철':'지하철','마트':'마트','편의점':'편의점',
-  '병원':'병원','공원':'공원','식당':'식당','주방':'주방','집':'집',
-  '횡단보도':'횡단보도','정류장':'버스 정류장','학원':'학원','길':'길거리',
+const EXPLORE_QS = {
+  wait:    ['이 대기를 줄이기 위해 기술(앱, 예약 시스템 등)을 활용할 수 있을까요?','다른 나라나 도시에서는 이 문제를 어떻게 해결하고 있을까요?','대기하는 동안 더 유익하게 시간을 보낼 수 있는 방법은 없을까요?'],
+  find:    ['정보나 물건 위치를 쉽게 알려줄 수 있는 시스템을 어떻게 만들 수 있을까요?','표지판, 지도, 앱 중 어떤 방법이 가장 효과적일까요?','비슷한 문제를 해결한 성공 사례를 찾아볼 수 있을까요?'],
+  tedious: ['이 과정에서 불필요한 단계를 줄이거나 자동화할 수 있을까요?','사람 대신 기술이나 도구가 처리할 수 있는 부분은 어디일까요?','이 과정을 한 번에 끝낼 수 있는 통합 서비스가 가능할까요?'],
+  forget:  ['알림이나 리마인더 시스템을 어떻게 설계하면 효과적일까요?','잊지 않도록 환경이나 장소 자체를 바꿀 수 있는 방법은?','자동으로 처리되도록 만들 수 있는 방법이 있을까요?'],
+  danger:  ['이 위험을 예방하기 위해 어떤 안전장치가 필요할까요?','위험 상황을 빠르게 알릴 수 있는 방법은 무엇일까요?','비슷한 안전 문제를 성공적으로 해결한 사례를 참고해볼까요?'],
+  waste:   ['낭비되는 자원을 줄이거나 재활용할 수 있는 방법은?','더 효율적인 대안이 이미 존재하는지 조사해볼 수 있을까요?','이 낭비가 환경이나 경제에 미치는 영향은 어느 정도일까요?'],
+  complex: ['복잡한 과정을 단계별로 단순화하면 어떻게 될까요?','누구나 쉽게 이해할 수 있는 안내 자료를 만들 수 있을까요?','처음 접하는 사람도 사용하기 쉽도록 어떻게 디자인할 수 있을까요?'],
+  gap:     ['이 서비스나 시설이 없는 이유는 무엇일까요?','직접 만들 수 있는 간단한 해결책이 있을까요?','비슷한 필요를 충족시킨 다른 지역이나 학교의 사례는?'],
 };
-const TIME_KEYWORDS = {
-  '아침':'아침','점심':'점심시간','저녁':'저녁','쉬는':'쉬는 시간',
-  '수업':'수업 시간','밤':'밤','주말':'주말','등교':'등교 시간','하교':'하교 시간',
-};
-const TARGET_KEYWORDS = {
-  '어르신':'어르신','할머니':'어르신','할아버지':'어르신',
-  '어린이':'어린이','아이':'어린이','유아':'어린이',
-  '장애':'장애인','우리':'우리 모두','나 자신':'나','나는':'나','나도':'나',
-};
+
+const PLACE_KW = { '급식':'급식실','교실':'교실','도서관':'도서관','화장실':'화장실','운동장':'운동장','복도':'복도 ','버스':'버스','지하철':'지하철','마트':'마트','편의점':'편의점','병원':'병원','공원':'공원','식당':'식당','주방':'주방','집':'집','횡단보도':'횡단보도','정류장':'버스 정류장','학원':'학원','길':'길거리' };
+const TIME_KW  = { '아침':'아침','점심':'점심시간','저녁':'저녁','쉬는':'쉬는 시간','수업':'수업 시간','밤':'밤','주말':'주말','등교':'등교 시간','하교':'하교 시간','출근':'출퇴근 시간' };
 
 /* ── State ── */
-let pfCurrentStep = 1;
-let pfSelectedArea = null;
-let pfSelectedExps = new Set();
+let pfStep = 1;
+let pfArea = null;
+let pfSubArea = null;
+let pfExps = new Set();
+let pfFreq = null;
+let pfAffected = null;
+let pfSeverity = null;
+let pfSolution = null;
 
 /* ── 렌더 ── */
-function pfRenderAreas() {
-  const grid = document.getElementById('pfAreaGrid');
-  grid.innerHTML = PF_AREAS.map(a => `
-    <div class="pf-area-card" data-id="${a.id}" onclick="pfSelectArea('${a.id}', this)">
+function pfRenderStep1() {
+  document.getElementById('pfAreaGrid').innerHTML = PF_AREAS.map(a =>
+    `<div class="pf-area-card" data-id="${a.id}" onclick="pfSelectArea('${a.id}',this)">
       <span class="ac-emoji">${a.emoji}</span>
       <span class="ac-label">${a.label}</span>
     </div>`).join('');
 }
 
-function pfRenderExps() {
-  const grid = document.getElementById('pfExpGrid');
-  grid.innerHTML = PF_EXPS.map(e => `
-    <button class="pf-exp-chip" data-id="${e.id}" onclick="pfToggleExp('${e.id}', this)">
+function pfRenderStep2() {
+  document.getElementById('pfExpList').innerHTML = PF_EXPS.map(e =>
+    `<button class="pf-exp-chip${pfExps.has(e.id)?' active':''}" data-id="${e.id}" onclick="pfToggleExp('${e.id}',this)">
       <span class="pf-exp-emoji">${e.emoji}</span>${e.label}
+    </button>`).join('');
+  document.getElementById('pfFreqGrid').innerHTML = PF_FREQS.map(f =>
+    `<button class="pf-freq-btn${pfFreq===f.id?' active':''}" data-id="${f.id}" onclick="pfSelectFreq('${f.id}',this)">
+      <span class="freq-icon">${f.icon}</span>${f.label}
     </button>`).join('');
 }
 
+function pfRenderStep3() {
+  document.getElementById('pfAffectedGrid').innerHTML = PF_AFFECTED.map(a =>
+    `<button class="pf-affected-btn${pfAffected===a.id?' active':''}" data-id="${a.id}" onclick="pfSelectAffected('${a.id}',this)">
+      ${a.label}
+    </button>`).join('');
+  document.getElementById('pfSeverityGrid').innerHTML = PF_SEVERITY.map(s =>
+    `<button class="pf-severity-btn${pfSeverity===s.id?' active':''}" data-id="${s.id}" onclick="pfSelectSeverity('${s.id}',this)">
+      ${s.label}
+    </button>`).join('');
+  document.getElementById('pfSolutionGrid').innerHTML = PF_SOLUTIONS.map(s =>
+    `<button class="pf-affected-btn${pfSolution===s.id?' active':''}" data-id="${s.id}" onclick="pfSelectSolution('${s.id}',this)">
+      ${s.label}
+    </button>`).join('');
+}
+
+/* ── 선택 핸들러 ── */
 function pfSelectArea(id, el) {
-  pfSelectedArea = id;
+  pfArea = id; pfSubArea = null;
   document.querySelectorAll('.pf-area-card').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+
+  const sub = document.getElementById('pfSubSection');
+  sub.style.display = 'block';
+
+  const areaData = PF_AREAS.find(a => a.id === id);
+  document.getElementById('pfSubChips').innerHTML = (PF_SUB_AREAS[id]||[]).map((s,i) =>
+    `<button class="pf-sub-chip" onclick="pfSelectSub(this,'${id}',${i})">${s}</button>`).join('');
+
+  document.getElementById('pfExamples').innerHTML = (PF_EXAMPLES[id]||[]).map(ex =>
+    `<div class="pf-example-item" onclick="pfUseExample(this,'${ex}')">${ex}</div>`).join('');
+}
+
+function pfSelectSub(el, areaId, idx) {
+  document.querySelectorAll('.pf-sub-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  pfSubArea = (PF_SUB_AREAS[areaId]||[])[idx];
+}
+
+function pfUseExample(el, text) {
+  document.querySelectorAll('.pf-example-item').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  const ta = document.getElementById('pfSituation');
+  if (ta) ta.value = text;
+  pfShowToast('Step 3 입력란에 자동으로 채워졌어요!');
 }
 
 function pfToggleExp(id, el) {
   el.classList.toggle('active');
-  if (pfSelectedExps.has(id)) pfSelectedExps.delete(id);
-  else pfSelectedExps.add(id);
+  if (pfExps.has(id)) pfExps.delete(id); else pfExps.add(id);
+  if (el.classList.contains('active')) el.insertAdjacentHTML('beforeend','');
+}
+
+function pfSelectFreq(id, el) {
+  pfFreq = id;
+  document.querySelectorAll('.pf-freq-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function pfSelectAffected(id, el) {
+  pfAffected = id;
+  document.querySelectorAll('#pfAffectedGrid .pf-affected-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function pfSelectSeverity(id, el) {
+  pfSeverity = id;
+  document.querySelectorAll('.pf-severity-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function pfSelectSolution(id, el) {
+  pfSolution = id;
+  document.querySelectorAll('#pfSolutionGrid .pf-affected-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
 }
 
 /* ── 단계 이동 ── */
 function pfGoTo(step) {
   document.querySelectorAll('.pf-step').forEach(s => s.classList.remove('active'));
   document.getElementById(`pfStep${step}`).classList.add('active');
-
-  // 진행 표시 업데이트
   for (let i = 1; i <= 4; i++) {
-    const prog = document.getElementById(`pfProg${i}`);
-    prog.classList.remove('active', 'done');
-    if (i < step) prog.classList.add('done');
-    else if (i === step) prog.classList.add('active');
-    if (i < 4) {
-      const line = document.getElementById(`pfLine${i}`);
-      line.classList.toggle('done', i < step);
-    }
+    const p = document.getElementById(`pfProg${i}`);
+    p.classList.remove('active','done');
+    if (i < step) p.classList.add('done');
+    else if (i === step) p.classList.add('active');
+    if (i < 4) document.getElementById(`pfLine${i}`).classList.toggle('done', i < step);
   }
-
   document.getElementById('pfPrevBtn').style.display = step > 1 ? '' : 'none';
-  const nextBtn = document.getElementById('pfNextBtn');
-  nextBtn.style.display = step === 4 ? 'none' : '';
-  nextBtn.textContent = step === 3 ? '🔍 문제 분석하기!' : '다음 →';
-
-  pfCurrentStep = step;
+  const nb = document.getElementById('pfNextBtn');
+  nb.style.display = step === 4 ? 'none' : '';
+  nb.textContent = step === 3 ? '🔍 문제 분석하기!' : '다음 →';
+  pfStep = step;
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function pfNext() {
-  if (pfCurrentStep === 1) {
-    if (!pfSelectedArea) { pfShowToast('생활 영역을 선택해주세요!'); return; }
-    pfGoTo(2);
-  } else if (pfCurrentStep === 2) {
-    if (pfSelectedExps.size === 0) { pfShowToast('불편 경험을 하나 이상 선택해주세요!'); return; }
-    pfGoTo(3);
-  } else if (pfCurrentStep === 3) {
+  if (pfStep === 1) {
+    if (!pfArea) { pfShowToast('생활 영역을 선택해주세요!'); return; }
+    pfRenderStep2(); pfGoTo(2);
+  } else if (pfStep === 2) {
+    if (pfExps.size === 0) { pfShowToast('불편 경험을 하나 이상 선택해주세요!'); return; }
+    pfRenderStep3(); pfGoTo(3);
+  } else if (pfStep === 3) {
     const sit = document.getElementById('pfSituation').value.trim();
     if (!sit) { pfShowToast('상황을 짧게라도 적어주세요!'); return; }
-    pfAnalyze(sit);
-    pfGoTo(4);
+    pfAnalyze(sit); pfGoTo(4);
   }
 }
 
-function pfPrev() {
-  pfGoTo(pfCurrentStep - 1);
-}
+function pfPrev() { pfGoTo(pfStep - 1); }
 
 function pfReset() {
-  pfSelectedArea = null;
-  pfSelectedExps = new Set();
+  pfArea=null; pfSubArea=null; pfExps=new Set(); pfFreq=null;
+  pfAffected=null; pfSeverity=null; pfSolution=null;
   document.getElementById('pfSituation').value = '';
-  pfRenderAreas();
-  pfRenderExps();
-  pfGoTo(1);
+  document.getElementById('pfSubSection').style.display = 'none';
+  pfRenderStep1(); pfGoTo(1);
 }
 
 /* ── 분석 ── */
 function pfAnalyze(situation) {
-  const areaData = PF_AREAS.find(a => a.id === pfSelectedArea);
-  const exps = [...pfSelectedExps];
+  const areaData  = PF_AREAS.find(a => a.id === pfArea);
+  const exps      = [...pfExps];
+  const freqData  = PF_FREQS.find(f => f.id === pfFreq);
+  const affData   = PF_AFFECTED.find(a => a.id === pfAffected);
+  const severData = PF_SEVERITY.find(s => s.id === pfSeverity);
+  const solData   = PF_SOLUTIONS.find(s => s.id === pfSolution);
 
   /* 대상 추론 */
   let target = areaData.target;
-  for (const [kw, t] of Object.entries(TARGET_KEYWORDS)) {
-    if (situation.includes(kw)) { target = t; break; }
-  }
+  const targetKW = [['어르신','어르신'],['할머니','어르신'],['할아버지','어르신'],['어린이','어린이'],['아이','어린이'],['장애','장애인'],['나는','나(학생)'],['나도','나(학생)'],['내가','나(학생)']];
+  for (const [kw, t] of targetKW) if (situation.includes(kw)) { target = t; break; }
+  if (affData) target += ` (${affData.label} 영향)`;
 
   /* 장소 추론 */
-  let place = areaData.place;
-  for (const [kw, pl] of Object.entries(PLACE_KEYWORDS)) {
-    if (situation.includes(kw)) { place = pl; break; }
-  }
+  let place = pfSubArea ? pfSubArea.replace(/^\S+\s/,'') : areaData.place;
+  for (const [kw, pl] of Object.entries(PLACE_KW)) if (situation.includes(kw)) { place = pl; break; }
 
   /* 시간 추론 */
-  let when = '';
-  for (const [kw, t] of Object.entries(TIME_KEYWORDS)) {
-    if (situation.includes(kw)) { when = t; break; }
-  }
+  let when = '일상 속에서';
+  for (const [kw, t] of Object.entries(TIME_KW)) if (situation.includes(kw)) { when = t; break; }
 
-  /* 불편 정리 */
-  const discomfort = exps.length > 0
-    ? exps.map(e => DISCOMFORT_MAP[e]).join(', ')
-    : '불편함';
+  /* 불편 */
+  const discomfort = exps.length > 0 ? exps.map(e => DISCOMFORT_MAP[e]).join(', ') : '불편함';
 
-  /* 원인 추론 */
-  const cause = exps.length > 0 ? CAUSE_MAP[exps[0]] : '아직 더 나은 방법이 도입되지 않았기 때문';
+  /* 원인 */
+  const cause = exps.length > 0 ? CAUSE_MAP[exps[0]] : '아직 더 나은 방법이 도입되지 않았기 때문에';
 
-  /* 문제 정의 문장: 사용자 입력 그대로 사용 */
-  const sentence = `"${situation.length > 50 ? situation.slice(0, 50) + '…' : situation}"`;
+  /* 빈도 텍스트 */
+  const freqText = freqData ? freqData.label : '불명확';
 
-  document.getElementById('pfDefSentence').textContent = sentence;
-  document.getElementById('pfDefRows').innerHTML = [
-    { icon:'👤', key:'대상',     val:target },
-    { icon:'📍', key:'장소',     val:place },
-    { icon:'⏰', key:'상황',     val:when || '일상 속에서' },
-    { icon:'😣', key:'불편함',   val:discomfort },
-    { icon:'🔍', key:'원인 추측', val:cause },
+  /* 미해결 심각도 */
+  const severText = severData ? severData.label : '알 수 없음';
+
+  /* 해결책 현황 */
+  const solText = solData ? solData.label : '알 수 없음';
+
+  /* ── 문제 정의 문장 ── */
+  document.getElementById('pfSentence').textContent =
+    `"${situation.length > 55 ? situation.slice(0,55)+'…' : situation}"`;
+
+  /* ── 5W1H ── */
+  document.getElementById('pf5W1H').innerHTML = [
+    { icon:'👤', key:'누가 (대상)',    val:target },
+    { icon:'📍', key:'어디서 (장소)',  val:place },
+    { icon:'⏰', key:'언제',          val:when },
+    { icon:'😣', key:'무엇이 불편',   val:discomfort },
+    { icon:'⏱️', key:'얼마나 자주',   val:freqText },
+    { icon:'🔍', key:'왜 (원인추측)', val:cause },
+    { icon:'⚠️', key:'미해결시 결과', val:severText },
+    { icon:'🔧', key:'현재 해결책',   val:solText },
   ].map(r => `
-    <div class="pf-def-row">
-      <span class="dr-icon">${r.icon}</span> <span class="dr-key">${r.key}</span>
-      <span class="dr-val">${r.val}</span>
+    <div class="pf-5w1h-cell">
+      <span class="wh-key">${r.icon} ${r.key}</span>
+      <span class="wh-val">${r.val}</span>
     </div>`).join('');
 
-  /* 점수 계산 */
+  /* ── 점수 ── */
   let freq = 0, inconv = 0, improve = 4;
   exps.forEach(e => {
-    const exp = PF_EXPS.find(x => x.id === e);
-    if (exp) { freq = Math.max(freq, exp.freq); inconv = Math.max(inconv, exp.inconv); }
+    const ex = PF_EXPS.find(x => x.id === e);
+    if (ex) { freq = Math.max(freq, ex.freq); inconv = Math.max(inconv, ex.inconv); }
     improve = Math.max(improve, IMPROVE_MAP[e] || 4);
   });
   if (freq === 0) freq = 3;
   if (inconv === 0) inconv = 3;
-  const empathy = Math.min(5, AREA_EMPATHY[pfSelectedArea] || 3);
+
+  // 빈도 빈도 보정
+  if (pfFreq === 'daily')   freq = Math.min(5, freq + 1);
+  if (pfFreq === 'rarely')  freq = Math.max(1, freq - 1);
+
+  // 공감도: 영역 기준 + 영향 규모로 보정
+  let empathy = AREA_EMPATHY[pfArea] || 3;
+  if (affData) empathy = Math.min(5, Math.round((empathy + affData.scale) / 2) + 1);
+  empathy = Math.min(5, empathy);
+
+  // 해결책 없을수록 개선가능성 높게
+  if (pfSolution === 'none') improve = Math.min(5, improve + 1);
+
   const total = freq + inconv + empathy + improve;
 
-  const scoreDims = [
-    { label:'⏱️ 빈도',     val:freq,    desc:['','드물게','가끔','종종','자주','매우 자주'][freq] },
-    { label:'😤 불편도',   val:inconv,  desc:['','약간','보통','꽤','많이','매우'][inconv] },
-    { label:'👥 공감도',   val:empathy, desc:['','소수만','일부만','꽤 많이','많은 사람이','거의 모두가'][empathy] },
-    { label:'💡 개선가능성', val:improve, desc:['','어려움','조금','가능','좋음','매우 좋음'][improve] },
+  const dims = [
+    { label:'⏱️ 빈도',     v:freq,    descs:['','드물게','가끔','종종','자주','매우 자주'] },
+    { label:'😤 불편도',   v:inconv,  descs:['','약간','보통','꽤','많이','매우'] },
+    { label:'👥 공감도',   v:empathy, descs:['','소수','일부','꽤 많이','많은 사람','거의 모두'] },
+    { label:'💡 개선가능성', v:improve, descs:['','어려움','조금','가능','좋음','매우 좋음'] },
   ];
-
-  document.getElementById('pfScoreRows').innerHTML = scoreDims.map(d => `
+  document.getElementById('pfScoreRows').innerHTML = dims.map(d => `
     <div class="pf-score-row">
-      <span class="pf-score-label">${d.label}</span>
-      <span class="pf-score-stars" style="color:var(--amber)">${'★'.repeat(d.val)}${'☆'.repeat(5-d.val)}</span>
-      <span class="pf-score-desc">${d.desc}</span>
+      <span class="pf-score-lbl">${d.label}</span>
+      <span class="pf-score-stars">${'★'.repeat(d.v)}${'☆'.repeat(5-d.v)}</span>
+      <span class="pf-score-desc">${d.descs[d.v]}</span>
     </div>`).join('');
 
+  document.getElementById('pfTotalScore').textContent = total;
   const msgs = [
     { min:18, text:'아이디어 주제로 발전시키기 최고의 문제예요! 🌟' },
-    { min:14, text:'아이디어 주제로 발전시키기 좋은 문제예요! 💡' },
+    { min:14, text:'아이디어로 발전시키기 좋은 문제예요! 💡' },
     { min:10, text:'조금 더 구체화하면 멋진 아이디어가 나올 수 있어요! 😊' },
-    { min: 0, text:'작은 불편이지만, 해결하면 생활이 더 편해져요! 🔍' },
+    { min: 0, text:'작은 불편이지만 해결하면 생활이 더 편해져요! 🔍' },
   ];
-  const msgObj = msgs.find(m => total >= m.min);
+  document.getElementById('pfScoreMsg').textContent = msgs.find(m => total >= m.min).text;
 
-  document.getElementById('pfTotalScore').textContent = total;
-  document.getElementById('pfScoreMsg').textContent = msgObj.text;
+  /* ── 탐구 질문 ── */
+  const qs = exps.length > 0 ? (EXPLORE_QS[exps[0]] || EXPLORE_QS.tedious) : EXPLORE_QS.tedious;
+  document.getElementById('pfExploreQs').innerHTML = qs.map((q,i) => `
+    <div class="pf-explore-item">
+      <div class="pf-explore-num">${i+1}</div>
+      <div class="pf-explore-q">${q}</div>
+    </div>`).join('');
 
-  /* ChatGPT 프롬프트 */
-  const expLabels = exps.map(e => PF_EXPS.find(x => x.id === e)?.label).join(', ');
+  /* ── ChatGPT 프롬프트 ── */
+  const expLabels = exps.map(e => PF_EXPS.find(x => x.id === e)?.label.split('(')[0].trim()).join(', ');
   const prompt =
 `너는 생활 속 문제를 탐구하는 도우미야.
-아래 학생이 발견한 문제를 바탕으로 더 깊이 분석해줘.
+아래 학생이 발견한 문제를 분석하고 더 깊이 탐구할 수 있도록 도와줘.
 
-[발견한 문제]
-${situation}
+[학생이 발견한 문제]
+"${situation}"
 
-[영역] ${areaData.label}
-[불편 유형] ${expLabels || '일반적 불편'}
-[장소] ${place}  [대상] ${target}
+[문제 상세 정보]
+• 생활 영역: ${areaData.label}${pfSubArea ? ' > ' + pfSubArea : ''}
+• 불편 유형: ${expLabels || '일반적 불편'}
+• 발생 빈도: ${freqText}
+• 영향 대상: ${affData ? affData.label : '알 수 없음'}
+• 현재 해결책: ${solText}
+• 장소: ${place}
 
 다음 순서로 분석해줘:
-① 이 문제가 왜 발생하는지 원인 2~3가지
-② 이 문제로 인한 영향 (시간/비용/감정 등)
-③ 이 문제를 해결하기 위한 아이디어 3가지 (기술 활용 포함)
-④ 비슷한 문제로 이미 해결된 사례 1~2가지
+① 이 문제의 핵심 원인 (근본 원인 2~3가지)
+② 이 문제로 생기는 구체적 피해 (시간/비용/감정/건강 등)
+③ 이 문제를 해결할 수 있는 아이디어 3가지 (기술 활용 포함)
+④ 비슷한 문제를 이미 해결한 국내외 사례 1~2가지
+⑤ 학생이 직접 실천할 수 있는 작은 첫걸음 1가지
 
 [조건]
 - 초등/중학생이 이해할 수 있는 쉬운 말로 설명해줘
-- 아이디어는 실제로 만들거나 실천할 수 있는 것 위주로 제안해줘`;
+- 아이디어는 실제로 만들거나 실천할 수 있는 것 위주로 제안해줘
+- 각 항목은 짧고 명확하게 설명해줘`;
 
   document.getElementById('pfPromptBox').textContent = prompt;
 }
@@ -504,7 +707,6 @@ function pfShowToast(msg) {
 }
 
 /* ── 초기화 ── */
-pfRenderAreas();
-pfRenderExps();
+pfRenderStep1();
 </script>
 {% endblock %}

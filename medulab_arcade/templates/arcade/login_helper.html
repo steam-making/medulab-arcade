@@ -62,21 +62,32 @@
 
   /* ── 번호 그리드 ── */
   .lh-grid {
-    display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr));
-    gap:10px; margin-bottom:20px;
+    display:grid; grid-template-columns:repeat(10,1fr);
+    gap:8px; margin-bottom:20px;
   }
   .lh-num-btn {
-    padding:18px 0; font-size:20px; font-weight:700; border:none;
-    border-radius:12px; background:#fff;
+    padding:14px 0; font-size:17px; font-weight:700; border:none;
+    border-radius:10px; background:#fff;
     box-shadow:0 1px 4px rgba(0,0,0,.08); cursor:pointer; color:#1f2430;
     transition:transform .1s, box-shadow .1s;
   }
   .lh-num-btn:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(0,0,0,.12); }
-  .lh-num-btn.selected { outline:3px solid #f5a623; }
+  .lh-num-btn.selected { outline:3px solid #f5a623; background:#fffbf0; }
 
-  /* ── 상세 패널 ── */
-  .lh-panel { background:#fff; border-radius:16px; padding:24px; box-shadow:0 2px 10px rgba(0,0,0,.08); }
-  .lh-panel.hidden { display:none; }
+  /* ── 인라인 상세 패널 ── */
+  .lh-inline-panel {
+    grid-column: 1 / -1;
+    background:#fff; border-radius:16px; padding:20px 24px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+    animation:lhSlideDown .18s ease;
+  }
+  @keyframes lhSlideDown {
+    from { opacity:0; transform:translateY(-6px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* ── 상세 패널 (구형, 항상 숨김) ── */
+  .lh-panel { display:none !important; }
   .lh-panel h2 { margin-top:0; font-size:20px; color:#1f2430 !important; }
   .lh-field { margin-bottom:16px; }
   .lh-field label { display:block; font-size:13px; color:#6b7280; margin-bottom:6px; font-weight:600; }
@@ -422,11 +433,15 @@
 
   function lhPad(n){ return String(n).padStart(4,'0'); }
 
+  let lhInlinePanel = null;
+  let lhSelectedNum = null;
+
   function lhRenderGrid() {
+    lhInlinePanel = null;
+    lhSelectedNum = null;
     const grid = document.getElementById('lhNumberGrid');
     grid.innerHTML = '';
     grid.style.gridTemplateColumns = '';
-    document.getElementById('lhDetailPanel').classList.add('hidden');
     if (!LH_IS_UNLOCKED) return;
 
     if (lhPlatform === 'canva') {
@@ -451,19 +466,73 @@
   }
 
   function lhShowDetail(num, btnEl) {
-    document.querySelectorAll('.lh-num-btn').forEach(b => b.classList.remove('selected'));
+    const grid = document.getElementById('lhNumberGrid');
+    const allBtns = grid.querySelectorAll('.lh-num-btn');
+
+    // 같은 번호 재클릭 → 닫기
+    if (lhSelectedNum === num) {
+      allBtns.forEach(b => b.classList.remove('selected'));
+      if (lhInlinePanel) { lhInlinePanel.remove(); lhInlinePanel = null; }
+      lhSelectedNum = null;
+      return;
+    }
+
+    allBtns.forEach(b => b.classList.remove('selected'));
     btnEl.classList.add('selected');
+    lhSelectedNum = num;
+
+    const total = LH_RANGES[lhPlatform];
+    const rowEnd = Math.min(Math.ceil(num / 10) * 10, total);
     const email = `medu${lhPad(num)}@${LH_DOMAINS[lhPlatform]}`;
-    document.getElementById('lhPanelTitle').textContent =
-      `${num}번 학생 계정 (${lhPlatform === 'google' ? 'Google' : 'Microsoft'})`;
-    document.getElementById('lhEmailField').value = email;
-    const pw = document.getElementById('lhPasswordField');
-    pw.value = LH_PASSWORD; pw.type = 'password';
-    document.getElementById('lhTogglePwBtn').textContent = '👁';
-    const openBtn = document.getElementById('lhOpenLoginBtn');
-    openBtn.className = 'lh-open-btn ' + lhPlatform;
-    openBtn.onclick = () => { lhCopyText(email); lhShowToast('이메일 복사됨! 아이디 칸에 Ctrl+V'); window.open(LH_LOGIN_URLS[lhPlatform], '_blank', 'noopener,noreferrer'); };
-    document.getElementById('lhDetailPanel').classList.remove('hidden');
+    const platformLabel = lhPlatform === 'google' ? 'Google' : 'Microsoft';
+
+    // 기존 인라인 패널 제거
+    if (lhInlinePanel) lhInlinePanel.remove();
+
+    // 인라인 패널 생성 (그리드 전체 열 차지)
+    lhInlinePanel = document.createElement('div');
+    lhInlinePanel.className = 'lh-inline-panel';
+    lhInlinePanel.innerHTML = `
+      <h2 style="margin:0 0 16px;font-size:17px;color:#1f2430;">${num}번 학생 계정 (${platformLabel})</h2>
+      <div class="lh-field">
+        <label>아이디 (이메일)</label>
+        <div class="lh-field-row">
+          <input class="lip-email" value="${email}" readonly>
+          <button class="lip-copy-email">복사</button>
+        </div>
+      </div>
+      <div class="lh-field">
+        <label>비밀번호</label>
+        <div class="lh-field-row">
+          <input class="lip-pw" value="${LH_PASSWORD}" readonly type="password">
+          <button type="button" class="lip-toggle-pw" style="padding:0 16px !important;background:#e5e9f2 !important;color:#1f2430 !important;font-size:18px !important;">👁</button>
+          <button class="lip-copy-pw">복사</button>
+        </div>
+      </div>
+      <button class="lh-open-btn lip-open ${lhPlatform}">① 로그인 탭 열기 (아이디 자동 복사됨)</button>
+      <p class="lh-hint">① 누르면 새 탭으로 로그인 페이지가 열리고 아이디가 자동 복사돼요 → 아이디 칸에 Ctrl+V<br>② 위에서 비밀번호 "복사"를 누른 뒤 → 비밀번호 칸에 Ctrl+V</p>
+    `;
+
+    const emailInput = lhInlinePanel.querySelector('.lip-email');
+    const pwInput    = lhInlinePanel.querySelector('.lip-pw');
+    const toggleBtn  = lhInlinePanel.querySelector('.lip-toggle-pw');
+
+    lhInlinePanel.querySelector('.lip-copy-email').onclick = () => { lhCopyText(emailInput.value); lhShowToast('복사되었습니다!'); };
+    lhInlinePanel.querySelector('.lip-copy-pw').onclick    = () => { lhCopyText(pwInput.value);    lhShowToast('복사되었습니다!'); };
+    toggleBtn.onclick = () => {
+      if (pwInput.type === 'password') { pwInput.type = 'text';     toggleBtn.textContent = '🙈'; }
+      else                             { pwInput.type = 'password'; toggleBtn.textContent = '👁'; }
+    };
+    lhInlinePanel.querySelector('.lip-open').onclick = () => {
+      lhCopyText(email);
+      lhShowToast('이메일 복사됨! 아이디 칸에 Ctrl+V');
+      window.open(LH_LOGIN_URLS[lhPlatform], '_blank', 'noopener,noreferrer');
+    };
+
+    // 해당 행의 마지막 버튼 뒤에 삽입
+    const insertAfterBtn = allBtns[rowEnd - 1] || allBtns[allBtns.length - 1];
+    insertAfterBtn.after(lhInlinePanel);
+    lhInlinePanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function lhCopyText(text) {

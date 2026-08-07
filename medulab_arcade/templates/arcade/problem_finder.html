@@ -197,10 +197,25 @@
 
       <!-- 선택 후 표시 -->
       <div id="pfSubSection" class="pf-sub-section" style="display:none">
-        <div class="pf-sub-label">📌 더 구체적으로 선택해보세요 (선택 사항)</div>
-        <div id="pfSubChips" class="pf-chip-row" style="margin-bottom:18px"></div>
+        <!-- 기타 선택 시: 영역 직접 입력 -->
+        <div id="pfAreaCustomWrap" style="display:none">
+          <div class="pf-sub-label">✏️ 어떤 영역인지 직접 써주세요</div>
+          <input type="text" id="pfAreaCustomInput" class="pf-custom-input"
+            placeholder="예: 병원/의료 / 반려동물 / 캠핑/여행 / 직업 체험 등">
+        </div>
 
-        <div class="pf-examples-box">
+        <div id="pfSubChipsWrap">
+          <div class="pf-sub-label">📌 더 구체적으로 선택해보세요 (선택 사항)</div>
+          <div id="pfSubChips" class="pf-chip-row"></div>
+        </div>
+
+        <!-- 세부영역 직접 입력 (항상 표시) -->
+        <div class="pf-custom-wrap" style="margin-top:10px;margin-bottom:18px">
+          <input type="text" id="pfSubAreaCustomInput" class="pf-custom-input"
+            placeholder="✏️ 세부 영역 직접 입력 — 예: 수영장 / 학생증 발급 / 자전거 보관소">
+        </div>
+
+        <div class="pf-examples-box" id="pfExamplesBox">
           <div class="pf-examples-title">💡 이런 문제를 찾을 수 있어요 — 클릭하면 Step 3에 자동 입력돼요!</div>
           <div id="pfExamples"></div>
         </div>
@@ -330,6 +345,7 @@ const PF_AREAS = [
   { id:'env',     emoji:'🌿', label:'환경/쓰레기',    target:'지역주민', place:'생활환경' },
   { id:'safety',  emoji:'⚠️', label:'안전',          target:'누구나',  place:'주변 환경' },
   { id:'hobby',   emoji:'🎨', label:'취미/여가',      target:'나',      place:'취미 공간' },
+  { id:'other',   emoji:'✏️', label:'기타\n직접 입력', target:'사람들',  place:'생활 공간' },
 ];
 
 const PF_SUB_AREAS = {
@@ -431,6 +447,7 @@ let pfAffected = null;
 let pfSeverity = null;
 let pfSolution = null;
 // 직접 입력 값
+let pfAreaCustom = '';
 let pfExpCustom = '';
 let pfAffectedCustom = '';
 let pfSeverityCustom = '';
@@ -477,15 +494,19 @@ function pfSelectArea(id, el) {
   document.querySelectorAll('.pf-area-card').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
 
-  const sub = document.getElementById('pfSubSection');
-  sub.style.display = 'block';
+  document.getElementById('pfSubSection').style.display = 'block';
 
-  const areaData = PF_AREAS.find(a => a.id === id);
-  document.getElementById('pfSubChips').innerHTML = (PF_SUB_AREAS[id]||[]).map((s,i) =>
-    `<button class="pf-sub-chip" onclick="pfSelectSub(this,'${id}',${i})">${s}</button>`).join('');
+  const isOther = id === 'other';
+  document.getElementById('pfAreaCustomWrap').style.display = isOther ? 'block' : 'none';
+  document.getElementById('pfSubChipsWrap').style.display  = isOther ? 'none'  : 'block';
+  document.getElementById('pfExamplesBox').style.display   = isOther ? 'none'  : 'block';
 
-  document.getElementById('pfExamples').innerHTML = (PF_EXAMPLES[id]||[]).map(ex =>
-    `<div class="pf-example-item" onclick="pfUseExample(this,'${ex}')">${ex}</div>`).join('');
+  if (!isOther) {
+    document.getElementById('pfSubChips').innerHTML = (PF_SUB_AREAS[id]||[]).map((s,i) =>
+      `<button class="pf-sub-chip" onclick="pfSelectSub(this,'${id}',${i})">${s}</button>`).join('');
+    document.getElementById('pfExamples').innerHTML = (PF_EXAMPLES[id]||[]).map(ex =>
+      `<div class="pf-example-item" onclick="pfUseExample(this,'${ex}')">${ex}</div>`).join('');
+  }
 }
 
 function pfSelectSub(el, areaId, idx) {
@@ -570,17 +591,19 @@ function pfPrev() { pfGoTo(pfStep - 1); }
 function pfReset() {
   pfArea=null; pfSubArea=null; pfExps=new Set(); pfFreq=null;
   pfAffected=null; pfSeverity=null; pfSolution=null;
-  pfExpCustom=''; pfAffectedCustom=''; pfSeverityCustom=''; pfSolutionCustom='';
+  pfAreaCustom=''; pfExpCustom=''; pfAffectedCustom=''; pfSeverityCustom=''; pfSolutionCustom='';
   document.getElementById('pfSituation').value = '';
   document.getElementById('pfSubSection').style.display = 'none';
-  ['pfExpCustomInput','pfAffectedCustomInput','pfSeverityCustomInput','pfSolutionCustomInput']
+  ['pfAreaCustomInput','pfSubAreaCustomInput','pfExpCustomInput','pfAffectedCustomInput','pfSeverityCustomInput','pfSolutionCustomInput']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   pfRenderStep1(); pfGoTo(1);
 }
 
 /* ── 분석 ── */
 function pfAnalyze(situation) {
-  const areaData  = PF_AREAS.find(a => a.id === pfArea);
+  const areaData  = pfArea === 'other'
+    ? { id:'other', label: pfAreaCustom || '기타', target:'사람들', place: pfAreaCustom || '생활 공간' }
+    : PF_AREAS.find(a => a.id === pfArea);
   const exps      = [...pfExps];
   const freqData  = PF_FREQS.find(f => f.id === pfFreq);
   const affData   = PF_AFFECTED.find(a => a.id === pfAffected);
@@ -588,6 +611,9 @@ function pfAnalyze(situation) {
   const solData   = PF_SOLUTIONS.find(s => s.id === pfSolution);
 
   // 직접 입력값 읽기
+  pfAreaCustom      = document.getElementById('pfAreaCustomInput')?.value.trim() || '';
+  const subAreaCustom = document.getElementById('pfSubAreaCustomInput')?.value.trim() || '';
+  if (subAreaCustom) pfSubArea = subAreaCustom;
   pfExpCustom       = document.getElementById('pfExpCustomInput')?.value.trim() || '';
   pfAffectedCustom  = document.getElementById('pfAffectedCustomInput')?.value.trim() || '';
   pfSeverityCustom  = document.getElementById('pfSeverityCustomInput')?.value.trim() || '';

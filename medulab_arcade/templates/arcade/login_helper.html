@@ -207,7 +207,9 @@
     <button class="lh-status-btn extend" id="lhExtendBtn">⏱ 해제시간 추가</button>
     <button class="lh-status-btn lock-now" id="lhLockNowBtn">🔒 잠금하기</button>
     {% else %}
+    {% if is_admin %}
     <button class="lh-status-btn unlock" id="lhAdminToggleBtn">🔓 관리자 잠금 해제</button>
+    {% endif %}
     {% endif %}
   </div>
 

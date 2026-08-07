@@ -375,12 +375,16 @@
   });
 
   // 관리자 잠금 해제 시간 선택 모달
+  let lhAdminExtendMode = false;
+  function lhOpenAdminUnlockModal(extend = false) {
+    lhAdminExtendMode = extend;
+    document.getElementById('lhAdminUnlockOverlay').querySelector('h3').textContent =
+      extend ? '⏱ 해제 시간 추가' : '🔓 잠금 해제';
+    document.getElementById('lhAdminUnlockOverlay').classList.remove('hidden');
+  }
+
   document.getElementById('lhAdminToggleBtn')?.addEventListener('click', () => {
-    if (LH_IS_ADMIN) {
-      document.getElementById('lhAdminUnlockOverlay').classList.remove('hidden');
-    } else {
-      lhOpenUnlockModal();
-    }
+    if (LH_IS_ADMIN) lhOpenAdminUnlockModal(); else lhOpenUnlockModal();
   });
   document.getElementById('lhAdminUnlockCancelBtn')?.addEventListener('click', () => {
     document.getElementById('lhAdminUnlockOverlay').classList.add('hidden');
@@ -390,11 +394,11 @@
     const res = await fetch(LH_UNLOCK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': LH_CSRF },
-      body: JSON.stringify({ hours }),
+      body: JSON.stringify({ hours, extend: lhAdminExtendMode }),
     });
     const data = await res.json();
     if (data.ok) {
-      lhShowToast(`✅ ${hours}시간 동안 접속이 허용됩니다!`);
+      lhShowToast(lhAdminExtendMode ? `⏱ ${hours}시간 추가됐습니다!` : `✅ ${hours}시간 동안 접속이 허용됩니다!`);
       setTimeout(() => location.reload(), 900);
     }
   });
@@ -402,7 +406,9 @@
   document.getElementById('lhUnlockCancelBtn').onclick = lhCloseUnlockModal;
 
   /* ── 해제시간 추가 ── */
-  document.getElementById('lhExtendBtn')?.addEventListener('click', () => lhOpenUnlockModal(true));
+  document.getElementById('lhExtendBtn')?.addEventListener('click', () => {
+    if (LH_IS_ADMIN) lhOpenAdminUnlockModal(true); else lhOpenUnlockModal(true);
+  });
 
   /* ── 잠금하기 ── */
   document.getElementById('lhLockNowBtn')?.addEventListener('click', async () => {

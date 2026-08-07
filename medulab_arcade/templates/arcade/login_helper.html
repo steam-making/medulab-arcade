@@ -247,14 +247,13 @@
   <p class="lh-footnote">캠프 종료 후에는 관리자 콘솔에서 계정 비밀번호를 재설정하는 것을 권장합니다.</p>
 </div>
 
-<!-- ── 접속 불가 모달 ── -->
-<div class="lh-lock-overlay {% if is_unlocked %}hidden{% endif %}" id="lhLockOverlay">
+<!-- ── 접속 불가 모달 (비관리자 + 잠금 상태에서만 표시) ── -->
+<div class="lh-lock-overlay {% if is_unlocked or is_admin %}hidden{% endif %}" id="lhLockOverlay">
   <div class="lh-lock-box" style="position:relative;">
     <button class="lh-lock-close-btn" id="lhLockCloseBtn" title="닫기">✕</button>
     <div class="lh-lock-icon">🔒</div>
     <h2>접속이 제한된 페이지입니다</h2>
     <p>캠프 진행 시 관리자가 잠금을 해제해야 이용할 수 있습니다.<br>관리자에게 문의해 주세요.</p>
-    <button class="lh-lock-admin-btn" id="lhLockAdminBtn">🔓 관리자 잠금 해제</button>
   </div>
 </div>
 
@@ -309,6 +308,7 @@
 <script>
   const LH_IS_UNLOCKED   = {{ is_unlocked|yesno:"true,false" }};
   const LH_REMAINING_MIN = {{ remaining_minutes }};
+  const LH_IS_ADMIN      = {{ is_admin|yesno:"true,false" }};
   const LH_UNLOCK_URL    = "{% url 'api_login_helper_unlock' %}";
   const LH_LOCK_URL      = "{% url 'api_login_helper_lock' %}";
   const LH_CSRF          = '{{ csrf_token }}';
@@ -349,8 +349,20 @@
   document.getElementById('lhLockCloseBtn')?.addEventListener('click', () => {
     document.getElementById('lhLockOverlay').classList.add('hidden');
   });
-  document.getElementById('lhAdminToggleBtn')?.addEventListener('click', lhOpenUnlockModal);
-  document.getElementById('lhLockAdminBtn')?.addEventListener('click', lhOpenUnlockModal);
+
+  // 관리자: 비밀번호 없이 바로 잠금 해제 / 일반: 비밀번호 모달
+  document.getElementById('lhAdminToggleBtn')?.addEventListener('click', () => {
+    if (LH_IS_ADMIN) {
+      fetch(LH_UNLOCK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': LH_CSRF },
+        body: JSON.stringify({ hours: 4 }),
+      }).then(r => r.json()).then(d => { if (d.ok) location.reload(); });
+    } else {
+      lhOpenUnlockModal();
+    }
+  });
+
   document.getElementById('lhUnlockCancelBtn').onclick = lhCloseUnlockModal;
 
   /* ── 해제시간 추가 ── */

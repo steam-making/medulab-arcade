@@ -109,6 +109,7 @@ def login_helper(request):
     return render(request, 'arcade/login_helper.html', {
         'is_unlocked': is_unlocked,
         'remaining_minutes': remaining_minutes,
+        'is_admin': request.user.is_staff,
     })
 
 
@@ -141,7 +142,7 @@ def api_login_helper_unlock(request):
     hours = min(max(hours, 1), 24)
 
     correct_pw = getattr(django_settings, 'LOGIN_HELPER_PASSWORD', 'medu2025!')
-    if password != correct_pw:
+    if not request.user.is_staff and password != correct_pw:
         return JsonResponse({'ok': False, 'error': '비밀번호가 틀렸습니다'}, status=403)
 
     now_ts = timezone.now().timestamp()

@@ -87,6 +87,13 @@
   .pf-freq-btn:hover { border-color:var(--orange); background:#FFF3E0; }
   .pf-freq-btn.active { border-color:var(--orange); background:var(--orange); color:#fff; }
 
+  /* 직접 입력 */
+  .pf-custom-wrap { margin-top:12px; }
+  .pf-custom-label { font-size:12px; font-weight:700; color:#b09070; margin-bottom:6px; }
+  .pf-custom-input { width:100%; box-sizing:border-box; padding:11px 14px; border:2px solid #f0e8dc; border-radius:12px; font-size:13px; color:var(--ink); background:#FFFAF5; transition:border-color .2s; }
+  .pf-custom-input:focus { outline:none; border-color:var(--orange); }
+  .pf-custom-input::placeholder { color:#c8a880; }
+
   /* ───── Step 3: 상황 입력 ───── */
   .pf-textarea { width:100%; box-sizing:border-box; padding:16px; border:2px solid #FFE0B2; border-radius:14px; font-size:15px; color:var(--ink); line-height:1.7; resize:vertical; min-height:90px; transition:border-color .2s; background:#FFFAF5; }
   .pf-textarea:focus { outline:none; border-color:var(--orange); }
@@ -210,6 +217,12 @@
 
       <div class="pf-card-label">⏱️ 이런 상황이 얼마나 자주 있나요?</div>
       <div class="pf-freq-grid" id="pfFreqGrid"></div>
+
+      <div class="pf-custom-wrap">
+        <div class="pf-custom-label">✏️ 보기에 없는 불편함이 있다면 직접 써주세요 <span style="font-weight:400;color:#ccc">(선택 사항)</span></div>
+        <input type="text" id="pfExpCustomInput" class="pf-custom-input"
+          placeholder="예: 냄새가 심해서 불쾌했어요 / 소음 때문에 집중이 안 됐어요">
+      </div>
     </div>
   </div>
 
@@ -228,14 +241,26 @@
       <!-- Q2: 영향 대상 -->
       <div class="pf-card-label">② 주로 누가 이 문제를 경험하나요?</div>
       <div class="pf-affected-grid" id="pfAffectedGrid"></div>
+      <div class="pf-custom-wrap">
+        <input type="text" id="pfAffectedCustomInput" class="pf-custom-input"
+          placeholder="✏️ 직접 입력 — 예: 휠체어를 타는 분들 / 임산부 / 색각 이상자 등">
+      </div>
 
       <!-- Q3: 심각도 -->
       <div class="pf-card-label">③ 이 문제가 계속 해결되지 않으면 어떻게 될까요?</div>
       <div class="pf-severity-grid" id="pfSeverityGrid"></div>
+      <div class="pf-custom-wrap">
+        <input type="text" id="pfSeverityCustomInput" class="pf-custom-input"
+          placeholder="✏️ 직접 입력 — 예: 공부 집중이 안 되고 성적이 떨어질 것 같아요">
+      </div>
 
       <!-- Q4: 현재 해결책 -->
       <div class="pf-card-label">④ 지금 이 문제를 해결하는 방법이 있나요?</div>
       <div class="pf-affected-grid" id="pfSolutionGrid"></div>
+      <div class="pf-custom-wrap">
+        <input type="text" id="pfSolutionCustomInput" class="pf-custom-input"
+          placeholder="✏️ 직접 입력 — 예: 선생님께 말씀드렸지만 아직 바뀐 게 없어요">
+      </div>
     </div>
   </div>
 
@@ -405,6 +430,11 @@ let pfFreq = null;
 let pfAffected = null;
 let pfSeverity = null;
 let pfSolution = null;
+// 직접 입력 값
+let pfExpCustom = '';
+let pfAffectedCustom = '';
+let pfSeverityCustom = '';
+let pfSolutionCustom = '';
 
 /* ── 렌더 ── */
 function pfRenderStep1() {
@@ -540,8 +570,11 @@ function pfPrev() { pfGoTo(pfStep - 1); }
 function pfReset() {
   pfArea=null; pfSubArea=null; pfExps=new Set(); pfFreq=null;
   pfAffected=null; pfSeverity=null; pfSolution=null;
+  pfExpCustom=''; pfAffectedCustom=''; pfSeverityCustom=''; pfSolutionCustom='';
   document.getElementById('pfSituation').value = '';
   document.getElementById('pfSubSection').style.display = 'none';
+  ['pfExpCustomInput','pfAffectedCustomInput','pfSeverityCustomInput','pfSolutionCustomInput']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   pfRenderStep1(); pfGoTo(1);
 }
 
@@ -554,11 +587,18 @@ function pfAnalyze(situation) {
   const severData = PF_SEVERITY.find(s => s.id === pfSeverity);
   const solData   = PF_SOLUTIONS.find(s => s.id === pfSolution);
 
+  // 직접 입력값 읽기
+  pfExpCustom       = document.getElementById('pfExpCustomInput')?.value.trim() || '';
+  pfAffectedCustom  = document.getElementById('pfAffectedCustomInput')?.value.trim() || '';
+  pfSeverityCustom  = document.getElementById('pfSeverityCustomInput')?.value.trim() || '';
+  pfSolutionCustom  = document.getElementById('pfSolutionCustomInput')?.value.trim() || '';
+
   /* 대상 추론 */
   let target = areaData.target;
   const targetKW = [['어르신','어르신'],['할머니','어르신'],['할아버지','어르신'],['어린이','어린이'],['아이','어린이'],['장애','장애인'],['나는','나(학생)'],['나도','나(학생)'],['내가','나(학생)']];
   for (const [kw, t] of targetKW) if (situation.includes(kw)) { target = t; break; }
-  if (affData) target += ` (${affData.label} 영향)`;
+  if (pfAffectedCustom) target = pfAffectedCustom;
+  else if (affData) target += ` (${affData.label} 영향)`;
 
   /* 장소 추론 */
   let place = pfSubArea ? pfSubArea.replace(/^\S+\s/,'') : areaData.place;
@@ -569,7 +609,9 @@ function pfAnalyze(situation) {
   for (const [kw, t] of Object.entries(TIME_KW)) if (situation.includes(kw)) { when = t; break; }
 
   /* 불편 */
-  const discomfort = exps.length > 0 ? exps.map(e => DISCOMFORT_MAP[e]).join(', ') : '불편함';
+  let discomfort = exps.length > 0 ? exps.map(e => DISCOMFORT_MAP[e]).join(', ') : '';
+  if (pfExpCustom) discomfort = discomfort ? `${discomfort}, ${pfExpCustom}` : pfExpCustom;
+  if (!discomfort) discomfort = '불편함';
 
   /* 원인 */
   const cause = exps.length > 0 ? CAUSE_MAP[exps[0]] : '아직 더 나은 방법이 도입되지 않았기 때문에';
@@ -578,10 +620,10 @@ function pfAnalyze(situation) {
   const freqText = freqData ? freqData.label : '불명확';
 
   /* 미해결 심각도 */
-  const severText = severData ? severData.label : '알 수 없음';
+  const severText = pfSeverityCustom || (severData ? severData.label : '알 수 없음');
 
   /* 해결책 현황 */
-  const solText = solData ? solData.label : '알 수 없음';
+  const solText = pfSolutionCustom || (solData ? solData.label : '알 수 없음');
 
   /* ── 문제 정의 문장 ── */
   document.getElementById('pfSentence').textContent =

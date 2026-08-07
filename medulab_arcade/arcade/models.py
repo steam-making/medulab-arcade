@@ -696,6 +696,33 @@ def auto_attendance_on_login(sender, request, user, **kwargs):
     Attendance.objects.get_or_create(user=user, date=today)
 
 
+class SiteConfig(models.Model):
+    key = models.CharField('키', max_length=100, unique=True)
+    value = models.TextField('값', blank=True)
+
+    class Meta:
+        verbose_name = '사이트 설정'
+        verbose_name_plural = '사이트 설정'
+
+    def __str__(self):
+        return self.key
+
+    @classmethod
+    def get_value(cls, key, default=None):
+        try:
+            return cls.objects.get(key=key).value
+        except cls.DoesNotExist:
+            return default
+
+    @classmethod
+    def set_value(cls, key, value):
+        cls.objects.update_or_create(key=key, defaults={'value': str(value)})
+
+    @classmethod
+    def delete_key(cls, key):
+        cls.objects.filter(key=key).delete()
+
+
 class NavItem(models.Model):
     SECTION_NOTICES = 'notices'
     SECTION_LEARNING = 'learning'

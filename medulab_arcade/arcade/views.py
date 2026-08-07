@@ -100,8 +100,9 @@ def ai_favorites(request):
 
 
 def login_helper(request):
-    from django.core.cache import cache
-    expiry_ts = cache.get('lh_unlock_expiry')
+    from .models import SiteConfig
+    val = SiteConfig.get_value('lh_unlock_expiry')
+    expiry_ts = float(val) if val else None
     now_ts = timezone.now().timestamp()
     is_unlocked = bool(expiry_ts and expiry_ts > now_ts)
     remaining_minutes = int((expiry_ts - now_ts) / 60) if is_unlocked else 0
@@ -113,7 +114,7 @@ def login_helper(request):
 
 @require_POST
 def api_login_helper_lock(request):
-    from django.core.cache import cache
+    from .models import SiteConfig
     from django.conf import settings as django_settings
     try:
         data = json.loads(request.body)
@@ -122,13 +123,13 @@ def api_login_helper_lock(request):
     correct_pw = getattr(django_settings, 'LOGIN_HELPER_PASSWORD', 'medu2025!')
     if data.get('password', '') != correct_pw:
         return JsonResponse({'ok': False, 'error': '비밀번호가 틀렸습니다'}, status=403)
-    cache.delete('lh_unlock_expiry')
+    SiteConfig.delete_key('lh_unlock_expiry')
     return JsonResponse({'ok': True})
 
 
 @require_POST
 def api_login_helper_unlock(request):
-    from django.core.cache import cache
+    from .models import SiteConfig
     from django.conf import settings as django_settings
     try:
         data = json.loads(request.body)
@@ -145,13 +146,13 @@ def api_login_helper_unlock(request):
 
     now_ts = timezone.now().timestamp()
     if data.get('extend'):
-        current_expiry = cache.get('lh_unlock_expiry') or now_ts
+        val = SiteConfig.get_value('lh_unlock_expiry')
+        current_expiry = float(val) if val else now_ts
         expiry_ts = max(current_expiry, now_ts) + hours * 3600
     else:
         expiry_ts = now_ts + hours * 3600
 
-    timeout = int(expiry_ts - now_ts) + 300
-    cache.set('lh_unlock_expiry', expiry_ts, timeout)
+    SiteConfig.set_value('lh_unlock_expiry', expiry_ts)
     return JsonResponse({'ok': True, 'hours': hours})
 
 

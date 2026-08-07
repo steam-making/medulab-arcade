@@ -44,9 +44,21 @@
     background:#e5e9f2; color:#6b7280; font-size:15px; font-weight:700; cursor:pointer;
     transition:all .15s;
   }
-  .lh-tab.active[data-platform="google"]   { background:#4285F4; color:#fff; }
   .lh-tab.active[data-platform="microsoft"]{ background:#00A4EF; color:#fff; }
+  .lh-tab.active[data-platform="google"]   { background:#4285F4; color:#fff; }
   .lh-tab.active[data-platform="canva"]    { background:#7D2AE8; color:#fff; }
+
+  /* ── 이동사이트 링크 버튼 ── */
+  .lh-link-grid {
+    display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:20px;
+  }
+  .lh-link-btn {
+    padding:28px 16px; border:none; border-radius:16px;
+    font-size:19px; font-weight:700; color:#fff; cursor:pointer;
+    transition:transform .12s, box-shadow .12s; text-align:center; line-height:1.4;
+  }
+  .lh-link-btn:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,.2); }
+  @media(max-width:480px){ .lh-link-grid { grid-template-columns:1fr; } }
 
   /* ── 번호 그리드 ── */
   .lh-grid {
@@ -189,9 +201,9 @@
   </div>
 
   <div class="lh-tabs">
-    <button class="lh-tab active" data-platform="google">Google 계정 (1~49)</button>
-    <button class="lh-tab" data-platform="microsoft">Microsoft 계정 (1~10)</button>
-    <button class="lh-tab" data-platform="canva">Canva</button>
+    <button class="lh-tab active" data-platform="microsoft">Microsoft 계정 (1~100)</button>
+    <button class="lh-tab" data-platform="google">Google 계정 (1~49)</button>
+    <button class="lh-tab" data-platform="canva">이동사이트</button>
   </div>
 
   <div id="lhNumberGrid" class="lh-grid"></div>
@@ -393,29 +405,40 @@
 
   /* ── 도구 기능 (잠금 해제 시만 동작) ── */
   const LH_DOMAINS    = { google: 'medu.p-e.kr', microsoft: 'steam-making.com' };
-  const LH_RANGES     = { google: 49, microsoft: 10 };
+  const LH_RANGES     = { google: 49, microsoft: 100 };
   const LH_PASSWORD   = 'md12345*';
   const LH_LOGIN_URLS = {
     google:    'https://accounts.google.com/signin/v2/identifier?hl=ko',
     microsoft: 'https://login.microsoftonline.com/'
   };
   const LH_CANVA_URL = 'https://www.canva.com/brand/join?token=Uaz0Z83cNGN8NM-ANlrG8w&brandingVariant=edu&invitationDestinationType=group';
-  let lhPlatform = 'google';
+  const LH_REDIRECT_LINKS = [
+    { label: '💬 GPT',     url: 'https://chatgpt.com',                    bg: '#10a37f' },
+    { label: '♊ 제미나이', url: 'https://gemini.google.com',              bg: '#4285F4' },
+    { label: '🤖 코파일럿', url: 'https://copilot.microsoft.com',          bg: '#0078d4' },
+    { label: '🎨 캔바교실1', url: LH_CANVA_URL,                           bg: '#7D2AE8' },
+  ];
+  let lhPlatform = 'microsoft';
 
   function lhPad(n){ return String(n).padStart(4,'0'); }
 
   function lhRenderGrid() {
     const grid = document.getElementById('lhNumberGrid');
     grid.innerHTML = '';
+    grid.style.gridTemplateColumns = '';
     document.getElementById('lhDetailPanel').classList.add('hidden');
     if (!LH_IS_UNLOCKED) return;
 
     if (lhPlatform === 'canva') {
-      const btn = document.createElement('button');
-      btn.className = 'lh-num-btn';
-      btn.textContent = '교실1';
-      btn.onclick = () => window.open(LH_CANVA_URL, '_blank', 'noopener,noreferrer');
-      grid.appendChild(btn);
+      grid.style.gridTemplateColumns = 'repeat(2,1fr)';
+      LH_REDIRECT_LINKS.forEach(function(link) {
+        const btn = document.createElement('button');
+        btn.className = 'lh-link-btn';
+        btn.textContent = link.label;
+        btn.style.background = link.bg;
+        btn.onclick = () => window.open(link.url, '_blank', 'noopener,noreferrer');
+        grid.appendChild(btn);
+      });
       return;
     }
     for (let i = 1; i <= LH_RANGES[lhPlatform]; i++) {

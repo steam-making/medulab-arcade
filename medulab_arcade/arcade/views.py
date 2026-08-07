@@ -122,7 +122,7 @@ def api_login_helper_lock(request):
     except (json.JSONDecodeError, ValueError):
         return JsonResponse({'ok': False}, status=400)
     correct_pw = getattr(django_settings, 'LOGIN_HELPER_PASSWORD', 'medu2025!')
-    if data.get('password', '') != correct_pw:
+    if not request.user.is_staff and data.get('password', '') != correct_pw:
         return JsonResponse({'ok': False, 'error': '비밀번호가 틀렸습니다'}, status=403)
     SiteConfig.delete_key('lh_unlock_expiry')
     return JsonResponse({'ok': True})

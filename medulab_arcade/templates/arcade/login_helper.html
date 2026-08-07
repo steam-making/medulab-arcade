@@ -285,11 +285,11 @@
   </div>
 </div>
 
-<!-- ── 잠금하기 확인 모달 ── -->
+<!-- ── 잠금하기 확인 모달 (관리자: 비밀번호 없음 / 일반: 비밀번호 필요) ── -->
 <div class="lh-unlock-overlay hidden" id="lhLockConfirmOverlay">
   <div class="lh-unlock-box">
     <h3>🔒 잠금하기</h3>
-    <div class="lh-unlock-field">
+    <div class="lh-unlock-field" id="lhLockConfirmPwField">
       <label>관리자 비밀번호 확인</label>
       <input type="password" id="lhLockConfirmPw" placeholder="비밀번호 입력" autocomplete="off">
       <div class="lh-unlock-err" id="lhLockConfirmErr">비밀번호가 틀렸습니다.</div>
@@ -297,6 +297,30 @@
     <div class="lh-unlock-btns">
       <button class="lh-unlock-cancel" id="lhLockConfirmCancelBtn">취소</button>
       <button class="lh-unlock-submit" id="lhLockConfirmSubmitBtn" style="background:#ef4444;">잠금하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 관리자 잠금 해제 시간 선택 모달 ── -->
+<div class="lh-unlock-overlay hidden" id="lhAdminUnlockOverlay">
+  <div class="lh-unlock-box">
+    <h3>🔓 잠금 해제</h3>
+    <div class="lh-unlock-field">
+      <label>허용 시간</label>
+      <select id="lhAdminUnlockHours">
+        <option value="1">1시간</option>
+        <option value="2">2시간</option>
+        <option value="3" selected>3시간 (기본값)</option>
+        <option value="4">4시간</option>
+        <option value="6">6시간</option>
+        <option value="8">8시간</option>
+        <option value="12">반나절 (12시간)</option>
+        <option value="24">하루 (24시간)</option>
+      </select>
+    </div>
+    <div class="lh-unlock-btns">
+      <button class="lh-unlock-cancel" id="lhAdminUnlockCancelBtn">취소</button>
+      <button class="lh-unlock-submit" id="lhAdminUnlockSubmitBtn">잠금 해제</button>
     </div>
   </div>
 </div>
@@ -350,16 +374,28 @@
     document.getElementById('lhLockOverlay').classList.add('hidden');
   });
 
-  // 관리자: 비밀번호 없이 바로 잠금 해제 / 일반: 비밀번호 모달
+  // 관리자 잠금 해제 시간 선택 모달
   document.getElementById('lhAdminToggleBtn')?.addEventListener('click', () => {
     if (LH_IS_ADMIN) {
-      fetch(LH_UNLOCK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': LH_CSRF },
-        body: JSON.stringify({ hours: 4 }),
-      }).then(r => r.json()).then(d => { if (d.ok) location.reload(); });
+      document.getElementById('lhAdminUnlockOverlay').classList.remove('hidden');
     } else {
       lhOpenUnlockModal();
+    }
+  });
+  document.getElementById('lhAdminUnlockCancelBtn')?.addEventListener('click', () => {
+    document.getElementById('lhAdminUnlockOverlay').classList.add('hidden');
+  });
+  document.getElementById('lhAdminUnlockSubmitBtn')?.addEventListener('click', async () => {
+    const hours = parseInt(document.getElementById('lhAdminUnlockHours').value);
+    const res = await fetch(LH_UNLOCK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': LH_CSRF },
+      body: JSON.stringify({ hours }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      lhShowToast(`✅ ${hours}시간 동안 접속이 허용됩니다!`);
+      setTimeout(() => location.reload(), 900);
     }
   });
 
@@ -369,9 +405,23 @@
   document.getElementById('lhExtendBtn')?.addEventListener('click', () => lhOpenUnlockModal(true));
 
   /* ── 잠금하기 ── */
-  document.getElementById('lhLockNowBtn')?.addEventListener('click', () => {
-    document.getElementById('lhLockConfirmOverlay').classList.remove('hidden');
-    setTimeout(() => document.getElementById('lhLockConfirmPw').focus(), 50);
+  document.getElementById('lhLockNowBtn')?.addEventListener('click', async () => {
+    if (LH_IS_ADMIN) {
+      // 관리자: 비밀번호 없이 즉시 잠금
+      const res = await fetch(LH_LOCK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': LH_CSRF },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        lhShowToast('🔒 잠금 완료!');
+        setTimeout(() => location.reload(), 800);
+      }
+    } else {
+      document.getElementById('lhLockConfirmOverlay').classList.remove('hidden');
+      setTimeout(() => document.getElementById('lhLockConfirmPw').focus(), 50);
+    }
   });
   document.getElementById('lhLockConfirmCancelBtn')?.addEventListener('click', () => {
     document.getElementById('lhLockConfirmOverlay').classList.add('hidden');
@@ -380,7 +430,7 @@
     const pw  = document.getElementById('lhLockConfirmPw').value;
     const err = document.getElementById('lhLockConfirmErr');
     err.style.display = 'none';
-    const res  = await fetch(LH_LOCK_URL, {
+    const res = await fetch(LH_LOCK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': LH_CSRF },
       body: JSON.stringify({ password: pw })

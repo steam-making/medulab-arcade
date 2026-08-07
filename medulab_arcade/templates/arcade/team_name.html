@@ -93,6 +93,14 @@
   .tn-star-legend { font-size:11px; color:#b0aac8; display:flex; gap:12px; margin-top:8px; }
   .tn-star-legend span { display:flex; align-items:center; gap:3px; }
 
+  /* 안내 문구 */
+  .tn-notice { background:#FFF8E1; border-radius:12px; padding:11px 16px; font-size:13px; color:#7a5c00; margin-bottom:16px; border-left:4px solid var(--yellow); line-height:1.6; }
+
+  /* 의견 textarea */
+  .tn-opinion textarea { width:100%; box-sizing:border-box; padding:8px 12px; border:2px solid #E8E4FF; border-radius:10px; font-size:13px; color:var(--ink); resize:vertical; min-height:58px; transition:border-color .2s; }
+  .tn-opinion textarea:focus { outline:none; border-color:var(--purple); }
+  .tn-opinion textarea::placeholder { color:#c0bbd8; }
+
   .tn-back { display:inline-flex; align-items:center; gap:6px; color:var(--purple); font-weight:700; font-size:14px; text-decoration:none; margin-bottom:20px; }
   .tn-back:hover { text-decoration:underline; }
 
@@ -143,6 +151,7 @@
   <!-- Step 3: 조원 정보 -->
   <div class="tn-section">
     <div class="tn-step-label">③ 각 조원의 정보를 입력하세요</div>
+    <div class="tn-notice">💡 모든 칸을 채우지 않아도 돼요! 아는 것만 입력해도 멋진 이름이 나와요 😊</div>
     <div class="tn-star-legend">
       <span><span style="color:var(--yellow)">★☆☆</span> 조금 반영</span>
       <span><span style="color:var(--yellow)">★★☆</span> 보통 반영</span>
@@ -388,7 +397,11 @@ function tnRenderMembers(count) {
       </div>`).join('');
     card.innerHTML = `
       <h3><span class="mc-num" style="background:${MC_COLORS[i % MC_COLORS.length]}">${i+1}</span>조원 ${i+1}</h3>
-      ${fieldsHtml}`;
+      ${fieldsHtml}
+      <div class="tn-field tn-opinion">
+        <div class="tn-field-label"><span>💬 기타 의견 / 하고 싶은 말</span></div>
+        <textarea id="tnOpinion${i}" placeholder="예: 우리 팀은 다 축구를 좋아해요 / 강하고 시원한 느낌이면 좋겠어요"></textarea>
+      </div>`;
     grid.appendChild(card);
     tnInitStars(card);
   }
@@ -432,6 +445,8 @@ function tnGenerate() {
       const rating = parseInt(document.getElementById(`tn${f.key}${i}Stars`)?.dataset.rating || f.defaultStar);
       if (val) allConcepts.push(...tnWeighted(val, rating));
     }
+    const opinion = document.getElementById(`tnOpinion${i}`)?.value.trim();
+    if (opinion) allConcepts.push(...tnWeighted(opinion, 2));
   }
 
   if (allConcepts.length === 0) {
@@ -477,6 +492,8 @@ function tnGenerate() {
         parts.push(`${f.label.replace(/[^ -~가-힣]/gu,'').trim()} ${val}${weight}`);
       }
     }
+    const opinion = document.getElementById(`tnOpinion${i}`)?.value.trim();
+    if (opinion) parts.push(`기타 의견 "${opinion}"`);
     if (parts.length > 0) memberInfo += `• 팀원${i+1}: ${parts.join(' / ')}\n`;
   }
 

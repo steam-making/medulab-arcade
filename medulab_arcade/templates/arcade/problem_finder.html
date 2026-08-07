@@ -1,0 +1,370 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}생활속 문제 찾기 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --orange:#FF9142; --amber:#FFC93C; --pink:#FF6FA5;
+    --teal:#3DDC97; --blue:#3FA9F5; --purple:#8C6BFA; --ink:#2E2A4A;
+  }
+  body { background:linear-gradient(150deg,#FFFBF0 0%,#FFF3E0 50%,#FFFFF0 100%) !important; color:var(--ink); }
+
+  .pf-wrap { max-width:860px; margin:0 auto; padding:40px 20px 80px; }
+
+  /* Hero */
+  .pf-hero { text-align:center; padding:36px 20px 28px; margin-bottom:28px; }
+  .pf-hero .badge { display:inline-block; background:linear-gradient(120deg,var(--orange),var(--amber)); color:#fff; font-size:13px; font-weight:bold; letter-spacing:1px; padding:5px 16px; border-radius:999px; margin-bottom:16px; }
+  .pf-hero h1 { font-size:32px; font-weight:900; margin:0 0 10px; background:linear-gradient(120deg,var(--orange),var(--pink)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .pf-hero p { font-size:15px; color:#7a6a50; margin:0; line-height:1.7; }
+
+  /* Section */
+  .pf-section { background:#fff; border-radius:20px; padding:24px 28px; margin-bottom:18px; box-shadow:0 4px 20px rgba(255,145,66,.09); }
+  .pf-step-label { font-size:16px; font-weight:800; color:var(--ink); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .pf-step-label .opt { font-size:12px; font-weight:600; color:#c8b89a; }
+
+  /* Topic input */
+  .pf-topic-input { display:flex; gap:8px; align-items:center; margin-bottom:14px; }
+  .pf-topic-input input { flex:1; padding:12px 16px; border:2px solid #FFE0B2; border-radius:12px; font-size:15px; color:var(--ink); transition:border-color .2s; background:#FFFAF5; }
+  .pf-topic-input input:focus { outline:none; border-color:var(--orange); }
+  .pf-topic-input input::placeholder { color:#d4b896; }
+
+  /* Quick topic chips */
+  .pf-chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .pf-chip { padding:7px 16px; border:2px solid #FFE0B2; border-radius:999px; background:#fff; color:#8a6a40; font-size:13px; font-weight:600; cursor:pointer; transition:all .18s; }
+  .pf-chip:hover { border-color:var(--orange); background:#FFF3E0; color:var(--orange); }
+  .pf-chip.active { background:var(--orange); color:#fff; border-color:var(--orange); }
+
+  /* Tag-style multi-select */
+  .pf-tags { display:flex; gap:8px; flex-wrap:wrap; }
+  .pf-tag { padding:7px 16px; border:2px solid #eee; border-radius:999px; background:#fafafa; color:#888; font-size:13px; font-weight:600; cursor:pointer; transition:all .18s; }
+  .pf-tag:hover { border-color:currentColor; }
+  .pf-tag.active { color:#fff !important; border-color:transparent !important; }
+  .pf-tag[data-color="time"]   { color:#FF9142; } .pf-tag[data-color="time"].active   { background:#FF9142; }
+  .pf-tag[data-color="safe"]   { color:#FF6FA5; } .pf-tag[data-color="safe"].active   { background:#FF6FA5; }
+  .pf-tag[data-color="incon"]  { color:#8C6BFA; } .pf-tag[data-color="incon"].active  { background:#8C6BFA; }
+  .pf-tag[data-color="repeat"] { color:#3FA9F5; } .pf-tag[data-color="repeat"].active { background:#3FA9F5; }
+  .pf-tag[data-color="access"] { color:#3DDC97; } .pf-tag[data-color="access"].active { background:#3DDC97; }
+  .pf-tag[data-color="waste"]  { color:#FFC93C; } .pf-tag[data-color="waste"].active  { background:#FFC93C; }
+
+  /* Generate button */
+  .pf-btn-wrap { text-align:center; margin:28px 0; }
+  .pf-btn { padding:16px 60px; font-size:19px; font-weight:900; background:linear-gradient(120deg,var(--orange),var(--amber)); color:#fff; border:none; border-radius:999px; cursor:pointer; box-shadow:0 6px 28px rgba(255,145,66,.35); transition:transform .2s, box-shadow .2s; letter-spacing:.5px; }
+  .pf-btn:hover { transform:translateY(-3px); box-shadow:0 12px 36px rgba(255,145,66,.45); }
+  .pf-btn:active { transform:translateY(0); }
+
+  /* Results */
+  .pf-results.hidden { display:none; }
+  .pf-results-header { font-size:20px; font-weight:900; color:var(--ink); margin-bottom:6px; text-align:center; }
+  .pf-results-sub { font-size:13px; color:#9a8060; text-align:center; margin-bottom:20px; }
+
+  /* Lens cards */
+  .pf-lens-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:28px; }
+  @media(max-width:580px) { .pf-lens-grid { grid-template-columns:1fr; } }
+
+  .pf-lens-card { border-radius:20px; padding:22px 20px; color:#fff; box-shadow:0 6px 24px rgba(0,0,0,.13); }
+  .pf-lens-top { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .pf-lens-emoji { font-size:26px; }
+  .pf-lens-name { font-size:15px; font-weight:900; letter-spacing:.3px; }
+  .pf-lens-q { font-size:14px; font-weight:700; line-height:1.55; margin-bottom:10px; }
+  .pf-lens-hint { font-size:12px; background:rgba(255,255,255,.2); border-radius:10px; padding:8px 12px; line-height:1.5; }
+
+  /* Example problems */
+  .pf-examples { background:#FFF8F0; border-radius:16px; padding:18px 20px; margin-bottom:24px; border:2px solid #FFE0B2; }
+  .pf-examples-title { font-size:14px; font-weight:800; color:var(--orange); margin-bottom:10px; }
+  .pf-example-list { display:flex; flex-direction:column; gap:7px; }
+  .pf-example-item { font-size:13px; color:#5a4030; display:flex; align-items:flex-start; gap:8px; }
+  .pf-example-item::before { content:'📌'; flex-shrink:0; }
+
+  /* Prompt section */
+  .pf-prompt-section { background:#fff; border-radius:20px; padding:24px 28px; box-shadow:0 4px 20px rgba(255,145,66,.09); border:2px dashed rgba(255,145,66,.3); }
+  .pf-prompt-header { margin-bottom:14px; }
+  .pf-prompt-header span { font-size:17px; font-weight:800; color:var(--ink); display:block; margin-bottom:4px; }
+  .pf-prompt-header small { color:#b09070; font-size:13px; }
+  .pf-prompt-box { background:#FFFAF5; border-radius:12px; padding:16px; font-size:13px; line-height:1.8; color:#6a5040; white-space:pre-wrap; margin-bottom:16px; border:1px solid #FFE0B2; word-break:break-all; }
+  .pf-copy-btn { padding:12px 32px; background:linear-gradient(120deg,var(--orange),var(--pink)); color:#fff; border:none; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(255,145,66,.3); transition:transform .2s; }
+  .pf-copy-btn:hover { transform:translateY(-2px); }
+
+  .pf-back { display:inline-flex; align-items:center; gap:6px; color:var(--orange); font-weight:700; font-size:14px; text-decoration:none; margin-bottom:20px; }
+  .pf-back:hover { text-decoration:underline; }
+
+  .pf-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#1f2430; color:#fff; padding:12px 24px; border-radius:999px; font-size:14px; font-weight:600; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .pf-toast.show { opacity:1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pf-wrap">
+  <a href="{% url 'ai_prompts' %}" class="pf-back">← AI 프롬프트 생성기</a>
+
+  <div class="pf-hero">
+    <div class="badge">🔍 AI TOOLS</div>
+    <h1>생활속 문제 찾기</h1>
+    <p>장소와 상황을 입력하면 6가지 탐구 시각으로 숨겨진 문제를 발견하는<br>질문들을 바로 만들어 드려요!</p>
+  </div>
+
+  <!-- Step 1: 장소/상황 -->
+  <div class="pf-section">
+    <div class="pf-step-label">① 어디를 / 어떤 상황을 관찰할까요?</div>
+    <div class="pf-topic-input">
+      <input id="pfTopic" type="text" placeholder="예: 학교 급식실, 버스 정류장, 우리 집 주방...">
+    </div>
+    <div class="pf-chips" id="pfTopicChips">
+      <button class="pf-chip" data-topic="학교">🏫 학교</button>
+      <button class="pf-chip" data-topic="집">🏠 집</button>
+      <button class="pf-chip" data-topic="마트/편의점">🛒 마트</button>
+      <button class="pf-chip" data-topic="버스/지하철">🚌 대중교통</button>
+      <button class="pf-chip" data-topic="병원">🏥 병원</button>
+      <button class="pf-chip" data-topic="공원">🌿 공원</button>
+      <button class="pf-chip" data-topic="식당">🍽️ 식당</button>
+      <button class="pf-chip" data-topic="도서관">📚 도서관</button>
+      <button class="pf-chip" data-topic="도로/횡단보도">🛣️ 도로</button>
+    </div>
+  </div>
+
+  <!-- Step 2: 관찰 대상 -->
+  <div class="pf-section">
+    <div class="pf-step-label">② 주로 누구를 관찰할까요? <span class="opt">(선택)</span></div>
+    <div class="pf-chips" id="pfTargetChips">
+      <button class="pf-chip" data-target="나 자신">🙋 나 자신</button>
+      <button class="pf-chip" data-target="친구/학생">👫 친구/학생</button>
+      <button class="pf-chip" data-target="어르신">👴 어르신</button>
+      <button class="pf-chip" data-target="어린이/유아">👶 어린이</button>
+      <button class="pf-chip" data-target="장애인">♿ 장애인</button>
+      <button class="pf-chip" data-target="선생님/직원">🧑‍🏫 직원</button>
+    </div>
+  </div>
+
+  <!-- Step 3: 문제 종류 -->
+  <div class="pf-section">
+    <div class="pf-step-label">③ 특히 찾고 싶은 문제 종류를 선택하세요 <span class="opt">(선택 · 복수)</span></div>
+    <div class="pf-tags">
+      <button class="pf-tag" data-lens="time"   data-color="time">  ⏱️ 시간낭비</button>
+      <button class="pf-tag" data-lens="safe"   data-color="safe">  ⚠️ 안전</button>
+      <button class="pf-tag" data-lens="incon"  data-color="incon"> 😤 불편함</button>
+      <button class="pf-tag" data-lens="repeat" data-color="repeat">🔄 반복작업</button>
+      <button class="pf-tag" data-lens="access" data-color="access">♿ 접근성</button>
+      <button class="pf-tag" data-lens="waste"  data-color="waste"> 🌍 낭비/환경</button>
+    </div>
+  </div>
+
+  <!-- 생성 버튼 -->
+  <div class="pf-btn-wrap">
+    <button class="pf-btn" onclick="pfGenerate()">🔍 문제 찾기 시작!</button>
+  </div>
+
+  <!-- 결과 -->
+  <div id="pfResults" class="pf-results hidden">
+    <div class="pf-results-header">🔎 탐구 질문이 완성됐어요!</div>
+    <div class="pf-results-sub">아래 질문들로 관찰하며 숨겨진 문제를 찾아보세요</div>
+
+    <!-- 예시 문제 -->
+    <div id="pfExamples" class="pf-examples" style="display:none">
+      <div class="pf-examples-title">💡 이런 문제들이 자주 발견돼요!</div>
+      <div id="pfExampleList" class="pf-example-list"></div>
+    </div>
+
+    <!-- 탐구 렌즈 카드 -->
+    <div id="pfLensGrid" class="pf-lens-grid"></div>
+
+    <!-- ChatGPT 프롬프트 -->
+    <div class="pf-prompt-section">
+      <div class="pf-prompt-header">
+        <span>💬 AI로 더 많은 문제 찾기</span>
+        <small>아래 프롬프트를 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
+      </div>
+      <div id="pfPromptBox" class="pf-prompt-box"></div>
+      <button class="pf-copy-btn" onclick="pfCopyPrompt()">📋 프롬프트 복사하기</button>
+    </div>
+  </div>
+</div>
+<div id="pfToast" class="pf-toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ── 탐구 렌즈 6개 ── */
+const PF_LENSES = [
+  {
+    id:'time', emoji:'⏱️', name:'시간 낭비',
+    bg:'linear-gradient(135deg,#FF9142,#FFC93C)',
+    q: (p,t) => `${p}에서 ${t?t+'이/가 ':''}가장 시간이 오래 걸리는 일은 무엇인가요?`,
+    hint:'기다리거나 반복하느라 시간이 낭비되는 순간을 찾아보세요.'
+  },
+  {
+    id:'safe', emoji:'⚠️', name:'안전',
+    bg:'linear-gradient(135deg,#FF6FA5,#FF9142)',
+    q: (p,t) => `${p}에서 ${t?t+'이/가 ':''}다치거나 위험한 상황이 생길 수 있는 곳은 어디인가요?`,
+    hint:'사고가 날 수 있는 환경·행동·시설을 관찰해 보세요.'
+  },
+  {
+    id:'incon', emoji:'😤', name:'불편함',
+    bg:'linear-gradient(135deg,#8C6BFA,#FF6FA5)',
+    q: (p,t) => `${p}에서 ${t?t+'이/가 ':''}매번 "왜 이렇게 불편하지?" 하고 느끼는 순간은 언제인가요?`,
+    hint:'"이게 왜 이렇게 힘들지?" 하고 짜증났던 경험을 떠올려 보세요.'
+  },
+  {
+    id:'repeat', emoji:'🔄', name:'반복 작업',
+    bg:'linear-gradient(135deg,#3FA9F5,#8C6BFA)',
+    q: (p,t) => `${p}에서 매번 반복해야 하는 귀찮은 작업이나 과정이 있나요?`,
+    hint:'"이건 항상 이렇게 해야 해" 하는 지겨운 반복을 찾아보세요.'
+  },
+  {
+    id:'access', emoji:'♿', name:'접근성',
+    bg:'linear-gradient(135deg,#3DDC97,#3FA9F5)',
+    q: (p,t) => `${p}에서 특정 사람들(어르신·어린이·장애인 등)이 이용하거나 참여하기 어려운 점이 있나요?`,
+    hint:'모든 사람이 편하게 이용할 수 있는지 살펴보세요.'
+  },
+  {
+    id:'waste', emoji:'🌍', name:'낭비/환경',
+    bg:'linear-gradient(135deg,#FFC93C,#3DDC97)',
+    q: (p,t) => `${p}에서 물·전기·음식·종이 등이 필요 이상으로 쓰이거나 버려지는 상황이 있나요?`,
+    hint:'버려지거나 과하게 소비되는 자원을 관찰해 보세요.'
+  },
+];
+
+/* ── 장소별 예시 문제 ── */
+const PF_EXAMPLES = {
+  '학교': ['책가방이 너무 무거워서 등/어깨가 아파요','급식 줄이 너무 길어서 먹는 시간이 부족해요','비 온 날 우산을 보관할 곳이 없어서 교실 바닥이 물에 젖어요','쉬는 시간에 화장실 줄이 너무 길어요','칠판 글씨가 뒷자리에서는 잘 안 보여요'],
+  '집': ['쓰레기 분리수거 방법이 복잡하고 헷갈려요','음식이 남아서 자주 버려져요','외출 후 문을 잠갔는지 기억이 안 나요','콘센트에 꽂은 플러그를 뽑는 걸 자주 잊어요'],
+  '마트': ['계산대 앞에 줄이 너무 길어요','비닐봉지 사용이 많아서 쓰레기가 많이 나와요','장바구니가 너무 무거워요','유통기한이 지난 제품을 발견하기 어려워요'],
+  '버스': ['노약자가 오래 서 있어야 할 때가 많아요','비가 올 때 정류장이 좁아서 비를 맞아요','배차 간격이 길어서 오래 기다려요'],
+  '병원': ['대기 시간이 너무 길어요','진료 후 약 복용 방법이 헷갈려요','주차 공간이 부족해요'],
+  '공원': ['쓰레기통이 부족해서 쓰레기를 들고 다녀야 해요','밤에 조명이 어두워서 위험해요','어르신이나 장애인이 이용하기 어려운 시설이 있어요'],
+  '식당': ['주문이 복잡하거나 메뉴를 고르기 어려워요','음식 잔반이 많이 나와요','주문 후 음식이 나오기까지 오래 걸려요'],
+  '도서관': ['읽고 싶은 책의 위치를 찾기 어려워요','반납 기한을 잊어버려요','자리가 부족해서 앉을 곳이 없어요'],
+  '도로': ['횡단보도 신호 시간이 너무 짧아요','자전거 도로와 보행자 도로가 구분이 안 돼요','야간에 횡단보도가 잘 안 보여요'],
+};
+
+let pfActiveTopic = null;
+let pfActiveTarget = null;
+let pfActiveLenses = new Set();
+
+/* ── 칩 초기화 ── */
+document.querySelectorAll('#pfTopicChips .pf-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const topic = btn.dataset.topic;
+    document.querySelectorAll('#pfTopicChips .pf-chip').forEach(b => b.classList.remove('active'));
+    if (pfActiveTopic === topic) {
+      pfActiveTopic = null;
+      document.getElementById('pfTopic').value = '';
+    } else {
+      pfActiveTopic = topic;
+      btn.classList.add('active');
+      document.getElementById('pfTopic').value = topic;
+    }
+  });
+});
+
+document.querySelectorAll('#pfTargetChips .pf-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.target;
+    document.querySelectorAll('#pfTargetChips .pf-chip').forEach(b => b.classList.remove('active'));
+    if (pfActiveTarget === target) {
+      pfActiveTarget = null;
+    } else {
+      pfActiveTarget = target;
+      btn.classList.add('active');
+    }
+  });
+});
+
+document.querySelectorAll('.pf-tag').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const lens = btn.dataset.lens;
+    btn.classList.toggle('active');
+    if (pfActiveLenses.has(lens)) pfActiveLenses.delete(lens);
+    else pfActiveLenses.add(lens);
+  });
+});
+
+// 텍스트 입력 시 칩 선택 해제
+document.getElementById('pfTopic').addEventListener('input', () => {
+  document.querySelectorAll('#pfTopicChips .pf-chip').forEach(b => b.classList.remove('active'));
+  pfActiveTopic = null;
+});
+
+/* ── 생성 ── */
+function pfGenerate() {
+  const topic = document.getElementById('pfTopic').value.trim();
+  if (!topic) { pfShowToast('관찰할 장소나 상황을 입력해주세요!'); return; }
+
+  const target = pfActiveTarget || '';
+  const selectedLenses = pfActiveLenses.size > 0
+    ? PF_LENSES.filter(l => pfActiveLenses.has(l.id))
+    : PF_LENSES;
+
+  // 예시 문제 표시
+  const exKey = Object.keys(PF_EXAMPLES).find(k => topic.includes(k));
+  const exEl = document.getElementById('pfExamples');
+  if (exKey) {
+    document.getElementById('pfExampleList').innerHTML =
+      PF_EXAMPLES[exKey].map(e => `<div class="pf-example-item">${e}</div>`).join('');
+    exEl.style.display = '';
+  } else {
+    exEl.style.display = 'none';
+  }
+
+  // 렌즈 카드 렌더
+  const grid = document.getElementById('pfLensGrid');
+  grid.innerHTML = '';
+  selectedLenses.forEach(lens => {
+    const card = document.createElement('div');
+    card.className = 'pf-lens-card';
+    card.style.background = lens.bg;
+    card.innerHTML = `
+      <div class="pf-lens-top">
+        <span class="pf-lens-emoji">${lens.emoji}</span>
+        <span class="pf-lens-name">${lens.name} 렌즈</span>
+      </div>
+      <div class="pf-lens-q">${lens.q(topic, target)}</div>
+      <div class="pf-lens-hint">💡 ${lens.hint}</div>`;
+    grid.appendChild(card);
+  });
+
+  // ChatGPT 프롬프트
+  const lensNames = selectedLenses.map(l => `${l.emoji} ${l.name}`).join(', ');
+  const targetLine = target ? `\n[관찰 대상]: ${target}` : '';
+  const lensLine = pfActiveLenses.size > 0 ? `\n[찾고 싶은 문제]: ${lensNames}` : '';
+
+  const prompt =
+`너는 생활 속 문제를 발견하는 탐구 도우미야.
+다음 정보를 바탕으로 관찰하면 좋을 구체적인 문제 상황 6~8개를 찾아줘.
+
+[관찰 장소/상황]: ${topic}${targetLine}${lensLine}
+
+각 문제마다 다음 형식으로 알려줘:
+① 구체적인 상황 (언제, 어디서, 누가)
+② 어떤 불편함/문제가 있나요?
+③ 왜 이게 문제인가요? (영향/결과)
+④ 어떻게 해결하면 좋을까요? (아이디어 힌트)
+
+[조건]
+- 초등/중등 학생도 이해할 수 있는 쉬운 말로 써줘
+- 실제로 관찰하고 경험할 수 있는 현실적인 문제로 찾아줘
+- 기술(로봇, AI, 앱, 센서 등)로 해결할 수 있는 것이면 더 좋아`;
+
+  document.getElementById('pfPromptBox').textContent = prompt;
+  document.getElementById('pfResults').classList.remove('hidden');
+  setTimeout(() => document.getElementById('pfResults').scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+function pfCopyPrompt() {
+  const text = document.getElementById('pfPromptBox').textContent;
+  navigator.clipboard.writeText(text).catch(() => {
+    const t = document.createElement('textarea');
+    t.value = text; document.body.appendChild(t); t.select();
+    document.execCommand('copy'); document.body.removeChild(t);
+  });
+  pfShowToast('프롬프트 복사 완료! ChatGPT에 붙여넣어 보세요 🚀');
+}
+
+function pfShowToast(msg) {
+  const el = document.getElementById('pfToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+{% endblock %}

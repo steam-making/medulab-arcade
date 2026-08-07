@@ -160,6 +160,10 @@ def team_name(request):
     return render(request, 'arcade/team_name.html')
 
 
+def problem_finder(request):
+    return render(request, 'arcade/problem_finder.html')
+
+
 def my_avatar(request):
     from .models import AvatarDraft
     draft_data = {}

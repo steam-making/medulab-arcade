@@ -156,6 +156,10 @@ def api_login_helper_unlock(request):
     return JsonResponse({'ok': True, 'hours': hours})
 
 
+def team_name(request):
+    return render(request, 'arcade/team_name.html')
+
+
 def my_avatar(request):
     from .models import AvatarDraft
     draft_data = {}

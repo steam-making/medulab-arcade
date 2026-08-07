@@ -1,0 +1,377 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}조이름 만들기 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --yellow:#FFC93C;
+    --green:#3DDC97; --ink:#2E2A4A; --orange:#FF9142;
+  }
+  body { background:linear-gradient(150deg,#FFF6FB 0%,#F1F0FF 45%,#EAF7FF 100%) !important; color:var(--ink); }
+
+  .tn-wrap { max-width:820px; margin:0 auto; padding:40px 20px 80px; }
+
+  .tn-hero { text-align:center; padding:36px 20px 28px; margin-bottom:28px; }
+  .tn-hero .badge { display:inline-block; background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; font-size:13px; font-weight:bold; letter-spacing:1px; padding:5px 16px; border-radius:999px; margin-bottom:16px; }
+  .tn-hero h1 { font-size:32px; font-weight:900; margin:0 0 10px; background:linear-gradient(120deg,var(--purple),var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .tn-hero p { font-size:15px; color:#6a6486; margin:0; line-height:1.7; }
+
+  .tn-section { background:#fff; border-radius:20px; padding:28px; margin-bottom:20px; box-shadow:0 4px 20px rgba(140,107,250,.08); }
+  .tn-step-label { font-size:16px; font-weight:800; color:var(--ink); margin-bottom:18px; }
+
+  .tn-count-btns { display:flex; gap:10px; flex-wrap:wrap; }
+  .tn-cnt-btn { padding:10px 26px; border:2px solid #E8E4FF; border-radius:999px; background:#fff; color:var(--ink); font-size:15px; font-weight:700; cursor:pointer; transition:all .18s; }
+  .tn-cnt-btn:hover { border-color:var(--purple); color:var(--purple); }
+  .tn-cnt-btn.active { background:var(--purple); color:#fff; border-color:var(--purple); }
+
+  .tn-member-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:600px) { .tn-member-grid { grid-template-columns:1fr; } }
+
+  .tn-member-card { background:linear-gradient(135deg,#F8F6FF,#F0F8FF); border-radius:16px; padding:20px; border:2px solid rgba(140,107,250,.12); }
+  .tn-member-card h3 { margin:0 0 14px; font-size:15px; font-weight:800; color:var(--ink); display:flex; align-items:center; gap:8px; }
+  .mc-num { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; color:#fff; flex-shrink:0; }
+
+  .tn-input-group { margin-bottom:12px; }
+  .tn-input-group:last-child { margin-bottom:0; }
+  .tn-input-group label { display:block; font-size:11px; font-weight:700; color:#9d96bc; margin-bottom:6px; letter-spacing:.5px; text-transform:uppercase; }
+  .tn-input-group input { width:100%; box-sizing:border-box; padding:10px 14px; border:2px solid #E8E4FF; border-radius:10px; font-size:14px; color:var(--ink); background:#fff; transition:border-color .2s; }
+  .tn-input-group input:focus { outline:none; border-color:var(--purple); }
+  .tn-input-group input::placeholder { color:#b8b3d0; }
+
+  .tn-generate-wrap { text-align:center; margin:28px 0; }
+  .tn-generate-btn { padding:16px 56px; font-size:19px; font-weight:900; background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; border:none; border-radius:999px; cursor:pointer; box-shadow:0 6px 28px rgba(140,107,250,.35); transition:transform .2s, box-shadow .2s; letter-spacing:.5px; }
+  .tn-generate-btn:hover { transform:translateY(-3px); box-shadow:0 12px 36px rgba(140,107,250,.45); }
+  .tn-generate-btn:active { transform:translateY(0); }
+
+  .tn-results.hidden { display:none; }
+  .tn-results-header { font-size:22px; font-weight:900; color:var(--ink); margin-bottom:20px; text-align:center; }
+
+  .tn-name-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:28px; }
+  @media(max-width:640px) { .tn-name-cards { grid-template-columns:1fr 1fr; } }
+  @media(max-width:400px) { .tn-name-cards { grid-template-columns:1fr; } }
+
+  .tn-name-card { border-radius:20px; padding:22px 18px 18px; color:#fff; box-shadow:0 6px 24px rgba(0,0,0,.14); display:flex; flex-direction:column; align-items:flex-start; }
+  .tnc-emoji { font-size:26px; margin-bottom:8px; }
+  .tnc-name { font-size:19px; font-weight:900; letter-spacing:.5px; margin-bottom:14px; line-height:1.35; flex:1; }
+  .tnc-copy { background:rgba(255,255,255,.22); border:2px solid rgba(255,255,255,.45); color:#fff; padding:6px 16px; border-radius:999px; font-size:12px; font-weight:700; cursor:pointer; transition:background .2s; white-space:nowrap; }
+  .tnc-copy:hover { background:rgba(255,255,255,.38); }
+  .tnc-copy.copied { background:rgba(255,255,255,.5); }
+
+  .tn-prompt-section { background:#fff; border-radius:20px; padding:28px; box-shadow:0 4px 20px rgba(140,107,250,.08); border:2px dashed rgba(140,107,250,.2); }
+  .tn-prompt-header { margin-bottom:16px; }
+  .tn-prompt-header span { font-size:17px; font-weight:800; color:var(--ink); display:block; margin-bottom:4px; }
+  .tn-prompt-header small { color:#9d96bc; font-size:13px; }
+  .tn-prompt-box { background:#F8F6FF; border-radius:12px; padding:16px; font-size:13px; line-height:1.8; color:#5a5475; white-space:pre-wrap; margin-bottom:16px; border:1px solid #EBE8FF; word-break:break-all; }
+  .tn-copy-prompt-btn { padding:12px 32px; background:linear-gradient(120deg,var(--purple),var(--pink)); color:#fff; border:none; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(140,107,250,.3); transition:transform .2s; }
+  .tn-copy-prompt-btn:hover { transform:translateY(-2px); }
+
+  .tn-back { display:inline-flex; align-items:center; gap:6px; color:var(--purple); font-weight:700; font-size:14px; text-decoration:none; margin-bottom:20px; }
+  .tn-back:hover { text-decoration:underline; }
+
+  .tn-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#1f2430; color:#fff; padding:12px 24px; border-radius:999px; font-size:14px; font-weight:600; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .tn-toast.show { opacity:1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tn-wrap">
+  <a href="{% url 'ai_prompts' %}" class="tn-back">← AI 프롬프트 생성기</a>
+
+  <div class="tn-hero">
+    <div class="badge">🔤 AI TOOLS</div>
+    <h1>조이름 만들기</h1>
+    <p>팀원들의 꿈과 좋아하는 캐릭터를 입력하면<br>멋진 조이름 후보를 즉시 만들어 드려요!</p>
+  </div>
+
+  <div class="tn-section">
+    <div class="tn-step-label">① 조원이 몇 명인가요?</div>
+    <div class="tn-count-btns">
+      <button class="tn-cnt-btn active" data-count="2">2명</button>
+      <button class="tn-cnt-btn" data-count="3">3명</button>
+      <button class="tn-cnt-btn" data-count="4">4명</button>
+      <button class="tn-cnt-btn" data-count="5">5명</button>
+      <button class="tn-cnt-btn" data-count="6">6명</button>
+    </div>
+  </div>
+
+  <div class="tn-section">
+    <div class="tn-step-label">② 각 조원의 정보를 입력하세요</div>
+    <div id="tnMemberGrid" class="tn-member-grid"></div>
+  </div>
+
+  <div class="tn-generate-wrap">
+    <button class="tn-generate-btn" onclick="tnGenerate()">✨ 조이름 만들기</button>
+  </div>
+
+  <div id="tnResults" class="tn-results hidden">
+    <div class="tn-results-header">🎉 조이름 후보예요!</div>
+    <div id="tnNameCards" class="tn-name-cards"></div>
+
+    <div class="tn-prompt-section">
+      <div class="tn-prompt-header">
+        <span>💬 AI로 더 다양한 이름 만들기</span>
+        <small>아래 프롬프트를 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
+      </div>
+      <div id="tnPromptBox" class="tn-prompt-box"></div>
+      <button class="tn-copy-prompt-btn" onclick="tnCopyPrompt()">📋 프롬프트 복사하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="tnToast" class="tn-toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let tnCurrentCount = 2;
+
+const TN_KEYWORDS = [
+  { p:['우주','천문','비행사','우주인','우주비행'],  c:['갤럭시','스타','코스모','오비터'] },
+  { p:['의사','의학','병원','의원'],               c:['힐링','케어','라이프','메딕'] },
+  { p:['간호','간호사'],                           c:['케어','앤젤','가디언'] },
+  { p:['요리','셰프','쉐프','요리사','조리'],       c:['쿡','플레이버','테이스트','매직'] },
+  { p:['선생','교사','교육','교수'],               c:['위즈덤','러닝','멘토','스쿨'] },
+  { p:['프로그래머','개발자','코딩','개발','컴퓨터'], c:['코드','픽셀','바이트','테크'] },
+  { p:['운동선수','스포츠'],                       c:['스피드','파워','챔피언'] },
+  { p:['축구'],                                   c:['킥','스트라이커','골'] },
+  { p:['야구'],                                   c:['홈런','스트라이크'] },
+  { p:['농구'],                                   c:['훕스','슬램','덩크'] },
+  { p:['수영'],                                   c:['아쿠아','스플래시','웨이브'] },
+  { p:['태권도','무술','격투','권투','합기도'],     c:['마샬','파이터','워리어'] },
+  { p:['화가','미술','그림','예술','아티스트'],     c:['아트','크리에이트','컬러','비전'] },
+  { p:['음악','피아노','바이올린','작곡','악기'],   c:['멜로디','비트','리듬','소닉'] },
+  { p:['가수','아이돌','댄서','댄스'],             c:['스타','퍼포머','스테이지'] },
+  { p:['유튜버','크리에이터','스트리머'],           c:['크리에이터','콘텐츠','채널'] },
+  { p:['과학자','과학','연구','발명'],             c:['사이언스','이노베이션','디스커버'] },
+  { p:['건축','건축가'],                           c:['빌더','아키텍트','크래프트'] },
+  { p:['소방','소방관'],                           c:['파이어','레스큐','히어로'] },
+  { p:['경찰','경찰관','형사'],                    c:['저스티스','가디언','쉴드'] },
+  { p:['디자이너','패션'],                         c:['스타일','트렌드','비주얼'] },
+  { p:['게임','게이머'],                           c:['레벨업','퀘스트','플레이'] },
+  { p:['로봇','로봇공학'],                         c:['메카','사이버','드로이드'] },
+  { p:['AI','인공지능'],                           c:['스마트','퓨처','이노베이션'] },
+  { p:['작가','소설','시인'],                      c:['스토리','드림','라이터'] },
+  { p:['파일럿','항공','비행기'],                  c:['스카이','에어','클라우드'] },
+  { p:['탐험','모험'],                             c:['어드벤처','익스플로러','퀘스트'] },
+  { p:['마술','마법사','마법'],                    c:['매직','위자드','스펠'] },
+  { p:['환경','자연보호'],                         c:['그린','에코','어스'] },
+  { p:['피카츄','라이츄'],                         c:['썬더','스파크','옐로우'] },
+  { p:['이상해씨','이상해꽃'],                     c:['리프','블룸','그린'] },
+  { p:['꼬부기','거북왕'],                         c:['아쿠아','쉘','웨이브'] },
+  { p:['파이리','리자드','리자몽'],                c:['파이어','블레이즈','드래곤'] },
+  { p:['루피','원피스','밀짚'],                    c:['드림','어드벤처','킹'] },
+  { p:['나루토','사스케','닌자'],                  c:['닌자','불꽃','가디언'] },
+  { p:['아이언맨','토니스타크'],                   c:['스틸','테크','이노베이션'] },
+  { p:['스파이더맨','스파이더'],                   c:['웹','히어로'] },
+  { p:['배트맨','다크나이트'],                     c:['나이트','가디언','다크'] },
+  { p:['슈퍼맨'],                                 c:['슈퍼','히어로','파워'] },
+  { p:['마리오','슈퍼마리오','루이지'],             c:['슈퍼','점프','챔피언'] },
+  { p:['도라에몽','도라'],                         c:['퓨처','드림','매직'] },
+  { p:['뽀로로'],                                 c:['프렌드','스노우','어드벤처'] },
+  { p:['헬로키티','키티'],                         c:['스위트','스타','핑크'] },
+  { p:['엘사','겨울왕국'],                         c:['아이스','퀸','블리자드'] },
+  { p:['안나','올라프'],                           c:['선샤인','프렌드'] },
+  { p:['미니언'],                                 c:['펀','바나나','크레이지'] },
+  { p:['미키마우스','미키'],                       c:['매직','스타','클래식'] },
+  { p:['토르'],                                   c:['썬더','파워','해머'] },
+  { p:['헐크'],                                   c:['파워','그린','스매시'] },
+  { p:['캡틴아메리카','캡틴'],                     c:['쉴드','저스티스','스타'] },
+  { p:['손오공','드래곤볼','베지터'],               c:['파워','드래곤','킹'] },
+  { p:['짱구','크레용'],                           c:['크레용','펀','해피'] },
+  { p:['코난','명탐정코난'],                       c:['디텍티브','스마트'] },
+  { p:['공룡','티라노'],                           c:['다이노','렉스','로어'] },
+  { p:['용','드래곤'],                             c:['드래곤','파이어','레전드'] },
+  { p:['포켓몬'],                                 c:['마스터','챔피언','볼'] },
+  { p:['쿵푸팬더','판다'],                         c:['쿵푸','마스터','파워'] },
+  { p:['스펀지밥','뚱이'],                         c:['바다','펀','프렌드'] },
+  { p:['닌자거북이'],                             c:['닌자','히어로','팀'] },
+  { p:['마인크래프트','스티브'],                   c:['크래프트','빌드','픽셀'] },
+  { p:['로블록스'],                               c:['크리에이트','빌드','플레이'] },
+  { p:['해리포터','해리'],                         c:['매직','위자드','퀘스트'] },
+  { p:['라이온킹','심바'],                         c:['킹','레전드','로어'] },
+  { p:['모아나'],                                 c:['오션','웨이브','어드벤처'] },
+  { p:['토이스토리','우디','버즈'],                c:['어드벤처','프렌드','인피니티'] },
+  { p:['인크레더블'],                             c:['슈퍼','파워','히어로'] },
+  { p:['고양이','냥이'],                           c:['캣','미야오','나인'] },
+  { p:['강아지','멍멍'],                           c:['퍼피','프렌드'] },
+  { p:['토끼'],                                   c:['퀵','스피드','플러피'] },
+  { p:['펭귄','펭수'],                             c:['쿨','아이스','프렌드'] },
+  { p:['공주','프린세스'],                         c:['퀸','스타','로얄'] },
+  { p:['기사','나이트'],                           c:['가디언','나이트','쉴드'] },
+];
+
+const TN_TEMPLATES = [
+  (a, b) => `${a}${b}단`,
+  (a, b) => `${a} ${b} 크루`,
+  (a, b) => `무적 ${a}${b}`,
+  (a, b) => `Team ${a} ${b}`,
+  (a, b) => `${a} ${b} 메이커즈`,
+  (a, b) => `${a}${b} 히어로즈`,
+];
+
+const TN_CARD_STYLES = [
+  { emoji:'🏆', bg:'linear-gradient(135deg,#FF6FA5,#8C6BFA)' },
+  { emoji:'⚡', bg:'linear-gradient(135deg,#3FA9F5,#8C6BFA)' },
+  { emoji:'🔥', bg:'linear-gradient(135deg,#FF9142,#FFC93C)' },
+  { emoji:'🌟', bg:'linear-gradient(135deg,#3DDC97,#3FA9F5)' },
+  { emoji:'💎', bg:'linear-gradient(135deg,#8C6BFA,#FF6FA5)' },
+  { emoji:'🎯', bg:'linear-gradient(135deg,#FFC93C,#FF9142)' },
+];
+
+const MC_COLORS = ['#8C6BFA','#3FA9F5','#FF6FA5','#FF9142','#3DDC97','#FFC93C'];
+
+function tnExtractConcepts(text) {
+  if (!text || !text.trim()) return [];
+  const t = text.trim();
+  const found = [];
+  for (const entry of TN_KEYWORDS) {
+    if (entry.p.some(p => t.includes(p))) {
+      found.push(...entry.c);
+    }
+  }
+  if (found.length === 0) {
+    const clean = t.replace(/\s+/g, '');
+    if (clean.length >= 2) found.push(clean.slice(0, Math.min(3, clean.length)));
+  }
+  return found;
+}
+
+function tnRenderMembers(count) {
+  const grid = document.getElementById('tnMemberGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const card = document.createElement('div');
+    card.className = 'tn-member-card';
+    card.innerHTML = `
+      <h3>
+        <span class="mc-num" style="background:${MC_COLORS[i % MC_COLORS.length]}">${i+1}</span>
+        조원 ${i+1}
+      </h3>
+      <div class="tn-input-group">
+        <label>💼 장래희망 (꿈)</label>
+        <input id="tnJob${i}" type="text" placeholder="예: 우주비행사, 요리사, 게임개발자">
+      </div>
+      <div class="tn-input-group">
+        <label>⭐ 좋아하는 캐릭터 / 것</label>
+        <input id="tnChar${i}" type="text" placeholder="예: 피카츄, 루피, 마인크래프트">
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+function tnGenerate() {
+  const allConcepts = [];
+  for (let i = 0; i < tnCurrentCount; i++) {
+    const job  = document.getElementById(`tnJob${i}`)?.value.trim()  || '';
+    const char = document.getElementById(`tnChar${i}`)?.value.trim() || '';
+    allConcepts.push(...tnExtractConcepts(job));
+    allConcepts.push(...tnExtractConcepts(char));
+  }
+
+  if (allConcepts.length === 0) {
+    tnShowToast('조원 정보를 한 명 이상 입력해주세요!');
+    return;
+  }
+
+  // 중복 제거 후 셔플
+  const unique = [...new Set(allConcepts)];
+  for (let i = unique.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unique[i], unique[j]] = [unique[j], unique[i]];
+  }
+
+  // 6개 이름 생성 (다양한 A, B 조합)
+  const half = Math.max(1, Math.floor(unique.length / 2));
+  const names = TN_TEMPLATES.map((tpl, i) => {
+    const a = unique[i % unique.length];
+    const b = unique[(i + half) % unique.length];
+    return tpl(a, b);
+  });
+
+  // 이름 카드 렌더
+  const cardsEl = document.getElementById('tnNameCards');
+  cardsEl.innerHTML = '';
+  names.forEach((name, i) => {
+    const s = TN_CARD_STYLES[i % TN_CARD_STYLES.length];
+    const card = document.createElement('div');
+    card.className = 'tn-name-card';
+    card.style.background = s.bg;
+    const safeName = name.replace(/'/g, "\\'");
+    card.innerHTML = `
+      <div class="tnc-emoji">${s.emoji}</div>
+      <div class="tnc-name">${name}</div>
+      <button class="tnc-copy" onclick="tnCopyName('${safeName}', this)">📋 복사</button>
+    `;
+    cardsEl.appendChild(card);
+  });
+
+  // ChatGPT 프롬프트 생성
+  let memberInfo = '';
+  for (let i = 0; i < tnCurrentCount; i++) {
+    const job  = document.getElementById(`tnJob${i}`)?.value.trim()  || '미정';
+    const char = document.getElementById(`tnChar${i}`)?.value.trim() || '미정';
+    memberInfo += `• 팀원${i+1}: 장래희망 - ${job}, 좋아하는 것 - ${char}\n`;
+  }
+
+  const prompt =
+`다음 팀원 정보를 참고해서 멋지고 세련된 조이름 후보 5개를 제안해줘.
+각 이름은 2~5글자의 한국어, 또는 한국어+영어 혼합도 좋아.
+각 이름마다 왜 이 이름이 어울리는지 한 줄 이유도 써줘.
+
+[팀원 정보]
+${memberInfo}
+[조건]
+- 팀원들의 꿈과 관심사의 공통점이나 특징을 반영해줘
+- 부르기 쉽고 기억에 남는 이름으로 만들어줘
+- 긍정적이고 힘찬 느낌이면 좋겠어`;
+
+  document.getElementById('tnPromptBox').textContent = prompt;
+  document.getElementById('tnResults').classList.remove('hidden');
+  setTimeout(() => document.getElementById('tnResults').scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+function tnCopyName(name, btn) {
+  navigator.clipboard.writeText(name).catch(() => {
+    const t = document.createElement('textarea');
+    t.value = name; document.body.appendChild(t); t.select();
+    document.execCommand('copy'); document.body.removeChild(t);
+  });
+  btn.textContent = '✅ 복사됨!';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = '📋 복사'; btn.classList.remove('copied'); }, 2000);
+  tnShowToast(`"${name}" 복사됨!`);
+}
+
+function tnCopyPrompt() {
+  const text = document.getElementById('tnPromptBox').textContent;
+  navigator.clipboard.writeText(text).catch(() => {
+    const t = document.createElement('textarea');
+    t.value = text; document.body.appendChild(t); t.select();
+    document.execCommand('copy'); document.body.removeChild(t);
+  });
+  tnShowToast('프롬프트 복사 완료! ChatGPT에 붙여넣어 보세요 🚀');
+}
+
+function tnShowToast(msg) {
+  const el = document.getElementById('tnToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+document.querySelectorAll('.tn-cnt-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tn-cnt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    tnCurrentCount = parseInt(btn.dataset.count);
+    tnRenderMembers(tnCurrentCount);
+    document.getElementById('tnResults').classList.add('hidden');
+  });
+});
+
+tnRenderMembers(tnCurrentCount);
+</script>
+{% endblock %}

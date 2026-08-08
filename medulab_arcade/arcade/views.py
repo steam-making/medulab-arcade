@@ -324,6 +324,7 @@ def api_problem_room_state(request, room_id):
         if cust and cust not in sit_seen:
             sit_seen.add(cust); situation_options.append(cust)
     leader = next((m for m in members if m['is_leader']), None)
+    leader_step = leader['data'].get('current_step', 1) if leader else 1
     req_member_id = request.GET.get('member_id')
     my_is_leader = any(str(m['id']) == str(req_member_id) and m['is_leader'] for m in members)
     return JsonResponse({
@@ -333,6 +334,7 @@ def api_problem_room_state(request, room_id):
         'threshold': threshold,
         'members': [{'name': m['name'], 'is_leader': m['is_leader'], 'data': m['data']} for m in members],
         'leader_name': leader['name'] if leader else None,
+        'leader_step': leader_step,
         'my_is_leader': my_is_leader,
         'selections': sel,
         'majority': maj,

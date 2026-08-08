@@ -661,6 +661,7 @@ async function pfEnterRoom() {
 /* ── 동기화 ── */
 function pfCollectMyData() {
   return {
+    current_step: pfStep,
     area: pfArea,
     subArea: pfSubArea,
     areaCustom: (document.getElementById('pfAreaCustomInput')?.value||'').trim(),
@@ -705,7 +706,39 @@ async function pfPollRoom() {
     pfUpdateHeader(d);
     pfApplyVotes();
     pfUpdateNextBtn();
+    // 조장이 다음 단계로 넘어가면 팀원도 자동 이동
+    if (!pfIsLeader && typeof d.leader_step === 'number' && d.leader_step > pfStep) {
+      pfAutoAdvanceTo(d.leader_step);
+    }
   } catch(e) {}
+}
+
+async function pfAutoAdvanceTo(targetStep) {
+  // 현재 단계에서 targetStep까지 순차적으로 렌더링
+  if (targetStep >= 2 && pfStep < 2) {
+    pfRenderStep2();
+    pfStep = 2;
+  }
+  if (targetStep >= 3 && pfStep < 3) {
+    pfRenderStep3();
+    pfStep = 3;
+  }
+  if (targetStep >= 4 && pfStep < 4) {
+    // 과반수 값으로 상태 세팅 후 분석
+    if (pfRoomState && pfRoomState.majority) {
+      const maj = pfRoomState.majority;
+      pfArea = maj.area || pfArea;
+      pfExps = new Set(maj.exps || []);
+      pfFreq = maj.freq || pfFreq;
+      pfAffected = maj.affected || pfAffected;
+      pfSeverity = maj.severity || pfSeverity;
+      pfSolution = maj.solution || pfSolution;
+      pfSituationVal = maj.situation || pfSituationVal;
+    }
+    pfAnalyze(pfSituationVal);
+    pfStep = 4;
+  }
+  pfGoTo(targetStep);
 }
 
 function pfUpdateHeader(state) {
@@ -1103,6 +1136,8 @@ function pfGoTo(step) {
   nb.textContent = step === 3 ? '🔍 문제 분석하기!' : '다음 →';
   pfStep = step;
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  // 조장이 단계 변경 시 즉시 서버에 current_step 동기화
+  if (pfIsLeader && pfMemberId) pfScheduleSync();
 }
 
 function pfNext() {

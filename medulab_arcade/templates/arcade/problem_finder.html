@@ -155,6 +155,17 @@
   .pf-reset-btn { padding:11px 22px; background:#f0e8dc; color:#8a6040; border:none; border-radius:999px; font-size:13px; font-weight:700; cursor:pointer; transition:background .2s; }
   .pf-reset-btn:hover { background:#ffe0b2; }
 
+  /* 팀 분업 프롬프트 카드 */
+  .pf-team-prompt-cards { display:flex; flex-direction:column; gap:14px; margin-bottom:16px; }
+  .pf-tpc { background:#FFFAF5; border-radius:16px; padding:16px 18px; border:1px solid #FFE0B2; }
+  .pf-tpc-header { display:flex; align-items:center; gap:10px; margin-bottom:11px; flex-wrap:wrap; }
+  .pf-tpc-name { color:#fff; border-radius:999px; padding:4px 14px; font-size:13px; font-weight:700; white-space:nowrap; }
+  .pf-tpc-task { font-size:14px; font-weight:700; color:var(--ink); }
+  .pf-tpc-prompt { background:#fff; border-radius:10px; padding:12px 14px; font-size:12px; line-height:1.85; color:#6a5040; white-space:pre-wrap; border:1px solid #FFE0B2; word-break:break-word; max-height:180px; overflow-y:auto; margin-bottom:10px; }
+  .pf-tpc-copy-btn { padding:8px 22px; background:linear-gradient(120deg,var(--orange),var(--pink)); color:#fff; border:none; border-radius:999px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 3px 10px rgba(255,145,66,.3); transition:opacity .15s; }
+  .pf-tpc-copy-btn:hover { opacity:.85; }
+  .pf-tpc-copy-btn.copied { background:linear-gradient(120deg,#4CAF7D,#28a745); box-shadow:none; }
+
   /* Navigation */
   .pf-nav { display:flex; justify-content:space-between; align-items:center; margin-top:20px; }
   .pf-prev-btn { padding:14px 30px; background:#f0e8dc; color:#7a5030; border:none; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; transition:background .2s; }
@@ -414,15 +425,14 @@
       <div id="pfExploreQs"></div>
     </div>
 
-    <!-- ChatGPT 프롬프트 -->
+    <!-- ChatGPT 프롬프트 (팀 분업) -->
     <div class="pf-prompt-section">
       <div class="pf-prompt-header">
         <span>💬 AI로 이 문제 심층 분석하기</span>
-        <small>아래 프롬프트를 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
+        <small>팀원별로 역할을 나눠 분석해요! 내 카드의 프롬프트를 복사해서 AI에 붙여넣어 보세요.</small>
       </div>
-      <div id="pfPromptBox" class="pf-prompt-box"></div>
+      <div id="pfTeamPromptCards" class="pf-team-prompt-cards"></div>
       <div class="pf-btn-row">
-        <button class="pf-copy-btn" onclick="pfCopyPrompt()">📋 프롬프트 복사</button>
         <button class="pf-reset-btn" onclick="pfReset()">🔄 새 문제 찾기</button>
       </div>
     </div>
@@ -1332,46 +1342,110 @@ function pfAnalyze(situation) {
       <div class="pf-explore-q">${q}</div>
     </div>`).join('');
 
-  /* ── ChatGPT 프롬프트 ── */
-  const expLabels = exps.map(e => PF_EXPS.find(x => x.id === e)?.label.split('(')[0].trim()).join(', ');
-  const prompt =
-`너는 생활 속 문제를 탐구하는 도우미야.
-아래 학생이 발견한 문제를 분석하고 더 깊이 탐구할 수 있도록 도와줘.
-
-[학생이 발견한 문제]
-"${situation}"
-
-[문제 상세 정보]
-• 생활 영역: ${areaData.label}${pfSubArea ? ' > ' + pfSubArea : ''}
-• 불편 유형: ${expLabels || '일반적 불편'}
-• 발생 빈도: ${freqText}
-• 영향 대상: ${affData ? affData.label : '알 수 없음'}
-• 현재 해결책: ${solText}
-• 장소: ${place}
-
-다음 순서로 분석해줘:
-① 이 문제의 핵심 원인 (근본 원인 2~3가지)
-② 이 문제로 생기는 구체적 피해 (시간/비용/감정/건강 등)
-③ 이 문제를 해결할 수 있는 아이디어 3가지 (기술 활용 포함)
-④ 비슷한 문제를 이미 해결한 국내외 사례 1~2가지
-⑤ 학생이 직접 실천할 수 있는 작은 첫걸음 1가지
-
-[조건]
-- 초등/중학생이 이해할 수 있는 쉬운 말로 설명해줘
-- 아이디어는 실제로 만들거나 실천할 수 있는 것 위주로 제안해줘
-- 각 항목은 짧고 명확하게 설명해줘`;
-
-  document.getElementById('pfPromptBox').textContent = prompt;
+  /* ── 팀 분업 AI 프롬프트 ── */
+  const expLabels = exps.map(e => PF_EXPS.find(x => x.id === e)?.label.split('(')[0].trim()).filter(Boolean).join(', ');
+  const areaLabel = areaData.label + (pfSubArea ? ' > ' + pfSubArea : '');
+  pfRenderTeamPrompts(situation, areaLabel, expLabels, freqText, place, solText);
 }
 
-function pfCopyPrompt() {
-  const text = document.getElementById('pfPromptBox').textContent;
+/* ── 팀 분업 AI 프롬프트 ── */
+const PF_AI_TASKS = [
+  { icon:'🔍', label:'핵심원인 분석',
+    ask:'이 문제가 왜 생기는지 핵심원인을 2~3가지로 분석해줘.\n겉으로 보이는 이유 말고, "왜?"를 한 번 더 파고든 근본 원인을 중심으로 설명해줘.' },
+  { icon:'⚠️', label:'구체적 피해 분석',
+    ask:'이 문제로 생기는 구체적인 피해와 영향을 분석해줘.\n시간 낭비, 비용, 감정적 스트레스, 건강, 안전 등 다양한 측면에서 구체적인 예를 들어 설명해줘.' },
+  { icon:'💡', label:'해결 아이디어 3가지',
+    ask:'이 문제를 해결할 수 있는 아이디어를 3가지 제시해줘.\n① 기술을 활용한 방법 ② 사람들이 함께 참여하는 방법 ③ 지금 당장 실천 가능한 방법으로 각각 제안해줘.' },
+  { icon:'🌍', label:'국내외 해결 사례',
+    ask:'비슷한 문제를 이미 해결한 국내외 사례를 1~2가지 소개해줘.\n어떤 나라나 도시에서, 어떤 방법으로 해결했는지, 어떤 효과가 있었는지도 함께 설명해줘.' },
+  { icon:'👣', label:'첫걸음 실천 방법',
+    ask:'학생이 직접 실천할 수 있는 작은 첫걸음을 1가지 알려줘.\n오늘 당장 시작할 수 있고, 돈이 많이 들지 않으며, 혼자서도 할 수 있는 구체적인 행동을 제안해줘.' },
+];
+
+function pfBuildTaskPrompt(taskAsk, situation, areaLabel, expLabels, freqText, place, solText) {
+  return `너는 생활 속 문제를 탐구하는 도우미야. 초등/중학생이 이해할 수 있는 쉬운 말로 답해줘.
+
+[학생들이 발견한 생활 속 문제]
+"${situation}"
+
+[문제 정보]
+• 생활 영역: ${areaLabel}
+• 불편 유형: ${expLabels || '일반적 불편'}
+• 발생 빈도: ${freqText}
+• 장소: ${place}
+• 현재 해결책: ${solText}
+
+[분석 요청]
+${taskAsk}`;
+}
+
+function pfRenderTeamPrompts(situation, areaLabel, expLabels, freqText, place, solText) {
+  const members = (pfRoomState && pfMemberId) ? pfRoomState.members : [];
+  const nonLeaders = members.filter(m => !m.is_leader);
+  const leader = members.find(m => m.is_leader);
+
+  // 비협업 모드: 팀원 3명 기본 배정
+  if (!pfMemberId || members.length === 0) {
+    const genericAssignees = [
+      {name:'팀원 1', is_leader:false},
+      {name:'팀원 2', is_leader:false},
+      {name:'팀원 3', is_leader:false},
+    ];
+    return pfDrawPromptCards(genericAssignees, PF_AI_TASKS.slice(0,3), situation, areaLabel, expLabels, freqText, place, solText);
+  }
+
+  // 과제 수 결정 (비조장 팀원 수 기준)
+  const taskCount = nonLeaders.length >= 5 ? 5 : nonLeaders.length >= 4 ? 4 : 3;
+  const tasks = PF_AI_TASKS.slice(0, taskCount);
+
+  // 배정 대상: 비조장 우선, 부족하면 조장 추가
+  let assignees = [...nonLeaders];
+  if (assignees.length < 3 && leader) assignees.push(leader);
+  if (assignees.length === 0) assignees = [{name:'팀원', is_leader:false}];
+
+  pfDrawPromptCards(assignees, tasks, situation, areaLabel, expLabels, freqText, place, solText);
+}
+
+function pfDrawPromptCards(assignees, tasks, situation, areaLabel, expLabels, freqText, place, solText) {
+  // 과제 → 사람 배정 (assignees 수 < tasks 수면 순환)
+  const cardData = []; // [{name, isLeader, colorIdx, task}]
+  tasks.forEach((task, i) => {
+    const person = assignees[i % assignees.length];
+    // 이 사람이 이미 배정됐으면 colorIdx 재사용
+    let ci = cardData.findIndex(c => c.name === person.name);
+    const colorIdx = ci >= 0 ? cardData[ci].colorIdx : i % PF_MEMBER_COLORS.length;
+    cardData.push({ name: person.name, isLeader: person.is_leader, colorIdx, task });
+  });
+
+  const container = document.getElementById('pfTeamPromptCards');
+  container.innerHTML = cardData.map((c, idx) => {
+    const color = PF_MEMBER_COLORS[c.colorIdx];
+    const prompt = pfBuildTaskPrompt(c.task.ask, situation, areaLabel, expLabels, freqText, place, solText);
+    const cardId = `pfTpc${idx}`;
+    const extraBadge = cardData.filter(x => x.name === c.name).length > 1
+      ? ' <span style="font-size:10px;opacity:.7">(추가 과제)</span>' : '';
+    return `
+      <div class="pf-tpc">
+        <div class="pf-tpc-header">
+          <span class="pf-tpc-name" style="background:${color}">${c.isLeader ? '👑 ' : ''}${c.name}${extraBadge}</span>
+          <span class="pf-tpc-task">${c.task.icon} ${c.task.label}</span>
+        </div>
+        <div class="pf-tpc-prompt" id="${cardId}">${prompt}</div>
+        <button class="pf-tpc-copy-btn" onclick="pfCopyTaskPrompt('${cardId}', this)">📋 프롬프트 복사</button>
+      </div>`;
+  }).join('');
+}
+
+function pfCopyTaskPrompt(cardId, btn) {
+  const text = document.getElementById(cardId).textContent;
   navigator.clipboard.writeText(text).catch(() => {
     const t = document.createElement('textarea');
     t.value = text; document.body.appendChild(t); t.select();
     document.execCommand('copy'); document.body.removeChild(t);
   });
-  pfShowToast('프롬프트 복사 완료! ChatGPT에 붙여넣어 보세요 🚀');
+  btn.textContent = '✅ 복사됨!';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = '📋 프롬프트 복사'; btn.classList.remove('copied'); }, 2000);
 }
 
 function pfShowToast(msg) {

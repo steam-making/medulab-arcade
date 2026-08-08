@@ -577,7 +577,8 @@ function pfNext() {
     if (!pfArea) { pfShowToast('생활 영역을 선택해주세요!'); return; }
     pfRenderStep2(); pfGoTo(2);
   } else if (pfStep === 2) {
-    if (pfExps.size === 0) { pfShowToast('불편 경험을 하나 이상 선택해주세요!'); return; }
+    const expCustomVal = document.getElementById('pfExpCustomInput')?.value.trim() || '';
+    if (pfExps.size === 0 && !expCustomVal) { pfShowToast('불편 경험을 선택하거나 직접 입력해주세요!'); return; }
     pfRenderStep3(); pfGoTo(3);
   } else if (pfStep === 3) {
     const sit = document.getElementById('pfSituation').value.trim();

@@ -106,6 +106,48 @@
   .avatar-wrap input[type=color]::-webkit-color-swatch-wrapper{padding:0; border-radius:12px;}
   .avatar-wrap input[type=color]::-webkit-color-swatch{border:2px solid #E7E3FA; border-radius:12px;}
   #colorPreviewText{font-size:13px; font-weight:700; color:#6a6486; background:#F8F7FF; padding:6px 12px; border-radius:999px;}
+  /* ── MBTI 성격 카드 ── */
+  .mbti-section { margin-bottom:16px; }
+  .mbti-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .mbti-header-title { font-size:15px; font-weight:800; color:var(--ink); }
+  .mbti-header-hint  { font-size:12px; color:#9a93b8; }
+  .mbti-grid {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+  }
+  @media(max-width:540px){ .mbti-grid { grid-template-columns:repeat(2,1fr); gap:6px; } }
+  .mbti-card {
+    border:2px solid #E7E3FA; border-radius:14px; padding:10px 8px;
+    text-align:center; cursor:pointer; transition:.15s; background:#FBFAFF;
+    position:relative; user-select:none;
+  }
+  .mbti-card:hover { border-color:var(--purple); background:#F1EEFF; }
+  .mbti-card.selected { border-color:var(--purple); background:#F1EEFF; box-shadow:0 4px 14px rgba(140,107,250,.3); }
+  .mbti-card.selected::after {
+    content:'✓'; position:absolute; top:4px; right:6px;
+    font-size:11px; font-weight:900; color:var(--purple);
+  }
+  .mbti-num {
+    display:inline-flex; width:20px; height:20px; border-radius:50%;
+    align-items:center; justify-content:center; font-size:11px; font-weight:800;
+    color:#fff; margin-bottom:4px;
+  }
+  .mbti-code { font-size:15px; font-weight:900; letter-spacing:.5px; margin-bottom:3px; }
+  .mbti-label { font-size:11px; font-weight:700; color:#4a4568; line-height:1.35; }
+  .mbti-selected-badge {
+    display:inline-flex; align-items:center; gap:6px; margin-top:10px;
+    background:linear-gradient(120deg,var(--pink),var(--purple)); color:#fff;
+    border-radius:999px; padding:6px 14px; font-size:13px; font-weight:700;
+    cursor:pointer;
+  }
+  .mbti-selected-badge:hover { opacity:.85; }
+  .mbti-divider {
+    font-size:13px; font-weight:700; color:#9a93b8;
+    display:flex; align-items:center; gap:8px; margin:14px 0 6px;
+  }
+  .mbti-divider::before, .mbti-divider::after {
+    content:''; flex:1; height:1px; background:#E7E3FA;
+  }
+
   .make-btn{
     display:block; width:100%; padding:16px; border:none; border-radius:16px;
     background:linear-gradient(120deg,var(--blue),var(--purple)); color:#fff;
@@ -214,9 +256,25 @@
 
   <div class="avatar-card">
     <h2><span class="num">3</span> 나의 성격은?</h2>
-    <p class="desc">나를 가장 잘 표현하는 성격을 3개까지 골라보세요. 원하는 보기가 없다면 직접 적어도 돼요.</p>
+    <p class="desc">MBTI로 나의 성격을 찾아보고, 아래에서 추가로 골라보세요!</p>
+
+    <!-- MBTI 카드 -->
+    <div class="mbti-section">
+      <div class="mbti-header">
+        <span class="mbti-header-title">🧠 MBTI로 성격 찾기</span>
+        <span class="mbti-header-hint">카드를 선택하면 성격이 자동으로 반영돼요</span>
+      </div>
+      <div class="mbti-grid" id="mbti-grid"></div>
+      <div id="mbti-selected-wrap" style="display:none; margin-top:10px;">
+        <span class="mbti-selected-badge" onclick="mbtiClear()" title="클릭해서 취소">
+          <span id="mbti-selected-text"></span> ✕
+        </span>
+      </div>
+    </div>
+
+    <!-- 기존 성격 칩 (추가 선택) -->
+    <div class="mbti-divider">추가로 골라보세요 (최대 3개)</div>
     <div class="chip-row" id="personality-chips"></div>
-    <div class="hint">최대 3개 선택 가능</div>
     <div class="custom-input">
       <label for="personality-custom">✏️ 나만의 성격 직접 적기 (쉼표로 구분)</label>
       <input type="text" id="personality-custom" placeholder="예: 엉뚱한, 겁이 없는">
@@ -334,6 +392,61 @@
 
 {% block extra_js %}
 <script>
+/* ── MBTI 데이터 ── */
+const MBTI_DATA = [
+  { code:'ISTJ', num:1,  label:'계획을 잘\n세우는 성격',      en:'detail-oriented and well-organized', color:'#5B9BD5', bg:'#EBF4FF' },
+  { code:'ISFJ', num:2,  label:'친구를 잘\n도와주는 성격',    en:'helpful, nurturing and caring',       color:'#FF85A1', bg:'#FFF0F4' },
+  { code:'INFJ', num:3,  label:'공감을\n잘하는 성격',        en:'empathetic and deeply insightful',    color:'#3CB371', bg:'#EDFBF3' },
+  { code:'INTJ', num:4,  label:'생각이\n깊은 성격',          en:'strategic and deep-thinking',         color:'#9B59B6', bg:'#F5EEFF' },
+  { code:'ISTP', num:5,  label:'만들기를\n좋아하는 성격',     en:'hands-on and analytical',             color:'#5B9BD5', bg:'#EBF4FF' },
+  { code:'ISFP', num:6,  label:'예술을\n좋아하는 성격',      en:'artistic and gentle-spirited',        color:'#FF85A1', bg:'#FFF0F4' },
+  { code:'INFP', num:7,  label:'상상력이\n풍부한 성격',       en:'imaginative and idealistic dreamer',  color:'#3CB371', bg:'#EDFBF3' },
+  { code:'INTP', num:8,  label:'아이디어가\n많은 성격',       en:'curious and full of new ideas',       color:'#9B59B6', bg:'#F5EEFF' },
+  { code:'ESTP', num:9,  label:'도전하는\n성격',             en:'adventurous and action-oriented',     color:'#5B9BD5', bg:'#EBF4FF' },
+  { code:'ESFP', num:10, label:'활발한\n성격',               en:'energetic, fun-loving and outgoing',  color:'#FF85A1', bg:'#FFF0F4' },
+  { code:'ENFP', num:11, label:'창의적인\n성격',             en:'creative, enthusiastic and free-spirited', color:'#3CB371', bg:'#EDFBF3' },
+  { code:'ENTP', num:12, label:'새로운 것을\n좋아하는 성격', en:'inventive and loves debating ideas',  color:'#9B59B6', bg:'#F5EEFF' },
+  { code:'ESTJ', num:13, label:'리더십이\n있는 성격',        en:'confident leader and natural organizer', color:'#5B9BD5', bg:'#EBF4FF' },
+  { code:'ESFJ', num:14, label:'협동을\n잘하는 성격',        en:'warm, cooperative and team-oriented', color:'#FF85A1', bg:'#FFF0F4' },
+  { code:'ENFJ', num:15, label:'응원을\n잘하는 성격',        en:'inspiring, encouraging and empowering others', color:'#3CB371', bg:'#EDFBF3' },
+  { code:'ENTJ', num:16, label:'목표를 끝까지\n이루는 성격', en:'determined, goal-driven achiever',    color:'#9B59B6', bg:'#F5EEFF' },
+];
+let selectedMbti = null;
+
+function mbtiSelect(code) {
+  selectedMbti = code === selectedMbti ? null : code;
+  document.querySelectorAll('.mbti-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.code === selectedMbti);
+  });
+  const wrap = document.getElementById('mbti-selected-wrap');
+  const textEl = document.getElementById('mbti-selected-text');
+  if (selectedMbti) {
+    const m = MBTI_DATA.find(x => x.code === selectedMbti);
+    textEl.textContent = m.code + ' · ' + m.label.replace('\n', ' ');
+    wrap.style.display = '';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+function mbtiClear() { mbtiSelect(null); }
+
+function buildMbtiGrid() {
+  const grid = document.getElementById('mbti-grid');
+  MBTI_DATA.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'mbti-card';
+    card.dataset.code = m.code;
+    card.style.background = m.bg;
+    card.innerHTML = `
+      <div class="mbti-num" style="background:${m.color}">${m.num}</div>
+      <div class="mbti-code" style="color:${m.color}">${m.code}</div>
+      <div class="mbti-label">${m.label.replace('\n','<br>')}</div>`;
+    card.onclick = () => mbtiSelect(m.code);
+    grid.appendChild(card);
+  });
+}
+buildMbtiGrid();
+
 const personalityOptions = [
   "밝고 긍정적인","차분하고 신중한","호기심 많은","리더십 있는","창의적인","배려심 많은",
   "용감한","유쾌하고 재치있는","성실한","도전적인","꼼꼼한","활발한","다정한","끈기있는",
@@ -758,7 +871,10 @@ document.getElementById('makeBtn').onclick = ()=>{
     "우디":"a cowboy figure in plaid shirt and hat"
   };
 
-  const persEn = personality.map(p=>personalityEnMap[p]||p).join(", ") || "cheerful";
+  const mbtiInfo = selectedMbti ? MBTI_DATA.find(x => x.code === selectedMbti) : null;
+  const mbtiEn = mbtiInfo ? mbtiInfo.en : '';
+  const persChips = personality.map(p=>personalityEnMap[p]||p).join(", ");
+  const persEn = [mbtiEn, persChips].filter(Boolean).join(", ") || "cheerful";
   const intEn = interests.map(i=>interestEnMap[i]||i).join(" and ") || "many things";
   const specEn = specialties.map(s=>specialtyEnMap[s]||s).join(" and ") || "many skills";
   const hobEn = hobbies.map(h=>hobbyEnMap[h]||h).join(" and ") || "creative activities";

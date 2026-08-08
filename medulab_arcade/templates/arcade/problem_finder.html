@@ -608,7 +608,7 @@ async function pfEnterRoom() {
   let storedKey = null;
   try { storedKey = JSON.parse(stored||'{}').session_key || null; } catch(e) {}
   try {
-    const res = await fetch('/arcade/api/problem/join/', {
+    const res = await fetch('/api/problem/join/', {
       method:'POST',
       headers:{'Content-Type':'application/json','X-CSRFToken':pfCsrf()},
       body: JSON.stringify({team: pfSelectedTeam, name, session_key: storedKey})
@@ -659,7 +659,7 @@ function pfScheduleSync() {
 async function pfSyncNow() {
   if (!pfMemberId) return;
   try {
-    await fetch('/arcade/api/problem/update/', {
+    await fetch('/api/problem/update/', {
       method:'POST',
       headers:{'Content-Type':'application/json','X-CSRFToken':pfCsrf()},
       body: JSON.stringify({member_id: pfMemberId, session_key: pfSessionKey, data: pfCollectMyData()})
@@ -671,7 +671,7 @@ async function pfSyncNow() {
 async function pfPollRoom() {
   if (!pfRoomId) return;
   try {
-    const url = `/arcade/api/problem/room/${pfRoomId}/state/?member_id=${pfMemberId}&session_key=${encodeURIComponent(pfSessionKey)}`;
+    const url = `/api/problem/room/${pfRoomId}/state/?member_id=${pfMemberId}&session_key=${encodeURIComponent(pfSessionKey)}`;
     const d = await (await fetch(url)).json();
     if (!d.ok) return;
     pfRoomState = d;

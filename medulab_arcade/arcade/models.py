@@ -760,3 +760,33 @@ def _clear_nav_cache(sender, **kwargs):
 
 post_save.connect(_clear_nav_cache, sender=NavItem)
 post_delete.connect(_clear_nav_cache, sender=NavItem)
+
+
+class ProblemRoom(models.Model):
+    team_name = models.CharField('팀명', max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'problem_room'
+        verbose_name = '문제찾기 팀방'
+        verbose_name_plural = '문제찾기 팀방'
+
+    def __str__(self):
+        return self.team_name
+
+
+class ProblemMember(models.Model):
+    room = models.ForeignKey(ProblemRoom, on_delete=models.CASCADE, related_name='members', verbose_name='팀방')
+    name = models.CharField('이름', max_length=20)
+    session_key = models.CharField('세션키', max_length=64, db_index=True)
+    data = models.JSONField('선택 데이터', default=dict)
+    last_seen = models.DateTimeField('최근 접속', auto_now=True)
+
+    class Meta:
+        db_table = 'problem_member'
+        verbose_name = '문제찾기 팀원'
+        verbose_name_plural = '문제찾기 팀원'
+        unique_together = [('room', 'session_key')]
+
+    def __str__(self):
+        return f"{self.room.team_name} - {self.name}"

@@ -165,6 +165,151 @@ def problem_finder(request):
     return render(request, 'arcade/problem_finder.html')
 
 
+@require_POST
+def api_problem_join(request):
+    from .models import ProblemRoom, ProblemMember
+    import secrets
+    try:
+        body = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
+    team = body.get('team', '').strip()
+    name = body.get('name', '').strip()
+    stored_key = body.get('session_key', '')
+    if not team or not name:
+        return JsonResponse({'ok': False, 'error': '팀과 이름을 입력해주세요'}, status=400)
+    room, _ = ProblemRoom.objects.get_or_create(team_name=team)
+    session_key = stored_key if stored_key else secrets.token_urlsafe(32)
+    member, created = ProblemMember.objects.get_or_create(
+        room=room, session_key=session_key,
+        defaults={'name': name, 'data': {}}
+    )
+    if not created:
+        member.name = name
+        member.save(update_fields=['name', 'last_seen'])
+    return JsonResponse({'ok': True, 'room_id': room.id, 'member_id': member.id, 'session_key': session_key})
+
+
+@require_POST
+def api_problem_update(request):
+    from .models import ProblemMember
+    try:
+        body = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
+    member_id = body.get('member_id')
+    session_key = body.get('session_key', '')
+    try:
+        member = ProblemMember.objects.get(id=member_id, session_key=session_key)
+        member.data = body.get('data', {})
+        member.save(update_fields=['data', 'last_seen'])
+        return JsonResponse({'ok': True})
+    except ProblemMember.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'not found'}, status=404)
+
+
+def api_problem_room_state(request, room_id):
+    from .models import ProblemRoom, ProblemMember
+    cutoff = timezone.now() - timedelta(seconds=90)
+    try:
+        room = ProblemRoom.objects.get(id=room_id)
+    except ProblemRoom.DoesNotExist:
+        return JsonResponse({'ok': False}, status=404)
+    member_id = request.GET.get('member_id')
+    session_key = request.GET.get('session_key', '')
+    if member_id and session_key:
+        ProblemMember.objects.filter(
+            id=member_id, room=room, session_key=session_key
+        ).update(last_seen=timezone.now())
+    members = list(room.members.filter(last_seen__gte=cutoff).values('id', 'name', 'data'))
+    n = len(members)
+    threshold = n / 2
+
+    def collect_single(field):
+        result = {}
+        for m in members:
+            val = m['data'].get(field)
+            if val:
+                result.setdefault(val, [])
+                result[val].append(m['name'])
+        return result
+
+    def collect_multi(field):
+        result = {}
+        for m in members:
+            for v in (m['data'].get(field) or []):
+                result.setdefault(v, [])
+                result[v].append(m['name'])
+        return result
+
+    def majority_single(d):
+        for val, names in d.items():
+            if len(names) > threshold:
+                return val
+        return None
+
+    def majority_multi(d):
+        return [v for v, names in d.items() if len(names) > threshold]
+
+    def collect_customs(field):
+        seen, result = set(), []
+        for m in members:
+            v = (m['data'].get(field) or '').strip()
+            if v and v not in seen:
+                seen.add(v)
+                result.append({'value': v, 'author': m['name']})
+        return result
+
+    sel = {
+        'area':    collect_single('area'),
+        'subArea': collect_single('subArea'),
+        'exps':    collect_multi('exps'),
+        'freq':    collect_single('freq'),
+        'situation': collect_single('situation'),
+        'affected':  collect_single('affected'),
+        'severity':  collect_single('severity'),
+        'solution':  collect_single('solution'),
+    }
+    maj = {
+        'area':      majority_single(sel['area']),
+        'subArea':   majority_single(sel['subArea']),
+        'exps':      majority_multi(sel['exps']),
+        'freq':      majority_single(sel['freq']),
+        'situation': majority_single(sel['situation']),
+        'affected':  majority_single(sel['affected']),
+        'severity':  majority_single(sel['severity']),
+        'solution':  majority_single(sel['solution']),
+    }
+    customs = {
+        'area':     collect_customs('areaCustom'),
+        'subArea':  collect_customs('subAreaCustom'),
+        'exp':      collect_customs('expCustom'),
+        'affected': collect_customs('affectedCustom'),
+        'severity': collect_customs('severityCustom'),
+        'solution': collect_customs('solutionCustom'),
+        'situation': collect_customs('situationCustom'),
+    }
+    sit_seen, situation_options = set(), []
+    for m in members:
+        for ex in (m['data'].get('selectedExamples') or []):
+            if ex and ex not in sit_seen:
+                sit_seen.add(ex); situation_options.append(ex)
+        cust = (m['data'].get('situationCustom') or '').strip()
+        if cust and cust not in sit_seen:
+            sit_seen.add(cust); situation_options.append(cust)
+    return JsonResponse({
+        'ok': True,
+        'team_name': room.team_name,
+        'member_count': n,
+        'threshold': threshold,
+        'members': [{'name': m['name'], 'data': m['data']} for m in members],
+        'selections': sel,
+        'majority': maj,
+        'customs': customs,
+        'situation_options': situation_options,
+    })
+
+
 def my_avatar(request):
     from .models import AvatarDraft
     draft_data = {}

@@ -164,6 +164,64 @@
 
   .pf-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#1f2430; color:#fff; padding:12px 22px; border-radius:999px; font-size:14px; font-weight:600; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
   .pf-toast.show { opacity:1; }
+
+  /* ── 협업: 조 선택 / 이름 입력 ── */
+  .pf-pre-phase { animation:pfFadeIn .3s ease; }
+  .pf-pre-title { text-align:center; font-size:22px; font-weight:900; color:var(--ink); margin-bottom:6px; }
+  .pf-pre-sub   { text-align:center; font-size:14px; color:#9a7060; margin-bottom:28px; }
+  .pf-team-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; max-width:480px; margin:0 auto 28px; }
+  .pf-team-card { padding:28px 12px; background:#fff; border:2px solid #f0e8dc; border-radius:18px; text-align:center; cursor:pointer; transition:all .18s; }
+  .pf-team-card:hover { border-color:var(--orange); background:#FFF3E0; transform:translateY(-3px); box-shadow:0 8px 24px rgba(255,145,66,.18); }
+  .pf-team-card .tc-num { font-size:32px; font-weight:900; color:var(--orange); }
+  .pf-team-card .tc-label { font-size:13px; color:#9a7060; margin-top:4px; font-weight:700; }
+  .pf-name-box { max-width:380px; margin:0 auto; }
+  .pf-name-box h3 { font-size:20px; font-weight:900; color:var(--ink); text-align:center; margin-bottom:6px; }
+  .pf-name-box p  { font-size:13px; color:#9a7060; text-align:center; margin-bottom:20px; }
+  .pf-name-input { width:100%; box-sizing:border-box; padding:14px 16px; border:2px solid #f0e8dc; border-radius:14px; font-size:16px; color:var(--ink); background:#FFFAF5; }
+  .pf-name-input:focus { outline:none; border-color:var(--orange); }
+  .pf-enter-btn { width:100%; padding:16px; background:linear-gradient(120deg,var(--orange),var(--amber)); color:#fff; border:none; border-radius:14px; font-size:16px; font-weight:900; cursor:pointer; margin-top:12px; transition:transform .15s; }
+  .pf-enter-btn:hover { transform:translateY(-2px); }
+  .pf-back-link { display:block; text-align:center; margin-top:14px; font-size:13px; color:var(--orange); cursor:pointer; text-decoration:underline; }
+
+  /* ── 협업: 팀 헤더 ── */
+  #pfTeamHeader { display:none; background:#fff; border-radius:16px; padding:12px 18px; margin-bottom:18px; box-shadow:0 4px 16px rgba(255,145,66,.12); border:2px solid rgba(255,145,66,.18); }
+  #pfTeamHeader.active { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .pf-team-badge { background:var(--orange); color:#fff; border-radius:999px; padding:4px 14px; font-size:14px; font-weight:900; flex-shrink:0; }
+  .pf-member-chips { display:flex; gap:7px; flex-wrap:wrap; flex:1; }
+  .pf-member-chip { padding:3px 11px; border-radius:999px; font-size:12px; font-weight:700; color:#fff; }
+  .pf-member-count { font-size:12px; color:#9a7060; flex-shrink:0; }
+
+  /* ── 협업: 투표 표시 ── */
+  .pf-voters-row { display:flex; gap:4px; flex-wrap:wrap; margin-top:5px; min-height:4px; }
+  .pf-voter-tag { font-size:10px; font-weight:700; padding:2px 6px; border-radius:999px; color:#fff; line-height:1.4; }
+  .pf-area-card.pf-majority   { box-shadow:0 0 0 3px var(--amber), 0 4px 16px rgba(255,200,60,.3); }
+  .pf-sub-chip.pf-majority    { box-shadow:0 0 0 3px var(--amber); }
+  .pf-exp-chip.pf-majority    { border-color:var(--amber) !important; background:#FFF8E0 !important; }
+  .pf-freq-btn.pf-majority    { box-shadow:0 0 0 3px var(--amber); }
+  .pf-affected-btn.pf-majority{ box-shadow:0 0 0 3px var(--amber); }
+  .pf-severity-btn.pf-majority{ box-shadow:0 0 0 3px var(--amber); }
+  .pf-example-item.pf-majority{ border-color:var(--amber); background:#FFF8E0; }
+  .pf-next-btn:disabled { background:#ccc !important; box-shadow:none !important; cursor:not-allowed; transform:none !important; }
+
+  /* ── 협업: 과반수 배너 ── */
+  .pf-vote-status { text-align:center; font-size:12px; color:#9a7060; margin-top:6px; line-height:1.7; }
+  .pf-vote-ok   { color:#3DDC97; font-weight:700; }
+  .pf-vote-need { color:var(--orange); font-weight:700; }
+
+  /* ── 협업: 팀원 추가 보기 ── */
+  .pf-team-customs { margin-top:10px; }
+  .pf-team-customs-label { font-size:11px; font-weight:700; color:#b09070; margin-bottom:6px; }
+  .pf-custom-chip { display:inline-block; padding:5px 13px; border:2px dashed #f0c880; border-radius:999px; font-size:12px; font-weight:700; color:#7a5a3a; cursor:pointer; background:#FFFAF5; margin:3px; transition:all .15s; }
+  .pf-custom-chip:hover { border-color:var(--orange); background:#FFF3E0; }
+  .pf-custom-chip.active { border-color:var(--orange); background:var(--orange); color:#fff; border-style:solid; }
+
+  /* ── 협업: Step3 상황 칩 ── */
+  .pf-sit-chip-grid { display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
+  .pf-sit-chip { padding:12px 16px; border:2px solid #eee; border-radius:12px; background:#fafafa; color:#5a5a5a; font-size:13px; cursor:pointer; transition:all .15s; text-align:left; }
+  .pf-sit-chip:hover { border-color:var(--orange); background:#FFF3E0; }
+  .pf-sit-chip.active { border-color:var(--orange); background:#FFF3E0; color:var(--orange); }
+  .pf-sit-chip.pf-majority { box-shadow:0 0 0 3px var(--amber); }
+  .pf-sit-empty { font-size:13px; color:#b09070; padding:12px; background:#FFFAF5; border-radius:12px; }
 </style>
 {% endblock %}
 
@@ -176,6 +234,35 @@
     <h1>생활속 문제 찾기</h1>
     <p>4단계로 탐구해서 해결할 가치 있는 생활 속 문제를 발견해요!<br>선택할수록 분석이 더 정확해져요 😊</p>
   </div>
+
+  <!-- ── 조 선택 단계 ── -->
+  <div id="pfPhase0" class="pf-pre-phase">
+    <div class="pf-pre-title">우리 조를 선택해주세요</div>
+    <div class="pf-pre-sub">같은 조 친구들과 함께 투표하며 문제를 탐구해요!</div>
+    <div class="pf-team-grid" id="pfTeamGrid"></div>
+  </div>
+
+  <!-- ── 이름 입력 단계 ── -->
+  <div id="pfPhase05" class="pf-pre-phase" style="display:none">
+    <div class="pf-name-box">
+      <h3>👋 <span id="pfSelectedTeamLabel"></span>에 참여합니다</h3>
+      <p>이름을 입력하면 조원들과 함께 탐구를 시작할 수 있어요</p>
+      <input type="text" id="pfNameInput" class="pf-name-input" placeholder="이름을 입력하세요" maxlength="10"
+        onkeydown="if(event.key==='Enter') pfEnterRoom()">
+      <button class="pf-enter-btn" onclick="pfEnterRoom()">🚀 시작하기</button>
+      <span class="pf-back-link" onclick="pfPhaseBack()">← 조 다시 선택</span>
+    </div>
+  </div>
+
+  <!-- ── 팀 헤더 ── -->
+  <div id="pfTeamHeader">
+    <span class="pf-team-badge" id="pfHeaderTeam"></span>
+    <div class="pf-member-chips" id="pfHeaderMembers"></div>
+    <span class="pf-member-count" id="pfHeaderCount"></span>
+  </div>
+
+  <!-- ── 메인 (참여 후 표시) ── -->
+  <div id="pfMainWrap" style="display:none">
 
   <!-- 진행 표시 -->
   <div class="pf-progress">
@@ -207,6 +294,7 @@
         <div id="pfSubChipsWrap">
           <div class="pf-sub-label">📌 더 구체적으로 선택해보세요 (선택 사항)</div>
           <div id="pfSubChips" class="pf-chip-row"></div>
+          <div id="pfSubAreaCustoms" class="pf-team-customs" style="margin-top:8px"></div>
         </div>
 
         <!-- 세부영역 직접 입력 (항상 표시) -->
@@ -214,6 +302,7 @@
           <input type="text" id="pfSubAreaCustomInput" class="pf-custom-input"
             placeholder="✏️ 세부 영역 직접 입력 — 예: 수영장 / 학생증 발급 / 자전거 보관소">
         </div>
+        <div id="pfAreaVoteStatus" class="pf-vote-status" style="margin-bottom:8px"></div>
 
         <div class="pf-examples-box" id="pfExamplesBox">
           <div class="pf-examples-title">💡 이런 문제를 찾을 수 있어요 — 클릭하면 Step 3에 자동 입력돼요!</div>
@@ -230,14 +319,17 @@
       <div class="pf-card-sub">해당하는 것을 모두 선택하세요. 여러 개 선택할수록 분석이 풍부해져요!</div>
       <div class="pf-exp-list" id="pfExpList"></div>
 
-      <div class="pf-card-label">⏱️ 이런 상황이 얼마나 자주 있나요?</div>
-      <div class="pf-freq-grid" id="pfFreqGrid"></div>
-
+      <div id="pfExpCustoms" class="pf-team-customs"></div>
       <div class="pf-custom-wrap">
         <div class="pf-custom-label">✏️ 보기에 없는 불편함이 있다면 직접 써주세요 <span style="font-weight:400;color:#ccc">(선택 사항)</span></div>
         <input type="text" id="pfExpCustomInput" class="pf-custom-input"
           placeholder="예: 냄새가 심해서 불쾌했어요 / 소음 때문에 집중이 안 됐어요">
       </div>
+      <div id="pfExpVoteStatus" class="pf-vote-status" style="margin-top:8px"></div>
+
+      <div class="pf-card-label">⏱️ 이런 상황이 얼마나 자주 있나요?</div>
+      <div class="pf-freq-grid" id="pfFreqGrid"></div>
+      <div id="pfFreqVoteStatus" class="pf-vote-status" style="margin-top:8px"></div>
     </div>
   </div>
 
@@ -245,37 +337,47 @@
   <div id="pfStep3" class="pf-step">
     <div class="pf-card">
       <div class="pf-card-title">상황을 자세히 알려주세요</div>
-      <div class="pf-card-sub">짧게 적어도 충분해요. 불편했던 순간을 떠올리며 적어보세요 😊</div>
+      <div class="pf-card-sub">Step 1에서 선택한 예시 중 하나를 고르거나 직접 입력해요 😊</div>
 
       <!-- Q1: 상황 -->
       <div class="pf-card-label">① 어떤 상황이었나요?</div>
-      <textarea id="pfSituation" class="pf-textarea" rows="3"
-        placeholder="예: 점심시간에 급식실에서 줄이 너무 길어서 밥 먹을 시간이 없어요&#10;예: 버스 정류장에 지붕이 없어서 비 오는 날 다 젖어요"></textarea>
-      <div class="pf-textarea-hint">💡 어디서 → 언제 → 무엇이 불편했는지 순서로 적으면 더 좋아요!</div>
+      <div class="pf-sit-chip-grid" id="pfSituationChips"></div>
+      <div class="pf-custom-wrap">
+        <input type="text" id="pfSituationCustomInput" class="pf-custom-input"
+          placeholder="✏️ 직접 입력 후 Enter — 팀원에게도 보기로 표시됩니다">
+      </div>
+      <textarea id="pfSituation" style="display:none"></textarea>
+      <div id="pfSitVoteStatus" class="pf-vote-status" style="margin-top:6px"></div>
 
       <!-- Q2: 영향 대상 -->
       <div class="pf-card-label">② 주로 누가 이 문제를 경험하나요?</div>
       <div class="pf-affected-grid" id="pfAffectedGrid"></div>
+      <div id="pfAffectedCustoms" class="pf-team-customs"></div>
       <div class="pf-custom-wrap">
         <input type="text" id="pfAffectedCustomInput" class="pf-custom-input"
           placeholder="✏️ 직접 입력 — 예: 휠체어를 타는 분들 / 임산부 / 색각 이상자 등">
       </div>
+      <div id="pfAffVoteStatus" class="pf-vote-status"></div>
 
       <!-- Q3: 심각도 -->
       <div class="pf-card-label">③ 이 문제가 계속 해결되지 않으면 어떻게 될까요?</div>
       <div class="pf-severity-grid" id="pfSeverityGrid"></div>
+      <div id="pfSeverityCustoms" class="pf-team-customs"></div>
       <div class="pf-custom-wrap">
         <input type="text" id="pfSeverityCustomInput" class="pf-custom-input"
           placeholder="✏️ 직접 입력 — 예: 공부 집중이 안 되고 성적이 떨어질 것 같아요">
       </div>
+      <div id="pfSevVoteStatus" class="pf-vote-status"></div>
 
       <!-- Q4: 현재 해결책 -->
       <div class="pf-card-label">④ 지금 이 문제를 해결하는 방법이 있나요?</div>
       <div class="pf-affected-grid" id="pfSolutionGrid"></div>
+      <div id="pfSolutionCustoms" class="pf-team-customs"></div>
       <div class="pf-custom-wrap">
         <input type="text" id="pfSolutionCustomInput" class="pf-custom-input"
           placeholder="✏️ 직접 입력 — 예: 선생님께 말씀드렸지만 아직 바뀐 게 없어요">
       </div>
+      <div id="pfSolVoteStatus" class="pf-vote-status"></div>
     </div>
   </div>
 
@@ -322,10 +424,13 @@
   </div>
 
   <!-- 네비게이션 -->
+  <div id="pfVoteStatusBar" class="pf-vote-status" style="margin-bottom:6px"></div>
   <div class="pf-nav">
     <button id="pfPrevBtn" class="pf-prev-btn" style="display:none" onclick="pfPrev()">← 이전</button>
     <button id="pfNextBtn" class="pf-next-btn" onclick="pfNext()">다음 →</button>
   </div>
+
+  </div><!-- /pfMainWrap -->
 </div>
 
 <div id="pfToast" class="pf-toast"></div>
@@ -446,6 +551,8 @@ let pfFreq = null;
 let pfAffected = null;
 let pfSeverity = null;
 let pfSolution = null;
+let pfSituationVal = '';
+let pfSelectedExamples = [];
 // 직접 입력 값
 let pfAreaCustom = '';
 let pfExpCustom = '';
@@ -453,12 +560,378 @@ let pfAffectedCustom = '';
 let pfSeverityCustom = '';
 let pfSolutionCustom = '';
 
+/* ── 협업 State ── */
+let pfRoomId = null;
+let pfMemberId = null;
+let pfSessionKey = null;
+let pfMyName = null;
+let pfSelectedTeam = null;
+let pfRoomState = null;
+let pfPollInterval = null;
+let pfSyncTimer = null;
+const PF_MEMBER_COLORS = ['#5B8DEF','#F47B44','#4CAF7D','#9B59B6','#E91E63','#FF9800'];
+
+function pfCsrf() {
+  return (document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrftoken='))||'').split('=')[1]||'';
+}
+function pfMemberColor(name) {
+  if (!pfRoomState) return PF_MEMBER_COLORS[0];
+  const i = pfRoomState.members.findIndex(m => m.name === name);
+  return PF_MEMBER_COLORS[(i < 0 ? 0 : i) % PF_MEMBER_COLORS.length];
+}
+
+/* ── Phase 0: 조 선택 ── */
+function pfInitTeams() {
+  const teams = ['1조','2조','3조','4조','5조','6조'];
+  document.getElementById('pfTeamGrid').innerHTML = teams.map(t =>
+    `<div class="pf-team-card" onclick="pfPickTeam('${t}')">
+      <div class="tc-num">${t.replace('조','')}</div>
+      <div class="tc-label">${t}</div>
+    </div>`).join('');
+}
+function pfPickTeam(team) {
+  pfSelectedTeam = team;
+  document.getElementById('pfSelectedTeamLabel').textContent = team;
+  document.getElementById('pfPhase0').style.display  = 'none';
+  document.getElementById('pfPhase05').style.display = 'block';
+  setTimeout(() => document.getElementById('pfNameInput').focus(), 80);
+}
+function pfPhaseBack() {
+  document.getElementById('pfPhase05').style.display = 'none';
+  document.getElementById('pfPhase0').style.display  = 'block';
+}
+
+async function pfEnterRoom() {
+  const name = document.getElementById('pfNameInput').value.trim();
+  if (!name) { pfShowToast('이름을 입력해주세요!'); return; }
+  const stored = localStorage.getItem('pf_session_' + pfSelectedTeam);
+  let storedKey = null;
+  try { storedKey = JSON.parse(stored||'{}').session_key || null; } catch(e) {}
+  try {
+    const res = await fetch('/arcade/api/problem/join/', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':pfCsrf()},
+      body: JSON.stringify({team: pfSelectedTeam, name, session_key: storedKey})
+    });
+    const d = await res.json();
+    if (!d.ok) { pfShowToast('입장 실패: ' + d.error); return; }
+    pfRoomId = d.room_id; pfMemberId = d.member_id;
+    pfSessionKey = d.session_key; pfMyName = name;
+    localStorage.setItem('pf_session_' + pfSelectedTeam, JSON.stringify({
+      session_key: pfSessionKey, name, room_id: pfRoomId, member_id: pfMemberId
+    }));
+    document.getElementById('pfPhase0').style.display  = 'none';
+    document.getElementById('pfPhase05').style.display = 'none';
+    document.getElementById('pfTeamHeader').classList.add('active');
+    document.getElementById('pfHeaderTeam').textContent = pfSelectedTeam;
+    document.getElementById('pfMainWrap').style.display = 'block';
+    pfPollRoom();
+    pfPollInterval = setInterval(pfPollRoom, 3000);
+    pfShowToast('🎉 ' + pfSelectedTeam + '에 입장했어요!');
+  } catch(e) { pfShowToast('연결 오류가 발생했습니다'); }
+}
+
+/* ── 동기화 ── */
+function pfCollectMyData() {
+  return {
+    area: pfArea,
+    subArea: pfSubArea,
+    areaCustom: (document.getElementById('pfAreaCustomInput')?.value||'').trim(),
+    subAreaCustom: (document.getElementById('pfSubAreaCustomInput')?.value||'').trim(),
+    selectedExamples: pfSelectedExamples,
+    exps: [...pfExps],
+    expCustom: (document.getElementById('pfExpCustomInput')?.value||'').trim(),
+    freq: pfFreq,
+    situation: pfSituationVal,
+    situationCustom: (document.getElementById('pfSituationCustomInput')?.value||'').trim(),
+    affected: pfAffected,
+    affectedCustom: (document.getElementById('pfAffectedCustomInput')?.value||'').trim(),
+    severity: pfSeverity,
+    severityCustom: (document.getElementById('pfSeverityCustomInput')?.value||'').trim(),
+    solution: pfSolution,
+    solutionCustom: (document.getElementById('pfSolutionCustomInput')?.value||'').trim(),
+  };
+}
+function pfScheduleSync() {
+  clearTimeout(pfSyncTimer);
+  pfSyncTimer = setTimeout(pfSyncNow, 600);
+}
+async function pfSyncNow() {
+  if (!pfMemberId) return;
+  try {
+    await fetch('/arcade/api/problem/update/', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':pfCsrf()},
+      body: JSON.stringify({member_id: pfMemberId, session_key: pfSessionKey, data: pfCollectMyData()})
+    });
+  } catch(e) {}
+}
+
+/* ── 폴링 ── */
+async function pfPollRoom() {
+  if (!pfRoomId) return;
+  try {
+    const url = `/arcade/api/problem/room/${pfRoomId}/state/?member_id=${pfMemberId}&session_key=${encodeURIComponent(pfSessionKey)}`;
+    const d = await (await fetch(url)).json();
+    if (!d.ok) return;
+    pfRoomState = d;
+    pfUpdateHeader(d);
+    pfApplyVotes();
+    pfUpdateNextBtn();
+  } catch(e) {}
+}
+
+function pfUpdateHeader(state) {
+  document.getElementById('pfHeaderMembers').innerHTML = state.members.map((m,i) =>
+    `<span class="pf-member-chip" style="background:${PF_MEMBER_COLORS[i%PF_MEMBER_COLORS.length]}">${m.name}${m.name===pfMyName?' (나)':''}</span>`
+  ).join('');
+  document.getElementById('pfHeaderCount').textContent = state.member_count + '명 접속 중';
+}
+
+/* ── 투표 표시 ── */
+function pfSetVoters(el, voters) {
+  if (!el) return;
+  let vr = el.querySelector('.pf-voters-row');
+  if (!vr) { vr = document.createElement('div'); vr.className='pf-voters-row'; el.appendChild(vr); }
+  vr.innerHTML = voters.map(n =>
+    `<span class="pf-voter-tag" style="background:${pfMemberColor(n)}">${n}</span>`).join('');
+}
+function pfVoteStatus(voters, label) {
+  if (!pfRoomState) return '';
+  const n = pfRoomState.member_count;
+  const cnt = voters.length;
+  const ok = cnt > pfRoomState.threshold;
+  if (ok) return `<span class="pf-vote-ok">✓ ${label} 과반수 동의 (${cnt}/${n})</span>`;
+  return `<span class="pf-vote-need">⏳ ${label} — ${cnt}/${n}명 선택, 과반수(${Math.ceil(n/2+0.01)}명) 필요</span>`;
+}
+function pfCustomChips(customs, onClickFn) {
+  if (!customs || !customs.length) return '';
+  const chips = customs.map(c =>
+    `<span class="pf-custom-chip" onclick="${onClickFn}(this,'${c.value.replace(/'/g,"\\'")}')" title="${c.author}이(가) 추가">
+      ✏️ ${c.value} <span style="font-size:9px;opacity:.6">(${c.author})</span>
+    </span>`).join('');
+  return `<div class="pf-team-customs-label">📝 팀원이 추가한 보기</div>${chips}`;
+}
+
+function pfApplyVotes() {
+  if (!pfRoomState || !pfMemberId) return;
+  const s = pfRoomState.selections;
+  const maj = pfRoomState.majority;
+  const customs = pfRoomState.customs;
+  const n = pfRoomState.member_count;
+
+  if (pfStep === 1) {
+    // Area chips
+    document.querySelectorAll('#pfAreaGrid .pf-area-card[data-id]').forEach(el => {
+      const id = el.dataset.id;
+      const voters = (s.area||{})[id]||[];
+      pfSetVoters(el, voters);
+      el.classList.toggle('pf-majority', maj.area === id);
+    });
+    // Sub-area chips
+    document.querySelectorAll('#pfSubChips .pf-sub-chip[data-sid]').forEach(el => {
+      const sid = el.dataset.sid;
+      const voters = (s.subArea||{})[sid]||[];
+      pfSetVoters(el, voters);
+      el.classList.toggle('pf-majority', maj.subArea === sid);
+    });
+    // Sub-area custom chips from teammates
+    const subCustomEl = document.getElementById('pfSubAreaCustoms');
+    if (subCustomEl) {
+      const mySubCustom = (document.getElementById('pfSubAreaCustomInput')?.value||'').trim();
+      const othersCustom = (customs.subArea||[]).filter(c => c.author !== pfMyName || c.value !== mySubCustom);
+      subCustomEl.innerHTML = pfCustomChips(othersCustom, 'pfPickSubCustom');
+    }
+    // Examples
+    document.querySelectorAll('#pfExamples .pf-example-item[data-ex]').forEach(el => {
+      const ex = el.dataset.ex;
+      const voters = pfRoomState.members.filter(m => (m.data.selectedExamples||[]).includes(ex)).map(m=>m.name);
+      pfSetVoters(el, voters);
+    });
+    // Area vote status
+    const areaVoters = maj.area ? (s.area||{})[maj.area]||[] : [];
+    const el = document.getElementById('pfAreaVoteStatus');
+    if (el && n > 1) {
+      el.innerHTML = maj.area ? pfVoteStatus(areaVoters, '영역') : `<span class="pf-vote-need">⏳ 팀원이 영역을 선택 중...</span>`;
+    }
+
+  } else if (pfStep === 2) {
+    // Exp chips
+    document.querySelectorAll('#pfExpList .pf-exp-chip[data-id]').forEach(el => {
+      const id = el.dataset.id;
+      const voters = (s.exps||{})[id]||[];
+      pfSetVoters(el, voters);
+      el.classList.toggle('pf-majority', (maj.exps||[]).includes(id));
+    });
+    // Exp customs from teammates
+    const expCustomEl = document.getElementById('pfExpCustoms');
+    if (expCustomEl) {
+      const myExpCustom = (document.getElementById('pfExpCustomInput')?.value||'').trim();
+      const others = (customs.exp||[]).filter(c => c.author !== pfMyName);
+      expCustomEl.innerHTML = pfCustomChips(others, 'pfPickExpCustom');
+    }
+    // Freq chips
+    document.querySelectorAll('#pfFreqGrid .pf-freq-btn[data-id]').forEach(el => {
+      const id = el.dataset.id;
+      const voters = (s.freq||{})[id]||[];
+      pfSetVoters(el, voters);
+      el.classList.toggle('pf-majority', maj.freq === id);
+    });
+    // Exp vote status
+    const expVoters = (maj.exps||[]).length > 0 ? Object.values(s.exps||{}).flat().filter((v,i,a)=>a.indexOf(v)===i) : [];
+    const expOk = (maj.exps||[]).length > 0;
+    const freqOk = !!maj.freq;
+    const expEl = document.getElementById('pfExpVoteStatus');
+    if (expEl && n > 1) expEl.innerHTML = expOk
+      ? `<span class="pf-vote-ok">✓ 불편유형 과반수 동의</span>`
+      : `<span class="pf-vote-need">⏳ 불편유형 — 과반수가 같은 항목을 선택해야 해요</span>`;
+    const frqEl = document.getElementById('pfFreqVoteStatus');
+    if (frqEl && n > 1) frqEl.innerHTML = freqOk
+      ? `<span class="pf-vote-ok">✓ 빈도 과반수 동의</span>`
+      : `<span class="pf-vote-need">⏳ 빈도 — 과반수가 같은 항목을 선택해야 해요</span>`;
+
+  } else if (pfStep === 3) {
+    pfRenderSituationChips();
+    // Affected
+    document.querySelectorAll('#pfAffectedGrid .pf-affected-btn[data-id]').forEach(el => {
+      const id = el.dataset.id;
+      const voters = (s.affected||{})[id]||[];
+      pfSetVoters(el, voters);
+      el.classList.toggle('pf-majority', maj.affected === id);
+    });
+    const affCustomEl = document.getElementById('pfAffectedCustoms');
+    if (affCustomEl) affCustomEl.innerHTML = pfCustomChips((customs.affected||[]).filter(c=>c.author!==pfMyName), 'pfPickAffCustom');
+    // Severity
+    document.querySelectorAll('#pfSeverityGrid .pf-severity-btn[data-id]').forEach(el => {
+      const id = el.dataset.id;
+      const voters = (s.severity||{})[id]||[];
+      pfSetVoters(el, voters);
+      el.classList.toggle('pf-majority', maj.severity === id);
+    });
+    const sevCustomEl = document.getElementById('pfSeverityCustoms');
+    if (sevCustomEl) sevCustomEl.innerHTML = pfCustomChips((customs.severity||[]).filter(c=>c.author!==pfMyName), 'pfPickSevCustom');
+    // Solution
+    document.querySelectorAll('#pfSolutionGrid .pf-affected-btn[data-id]').forEach(el => {
+      const id = el.dataset.id;
+      const voters = (s.solution||{})[id]||[];
+      pfSetVoters(el, voters);
+      el.classList.toggle('pf-majority', maj.solution === id);
+    });
+    const solCustomEl = document.getElementById('pfSolutionCustoms');
+    if (solCustomEl) solCustomEl.innerHTML = pfCustomChips((customs.solution||[]).filter(c=>c.author!==pfMyName), 'pfPickSolCustom');
+    // Vote status for each q
+    if (n > 1) {
+      const vs = (id, label, ok) => ok
+        ? `<span class="pf-vote-ok">✓ ${label} 과반수 동의</span>`
+        : `<span class="pf-vote-need">⏳ ${label} — 과반수 동의 필요</span>`;
+      const sitEl = document.getElementById('pfSitVoteStatus');
+      if (sitEl) sitEl.innerHTML = vs('sit','상황', !!maj.situation);
+      const affEl = document.getElementById('pfAffVoteStatus');
+      if (affEl) affEl.innerHTML = vs('aff','경험 대상', !!maj.affected);
+      const sevEl = document.getElementById('pfSevVoteStatus');
+      if (sevEl) sevEl.innerHTML = vs('sev','심각도', !!maj.severity);
+      const solEl = document.getElementById('pfSolVoteStatus');
+      if (solEl) solEl.innerHTML = vs('sol','해결책', !!maj.solution);
+    }
+  }
+}
+
+function pfRenderSituationChips() {
+  const el = document.getElementById('pfSituationChips');
+  if (!el) return;
+  const opts = pfRoomState?.situation_options || [];
+  if (!opts.length) {
+    el.innerHTML = '<div class="pf-sit-empty">Step 1에서 팀원이 예시를 선택하면 여기에 나타나요</div>';
+    return;
+  }
+  const sel = pfRoomState?.selections?.situation || {};
+  const maj = pfRoomState?.majority?.situation;
+  el.innerHTML = opts.map(opt => {
+    const voters = sel[opt] || [];
+    const isActive = pfSituationVal === opt;
+    const isMaj = maj === opt;
+    const votersHtml = voters.map(n =>
+      `<span class="pf-voter-tag" style="background:${pfMemberColor(n)}">${n}</span>`).join('');
+    return `<button class="pf-sit-chip${isActive?' active':''}${isMaj?' pf-majority':''}"
+      onclick="pfSelectSituation(this,'${opt.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"
+      >${opt}<div class="pf-voters-row">${votersHtml}</div></button>`;
+  }).join('');
+}
+
+function pfSelectSituation(el, text) {
+  pfSituationVal = text;
+  document.getElementById('pfSituation').value = text;
+  document.querySelectorAll('.pf-sit-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  pfScheduleSync();
+}
+
+/* 팀원 커스텀 보기 클릭 핸들러들 */
+function pfPickSubCustom(el, val) {
+  document.getElementById('pfSubAreaCustomInput').value = val;
+  pfSubArea = val; pfScheduleSync();
+  document.querySelectorAll('.pf-custom-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function pfPickExpCustom(el, val) {
+  document.getElementById('pfExpCustomInput').value = val;
+  pfScheduleSync();
+}
+function pfPickAffCustom(el, val) {
+  document.getElementById('pfAffectedCustomInput').value = val;
+  pfAffected = val; pfScheduleSync();
+  document.querySelectorAll('#pfAffectedCustoms .pf-custom-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function pfPickSevCustom(el, val) {
+  document.getElementById('pfSeverityCustomInput').value = val;
+  pfSeverity = val; pfScheduleSync();
+  document.querySelectorAll('#pfSeverityCustoms .pf-custom-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function pfPickSolCustom(el, val) {
+  document.getElementById('pfSolutionCustomInput').value = val;
+  pfSolution = val; pfScheduleSync();
+  document.querySelectorAll('#pfSolutionCustoms .pf-custom-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ── 다음 버튼 상태 ── */
+function pfUpdateNextBtn() {
+  if (!pfRoomState || !pfMemberId) return;
+  const maj = pfRoomState.majority;
+  const nb = document.getElementById('pfNextBtn');
+  const sb = document.getElementById('pfVoteStatusBar');
+  let ok = true;
+  let msg = '';
+  if (pfStep === 1) {
+    ok = !!maj.area;
+    msg = ok ? '<span class="pf-vote-ok">✓ 영역 결정 완료 — 다음 단계로 이동 가능</span>'
+             : '<span class="pf-vote-need">⏳ 과반수 팀원이 같은 영역을 선택해야 다음으로 넘어갈 수 있어요</span>';
+  } else if (pfStep === 2) {
+    ok = (maj.exps||[]).length > 0 && !!maj.freq;
+    msg = ok ? '<span class="pf-vote-ok">✓ 불편유형 & 빈도 결정 완료 — 다음 단계로 이동 가능</span>'
+             : '<span class="pf-vote-need">⏳ 불편유형과 빈도 모두 과반수 동의가 필요해요</span>';
+  } else if (pfStep === 3) {
+    ok = !!maj.situation && !!maj.affected && !!maj.severity && !!maj.solution;
+    const missing = [
+      !maj.situation && '상황', !maj.affected && '경험대상',
+      !maj.severity && '심각도', !maj.solution && '해결책'
+    ].filter(Boolean);
+    msg = ok ? '<span class="pf-vote-ok">✓ 모든 항목 과반수 동의 — 문제 분석 가능!</span>'
+             : `<span class="pf-vote-need">⏳ 과반수 동의 필요: ${missing.join(', ')}</span>`;
+  }
+  nb.disabled = !ok;
+  if (sb) sb.innerHTML = pfRoomState.member_count > 1 ? msg : '';
+}
+
 /* ── 렌더 ── */
 function pfRenderStep1() {
   document.getElementById('pfAreaGrid').innerHTML = PF_AREAS.map(a =>
     `<div class="pf-area-card" data-id="${a.id}" onclick="pfSelectArea('${a.id}',this)">
       <span class="ac-emoji">${a.emoji}</span>
       <span class="ac-label">${a.label}</span>
+      <div class="pf-voters-row"></div>
     </div>`).join('');
 }
 
@@ -466,26 +939,29 @@ function pfRenderStep2() {
   document.getElementById('pfExpList').innerHTML = PF_EXPS.map(e =>
     `<button class="pf-exp-chip${pfExps.has(e.id)?' active':''}" data-id="${e.id}" onclick="pfToggleExp('${e.id}',this)">
       <span class="pf-exp-emoji">${e.emoji}</span>${e.label}
+      <div class="pf-voters-row"></div>
     </button>`).join('');
   document.getElementById('pfFreqGrid').innerHTML = PF_FREQS.map(f =>
     `<button class="pf-freq-btn${pfFreq===f.id?' active':''}" data-id="${f.id}" onclick="pfSelectFreq('${f.id}',this)">
       <span class="freq-icon">${f.icon}</span>${f.label}
+      <div class="pf-voters-row"></div>
     </button>`).join('');
 }
 
 function pfRenderStep3() {
   document.getElementById('pfAffectedGrid').innerHTML = PF_AFFECTED.map(a =>
     `<button class="pf-affected-btn${pfAffected===a.id?' active':''}" data-id="${a.id}" onclick="pfSelectAffected('${a.id}',this)">
-      ${a.label}
+      ${a.label}<div class="pf-voters-row"></div>
     </button>`).join('');
   document.getElementById('pfSeverityGrid').innerHTML = PF_SEVERITY.map(s =>
     `<button class="pf-severity-btn${pfSeverity===s.id?' active':''}" data-id="${s.id}" onclick="pfSelectSeverity('${s.id}',this)">
-      ${s.label}
+      ${s.label}<div class="pf-voters-row"></div>
     </button>`).join('');
   document.getElementById('pfSolutionGrid').innerHTML = PF_SOLUTIONS.map(s =>
     `<button class="pf-affected-btn${pfSolution===s.id?' active':''}" data-id="${s.id}" onclick="pfSelectSolution('${s.id}',this)">
-      ${s.label}
+      ${s.label}<div class="pf-voters-row"></div>
     </button>`).join('');
+  pfRenderSituationChips();
 }
 
 /* ── 선택 핸들러 ── */
@@ -502,55 +978,68 @@ function pfSelectArea(id, el) {
   document.getElementById('pfExamplesBox').style.display   = isOther ? 'none'  : 'block';
 
   if (!isOther) {
-    document.getElementById('pfSubChips').innerHTML = (PF_SUB_AREAS[id]||[]).map((s,i) =>
-      `<button class="pf-sub-chip" onclick="pfSelectSub(this,'${id}',${i})">${s}</button>`).join('');
+    document.getElementById('pfSubChips').innerHTML = (PF_SUB_AREAS[id]||[]).map(s =>
+      `<button class="pf-sub-chip" data-sid="${s}" onclick="pfSelectSub(this,'${s}')">
+        ${s}<div class="pf-voters-row"></div>
+      </button>`).join('');
     document.getElementById('pfExamples').innerHTML = (PF_EXAMPLES[id]||[]).map(ex =>
-      `<div class="pf-example-item" onclick="pfUseExample(this,'${ex}')">${ex}</div>`).join('');
+      `<div class="pf-example-item" data-ex="${ex.replace(/"/g,'&quot;')}" onclick="pfUseExample(this,'${ex.replace(/'/g,"\\'")}')">
+        ${ex}<div class="pf-voters-row"></div>
+      </div>`).join('');
   }
+  pfScheduleSync();
 }
 
-function pfSelectSub(el, areaId, idx) {
+function pfSelectSub(el, sid) {
   document.querySelectorAll('.pf-sub-chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
-  pfSubArea = (PF_SUB_AREAS[areaId]||[])[idx];
+  pfSubArea = sid;
+  pfScheduleSync();
 }
 
 function pfUseExample(el, text) {
-  document.querySelectorAll('.pf-example-item').forEach(e => e.classList.remove('selected'));
-  el.classList.add('selected');
-  const ta = document.getElementById('pfSituation');
-  if (ta) ta.value = text;
-  pfShowToast('Step 3 입력란에 자동으로 채워졌어요!');
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) {
+    if (!pfSelectedExamples.includes(text)) pfSelectedExamples.push(text);
+    pfShowToast('Step 3 상황 보기에 추가됐어요!');
+  } else {
+    pfSelectedExamples = pfSelectedExamples.filter(e => e !== text);
+  }
+  pfScheduleSync();
 }
 
 function pfToggleExp(id, el) {
   el.classList.toggle('active');
   if (pfExps.has(id)) pfExps.delete(id); else pfExps.add(id);
-  if (el.classList.contains('active')) el.insertAdjacentHTML('beforeend','');
+  pfScheduleSync();
 }
 
 function pfSelectFreq(id, el) {
   pfFreq = id;
   document.querySelectorAll('.pf-freq-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  pfScheduleSync();
 }
 
 function pfSelectAffected(id, el) {
   pfAffected = id;
   document.querySelectorAll('#pfAffectedGrid .pf-affected-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  pfScheduleSync();
 }
 
 function pfSelectSeverity(id, el) {
   pfSeverity = id;
   document.querySelectorAll('.pf-severity-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  pfScheduleSync();
 }
 
 function pfSelectSolution(id, el) {
   pfSolution = id;
   document.querySelectorAll('#pfSolutionGrid .pf-affected-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  pfScheduleSync();
 }
 
 /* ── 단계 이동 ── */
@@ -574,16 +1063,45 @@ function pfGoTo(step) {
 
 function pfNext() {
   if (pfStep === 1) {
-    if (!pfArea) { pfShowToast('생활 영역을 선택해주세요!'); return; }
+    if (pfMemberId && pfRoomState) {
+      const maj = pfRoomState.majority;
+      if (!maj.area) { pfShowToast('아직 과반수 팀원이 영역을 선택하지 않았어요!'); return; }
+    } else {
+      if (!pfArea) { pfShowToast('생활 영역을 선택해주세요!'); return; }
+    }
     pfRenderStep2(); pfGoTo(2);
   } else if (pfStep === 2) {
-    const expCustomVal = document.getElementById('pfExpCustomInput')?.value.trim() || '';
-    if (pfExps.size === 0 && !expCustomVal) { pfShowToast('불편 경험을 선택하거나 직접 입력해주세요!'); return; }
+    if (pfMemberId && pfRoomState) {
+      const maj = pfRoomState.majority;
+      if (!(maj.exps||[]).length) { pfShowToast('아직 과반수 팀원이 불편 유형을 선택하지 않았어요!'); return; }
+      if (!maj.freq) { pfShowToast('아직 과반수 팀원이 빈도를 선택하지 않았어요!'); return; }
+    } else {
+      const expCustomVal = document.getElementById('pfExpCustomInput')?.value.trim() || '';
+      if (pfExps.size === 0 && !expCustomVal) { pfShowToast('불편 경험을 선택하거나 직접 입력해주세요!'); return; }
+    }
     pfRenderStep3(); pfGoTo(3);
   } else if (pfStep === 3) {
-    const sit = document.getElementById('pfSituation').value.trim();
-    if (!sit) { pfShowToast('상황을 짧게라도 적어주세요!'); return; }
-    pfAnalyze(sit); pfGoTo(4);
+    if (pfMemberId && pfRoomState) {
+      const maj = pfRoomState.majority;
+      if (!maj.situation) { pfShowToast('아직 과반수 팀원이 상황을 선택하지 않았어요!'); return; }
+      if (!maj.affected)  { pfShowToast('아직 과반수 팀원이 경험 대상을 선택하지 않았어요!'); return; }
+      if (!maj.severity)  { pfShowToast('아직 과반수 팀원이 심각도를 선택하지 않았어요!'); return; }
+      if (!maj.solution)  { pfShowToast('아직 과반수 팀원이 해결책을 선택하지 않았어요!'); return; }
+      // 과반수 값으로 상태 세팅
+      pfArea = maj.area; pfExps = new Set(maj.exps);
+      pfFreq = maj.freq; pfAffected = maj.affected;
+      pfSeverity = maj.severity; pfSolution = maj.solution;
+      pfSituationVal = maj.situation;
+      const majMember = pfRoomState.members.find(m => m.data.area === maj.area);
+      if (majMember) pfSubArea = majMember.data.subArea || pfSubArea;
+      document.getElementById('pfSituation').value = pfSituationVal;
+    } else {
+      const sit = document.getElementById('pfSituationCustomInput')?.value.trim() ||
+                  document.getElementById('pfSituation').value.trim() || pfSituationVal;
+      if (!sit) { pfShowToast('상황을 선택하거나 직접 입력해주세요!'); return; }
+      pfSituationVal = sit;
+    }
+    pfAnalyze(pfSituationVal); pfGoTo(4);
   }
 }
 
@@ -592,11 +1110,14 @@ function pfPrev() { pfGoTo(pfStep - 1); }
 function pfReset() {
   pfArea=null; pfSubArea=null; pfExps=new Set(); pfFreq=null;
   pfAffected=null; pfSeverity=null; pfSolution=null;
+  pfSituationVal=''; pfSelectedExamples=[];
   pfAreaCustom=''; pfExpCustom=''; pfAffectedCustom=''; pfSeverityCustom=''; pfSolutionCustom='';
   document.getElementById('pfSituation').value = '';
   document.getElementById('pfSubSection').style.display = 'none';
-  ['pfAreaCustomInput','pfSubAreaCustomInput','pfExpCustomInput','pfAffectedCustomInput','pfSeverityCustomInput','pfSolutionCustomInput']
+  ['pfAreaCustomInput','pfSubAreaCustomInput','pfExpCustomInput','pfSituationCustomInput',
+   'pfAffectedCustomInput','pfSeverityCustomInput','pfSolutionCustomInput']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  pfScheduleSync();
   pfRenderStep1(); pfGoTo(1);
 }
 
@@ -776,6 +1297,37 @@ function pfShowToast(msg) {
 }
 
 /* ── 초기화 ── */
+pfInitTeams();
 pfRenderStep1();
+
+/* 직접입력 sync 연결 */
+document.addEventListener('DOMContentLoaded', () => {
+  ['pfAreaCustomInput','pfSubAreaCustomInput','pfExpCustomInput',
+   'pfSituationCustomInput','pfAffectedCustomInput','pfSeverityCustomInput','pfSolutionCustomInput']
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', pfScheduleSync);
+    });
+  // 상황 직접입력 Enter → 상황값 업데이트
+  const sitCustom = document.getElementById('pfSituationCustomInput');
+  if (sitCustom) {
+    sitCustom.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const val = sitCustom.value.trim();
+        if (val) {
+          pfSituationVal = val;
+          document.getElementById('pfSituation').value = val;
+          pfSyncNow();
+          setTimeout(() => pfRenderSituationChips(), 700);
+        }
+      }
+    });
+  }
+  // 페이지 떠날 때 폴링 정리
+  window.addEventListener('beforeunload', () => {
+    clearInterval(pfPollInterval);
+    clearTimeout(pfSyncTimer);
+  });
+});
 </script>
 {% endblock %}

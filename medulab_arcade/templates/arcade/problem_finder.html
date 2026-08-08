@@ -155,8 +155,11 @@
   .pf-reset-btn { padding:11px 22px; background:#f0e8dc; color:#8a6040; border:none; border-radius:999px; font-size:13px; font-weight:700; cursor:pointer; transition:background .2s; }
   .pf-reset-btn:hover { background:#ffe0b2; }
 
+  /* 슬라이드 이미지 프롬프트 섹션 */
+  .pf-slide-section { background:#EFF8FF; border-radius:20px; padding:22px 26px; border:2px solid #90CAF9; margin-bottom:16px; }
+  .pf-slide-section-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
   /* 슬라이드 이미지 프롬프트 카드 */
-  .pf-slide-card { background:#EFF8FF; border-radius:16px; padding:16px 18px; border:1.5px solid #90CAF9; margin-bottom:14px; }
+  .pf-slide-card { }
   .pf-slide-badge { display:inline-flex; align-items:center; gap:6px; background:linear-gradient(120deg,#1976D2,#42A5F5); color:#fff; border-radius:999px; padding:4px 16px; font-size:13px; font-weight:700; margin-right:8px; }
   .pf-slide-label { font-size:14px; font-weight:700; color:#1565C0; }
   .pf-slide-desc { font-size:11.5px; color:#5c8fbf; margin:6px 0 10px; }
@@ -435,13 +438,15 @@
       <div id="pfExploreQs"></div>
     </div>
 
+    <!-- 슬라이드 이미지 프롬프트 (별도 섹션) -->
+    <div class="pf-slide-section" id="pfSlideCardWrap" style="display:none"></div>
+
     <!-- ChatGPT 프롬프트 (팀 분업) -->
     <div class="pf-prompt-section">
       <div class="pf-prompt-header">
         <span>💬 AI로 이 문제 심층 분석하기</span>
         <small>팀원별로 역할을 나눠 분석해요! 내 카드의 프롬프트를 복사해서 AI에 붙여넣어 보세요.</small>
       </div>
-      <div id="pfSlideCardWrap"></div>
       <div id="pfTeamPromptCards" class="pf-team-prompt-cards"></div>
       <div class="pf-btn-row">
         <button class="pf-reset-btn" onclick="pfReset()">🔄 새 문제 찾기</button>
@@ -1231,6 +1236,8 @@ function pfReset() {
   pfAreaCustom=''; pfExpCustom=''; pfAffectedCustom=''; pfSeverityCustom=''; pfSolutionCustom='';
   document.getElementById('pfSituation').value = '';
   document.getElementById('pfSubSection').style.display = 'none';
+  const sw = document.getElementById('pfSlideCardWrap');
+  if (sw) { sw.style.display = 'none'; sw.innerHTML = ''; }
   ['pfAreaCustomInput','pfSubAreaCustomInput','pfExpCustomInput','pfSituationCustomInput',
    'pfAffectedCustomInput','pfSeverityCustomInput','pfSolutionCustomInput']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
@@ -1428,16 +1435,16 @@ function pfBuildSlidePrompt(situation, areaLabel, expLabels, freqText, place, so
 function pfRenderSlideCard(situation, areaLabel, expLabels, freqText, place, solText) {
   const prompt = pfBuildSlidePrompt(situation, areaLabel, expLabels, freqText, place, solText);
   const wrap = document.getElementById('pfSlideCardWrap');
+  if (!wrap) return;
+  wrap.style.display = '';
   wrap.innerHTML = `
-    <div class="pf-slide-card">
-      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
-        <span class="pf-slide-badge">🖼️ 슬라이드</span>
-        <span class="pf-slide-label">16:9 발표 슬라이드 이미지 만들기</span>
-      </div>
-      <div class="pf-slide-desc">팀 전체 공통 · 이 프롬프트를 ChatGPT에 붙여넣으면 슬라이드 디자인 방향을 제안받을 수 있어요!</div>
-      <div class="pf-slide-prompt" id="pfSlidePromptText">${prompt}</div>
-      <button class="pf-slide-copy-btn" onclick="pfCopySlidePrompt(this)">📋 프롬프트 복사</button>
-    </div>`;
+    <div class="pf-slide-section-header">
+      <span class="pf-slide-badge">🖼️ 슬라이드</span>
+      <span class="pf-slide-label">16:9 발표 슬라이드 이미지 만들기</span>
+    </div>
+    <div class="pf-slide-desc">팀 전체 공통 · 이 프롬프트를 ChatGPT에 붙여넣으면 슬라이드 디자인 방향을 제안받을 수 있어요!</div>
+    <div class="pf-slide-prompt" id="pfSlidePromptText">${prompt}</div>
+    <button class="pf-slide-copy-btn" onclick="pfCopySlidePrompt(this)">📋 프롬프트 복사</button>`;
 }
 
 function pfCopySlidePrompt(btn) {

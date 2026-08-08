@@ -131,6 +131,18 @@
     align-items:center; justify-content:center; font-size:11px; font-weight:800;
     color:#fff; margin-bottom:4px;
   }
+  .mbti-img-wrap {
+    width:100%; overflow:hidden; border-radius:6px; margin:4px auto 2px;
+  }
+  .mbti-img {
+    width:100%;
+    aspect-ratio: 475 / 380;
+    background-image: url("{% static 'arcade/img/mbti_chars.png' %}");
+    background-size: 400% auto;
+    background-repeat: no-repeat;
+    margin-top: -34%;
+    margin-bottom: -10%;
+  }
   .mbti-code { font-size:15px; font-weight:900; letter-spacing:.5px; margin-bottom:3px; }
   .mbti-label { font-size:11px; font-weight:700; color:#4a4568; line-height:1.35; }
   .mbti-selected-badge {
@@ -394,22 +406,22 @@
 <script>
 /* ── MBTI 데이터 ── */
 const MBTI_DATA = [
-  { code:'ISTJ', num:1,  label:'계획을 잘\n세우는 성격',      en:'detail-oriented and well-organized', color:'#5B9BD5', bg:'#EBF4FF' },
-  { code:'ISFJ', num:2,  label:'친구를 잘\n도와주는 성격',    en:'helpful, nurturing and caring',       color:'#FF85A1', bg:'#FFF0F4' },
-  { code:'INFJ', num:3,  label:'공감을\n잘하는 성격',        en:'empathetic and deeply insightful',    color:'#3CB371', bg:'#EDFBF3' },
-  { code:'INTJ', num:4,  label:'생각이\n깊은 성격',          en:'strategic and deep-thinking',         color:'#9B59B6', bg:'#F5EEFF' },
-  { code:'ISTP', num:5,  label:'만들기를\n좋아하는 성격',     en:'hands-on and analytical',             color:'#5B9BD5', bg:'#EBF4FF' },
-  { code:'ISFP', num:6,  label:'예술을\n좋아하는 성격',      en:'artistic and gentle-spirited',        color:'#FF85A1', bg:'#FFF0F4' },
-  { code:'INFP', num:7,  label:'상상력이\n풍부한 성격',       en:'imaginative and idealistic dreamer',  color:'#3CB371', bg:'#EDFBF3' },
-  { code:'INTP', num:8,  label:'아이디어가\n많은 성격',       en:'curious and full of new ideas',       color:'#9B59B6', bg:'#F5EEFF' },
-  { code:'ESTP', num:9,  label:'도전하는\n성격',             en:'adventurous and action-oriented',     color:'#5B9BD5', bg:'#EBF4FF' },
-  { code:'ESFP', num:10, label:'활발한\n성격',               en:'energetic, fun-loving and outgoing',  color:'#FF85A1', bg:'#FFF0F4' },
-  { code:'ENFP', num:11, label:'창의적인\n성격',             en:'creative, enthusiastic and free-spirited', color:'#3CB371', bg:'#EDFBF3' },
-  { code:'ENTP', num:12, label:'새로운 것을\n좋아하는 성격', en:'inventive and loves debating ideas',  color:'#9B59B6', bg:'#F5EEFF' },
-  { code:'ESTJ', num:13, label:'리더십이\n있는 성격',        en:'confident leader and natural organizer', color:'#5B9BD5', bg:'#EBF4FF' },
-  { code:'ESFJ', num:14, label:'협동을\n잘하는 성격',        en:'warm, cooperative and team-oriented', color:'#FF85A1', bg:'#FFF0F4' },
-  { code:'ENFJ', num:15, label:'응원을\n잘하는 성격',        en:'inspiring, encouraging and empowering others', color:'#3CB371', bg:'#EDFBF3' },
-  { code:'ENTJ', num:16, label:'목표를 끝까지\n이루는 성격', en:'determined, goal-driven achiever',    color:'#9B59B6', bg:'#F5EEFF' },
+  { code:'ISTJ', num:1,  emoji:'📋', label:'계획을 잘\n세우는 성격',      en:'detail-oriented and well-organized', color:'#5B9BD5', bg:'#EBF4FF' },
+  { code:'ISFJ', num:2,  emoji:'🛡️', label:'친구를 잘\n도와주는 성격',    en:'helpful, nurturing and caring',       color:'#FF85A1', bg:'#FFF0F4' },
+  { code:'INFJ', num:3,  emoji:'🌸', label:'공감을\n잘하는 성격',        en:'empathetic and deeply insightful',    color:'#3CB371', bg:'#EDFBF3' },
+  { code:'INTJ', num:4,  emoji:'🔭', label:'생각이\n깊은 성격',          en:'strategic and deep-thinking',         color:'#9B59B6', bg:'#F5EEFF' },
+  { code:'ISTP', num:5,  emoji:'🔧', label:'만들기를\n좋아하는 성격',     en:'hands-on and analytical',             color:'#5B9BD5', bg:'#EBF4FF' },
+  { code:'ISFP', num:6,  emoji:'🎨', label:'예술을\n좋아하는 성격',      en:'artistic and gentle-spirited',        color:'#FF85A1', bg:'#FFF0F4' },
+  { code:'INFP', num:7,  emoji:'🌈', label:'상상력이\n풍부한 성격',       en:'imaginative and idealistic dreamer',  color:'#3CB371', bg:'#EDFBF3' },
+  { code:'INTP', num:8,  emoji:'💡', label:'아이디어가\n많은 성격',       en:'curious and full of new ideas',       color:'#9B59B6', bg:'#F5EEFF' },
+  { code:'ESTP', num:9,  emoji:'⚡', label:'도전하는\n성격',             en:'adventurous and action-oriented',     color:'#5B9BD5', bg:'#EBF4FF' },
+  { code:'ESFP', num:10, emoji:'🎉', label:'활발한\n성격',               en:'energetic, fun-loving and outgoing',  color:'#FF85A1', bg:'#FFF0F4' },
+  { code:'ENFP', num:11, emoji:'🦋', label:'창의적인\n성격',             en:'creative, enthusiastic and free-spirited', color:'#3CB371', bg:'#EDFBF3' },
+  { code:'ENTP', num:12, emoji:'🚀', label:'새로운 것을\n좋아하는 성격', en:'inventive and loves debating ideas',  color:'#9B59B6', bg:'#F5EEFF' },
+  { code:'ESTJ', num:13, emoji:'👑', label:'리더십이\n있는 성격',        en:'confident leader and natural organizer', color:'#5B9BD5', bg:'#EBF4FF' },
+  { code:'ESFJ', num:14, emoji:'🤗', label:'협동을\n잘하는 성격',        en:'warm, cooperative and team-oriented', color:'#FF85A1', bg:'#FFF0F4' },
+  { code:'ENFJ', num:15, emoji:'🌟', label:'응원을\n잘하는 성격',        en:'inspiring, encouraging and empowering others', color:'#3CB371', bg:'#EDFBF3' },
+  { code:'ENTJ', num:16, emoji:'🦁', label:'목표를 끝까지\n이루는 성격', en:'determined, goal-driven achiever',    color:'#9B59B6', bg:'#F5EEFF' },
 ];
 let selectedMbti = null;
 
@@ -437,8 +449,15 @@ function buildMbtiGrid() {
     card.className = 'mbti-card';
     card.dataset.code = m.code;
     card.style.background = m.bg;
+    const col = (m.num - 1) % 4;
+    const row = Math.floor((m.num - 1) / 4);
+    const bpx = [0, 100/3, 200/3, 100][col].toFixed(3) + '%';
+    const bpy = [0, 100/3, 200/3, 100][row].toFixed(3) + '%';
     card.innerHTML = `
       <div class="mbti-num" style="background:${m.color}">${m.num}</div>
+      <div class="mbti-img-wrap">
+        <div class="mbti-img" style="background-position:${bpx} ${bpy}"></div>
+      </div>
       <div class="mbti-code" style="color:${m.color}">${m.code}</div>
       <div class="mbti-label">${m.label.replace('\n','<br>')}</div>`;
     card.onclick = () => mbtiSelect(m.code);
@@ -640,29 +659,44 @@ function appendToInput(inputId, value){
 }
 
 const goalOptions = [
-  "멋진 어른 되기","많은 사람 돕기","최고의 전문가 되기","세상을 바꾸는 사람 되기","꿈을 이루는 사람 되기",
-  "매일 성장하는 사람 되기","친구들에게 도움이 되는 사람 되기","포기하지 않는 사람 되기","정직하고 신뢰받는 사람 되기",
-  "새로운 것에 도전하는 사람 되기","나만의 재능을 키우는 사람 되기","건강하고 밝은 사람 되기","리더십 있는 사람 되기",
-  "세계를 무대로 활약하는 사람 되기","환경을 지키는 사람 되기","어려운 사람을 돕는 사람 되기","꾸준히 노력하는 사람 되기",
-  "창의적인 아이디어로 세상을 이롭게 하기","실력으로 인정받는 사람 되기","가족을 자랑스럽게 만드는 사람 되기",
-  "내가 좋아하는 일로 성공하기","다른 사람에게 영감을 주는 사람 되기","배움을 멈추지 않는 사람 되기","행복하게 사는 사람 되기"
+  {e:"⭐",t:"멋진 어른 되기"},{e:"🤝",t:"많은 사람 돕기"},{e:"🏆",t:"최고의 전문가 되기"},
+  {e:"🌍",t:"세상을 바꾸는 사람 되기"},{e:"✨",t:"꿈을 이루는 사람 되기"},
+  {e:"📈",t:"매일 성장하는 사람 되기"},{e:"💝",t:"친구들에게 도움이 되는 사람 되기"},
+  {e:"💪",t:"포기하지 않는 사람 되기"},{e:"🙏",t:"정직하고 신뢰받는 사람 되기"},
+  {e:"🚀",t:"새로운 것에 도전하는 사람 되기"},{e:"🌱",t:"나만의 재능을 키우는 사람 되기"},
+  {e:"😊",t:"건강하고 밝은 사람 되기"},{e:"👑",t:"리더십 있는 사람 되기"},
+  {e:"🌐",t:"세계를 무대로 활약하는 사람 되기"},{e:"🌿",t:"환경을 지키는 사람 되기"},
+  {e:"❤️",t:"어려운 사람을 돕는 사람 되기"},{e:"⏳",t:"꾸준히 노력하는 사람 되기"},
+  {e:"💡",t:"창의적인 아이디어로 세상을 이롭게 하기"},{e:"🎯",t:"실력으로 인정받는 사람 되기"},
+  {e:"👨‍👩‍👧",t:"가족을 자랑스럽게 만드는 사람 되기"},
+  {e:"❤️",t:"내가 좋아하는 일로 성공하기"},{e:"✨",t:"다른 사람에게 영감을 주는 사람 되기"},
+  {e:"📚",t:"배움을 멈추지 않는 사람 되기"},{e:"😄",t:"행복하게 사는 사람 되기"}
 ];
 const goalSuggestEl = document.getElementById('goal-suggestions');
 goalOptions.forEach(g=>{
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'suggest';
-  btn.textContent = g;
-  btn.onclick = ()=>{ appendToInput('goal', g); };
+  btn.textContent = g.e + ' ' + g.t;
+  btn.onclick = ()=>{ appendToInput('goal', g.t); };
   goalSuggestEl.appendChild(btn);
 });
 
+const jobEmojiMap = {
+  "과학자":"🔬","의사":"👨‍⚕️","간호사":"🏥","수의사":"🐾","선생님":"📖","유튜버/크리에이터":"📹",
+  "프로그래머":"💻","게임 개발자":"🎮","운동선수":"🏃","화가/디자이너":"🎨","우주비행사":"🚀",
+  "요리사":"👨‍🍳","가수/음악가":"🎵","배우":"🎭","작가/소설가":"✍️","건축가":"🏛️",
+  "변호사":"⚖️","경찰관":"👮","소방관":"🚒","비행기 조종사":"✈️","사업가(CEO)":"💼",
+  "패션 디자이너":"👗","애니메이터":"🎬","로봇공학자":"🤖","환경운동가":"🌱","사회복지사":"🤲",
+  "통역사/번역가":"🗣️","프로게이머":"🕹️","스포츠 감독/코치":"🏆","박물관 큐레이터":"🏛️",
+  "심리상담사":"💭","동물 조련사":"🐘","제빵사/파티시에":"🍰"
+};
 const jobSuggestEl = document.getElementById('job-suggestions');
 jobOptions.forEach(j=>{
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'suggest';
-  btn.textContent = j;
+  btn.textContent = (jobEmojiMap[j] ? jobEmojiMap[j]+' ' : '') + j;
   btn.onclick = ()=>{ appendToInput('job', j); };
   jobSuggestEl.appendChild(btn);
 });
@@ -713,12 +747,12 @@ const colorOptions = [
   {name:"빨강", hex:"#FF5A5F"}, {name:"검정", hex:"#2E2A4A"}
 ];
 
-function buildChips(containerId, options, maxSelect, colorClass){
+function buildChips(containerId, options, maxSelect, colorClass, emojiMap){
   const el = document.getElementById(containerId);
   options.forEach(opt=>{
     const chip = document.createElement('div');
     chip.className = 'chip';
-    chip.textContent = opt;
+    chip.textContent = (emojiMap && emojiMap[opt] ? emojiMap[opt]+' ' : '') + opt;
     chip.dataset.value = opt;
     chip.onclick = ()=>{
       if(chip.classList.contains('selected')){
@@ -735,11 +769,31 @@ function buildChips(containerId, options, maxSelect, colorClass){
     el.appendChild(chip);
   });
 }
+const interestEmojiMap = {
+  "과학/기술":"🔬","예술/디자인":"🎨","스포츠":"⚽","음악":"🎵","자연/동물":"🌿","우주":"🚀",
+  "게임":"🎮","요리":"🍳","여행":"✈️","봉사/사회":"🤝","역사":"📜","경제/창업":"💰",
+  "코딩/로봇":"💻","패션":"👗","영화/드라마":"🎬","환경보호":"♻️","글쓰기/문학":"✍️","건축/공간디자인":"🏛️"
+};
+const hobbyEmojiMap = {
+  "그림 그리기":"🖼️","독서":"📚","게임하기":"🎮","운동하기":"🏃","악기 연주":"🎸","만들기(공작)":"🔨",
+  "춤추기":"💃","영상 만들기":"🎥","글쓰기":"✍️","반려동물 돌보기":"🐾","사진 찍기":"📸","보드게임":"🎲",
+  "레고 조립":"🧱","캠핑/야외활동":"⛺","노래 부르기":"🎤","퍼즐 맞추기":"🧩","자전거 타기":"🚴","요리하기":"🍳"
+};
+const specialtyEmojiMap = {
+  "그림 그리기":"🖌️","노래 부르기":"🎤","춤/안무":"💃","운동/스포츠":"🏅","글쓰기":"✍️","암산/수학":"🔢",
+  "컴퓨터/코딩":"💻","외국어":"🗣️","발표/말하기":"🎙️","손재주(만들기)":"✋","요리":"🍳","악기 연주":"🎵",
+  "기억력":"🧠","관찰력":"👀","문제 해결":"💡","친구 사귀기(사교성)":"🤝","정리정돈":"📁","리더십":"👑"
+};
+const animalEmojiMap = {
+  "강아지":"🐶","고양이":"🐱","사자":"🦁","호랑이":"🐯","곰":"🐻","여우":"🦊","토끼":"🐰","부엉이":"🦉",
+  "유니콘":"🦄","용":"🐉","팬더":"🐼","돌고래":"🐬","독수리":"🦅","늑대":"🐺","펭귄":"🐧","공룡":"🦕"
+};
+
 buildChips('personality-chips', personalityOptions, 3, 'pink');
-buildChips('interest-chips', interestOptions, null, 'blue');
-buildChips('specialty-chips', specialtyOptions, null, 'blue');
-buildChips('hobby-chips', hobbyOptions, null, 'green');
-buildChips('animal-chips', animalOptions, null, 'pink');
+buildChips('interest-chips', interestOptions, null, 'blue', interestEmojiMap);
+buildChips('specialty-chips', specialtyOptions, null, 'blue', specialtyEmojiMap);
+buildChips('hobby-chips', hobbyOptions, null, 'green', hobbyEmojiMap);
+buildChips('animal-chips', animalOptions, null, 'pink', animalEmojiMap);
 
 const styleGrid = document.getElementById('style-grid');
 styleOptions.forEach(s=>{

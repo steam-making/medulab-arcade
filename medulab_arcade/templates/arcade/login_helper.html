@@ -58,7 +58,23 @@
     transition:transform .12s, box-shadow .12s; text-align:center; line-height:1.4;
   }
   .lh-link-btn:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,.2); }
+  .lh-link-btn.wait-btn { grid-column:1/-1; background:linear-gradient(135deg,#ff6b35,#f72585) !important; font-size:22px !important; padding:32px 16px !important; letter-spacing:1px; }
   @media(max-width:480px){ .lh-link-grid { grid-template-columns:1fr; } }
+
+  /* ── 대기안내 오버레이 ── */
+  #lhWaitOverlay {
+    position:fixed; inset:0; background:rgba(15,20,40,0.97); z-index:9999;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  #lhWaitOverlay.hidden { display:none; }
+  #lhWaitOverlay .lh-wait-icon { font-size:96px; margin-bottom:32px; animation:lhPulse 1.8s ease-in-out infinite; }
+  #lhWaitOverlay .lh-wait-msg {
+    font-size:clamp(28px,5vw,52px); font-weight:900; color:#fff;
+    text-align:center; line-height:1.45; padding:0 24px; letter-spacing:-0.5px;
+  }
+  #lhWaitOverlay .lh-wait-sub { margin-top:24px; font-size:15px; color:rgba(255,255,255,.4); }
+  @keyframes lhPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
 
   /* ── 번호 그리드 ── */
   .lh-grid {
@@ -305,6 +321,13 @@
   </div>
 </div>
 
+<!-- ── 대기안내 오버레이 ── -->
+<div id="lhWaitOverlay" class="hidden" onclick="this.classList.add('hidden')">
+  <div class="lh-wait-icon">✋</div>
+  <div class="lh-wait-msg">컴퓨터에서 손 떼고<br>앞에 집중해 주세요 😊</div>
+  <div class="lh-wait-sub">화면을 클릭하면 닫힙니다</div>
+</div>
+
 <!-- ── 관리자 잠금 해제 시간 선택 모달 ── -->
 <div class="lh-unlock-overlay hidden" id="lhAdminUnlockOverlay">
   <div class="lh-unlock-box">
@@ -527,6 +550,11 @@
         btn.onclick = () => window.open(link.url, '_blank', 'noopener,noreferrer');
         grid.appendChild(btn);
       });
+      const waitBtn = document.createElement('button');
+      waitBtn.className = 'lh-link-btn wait-btn';
+      waitBtn.textContent = '📢 대기안내';
+      waitBtn.onclick = () => document.getElementById('lhWaitOverlay').classList.remove('hidden');
+      grid.appendChild(waitBtn);
       return;
     }
     for (let i = 1; i <= LH_RANGES[lhPlatform]; i++) {

@@ -698,19 +698,22 @@ async function pfSyncNow() {
 /* ── 폴링 ── */
 async function pfPollRoom() {
   if (!pfRoomId) return;
+  let d = null;
   try {
     const url = `/api/problem/room/${pfRoomId}/state/?member_id=${pfMemberId}&session_key=${encodeURIComponent(pfSessionKey)}`;
-    const d = await (await fetch(url)).json();
-    if (!d.ok) return;
-    pfRoomState = d;
-    pfUpdateHeader(d);
-    pfApplyVotes();
-    pfUpdateNextBtn();
-    // 조장이 다음 단계로 넘어가면 팀원도 자동 이동
-    if (!pfIsLeader && typeof d.leader_step === 'number' && d.leader_step > pfStep) {
-      pfAutoAdvanceTo(d.leader_step);
+    const resp = await (await fetch(url)).json();
+    if (resp.ok) {
+      d = resp;
+      pfRoomState = d;
+      pfUpdateHeader(d);
+      pfApplyVotes();
+      pfUpdateNextBtn();
     }
   } catch(e) {}
+  // try/catch 밖에서 처리 — pfApplyVotes 등에서 예외가 나도 자동이동은 실행됨
+  if (d && !pfIsLeader && typeof d.leader_step === 'number' && d.leader_step > pfStep) {
+    pfAutoAdvanceTo(d.leader_step);
+  }
 }
 
 async function pfAutoAdvanceTo(targetStep) {

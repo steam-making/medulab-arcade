@@ -198,6 +198,13 @@
   .pf-team-card:hover { border-color:var(--orange); background:#FFF3E0; transform:translateY(-3px); box-shadow:0 8px 24px rgba(255,145,66,.18); }
   .pf-team-card .tc-num { font-size:32px; font-weight:900; color:var(--orange); }
   .pf-team-card .tc-label { font-size:13px; color:#9a7060; margin-top:4px; font-weight:700; }
+  .pf-preview-row { text-align:center; margin-top:8px; }
+  .pf-preview-card { display:inline-flex; flex-direction:column; align-items:center; padding:14px 28px; background:#F3F0FF; border:2px dashed #9C6FD6; border-radius:16px; cursor:pointer; transition:all .18s; gap:2px; }
+  .pf-preview-card:hover { background:#EDE0FF; border-color:#7C4DBA; transform:translateY(-2px); box-shadow:0 6px 18px rgba(124,77,186,.18); }
+  .pf-preview-card .tc-num { font-size:28px; }
+  .pf-preview-card .tc-label { font-size:14px; font-weight:800; color:#6A35A8; }
+  .pf-preview-card .tc-sub { font-size:11px; color:#9C6FD6; font-weight:600; }
+  .pf-preview-banner { background:linear-gradient(90deg,#7C4DBA,#9C6FD6); color:#fff; text-align:center; padding:8px 16px; font-size:12px; font-weight:700; border-radius:10px; margin-bottom:14px; letter-spacing:.3px; }
   .pf-name-box { max-width:380px; margin:0 auto; }
   .pf-name-box h3 { font-size:20px; font-weight:900; color:var(--ink); text-align:center; margin-bottom:6px; }
   .pf-name-box p  { font-size:13px; color:#9a7060; text-align:center; margin-bottom:20px; }
@@ -264,6 +271,15 @@
     <div class="pf-pre-title">우리 조를 선택해주세요</div>
     <div class="pf-pre-sub">같은 조 친구들과 함께 투표하며 문제를 탐구해요!</div>
     <div class="pf-team-grid" id="pfTeamGrid"></div>
+    {% if user.is_staff %}
+    <div class="pf-preview-row">
+      <div class="pf-preview-card" onclick="pfStartPreview()">
+        <div class="tc-num">👀</div>
+        <div class="tc-label">예시조</div>
+        <div class="tc-sub">관리자 미리보기</div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <!-- ── 이름 입력 단계 ── -->
@@ -661,6 +677,21 @@ async function pfPickTeam(team) {
 function pfPhaseBack() {
   document.getElementById('pfPhase05').style.display = 'none';
   document.getElementById('pfPhase0').style.display  = 'block';
+}
+
+function pfStartPreview() {
+  // 관리자 미리보기 — 방 입장 없이 개인 모드로 모든 단계 체험
+  pfIsLeader = true;
+  document.getElementById('pfPhase0').style.display  = 'none';
+  document.getElementById('pfPhase05').style.display = 'none';
+  // 미리보기 배너 삽입
+  const banner = document.createElement('div');
+  banner.className = 'pf-preview-banner';
+  banner.textContent = '👀 관리자 미리보기 모드 — 실제 조 데이터와 연동되지 않습니다';
+  document.getElementById('pfMainWrap').prepend(banner);
+  document.getElementById('pfMainWrap').style.display = 'block';
+  pfRenderStep1();
+  pfGoTo(1);
 }
 
 async function pfEnterRoom() {

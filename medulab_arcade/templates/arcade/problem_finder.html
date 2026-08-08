@@ -249,6 +249,11 @@
       <p>이름을 입력하면 조원들과 함께 탐구를 시작할 수 있어요</p>
       <input type="text" id="pfNameInput" class="pf-name-input" placeholder="이름을 입력하세요" maxlength="10"
         onkeydown="if(event.key==='Enter') pfEnterRoom()">
+      <label id="pfLeaderLabel" style="display:flex;align-items:center;gap:10px;margin-top:14px;padding:12px 16px;background:#FFF8F0;border:2px solid #FFE0B2;border-radius:12px;cursor:pointer;font-size:14px;font-weight:700;color:#7a5a3a;">
+        <input type="checkbox" id="pfLeaderCheck" style="width:18px;height:18px;accent-color:var(--orange);cursor:pointer;">
+        <span>👑 나는 조장입니다</span>
+      </label>
+      <div id="pfLeaderNote" style="font-size:12px;color:#9a7060;margin-top:6px;text-align:center;min-height:18px;"></div>
       <button class="pf-enter-btn" onclick="pfEnterRoom()">🚀 시작하기</button>
       <span class="pf-back-link" onclick="pfPhaseBack()">← 조 다시 선택</span>
     </div>
@@ -565,6 +570,7 @@ let pfRoomId = null;
 let pfMemberId = null;
 let pfSessionKey = null;
 let pfMyName = null;
+let pfIsLeader = false;
 let pfSelectedTeam = null;
 let pfRoomState = null;
 let pfPollInterval = null;
@@ -589,9 +595,28 @@ function pfInitTeams() {
       <div class="tc-label">${t}</div>
     </div>`).join('');
 }
-function pfPickTeam(team) {
+async function pfPickTeam(team) {
   pfSelectedTeam = team;
   document.getElementById('pfSelectedTeamLabel').textContent = team;
+  // 조장 체크박스 상태 초기화
+  const cb = document.getElementById('pfLeaderCheck');
+  const note = document.getElementById('pfLeaderNote');
+  cb.checked = false; cb.disabled = false;
+  note.textContent = '조장이 없으면 체크 후 입장하세요';
+  note.style.color = '#FF9142';
+  document.getElementById('pfLeaderLabel').style.opacity = '1';
+  document.getElementById('pfLeaderLabel').style.cursor = 'pointer';
+  // 이미 조장 있는지 확인
+  try {
+    const d = await (await fetch('/api/problem/team-info/?team=' + encodeURIComponent(team))).json();
+    if (d.has_leader) {
+      cb.disabled = true; cb.checked = false;
+      document.getElementById('pfLeaderLabel').style.opacity = '0.45';
+      document.getElementById('pfLeaderLabel').style.cursor = 'default';
+      note.textContent = `👑 조장: ${d.leader_name} (이미 지정됨)`;
+      note.style.color = '#aaa';
+    }
+  } catch(e) {}
   document.getElementById('pfPhase0').style.display  = 'none';
   document.getElementById('pfPhase05').style.display = 'block';
   setTimeout(() => document.getElementById('pfNameInput').focus(), 80);
@@ -604,6 +629,7 @@ function pfPhaseBack() {
 async function pfEnterRoom() {
   const name = document.getElementById('pfNameInput').value.trim();
   if (!name) { pfShowToast('이름을 입력해주세요!'); return; }
+  const wantLeader = document.getElementById('pfLeaderCheck').checked;
   const stored = localStorage.getItem('pf_session_' + pfSelectedTeam);
   let storedKey = null;
   try { storedKey = JSON.parse(stored||'{}').session_key || null; } catch(e) {}
@@ -611,14 +637,15 @@ async function pfEnterRoom() {
     const res = await fetch('/api/problem/join/', {
       method:'POST',
       headers:{'Content-Type':'application/json','X-CSRFToken':pfCsrf()},
-      body: JSON.stringify({team: pfSelectedTeam, name, session_key: storedKey})
+      body: JSON.stringify({team: pfSelectedTeam, name, session_key: storedKey, is_leader: wantLeader})
     });
     const d = await res.json();
-    if (!d.ok) { pfShowToast('입장 실패: ' + d.error); return; }
+    if (!d.ok) { pfShowToast('입장 실패: ' + (d.error||'오류')); return; }
     pfRoomId = d.room_id; pfMemberId = d.member_id;
     pfSessionKey = d.session_key; pfMyName = name;
+    pfIsLeader = d.is_leader || false;
     localStorage.setItem('pf_session_' + pfSelectedTeam, JSON.stringify({
-      session_key: pfSessionKey, name, room_id: pfRoomId, member_id: pfMemberId
+      session_key: pfSessionKey, name, room_id: pfRoomId, member_id: pfMemberId, is_leader: pfIsLeader
     }));
     document.getElementById('pfPhase0').style.display  = 'none';
     document.getElementById('pfPhase05').style.display = 'none';
@@ -627,7 +654,7 @@ async function pfEnterRoom() {
     document.getElementById('pfMainWrap').style.display = 'block';
     pfPollRoom();
     pfPollInterval = setInterval(pfPollRoom, 3000);
-    pfShowToast('🎉 ' + pfSelectedTeam + '에 입장했어요!');
+    pfShowToast(pfIsLeader ? '👑 조장으로 입장했어요!' : '🎉 ' + pfSelectedTeam + '에 입장했어요!');
   } catch(e) { pfShowToast('연결 오류가 발생했습니다'); }
 }
 
@@ -682,8 +709,12 @@ async function pfPollRoom() {
 }
 
 function pfUpdateHeader(state) {
+  // 내 조장 여부 최신화
+  if (state.my_is_leader !== undefined) pfIsLeader = state.my_is_leader;
   document.getElementById('pfHeaderMembers').innerHTML = state.members.map((m,i) =>
-    `<span class="pf-member-chip" style="background:${PF_MEMBER_COLORS[i%PF_MEMBER_COLORS.length]}">${m.name}${m.name===pfMyName?' (나)':''}</span>`
+    `<span class="pf-member-chip" style="background:${PF_MEMBER_COLORS[i%PF_MEMBER_COLORS.length]}">
+      ${m.is_leader ? '👑 ' : ''}${m.name}${m.name===pfMyName?' (나)':''}
+    </span>`
   ).join('');
   document.getElementById('pfHeaderCount').textContent = state.member_count + '명 접속 중';
 }
@@ -902,15 +933,28 @@ function pfUpdateNextBtn() {
   const maj = pfRoomState.majority;
   const nb = document.getElementById('pfNextBtn');
   const sb = document.getElementById('pfVoteStatusBar');
+  const n = pfRoomState.member_count;
+
+  // 조장이 아니면 버튼 비활성 + 안내
+  if (!pfIsLeader) {
+    nb.disabled = true;
+    const leaderName = pfRoomState.leader_name;
+    if (sb) sb.innerHTML = leaderName
+      ? `<span class="pf-vote-need">👑 조장(${leaderName})만 다음 단계로 넘어갈 수 있어요</span>`
+      : `<span class="pf-vote-need">👑 조장이 다음 단계를 진행해요</span>`;
+    return;
+  }
+
+  // 조장이면 과반수 여부 체크
   let ok = true;
   let msg = '';
   if (pfStep === 1) {
     ok = !!maj.area;
-    msg = ok ? '<span class="pf-vote-ok">✓ 영역 결정 완료 — 다음 단계로 이동 가능</span>'
-             : '<span class="pf-vote-need">⏳ 과반수 팀원이 같은 영역을 선택해야 다음으로 넘어갈 수 있어요</span>';
+    msg = ok ? '<span class="pf-vote-ok">✓ 영역 결정 완료 — 다음으로 이동하세요</span>'
+             : '<span class="pf-vote-need">⏳ 과반수 팀원이 같은 영역을 선택해야 해요</span>';
   } else if (pfStep === 2) {
     ok = (maj.exps||[]).length > 0 && !!maj.freq;
-    msg = ok ? '<span class="pf-vote-ok">✓ 불편유형 & 빈도 결정 완료 — 다음 단계로 이동 가능</span>'
+    msg = ok ? '<span class="pf-vote-ok">✓ 불편유형 & 빈도 결정 완료</span>'
              : '<span class="pf-vote-need">⏳ 불편유형과 빈도 모두 과반수 동의가 필요해요</span>';
   } else if (pfStep === 3) {
     ok = !!maj.situation && !!maj.affected && !!maj.severity && !!maj.solution;
@@ -918,11 +962,11 @@ function pfUpdateNextBtn() {
       !maj.situation && '상황', !maj.affected && '경험대상',
       !maj.severity && '심각도', !maj.solution && '해결책'
     ].filter(Boolean);
-    msg = ok ? '<span class="pf-vote-ok">✓ 모든 항목 과반수 동의 — 문제 분석 가능!</span>'
+    msg = ok ? '<span class="pf-vote-ok">✓ 모든 항목 동의 완료 — 문제 분석하세요!</span>'
              : `<span class="pf-vote-need">⏳ 과반수 동의 필요: ${missing.join(', ')}</span>`;
   }
   nb.disabled = !ok;
-  if (sb) sb.innerHTML = pfRoomState.member_count > 1 ? msg : '';
+  if (sb) sb.innerHTML = n > 1 ? msg : '';
 }
 
 /* ── 렌더 ── */
@@ -1062,6 +1106,9 @@ function pfGoTo(step) {
 }
 
 function pfNext() {
+  if (pfMemberId && !pfIsLeader) {
+    pfShowToast('👑 다음 단계는 조장만 진행할 수 있어요!'); return;
+  }
   if (pfStep === 1) {
     if (pfMemberId && pfRoomState) {
       const maj = pfRoomState.majority;

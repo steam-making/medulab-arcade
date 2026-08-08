@@ -12,6 +12,7 @@ urlpatterns = [
     path('tools/team-name/', views.team_name, name='team_name'),
     path('tools/problem-finder/', views.problem_finder, name='problem_finder'),
     path('api/problem/join/', views.api_problem_join, name='api_problem_join'),
+    path('api/problem/team-info/', views.api_problem_team_info, name='api_problem_team_info'),
     path('api/problem/update/', views.api_problem_update, name='api_problem_update'),
     path('api/problem/room/<int:room_id>/state/', views.api_problem_room_state, name='api_problem_room_state'),
     path('api/avatar-draft/save/', views.api_avatar_draft_save, name='api_avatar_draft_save'),

@@ -176,18 +176,44 @@ def api_problem_join(request):
     team = body.get('team', '').strip()
     name = body.get('name', '').strip()
     stored_key = body.get('session_key', '')
+    want_leader = bool(body.get('is_leader', False))
     if not team or not name:
         return JsonResponse({'ok': False, 'error': '팀과 이름을 입력해주세요'}, status=400)
     room, _ = ProblemRoom.objects.get_or_create(team_name=team)
     session_key = stored_key if stored_key else secrets.token_urlsafe(32)
+    # 조장 요청 시 이미 조장이 있는지 확인
+    already_has_leader = room.members.filter(is_leader=True).exclude(session_key=session_key).exists()
+    if want_leader and already_has_leader:
+        return JsonResponse({'ok': False, 'error': '이미 조장이 있습니다'}, status=400)
     member, created = ProblemMember.objects.get_or_create(
         room=room, session_key=session_key,
-        defaults={'name': name, 'data': {}}
+        defaults={'name': name, 'is_leader': want_leader, 'data': {}}
     )
     if not created:
+        update_fields = ['name', 'last_seen']
+        if want_leader and not member.is_leader:
+            member.is_leader = True
+            update_fields.append('is_leader')
         member.name = name
-        member.save(update_fields=['name', 'last_seen'])
-    return JsonResponse({'ok': True, 'room_id': room.id, 'member_id': member.id, 'session_key': session_key})
+        member.save(update_fields=update_fields)
+    return JsonResponse({
+        'ok': True, 'room_id': room.id,
+        'member_id': member.id, 'session_key': session_key,
+        'is_leader': member.is_leader,
+    })
+
+
+def api_problem_team_info(request):
+    from .models import ProblemRoom, ProblemMember
+    team = request.GET.get('team', '').strip()
+    if not team:
+        return JsonResponse({'has_leader': False, 'leader_name': None})
+    try:
+        room = ProblemRoom.objects.get(team_name=team)
+        leader = room.members.filter(is_leader=True).first()
+        return JsonResponse({'has_leader': bool(leader), 'leader_name': leader.name if leader else None})
+    except ProblemRoom.DoesNotExist:
+        return JsonResponse({'has_leader': False, 'leader_name': None})
 
 
 @require_POST
@@ -221,7 +247,7 @@ def api_problem_room_state(request, room_id):
         ProblemMember.objects.filter(
             id=member_id, room=room, session_key=session_key
         ).update(last_seen=timezone.now())
-    members = list(room.members.filter(last_seen__gte=cutoff).values('id', 'name', 'data'))
+    members = list(room.members.filter(last_seen__gte=cutoff).values('id', 'name', 'is_leader', 'data'))
     n = len(members)
     threshold = n / 2
 
@@ -297,12 +323,17 @@ def api_problem_room_state(request, room_id):
         cust = (m['data'].get('situationCustom') or '').strip()
         if cust and cust not in sit_seen:
             sit_seen.add(cust); situation_options.append(cust)
+    leader = next((m for m in members if m['is_leader']), None)
+    req_member_id = request.GET.get('member_id')
+    my_is_leader = any(str(m['id']) == str(req_member_id) and m['is_leader'] for m in members)
     return JsonResponse({
         'ok': True,
         'team_name': room.team_name,
         'member_count': n,
         'threshold': threshold,
-        'members': [{'name': m['name'], 'data': m['data']} for m in members],
+        'members': [{'name': m['name'], 'is_leader': m['is_leader'], 'data': m['data']} for m in members],
+        'leader_name': leader['name'] if leader else None,
+        'my_is_leader': my_is_leader,
         'selections': sel,
         'majority': maj,
         'customs': customs,

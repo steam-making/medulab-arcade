@@ -779,6 +779,7 @@ class ProblemMember(models.Model):
     room = models.ForeignKey(ProblemRoom, on_delete=models.CASCADE, related_name='members', verbose_name='팀방')
     name = models.CharField('이름', max_length=20)
     session_key = models.CharField('세션키', max_length=64, db_index=True)
+    is_leader = models.BooleanField('조장', default=False)
     data = models.JSONField('선택 데이터', default=dict)
     last_seen = models.DateTimeField('최근 접속', auto_now=True)
 

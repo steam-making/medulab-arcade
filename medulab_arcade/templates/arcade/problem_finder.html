@@ -1242,7 +1242,7 @@ function pfReset() {
 function pfAnalyze(situation) {
   const areaData  = pfArea === 'other'
     ? { id:'other', label: pfAreaCustom || '기타', target:'사람들', place: pfAreaCustom || '생활 공간' }
-    : PF_AREAS.find(a => a.id === pfArea);
+    : (PF_AREAS.find(a => a.id === pfArea) || { id:'unknown', label:'생활', target:'사람들', place:'생활 공간' });
   const exps      = [...pfExps];
   const freqData  = PF_FREQS.find(f => f.id === pfFreq);
   const affData   = PF_AFFECTED.find(a => a.id === pfAffected);

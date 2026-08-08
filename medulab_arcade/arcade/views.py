@@ -181,8 +181,11 @@ def api_problem_join(request):
         return JsonResponse({'ok': False, 'error': '팀과 이름을 입력해주세요'}, status=400)
     room, _ = ProblemRoom.objects.get_or_create(team_name=team)
     session_key = stored_key if stored_key else secrets.token_urlsafe(32)
-    # 조장 요청 시 이미 조장이 있는지 확인
-    already_has_leader = room.members.filter(is_leader=True).exclude(session_key=session_key).exists()
+    # 조장 요청 시 최근 90초 내 활성 조장이 있는지만 확인
+    active_cutoff = timezone.now() - timedelta(seconds=90)
+    already_has_leader = room.members.filter(
+        is_leader=True, last_seen__gte=active_cutoff
+    ).exclude(session_key=session_key).exists()
     if want_leader and already_has_leader:
         return JsonResponse({'ok': False, 'error': '이미 조장이 있습니다'}, status=400)
     member, created = ProblemMember.objects.get_or_create(
@@ -210,7 +213,8 @@ def api_problem_team_info(request):
         return JsonResponse({'has_leader': False, 'leader_name': None})
     try:
         room = ProblemRoom.objects.get(team_name=team)
-        leader = room.members.filter(is_leader=True).first()
+        active_cutoff = timezone.now() - timedelta(seconds=90)
+        leader = room.members.filter(is_leader=True, last_seen__gte=active_cutoff).first()
         return JsonResponse({'has_leader': bool(leader), 'leader_name': leader.name if leader else None})
     except ProblemRoom.DoesNotExist:
         return JsonResponse({'has_leader': False, 'leader_name': None})
@@ -286,10 +290,20 @@ def api_problem_room_state(request, room_id):
                 result.append({'value': v, 'author': m['name']})
         return result
 
+    def collect_exps_with_custom():
+        result = {}
+        for m in members:
+            for v in (m['data'].get('exps') or []):
+                result.setdefault(v, []).append(m['name'])
+            custom_val = (m['data'].get('expCustom') or '').strip()
+            if custom_val and m['name'] not in result.get(custom_val, []):
+                result.setdefault(custom_val, []).append(m['name'])
+        return result
+
     sel = {
         'area':    collect_single('area'),
         'subArea': collect_single('subArea'),
-        'exps':    collect_multi('exps'),
+        'exps':    collect_exps_with_custom(),
         'freq':    collect_single('freq'),
         'situation': collect_single('situation'),
         'affected':  collect_single('affected'),

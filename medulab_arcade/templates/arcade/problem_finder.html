@@ -616,15 +616,26 @@ async function pfPickTeam(team) {
   note.style.color = '#FF9142';
   document.getElementById('pfLeaderLabel').style.opacity = '1';
   document.getElementById('pfLeaderLabel').style.cursor = 'pointer';
-  // 이미 조장 있는지 확인
+  // 이미 조장 있는지 확인 (내 session_key 전달 → 내가 조장이면 재입장 허용)
   try {
-    const d = await (await fetch('/api/problem/team-info/?team=' + encodeURIComponent(team))).json();
+    const stored = localStorage.getItem('pf_session_' + team);
+    let storedKey = '';
+    try { storedKey = JSON.parse(stored||'{}').session_key || ''; } catch(e) {}
+    const url = '/api/problem/team-info/?team=' + encodeURIComponent(team)
+              + (storedKey ? '&session_key=' + encodeURIComponent(storedKey) : '');
+    const d = await (await fetch(url)).json();
     if (d.has_leader) {
       cb.disabled = true; cb.checked = false;
       document.getElementById('pfLeaderLabel').style.opacity = '0.45';
       document.getElementById('pfLeaderLabel').style.cursor = 'default';
       note.textContent = `👑 조장: ${d.leader_name} (이미 지정됨)`;
       note.style.color = '#aaa';
+    } else if (storedKey) {
+      // 내 이전 세션이 조장이었으면 체크박스 자동 선택
+      try {
+        const prev = JSON.parse(stored||'{}');
+        if (prev.is_leader) { cb.checked = true; note.textContent = '👑 조장으로 재입장합니다'; }
+      } catch(e) {}
     }
   } catch(e) {}
   document.getElementById('pfPhase0').style.display  = 'none';

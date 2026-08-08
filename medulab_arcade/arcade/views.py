@@ -215,7 +215,13 @@ def api_problem_team_info(request):
         room = ProblemRoom.objects.get(team_name=team)
         active_cutoff = timezone.now() - timedelta(seconds=90)
         leader = room.members.filter(is_leader=True, last_seen__gte=active_cutoff).first()
-        return JsonResponse({'has_leader': bool(leader), 'leader_name': leader.name if leader else None})
+        # 요청자 본인이 조장이면 has_leader=False로 — 재입장 허용
+        my_key = request.GET.get('session_key', '')
+        is_me = bool(my_key and leader and leader.session_key == my_key)
+        return JsonResponse({
+            'has_leader': bool(leader) and not is_me,
+            'leader_name': leader.name if leader else None,
+        })
     except ProblemRoom.DoesNotExist:
         return JsonResponse({'has_leader': False, 'leader_name': None})
 

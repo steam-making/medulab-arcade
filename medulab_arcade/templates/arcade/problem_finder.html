@@ -598,7 +598,7 @@ function pfMemberColor(name) {
 
 /* ── Phase 0: 조 선택 ── */
 function pfInitTeams() {
-  const teams = ['1조','2조','3조','4조','5조','6조'];
+  const teams = ['1조','2조','3조','4조','5조','6조','7조','8조','9조','10조'];
   document.getElementById('pfTeamGrid').innerHTML = teams.map(t =>
     `<div class="pf-team-card" onclick="pfPickTeam('${t}')">
       <div class="tc-num">${t.replace('조','')}</div>

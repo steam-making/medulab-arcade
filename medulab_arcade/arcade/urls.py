@@ -8,6 +8,7 @@ urlpatterns = [
     path('tools/login-helper/', views.login_helper, name='login_helper'),
     path('api/login-helper/unlock/', views.api_login_helper_unlock, name='api_login_helper_unlock'),
     path('api/login-helper/lock/', views.api_login_helper_lock, name='api_login_helper_lock'),
+    path('api/login-helper/links/', views.api_login_helper_links_save, name='api_login_helper_links_save'),
     path('tools/my-avatar/', views.my_avatar, name='my_avatar'),
     path('tools/team-name/', views.team_name, name='team_name'),
     path('tools/problem-finder/', views.problem_finder, name='problem_finder'),

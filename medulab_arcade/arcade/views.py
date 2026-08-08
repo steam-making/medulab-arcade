@@ -106,11 +106,28 @@ def login_helper(request):
     now_ts = timezone.now().timestamp()
     is_unlocked = bool(expiry_ts and expiry_ts > now_ts)
     remaining_minutes = int((expiry_ts - now_ts) / 60) if is_unlocked else 0
+    links_json = SiteConfig.get_value('lh_link_overrides', '{}')
     return render(request, 'arcade/login_helper.html', {
         'is_unlocked': is_unlocked,
         'remaining_minutes': remaining_minutes,
         'is_admin': request.user.is_staff,
+        'links_json': links_json,
     })
+
+
+@require_POST
+def api_login_helper_links_save(request):
+    from .models import SiteConfig
+    from django.conf import settings as django_settings
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
+    overrides = data.get('overrides', {})
+    SiteConfig.set_value('lh_link_overrides', json.dumps(overrides, ensure_ascii=False))
+    return JsonResponse({'ok': True})
 
 
 @require_POST

@@ -50,16 +50,50 @@
 
   /* ── 이동사이트 링크 버튼 ── */
   .lh-link-grid {
-    display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:20px;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px;
   }
+  .lh-link-wrap { position:relative; }
+  .lh-link-wrap.full-width { grid-column:1/-1; }
   .lh-link-btn {
-    padding:28px 16px; border:none; border-radius:16px;
-    font-size:19px; font-weight:700; color:#fff; cursor:pointer;
+    width:100%; padding:22px 10px; border:none; border-radius:16px;
+    font-size:16px; font-weight:700; color:#fff; cursor:pointer;
     transition:transform .12s, box-shadow .12s; text-align:center; line-height:1.4;
   }
   .lh-link-btn:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,.2); }
-  .lh-link-btn.wait-btn { grid-column:1/-1; background:linear-gradient(135deg,#ff6b35,#f72585) !important; font-size:22px !important; padding:32px 16px !important; letter-spacing:1px; }
-  @media(max-width:480px){ .lh-link-grid { grid-template-columns:1fr; } }
+  .lh-link-btn.wait-btn { background:linear-gradient(135deg,#ff6b35,#f72585) !important; font-size:20px !important; padding:28px 16px !important; letter-spacing:1px; }
+  .lh-gear-btn {
+    position:absolute; top:6px; right:6px;
+    background:rgba(0,0,0,.28); border:none; border-radius:50%;
+    width:22px; height:22px; font-size:12px; cursor:pointer; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    opacity:.7; transition:opacity .15s; line-height:1; padding:0;
+  }
+  .lh-gear-btn:hover { opacity:1; background:rgba(0,0,0,.55); }
+  @media(max-width:480px){ .lh-link-grid { grid-template-columns:repeat(2,1fr); } }
+
+  /* ── 로그인 탭 열기 버튼 ── */
+  .lh-open-btn.google    { background:#4285F4; }
+  .lh-open-btn.microsoft { background:#00A4EF; }
+
+  /* ── 링크 편집 모달 ── */
+  .lh-link-edit-overlay {
+    position:fixed; inset:0; background:rgba(15,15,30,.72);
+    display:flex; align-items:center; justify-content:center;
+    z-index:2000; padding:20px;
+  }
+  .lh-link-edit-overlay.hidden { display:none; }
+  .lh-link-edit-box {
+    background:#fff; border-radius:20px; padding:28px 26px;
+    max-width:420px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  .lh-link-edit-box h3 { margin:0 0 18px; font-size:17px; color:#1f2430; }
+  .lh-link-edit-label { font-size:12px; color:#6b7280; font-weight:600; margin-bottom:6px; display:block; }
+  .lh-link-edit-input {
+    width:100%; padding:12px 14px; border:1.5px solid #d7dce5; border-radius:10px;
+    font-size:14px; background:#fafbfd; color:#1f2430; outline:none; font-family:inherit; box-sizing:border-box;
+  }
+  .lh-link-edit-input:focus { border-color:#7D2AE8; }
+  .lh-link-edit-btns { display:flex; gap:8px; margin-top:18px; }
 
   /* ── 대기안내 오버레이 ── */
   #lhWaitOverlay {
@@ -321,6 +355,19 @@
   </div>
 </div>
 
+<!-- ── 링크 편집 모달 (관리자 전용) ── -->
+<div class="lh-link-edit-overlay hidden" id="lhLinkEditOverlay">
+  <div class="lh-link-edit-box">
+    <h3>🔗 <span id="lhLinkEditTitle">링크 주소 변경</span></h3>
+    <label class="lh-link-edit-label">새 URL</label>
+    <input type="url" id="lhLinkEditInput" class="lh-link-edit-input" placeholder="https://...">
+    <div class="lh-link-edit-btns">
+      <button class="lh-unlock-cancel" id="lhLinkEditCancelBtn">취소</button>
+      <button class="lh-unlock-submit" id="lhLinkEditSaveBtn" style="background:#7D2AE8;">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── 대기안내 오버레이 ── -->
 <div id="lhWaitOverlay" class="hidden" onclick="this.classList.add('hidden')">
   <div class="lh-wait-icon">✋</div>
@@ -517,14 +564,31 @@
     google:    'https://accounts.google.com/signin/v2/identifier?hl=ko',
     microsoft: 'https://outlook.office.com'
   };
-  const LH_CANVA_URL = 'https://www.canva.com/brand/join?token=Uaz0Z83cNGN8NM-ANlrG8w&brandingVariant=edu&invitationDestinationType=group';
-  const LH_REDIRECT_LINKS = [
-    { label: '💬 GPT',     url: 'https://chatgpt.com',                    bg: '#10a37f' },
-    { label: '♊ 제미나이', url: 'https://gemini.google.com',              bg: '#4285F4' },
-    { label: '🤖 코파일럿', url: 'https://copilot.microsoft.com',          bg: '#0078d4' },
-    { label: '📧 아웃룩',  url: 'https://outlook.office.com',             bg: '#0F6CBD' },
-    { label: '🎨 캔바교실1', url: LH_CANVA_URL,                           bg: '#7D2AE8' },
+  const LH_LINKS_SAVE_URL = "{% url 'api_login_helper_links_save' %}";
+  const _CV = 'https://www.canva.com/brand/join?token=Uaz0Z83cNGN8NM-ANlrG8w&brandingVariant=edu&invitationDestinationType=group';
+  const LH_DEFAULT_LINKS = [
+    { id:'gpt',     label:'💬 GPT',        url:'https://chatgpt.com',               bg:'#10a37f' },
+    { id:'gemini',  label:'♊ 제미나이',    url:'https://gemini.google.com',         bg:'#4285F4' },
+    { id:'copilot', label:'🤖 코파일럿',   url:'https://copilot.microsoft.com',     bg:'#0078d4' },
+    { id:'outlook', label:'📧 아웃룩',     url:'https://outlook.office.com',        bg:'#0F6CBD' },
+    { id:'canva1',  label:'🎨 캔바 1조',   url:_CV, bg:'#7D2AE8' },
+    { id:'canva2',  label:'🎨 캔바 2조',   url:_CV, bg:'#7D2AE8' },
+    { id:'canva3',  label:'🎨 캔바 3조',   url:_CV, bg:'#7D2AE8' },
+    { id:'canva4',  label:'🎨 캔바 4조',   url:_CV, bg:'#7D2AE8' },
+    { id:'canva5',  label:'🎨 캔바 5조',   url:_CV, bg:'#7D2AE8' },
+    { id:'canva6',  label:'🎨 캔바 6조',   url:_CV, bg:'#7D2AE8' },
+    { id:'canva7',  label:'🎨 캔바 7조',   url:_CV, bg:'#7D2AE8' },
+    { id:'canva8',  label:'🎨 캔바 8조',   url:_CV, bg:'#7D2AE8' },
+    { id:'canva9',  label:'🎨 캔바 9조',   url:_CV, bg:'#7D2AE8' },
+    { id:'canva10', label:'🎨 캔바 10조',  url:_CV, bg:'#7D2AE8' },
   ];
+  // 서버에서 저장된 URL override 적용
+  let lhLinkOverrides = {};
+  try { lhLinkOverrides = JSON.parse('{{ links_json|escapejs }}') || {}; } catch(e) {}
+  const LH_REDIRECT_LINKS = LH_DEFAULT_LINKS.map(l => ({
+    ...l, url: lhLinkOverrides[l.id] || l.url
+  }));
+
   let lhPlatform = 'microsoft';
 
   function lhPad(n){ return String(n).padStart(4,'0'); }
@@ -541,22 +605,38 @@
     if (!LH_IS_UNLOCKED) return;
 
     if (lhPlatform === 'canva') {
-      grid.style.gridTemplateColumns = 'repeat(2,1fr)';
+      grid.className = 'lh-link-grid';
       LH_REDIRECT_LINKS.forEach(function(link) {
+        const wrap = document.createElement('div');
+        wrap.className = 'lh-link-wrap';
         const btn = document.createElement('button');
         btn.className = 'lh-link-btn';
         btn.textContent = link.label;
         btn.style.background = link.bg;
         btn.onclick = () => window.open(link.url, '_blank', 'noopener,noreferrer');
-        grid.appendChild(btn);
+        wrap.appendChild(btn);
+        if (LH_IS_ADMIN) {
+          const gear = document.createElement('button');
+          gear.className = 'lh-gear-btn';
+          gear.textContent = '⚙';
+          gear.title = 'URL 변경';
+          gear.onclick = (e) => { e.stopPropagation(); lhOpenLinkEdit(link.id, link.label, link.url); };
+          wrap.appendChild(gear);
+        }
+        grid.appendChild(wrap);
       });
+      // 대기안내 (전체 너비)
+      const waitWrap = document.createElement('div');
+      waitWrap.className = 'lh-link-wrap full-width';
       const waitBtn = document.createElement('button');
       waitBtn.className = 'lh-link-btn wait-btn';
       waitBtn.textContent = '📢 대기안내';
       waitBtn.onclick = () => document.getElementById('lhWaitOverlay').classList.remove('hidden');
-      grid.appendChild(waitBtn);
+      waitWrap.appendChild(waitBtn);
+      grid.appendChild(waitWrap);
       return;
     }
+    grid.className = 'lh-grid';
     for (let i = 1; i <= LH_RANGES[lhPlatform]; i++) {
       const btn = document.createElement('button');
       btn.className = 'lh-num-btn';
@@ -565,6 +645,41 @@
       grid.appendChild(btn);
     }
   }
+
+  /* ── 링크 편집 모달 (관리자) ── */
+  let lhEditingId = null;
+  function lhOpenLinkEdit(id, label, currentUrl) {
+    lhEditingId = id;
+    document.getElementById('lhLinkEditTitle').textContent = label + ' URL 변경';
+    document.getElementById('lhLinkEditInput').value = currentUrl;
+    document.getElementById('lhLinkEditOverlay').classList.remove('hidden');
+    setTimeout(() => document.getElementById('lhLinkEditInput').focus(), 50);
+  }
+  document.getElementById('lhLinkEditCancelBtn').onclick = () => {
+    document.getElementById('lhLinkEditOverlay').classList.add('hidden');
+  };
+  document.getElementById('lhLinkEditSaveBtn').onclick = async () => {
+    const newUrl = document.getElementById('lhLinkEditInput').value.trim();
+    if (!newUrl) { lhShowToast('URL을 입력해주세요.'); return; }
+    // 로컬 override 업데이트
+    lhLinkOverrides[lhEditingId] = newUrl;
+    // LH_REDIRECT_LINKS에서 해당 링크 url 업데이트
+    const link = LH_REDIRECT_LINKS.find(l => l.id === lhEditingId);
+    if (link) link.url = newUrl;
+    // 서버 저장
+    try {
+      const res = await fetch(LH_LINKS_SAVE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': LH_CSRF },
+        body: JSON.stringify({ overrides: lhLinkOverrides })
+      });
+      const d = await res.json();
+      if (d.ok) { lhShowToast('✅ 저장됐습니다!'); }
+      else { lhShowToast('저장 실패: ' + (d.error || '오류')); }
+    } catch(e) { lhShowToast('저장 중 오류가 발생했습니다.'); }
+    document.getElementById('lhLinkEditOverlay').classList.add('hidden');
+    lhRenderGrid(); // 그리드 다시 렌더링
+  };
 
   function lhShowDetail(num, btnEl) {
     const grid = document.getElementById('lhNumberGrid');

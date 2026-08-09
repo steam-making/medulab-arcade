@@ -13,6 +13,7 @@ urlpatterns = [
     path('tools/team-name/', views.team_name, name='team_name'),
     path('tools/problem-finder/', views.problem_finder, name='problem_finder'),
     path('tools/presentation-script/', views.presentation_script, name='presentation_script'),
+    path('api/presentation-prompt/save/', views.api_presentation_prompt_save, name='api_presentation_prompt_save'),
     path('api/problem/join/', views.api_problem_join, name='api_problem_join'),
     path('api/problem/team-info/', views.api_problem_team_info, name='api_problem_team_info'),
     path('api/problem/update/', views.api_problem_update, name='api_problem_update'),

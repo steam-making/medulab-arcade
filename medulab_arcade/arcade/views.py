@@ -182,8 +182,37 @@ def problem_finder(request):
     return render(request, 'arcade/problem_finder.html')
 
 
+PROMPTS_FILE = os.path.join(os.path.dirname(__file__), 'data', 'presentation_prompts.json')
+
+def _load_presentation_prompts():
+    if os.path.exists(PROMPTS_FILE):
+        with open(PROMPTS_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
 def presentation_script(request):
-    return render(request, 'arcade/presentation_script.html')
+    prompts = _load_presentation_prompts()
+    return render(request, 'arcade/presentation_script.html', {'custom_prompts': json.dumps(prompts)})
+
+
+@require_POST
+def api_presentation_prompt_save(request):
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': '권한이 없습니다.'}, status=403)
+    try:
+        body = json.loads(request.body)
+        target = body.get('target')
+        content = body.get('content', '').strip()
+        if target not in ('elementary', 'middle'):
+            return JsonResponse({'ok': False, 'error': '잘못된 대상입니다.'})
+        prompts = _load_presentation_prompts()
+        prompts[target] = content
+        os.makedirs(os.path.dirname(PROMPTS_FILE), exist_ok=True)
+        with open(PROMPTS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(prompts, f, ensure_ascii=False, indent=2)
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)})
 
 
 @require_POST

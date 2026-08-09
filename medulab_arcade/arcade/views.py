@@ -182,6 +182,10 @@ def problem_finder(request):
     return render(request, 'arcade/problem_finder.html')
 
 
+def presentation_script(request):
+    return render(request, 'arcade/presentation_script.html')
+
+
 @require_POST
 def api_problem_join(request):
     from .models import ProblemRoom, ProblemMember

@@ -522,30 +522,70 @@
         <div class="ci-step-subtitle">어떤 발명품을 만들 건가요?</div>
       </div>
     </div>
+
+    <!-- ① 해결하려는 문제 (2단계 자동 복사) -->
     <div class="ci-field">
-      <label class="ci-label">발명품 이름 <span class="req">*</span></label>
-      <input class="ci-input" id="ciInventionName" placeholder="예) 스마트 에너지 교실" />
-    </div>
-    <div class="ci-field">
-      <label class="ci-label">해결하려는 문제</label>
+      <label class="ci-label">해결하려는 문제
+        <span class="hint">2단계 내용이 자동으로 채워져요. 수정해도 됩니다.</span>
+      </label>
       <textarea class="ci-textarea" id="ciSolveProblem" rows="3"
-        placeholder="예) 사람이 없는 교실의 전기·에어컨이 계속 켜져 있는 문제를 해결하고 싶어요."></textarea>
+        placeholder="2단계에서 입력한 탄소 문제가 자동으로 입력됩니다."></textarea>
     </div>
+
+    <!-- AI 아이디어 도우미 A -->
+    <button type="button" class="ci-help-toggle" id="ciHelpToggle3A" onclick="toggleStep3Helper('A')">
+      🤖 발명 아이디어를 어떻게 할지 모르겠어요 — AI 도움 받기
+      <span class="ci-help-toggle-arrow">▼</span>
+    </button>
+    <div class="ci-gpt-helper" id="ciGptHelper3A">
+      <div class="ci-gpt-header">
+        <div class="ci-gpt-icon">💡</div>
+        <div class="ci-gpt-header-text">
+          <strong>AI로 발명 아이디어 추천받기</strong>
+          <span>아래 프롬프트를 AI에 붙여넣으면 발명 아이디어 3가지를 추천받을 수 있어요!</span>
+        </div>
+      </div>
+      <div class="ci-gpt-field-badge" id="ciGptBadge3A">💡 아이디어 추천</div>
+      <div class="ci-gpt-prompt-box" id="ciGptPrompt3A"></div>
+      <button class="ci-gpt-copy-btn" id="ciGptCopyBtn3A" onclick="copyStep3Prompt('ciGptPrompt3A','ciGptCopyBtn3A')">📋 AI 프롬프트 복사</button>
+    </div>
+
+    <!-- ② 주요 기능 -->
     <div class="ci-field">
       <label class="ci-label">주요 기능 (3가지) <span class="req">*</span></label>
       <input class="ci-input" id="ciFunc1" placeholder="기능 1: 예) 사람 감지 센서로 빈 교실 자동 절전" style="margin-bottom:8px" />
       <input class="ci-input" id="ciFunc2" placeholder="기능 2: 예) 앱으로 전기 사용량 실시간 확인" style="margin-bottom:8px" />
       <input class="ci-input" id="ciFunc3" placeholder="기능 3: 예) 절전 목표 달성 시 반 포인트 적립" />
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="ci-field">
-        <label class="ci-label">누가 사용하나요?</label>
-        <input class="ci-input" id="ciWhoUses" placeholder="예) 초등학교 학생·선생님" />
+
+    <!-- ③ 누가 사용하나요 -->
+    <div class="ci-field">
+      <label class="ci-label">누가 사용하나요?</label>
+      <input class="ci-input" id="ciWhoUses" placeholder="예) 초등학교 학생·선생님" />
+    </div>
+
+    <!-- AI 이름 추천 도우미 B -->
+    <button type="button" class="ci-help-toggle" id="ciHelpToggle3B" onclick="toggleStep3Helper('B')">
+      🤖 발명품 이름을 어떻게 지을지 모르겠어요 — AI 도움 받기
+      <span class="ci-help-toggle-arrow">▼</span>
+    </button>
+    <div class="ci-gpt-helper" id="ciGptHelper3B">
+      <div class="ci-gpt-header">
+        <div class="ci-gpt-icon">✏️</div>
+        <div class="ci-gpt-header-text">
+          <strong>AI로 발명품 이름 추천받기</strong>
+          <span>주요 기능을 입력한 뒤 아래 프롬프트를 AI에 붙여넣으면 이름을 추천받을 수 있어요!</span>
+        </div>
       </div>
-      <div class="ci-field">
-        <label class="ci-label">어디서 사용하나요?</label>
-        <input class="ci-input" id="ciWhereUse" placeholder="예) 교실, 도서관, 복도" />
-      </div>
+      <div class="ci-gpt-field-badge" id="ciGptBadge3B">✏️ 이름 추천</div>
+      <div class="ci-gpt-prompt-box" id="ciGptPrompt3B"></div>
+      <button class="ci-gpt-copy-btn" id="ciGptCopyBtn3B" onclick="copyStep3Prompt('ciGptPrompt3B','ciGptCopyBtn3B')">📋 AI 프롬프트 복사</button>
+    </div>
+
+    <!-- ④ 발명품 이름 -->
+    <div class="ci-field">
+      <label class="ci-label">발명품 이름 <span class="req">*</span></label>
+      <input class="ci-input" id="ciInventionName" placeholder="예) 스마트 에너지 교실" />
     </div>
   </div>
 
@@ -961,6 +1001,68 @@ gradeIntro + '\n' +
   document.getElementById('ciGptPrompt').textContent = prompt;
 }
 
+// ── Step3 도우미 ──
+function toggleStep3Helper(key){
+  const helper = document.getElementById('ciGptHelper3'+key);
+  const toggle = document.getElementById('ciHelpToggle3'+key);
+  const isOpen = helper.classList.toggle('open');
+  toggle.classList.toggle('open', isOpen);
+  if(isOpen) updateStep3Helper(key);
+}
+
+function updateStep3Helper(key){
+  const field = ciSelectedField || v('ciFieldCustom') || '선택한 분야';
+  const grade = ciSelectedGrade;
+  const gradeIntro = grade ? '저는 ' + grade + '이에요.' : '저는 초등학생(또는 중학생)이에요.';
+  const gradeSuffix = grade ? grade + '이 이해하기 쉽게' : '초등학생이 이해하기 쉽게';
+
+  if(key === 'A'){
+    const problem = v('ciSolveProblem') || v('ciProblem') || '(2단계에서 입력한 탄소 문제)';
+    document.getElementById('ciGptBadge3A').textContent = '💡 ' + field + ' 발명 아이디어 추천';
+    document.getElementById('ciGptPrompt3A').textContent =
+gradeIntro + '\n' +
+'"' + field + '" 분야에서 탄소중립 발명품을 만들려고 해요.\n\n' +
+'내가 발견한 탄소 문제:\n' + problem + '\n\n' +
+'이 문제를 해결하는 탄소중립 발명품 아이디어를 3가지 추천해줘.\n' +
+'각각 다음 형식으로 ' + gradeSuffix + ' 설명해줘:\n\n' +
+'① 이 발명품은 어떻게 탄소 문제를 해결하나요? (2~3문장)\n' +
+'② 주요 기능 3가지 (각각 한 문장으로)\n' +
+'③ 누가 주로 사용하면 좋을지';
+  }
+
+  if(key === 'B'){
+    const f1 = v('ciFunc1') || '(기능 1 입력 후 사용하세요)';
+    const f2 = v('ciFunc2');
+    const f3 = v('ciFunc3');
+    const who = v('ciWhoUses') || '(미입력)';
+    const problem = v('ciSolveProblem') || v('ciProblem') || '';
+    document.getElementById('ciGptBadge3B').textContent = '✏️ ' + field + ' 발명품 이름 추천';
+    document.getElementById('ciGptPrompt3B').textContent =
+gradeIntro + '\n' +
+'"' + field + '" 분야의 탄소중립 발명품을 만들고 있어요.\n\n' +
+'발명품 정보:\n' +
+(problem ? '- 해결하는 문제: ' + problem + '\n' : '') +
+'- 주요 기능 1: ' + f1 + '\n' +
+(f2 ? '- 주요 기능 2: ' + f2 + '\n' : '') +
+(f3 ? '- 주요 기능 3: ' + f3 + '\n' : '') +
+'- 사용 대상: ' + who + '\n\n' +
+'이 발명품에 어울리는 창의적인 이름을 5가지 추천해줘.\n' +
+'(한국어로, 짧고 부르기 쉬운 이름,\n' +
+'발명품의 기능이나 탄소절감 효과가 느껴지는 이름으로)';
+  }
+}
+
+async function copyStep3Prompt(promptId, btnId){
+  const text = document.getElementById(promptId).textContent;
+  const btn = document.getElementById(btnId);
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = '✅ 복사됨! AI에 붙여넣기 하세요';
+    btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent='📋 AI 프롬프트 복사'; btn.classList.remove('copied'); }, 3000);
+  } catch(e){ alert('복사 실패. 직접 선택 후 Ctrl+C 해주세요.'); }
+}
+
 async function copyGptPrompt(){
   const text = document.getElementById('ciGptPrompt').textContent;
   const btn = document.getElementById('ciGptCopyBtn');
@@ -977,9 +1079,19 @@ function showStep(n){
   const target = document.querySelector('.ci-step[data-step="' + n + '"]');
   if(target) target.classList.add('active');
   if(n === 2){
-    // Step2 진입 시 도우미 닫힘 상태로 초기화
     document.getElementById('ciGptHelper').classList.remove('open');
     document.getElementById('ciHelpToggle').classList.remove('open');
+  }
+  if(n === 3){
+    // 2단계 문제 자동 복사 (비어있을 때만)
+    const prob = document.getElementById('ciProblem').value.trim();
+    const solveEl = document.getElementById('ciSolveProblem');
+    if(prob && !solveEl.value.trim()) solveEl.value = prob;
+    // 도우미 닫힘 초기화
+    ['3A','3B'].forEach(k => {
+      document.getElementById('ciGptHelper'+k).classList.remove('open');
+      document.getElementById('ciHelpToggle'+k).classList.remove('open');
+    });
   }
 
   const results = document.getElementById('ciResults');
@@ -1189,7 +1301,7 @@ function generateResults(){
     problem:v('ciProblem'), places:getChecked('ciPlaces'), whyCarbon:v('ciWhyCarbon'),
     inventionName:v('ciInventionName'), solveProblem:v('ciSolveProblem'),
     func1:v('ciFunc1'), func2:v('ciFunc2'), func3:v('ciFunc3'),
-    whoUses:v('ciWhoUses'), whereUse:v('ciWhereUse'),
+    whoUses:v('ciWhoUses'),
     flow1:v('ciFlow1'), flow2:v('ciFlow2'), flow3:v('ciFlow3'), flow4:v('ciFlow4'),
     aiChecked:getChecked('ciAiChecks'), aiRole:v('ciAiRole'),
     carbonHow:v('ciCarbonHow'), carbonEffect:v('ciCarbonEffect'),
@@ -1211,7 +1323,7 @@ function generateResults(){
 '발명품 이름: ' + (data.inventionName||'(미입력)') + '\n' +
 '발명 분야: ' + (data.field||'(미입력)') + '\n\n' +
 '발명품 설명:\n"' + (data.inventionName||'발명품') + '"은(는) ' +
-(data.whereUse||'생활 속') + '에서 ' + (data.whoUses||'사람들') + '이 사용하는 탄소중립 발명품입니다.\n' +
+(places||'생활 속') + '에서 ' + (data.whoUses||'사람들') + '이 사용하는 탄소중립 발명품입니다.\n' +
 '주요 기능: ' + (funcs||'(미입력)') + '\n' +
 'AI 기능: ' + ai +
 (data.carbonEffect?'\n탄소중립 효과: '+data.carbonEffect:'') + ann + '\n\n' +
@@ -1255,7 +1367,7 @@ function generateResults(){
 '  - ' + (data.func1||'(미입력)') +
 (data.func2?'\n  - '+data.func2:'') + (data.func3?'\n  - '+data.func3:'') + '\n\n' +
 '⑧ 사용 대상: ' + (data.whoUses||'(미입력)') + '\n' +
-'   사용 장소: ' + (data.whereUse||'(미입력)') + '\n\n' +
+'   발생 장소: ' + (places||'(미입력)') + '\n\n' +
 '⑨ 작동 원리 (4단계):\n' + (flowLines||'  (미입력)') + '\n\n' +
 '⑩ AI 기능: ' + ai + (data.aiRole?'\n  AI 역할: '+data.aiRole:'') + '\n\n' +
 '⑪ 탄소중립 효과:' + (fillSentence||'\n  '+(data.carbonHow||'(미입력)')) + '\n\n' +

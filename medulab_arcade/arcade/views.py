@@ -3116,6 +3116,7 @@ def api_gallery_join(request):
 
 def api_gallery_state(request):
     from .models import GalleryRoom, GalleryVote
+    from django.db.models import Avg, Count
     room_id = request.GET.get('room_id')
     try:
         room = GalleryRoom.objects.get(id=room_id)
@@ -3124,20 +3125,23 @@ def api_gallery_state(request):
 
     session_key = request.session.session_key or ''
     poster_data = None
-    my_vote = False
+    my_score = 0  # 0 = 미투표, 1~5 = 별점
 
     if room.status == 'voting' and room.current_index >= 0:
         posters = list(room.posters.all())
         if room.current_index < len(posters):
             poster = posters[room.current_index]
-            my_vote = GalleryVote.objects.filter(
+            my_vote_obj = GalleryVote.objects.filter(
                 poster=poster, voter_session=session_key
-            ).exists()
+            ).first()
+            my_score = my_vote_obj.score if my_vote_obj else 0
+            agg = poster.votes.aggregate(avg=Avg('score'), count=Count('id'))
             poster_data = {
                 'id': poster.id,
                 'title': poster.title,
                 'image_url': poster.image.url,
-                'vote_count': poster.votes.count(),
+                'vote_count': agg['count'] or 0,
+                'avg_score': round(agg['avg'] or 0, 1),
                 'index': room.current_index,
                 'total': len(posters),
             }
@@ -3146,21 +3150,23 @@ def api_gallery_state(request):
     if room.status == 'done':
         results = []
         for poster in room.posters.all():
+            agg = poster.votes.aggregate(avg=Avg('score'), count=Count('id'))
             results.append({
                 'id': poster.id,
                 'title': poster.title,
                 'image_url': poster.image.url,
-                'vote_count': poster.votes.count(),
+                'vote_count': agg['count'] or 0,
+                'avg_score': round(agg['avg'] or 0, 1),
                 'order': poster.order,
             })
-        results.sort(key=lambda x: -x['vote_count'])
+        results.sort(key=lambda x: (-x['avg_score'], -x['vote_count']))
 
     return JsonResponse({
         'ok': True,
         'status': room.status,
         'current_index': room.current_index,
         'poster': poster_data,
-        'my_vote': my_vote,
+        'my_score': my_score,
         'results': results,
     })
 
@@ -3168,8 +3174,12 @@ def api_gallery_state(request):
 @require_POST
 def api_gallery_vote(request):
     from .models import GalleryPoster, GalleryVote
+    from django.db.models import Avg, Count
     data = json.loads(request.body)
     poster_id = data.get('poster_id')
+    score = int(data.get('score', 5))
+    if not (1 <= score <= 5):
+        score = 5
     voter_name = request.session.get('gallery_voter_name', '')
     session_key = request.session.session_key or ''
     if not session_key or not voter_name:
@@ -3182,6 +3192,11 @@ def api_gallery_vote(request):
         return JsonResponse({'ok': False, 'error': '투표 중인 방이 아닙니다.'})
     _, created = GalleryVote.objects.get_or_create(
         poster=poster, voter_session=session_key,
-        defaults={'voter_name': voter_name}
+        defaults={'voter_name': voter_name, 'score': score}
     )
-    return JsonResponse({'ok': True, 'created': created, 'vote_count': poster.votes.count()})
+    agg = poster.votes.aggregate(avg=Avg('score'), count=Count('id'))
+    return JsonResponse({
+        'ok': True, 'created': created,
+        'vote_count': agg['count'] or 0,
+        'avg_score': round(agg['avg'] or 0, 1),
+    })

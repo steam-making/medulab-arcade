@@ -8,16 +8,12 @@
   :root { --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --orange:#FF9142; --green:#3DDC97; --ink:#2E2A4A; }
   body { background:linear-gradient(150deg,#FFF6FB 0%,#F1F0FF 45%,#EAF7FF 100%) !important; }
 
-  /* ── 투표 중일 때 네비게이션/헤더 숨김 ── */
-  body.gv-voting-mode nav,
-  body.gv-voting-mode header,
-  body.gv-voting-mode .navbar,
-  body.gv-voting-mode .site-header,
-  body.gv-voting-mode .gv-back,
-  body.gv-voting-mode .gv-hero { display:none !important; }
-  body.gv-voting-mode { background:#F4F2FF !important; }
+  /* 투표 중 네비게이션 숨김 */
+  body.gv-voting-mode nav, body.gv-voting-mode header,
+  body.gv-voting-mode .navbar, body.gv-voting-mode .site-header,
+  body.gv-voting-mode .gv-back, body.gv-voting-mode .gv-hero { display:none !important; }
+  body.gv-voting-mode { background:#1e1a3e !important; }
 
-  /* ── 공통 ── */
   .gv-wrap { max-width:680px; margin:0 auto; padding:36px 20px 80px; }
   .gv-back { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700;
     color:#8C6BFA; text-decoration:none; margin-bottom:24px; }
@@ -32,7 +28,7 @@
   .gv-phase { display:none; }
   .gv-phase.active { display:block; }
 
-  /* ── Phase 0: 방 목록 ── */
+  /* Phase 0 */
   .gv-room-list { display:flex; flex-direction:column; gap:14px; }
   .gv-room-item { background:#fff; border-radius:18px; padding:20px 22px;
     box-shadow:0 4px 16px rgba(140,107,250,.08); border:2px solid #e8e3fa;
@@ -46,7 +42,7 @@
   .gv-badge.waiting { background:#F1EEFF; color:#8C6BFA; }
   .gv-empty { text-align:center; padding:48px 0; color:#9a96b4; font-size:14px; }
 
-  /* ── Phase 1: 이름 입력 ── */
+  /* Phase 1 */
   .gv-name-box { background:#fff; border-radius:20px; padding:32px 28px;
     box-shadow:0 6px 24px rgba(140,107,250,.1); border:2px solid #e8e3fa; text-align:center; }
   .gv-name-box h2 { font-size:20px; font-weight:900; color:var(--ink); margin:0 0 6px; }
@@ -59,114 +55,89 @@
     box-shadow:0 4px 16px rgba(140,107,250,.3); margin-top:14px; transition:all .18s; }
   .gv-join-btn:hover { opacity:.9; transform:translateY(-1px); }
 
-  /* ── Phase 2: 대기실 ── */
+  /* Phase 2 */
   .gv-waiting { text-align:center; padding:60px 20px; }
   .gv-waiting .spin { font-size:48px; animation:gvSpin 2s linear infinite; display:inline-block; }
   @keyframes gvSpin { to { transform:rotate(360deg); } }
   .gv-waiting h2 { font-size:20px; font-weight:800; color:var(--ink); margin:20px 0 8px; }
   .gv-waiting p { font-size:13px; color:#7a7498; }
 
-  /* ── Phase 3: 투표 (전체 화면, 좌우 레이아웃) ── */
+  /* Phase 3: 투표 전체화면 */
   #gvPhase3 { display:none; }
-  #gvPhase3.active {
-    display:flex; flex-direction:column;
-    min-height:100vh; padding:0; box-sizing:border-box;
-  }
+  #gvPhase3.active { display:flex; flex-direction:column; min-height:100vh; }
 
-  /* 상단 진행 바 영역 */
-  .gv-vote-topbar {
-    padding:14px 24px 10px;
-    background:#fff;
-    border-bottom:1px solid #ede8fa;
-    display:flex; align-items:center; gap:14px;
-    position:sticky; top:0; z-index:10;
+  .gv-topbar {
+    background:rgba(30,26,62,.95); backdrop-filter:blur(8px);
+    padding:12px 24px; display:flex; align-items:center; gap:14px;
+    position:sticky; top:0; z-index:10; border-bottom:1px solid rgba(255,255,255,.08);
   }
-  .gv-vote-topbar .gv-progress-text {
-    font-size:13px; font-weight:800; color:#8C6BFA; white-space:nowrap;
-  }
-  .gv-progress-bar { flex:1; height:7px; background:#e8e3fa; border-radius:999px; overflow:hidden; }
-  .gv-progress-fill { height:100%; background:linear-gradient(90deg,#8C6BFA,#3FA9F5); border-radius:999px; transition:width .5s; }
+  .gv-topbar-label { font-size:13px; font-weight:800; color:#c4bde8; white-space:nowrap; }
+  .gv-topbar .bar { flex:1; height:6px; background:rgba(255,255,255,.15); border-radius:999px; overflow:hidden; }
+  .gv-topbar .fill { height:100%; background:linear-gradient(90deg,#8C6BFA,#3FA9F5); border-radius:999px; transition:width .5s; }
 
-  /* 좌우 메인 영역 */
-  .gv-vote-main {
-    display:grid;
-    grid-template-columns:1fr 320px;
-    flex:1;
-    gap:0;
-    min-height:0;
-  }
+  .gv-vote-main { display:grid; grid-template-columns:1fr 300px; flex:1; }
 
-  /* 왼쪽: 포스터 */
-  .gv-poster-side {
-    background:#2a2550;
-    display:flex; align-items:center; justify-content:center;
-    padding:20px;
-    min-height:calc(100vh - 55px);
-  }
-  .gv-poster-side img {
-    max-width:100%; max-height:calc(100vh - 100px);
-    object-fit:contain; border-radius:16px;
-    box-shadow:0 12px 48px rgba(0,0,0,.4);
-  }
+  .gv-poster-side { background:#1e1a3e; display:flex; align-items:center; justify-content:center;
+    padding:24px; min-height:calc(100vh - 52px); }
+  .gv-poster-side img { max-width:100%; max-height:calc(100vh - 110px); object-fit:contain;
+    border-radius:16px; box-shadow:0 16px 60px rgba(0,0,0,.5); }
 
-  /* 오른쪽: 평가 패널 */
-  .gv-vote-panel {
-    background:#fff;
-    display:flex; flex-direction:column; justify-content:center;
-    padding:32px 28px;
-    gap:20px;
-    border-left:1px solid #ede8fa;
-  }
-  .gv-vote-panel .poster-label {
-    font-size:11px; font-weight:800; color:#9a96b4; letter-spacing:.5px; text-transform:uppercase;
-  }
-  .gv-vote-panel .poster-title {
-    font-size:18px; font-weight:900; color:var(--ink); line-height:1.4;
-    word-break:keep-all;
-  }
+  .gv-vote-panel { background:#fff; display:flex; flex-direction:column;
+    padding:28px 24px; gap:18px; border-left:1px solid #ede8fa; overflow-y:auto; }
+  .gv-panel-label { font-size:10px; font-weight:800; color:#b0aac8; letter-spacing:.8px; text-transform:uppercase; }
+  .gv-panel-title { font-size:17px; font-weight:900; color:var(--ink); line-height:1.4; word-break:keep-all; }
   .gv-divider { height:1px; background:#ede8fa; }
 
-  /* 하트 버튼 */
-  .gv-heart-btn {
-    width:100%; padding:18px; border:3px solid #FF6FA5; border-radius:20px;
-    background:#fff; cursor:pointer; transition:all .2s; color:#FF6FA5;
-    font-size:22px; font-weight:900;
-    display:flex; align-items:center; justify-content:center; gap:10px;
-    box-shadow:0 4px 16px rgba(255,111,165,.12);
+  /* 별점 */
+  .gv-star-label { font-size:13px; font-weight:800; color:#5a5480; text-align:center; }
+  .gv-stars { display:flex; justify-content:center; gap:6px; margin:4px 0; }
+  .gv-star {
+    font-size:38px; cursor:pointer; transition:transform .15s, filter .15s;
+    filter:grayscale(1) opacity(.3); line-height:1;
   }
-  .gv-heart-btn:hover:not(:disabled) { background:#FFF0F6; transform:scale(1.03); }
-  .gv-heart-btn.voted {
-    background:linear-gradient(120deg,#FF6FA5,#FF9142);
-    color:#fff; border-color:transparent;
-    box-shadow:0 6px 20px rgba(255,111,165,.45);
-    transform:none;
-  }
-  .gv-heart-btn:disabled { cursor:not-allowed; }
-  .gv-heart-count { text-align:center; font-size:13px; color:#9a96b4; font-weight:700; }
+  .gv-star:hover, .gv-star.on { filter:none; transform:scale(1.15); }
+  .gv-star.on { filter:drop-shadow(0 2px 6px rgba(255,193,60,.6)); }
+  .gv-star-hint { font-size:12px; color:#9a96b4; text-align:center; min-height:18px; }
 
-  .gv-wait-notice {
-    text-align:center; font-size:13px; font-weight:700; color:#8C6BFA;
-    background:#F1EEFF; border-radius:12px; padding:12px;
-    display:none;
+  .gv-vote-btn {
+    width:100%; padding:15px; border:none; border-radius:14px; cursor:pointer;
+    font-size:16px; font-weight:900; background:linear-gradient(120deg,#FF9142,#FFC93C);
+    color:#fff; box-shadow:0 4px 16px rgba(255,145,66,.35); transition:all .2s;
   }
+  .gv-vote-btn:hover:not(:disabled) { opacity:.9; transform:translateY(-2px); }
+  .gv-vote-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+  .gv-vote-btn.done { background:linear-gradient(120deg,#3DDC97,#22c77c); box-shadow:0 4px 16px rgba(61,220,151,.35); }
 
-  /* ── Phase 4: 결과 ── */
-  .gv-result-hero { text-align:center; padding:24px 0 28px; }
-  .gv-result-hero h2 { font-size:24px; font-weight:900; color:var(--ink); margin:0 0 4px; }
-  .gv-result-hero p { font-size:13px; color:#7a7498; margin:0; }
-  .gv-result-list { display:flex; flex-direction:column; gap:14px; }
-  .gv-result-item { background:#fff; border-radius:18px; overflow:hidden;
-    box-shadow:0 4px 16px rgba(140,107,250,.08); border:2px solid #e8e3fa;
-    display:flex; align-items:center; gap:16px; padding:14px 18px; }
-  .gv-result-item.rank1 { border-color:#FFD700; box-shadow:0 6px 24px rgba(255,215,0,.2); background:linear-gradient(120deg,#FFFDF0,#fff); }
+  .gv-voted-info { text-align:center; }
+  .gv-voted-score { font-size:24px; font-weight:900; color:var(--ink); }
+  .gv-voted-stars { font-size:22px; letter-spacing:2px; }
+  .gv-voted-count { font-size:12px; color:#9a96b4; margin-top:4px; }
+
+  .gv-wait-notice { text-align:center; font-size:13px; font-weight:700; color:#8C6BFA;
+    background:#F1EEFF; border-radius:12px; padding:12px; display:none; }
+
+  /* Phase 4: 결과 */
+  .gv-result-wrap { max-width:680px; margin:0 auto; padding:32px 20px 80px; }
+  .gv-result-hero { text-align:center; padding:0 0 28px; }
+  .gv-result-hero h2 { font-size:30px; font-weight:900; color:var(--ink); margin:0 0 4px; }
+  .gv-result-hero p { font-size:14px; color:#7a7498; margin:0; }
+
+  .gv-result-list { display:flex; flex-direction:column; gap:16px; }
+  .gv-result-item { background:#fff; border-radius:20px; overflow:hidden;
+    box-shadow:0 6px 24px rgba(140,107,250,.1); border:2px solid #e8e3fa;
+    display:flex; align-items:center; gap:0; }
+  .gv-result-item.rank1 { border-color:#FFD700; box-shadow:0 8px 32px rgba(255,215,0,.25); }
   .gv-result-item.rank2 { border-color:#C0C0C0; }
   .gv-result-item.rank3 { border-color:#CD7F32; }
-  .gv-rank-num { font-size:26px; font-weight:900; min-width:36px; text-align:center; }
-  .gv-result-img { width:72px; height:72px; object-fit:cover; border-radius:12px; flex-shrink:0; }
-  .gv-result-info { flex:1; min-width:0; }
-  .gv-result-title { font-size:15px; font-weight:800; color:var(--ink);
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .gv-result-votes { font-size:13px; color:#FF6FA5; font-weight:800; margin-top:3px; }
+  .gv-result-rank { font-size:32px; font-weight:900; min-width:60px; text-align:center;
+    padding:16px 0; flex-shrink:0; }
+  .gv-result-img { width:100px; height:100px; object-fit:cover; flex-shrink:0; }
+  .gv-result-info { flex:1; min-width:0; padding:16px 18px; }
+  .gv-result-title { font-size:16px; font-weight:900; color:var(--ink);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:6px; }
+  .gv-result-stars-row { font-size:20px; letter-spacing:2px; margin-bottom:4px; }
+  .gv-result-score { font-size:15px; font-weight:800; color:#FF9142; }
+  .gv-result-count { font-size:12px; color:#9a96b4; margin-top:2px; }
 
   .gv-toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
     background:#2E2A4A; color:#fff; font-size:14px; font-weight:700; padding:12px 28px;
@@ -174,27 +145,24 @@
     opacity:0; transition:opacity .3s; pointer-events:none; }
   .gv-toast.show { opacity:1; }
 
-  /* ── 모바일 ── */
   @media (max-width:700px) {
     .gv-vote-main { grid-template-columns:1fr; }
-    .gv-poster-side { min-height:55vw; padding:16px; }
-    .gv-poster-side img { max-height:55vw; border-radius:12px; }
-    .gv-vote-panel { padding:20px 18px; gap:14px; }
-    .gv-heart-btn { font-size:20px; padding:16px; }
+    .gv-poster-side { min-height:60vw; padding:14px; }
+    .gv-poster-side img { max-height:60vw; }
+    .gv-vote-panel { padding:18px 16px; gap:14px; }
+    .gv-star { font-size:30px; }
+    .gv-result-img { width:80px; height:80px; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-
-<!-- 방 목록 / 이름 입력 / 대기실 / 결과는 .gv-wrap 안에 -->
-<div class="gv-wrap">
+<div class="gv-wrap" id="gvWrap">
   <a href="{% url 'ai_prompts' %}" class="gv-back">← AI 프롬프트 생성기로</a>
-
   <div class="gv-hero">
     <div class="badge">🖼️ MEDULAB GALLERY</div>
     <h1>작품 평가단</h1>
-    <p>포스터를 보고 마음에 드는 작품에 하트를 눌러주세요!</p>
+    <p>포스터를 보고 별점으로 작품을 평가해주세요!</p>
     {% if user.is_staff %}
     <a href="{% url 'gallery_admin' %}" style="display:inline-block;margin-top:12px;
       font-size:12px;font-weight:800;color:#FF9142;text-decoration:none;
@@ -238,46 +206,56 @@
   <!-- Phase 4: 결과 -->
   <div class="gv-phase" id="gvPhase4">
     <div class="gv-result-hero">
-      <h2>🏆 투표 결과</h2>
+      <h2>🏆 최종 결과</h2>
       <p>모두 수고했어요!</p>
     </div>
     <div class="gv-result-list" id="gvResultList"></div>
   </div>
 </div>
 
-<!-- Phase 3: 투표 (전체 화면, .gv-wrap 바깥) -->
+<!-- Phase 3: 투표 전체화면 (.gv-wrap 바깥) -->
 <div id="gvPhase3">
-  <!-- 상단 진행 바 -->
-  <div class="gv-vote-topbar">
-    <div class="gv-progress-text" id="gvProgressText">1 / 1 번째 작품</div>
-    <div class="gv-progress-bar">
-      <div class="gv-progress-fill" id="gvProgressFill" style="width:0%"></div>
-    </div>
+  <div class="gv-topbar">
+    <div class="gv-topbar-label" id="gvProgressText">1 / 1 번째 작품</div>
+    <div class="bar"><div class="fill" id="gvProgressFill" style="width:0%"></div></div>
   </div>
-
-  <!-- 좌우 레이아웃 -->
   <div class="gv-vote-main">
-    <!-- 왼쪽: 포스터 이미지 -->
+    <!-- 왼쪽: 포스터 -->
     <div class="gv-poster-side">
       <img id="gvPosterImg" src="" alt="포스터">
     </div>
-
-    <!-- 오른쪽: 평가 패널 -->
+    <!-- 오른쪽: 별점 패널 -->
     <div class="gv-vote-panel">
       <div>
-        <div class="poster-label">작품 제목</div>
-        <div class="poster-title" id="gvPosterTitle">—</div>
+        <div class="gv-panel-label">작품 제목</div>
+        <div class="gv-panel-title" id="gvPosterTitle">—</div>
       </div>
       <div class="gv-divider"></div>
 
-      <button class="gv-heart-btn" id="gvHeartBtn" onclick="gvVote()">
-        ❤️ <span id="gvHeartLabel">하트 보내기</span>
-      </button>
-      <div class="gv-heart-count" id="gvHeartCount"></div>
-
-      <div class="gv-wait-notice" id="gvWaitNotice">
-        ⏳ 다음 포스터를 기다리는 중...
+      <!-- 별점 선택 (투표 전) -->
+      <div id="gvStarSection">
+        <div class="gv-star-label">별점을 선택하세요</div>
+        <div class="gv-stars" id="gvStars">
+          <span class="gv-star" data-s="1" onmouseenter="gvHover(1)" onmouseleave="gvUnhover()" onclick="gvSelectStar(1)">⭐</span>
+          <span class="gv-star" data-s="2" onmouseenter="gvHover(2)" onmouseleave="gvUnhover()" onclick="gvSelectStar(2)">⭐</span>
+          <span class="gv-star" data-s="3" onmouseenter="gvHover(3)" onmouseleave="gvUnhover()" onclick="gvSelectStar(3)">⭐</span>
+          <span class="gv-star" data-s="4" onmouseenter="gvHover(4)" onmouseleave="gvUnhover()" onclick="gvSelectStar(4)">⭐</span>
+          <span class="gv-star" data-s="5" onmouseenter="gvHover(5)" onmouseleave="gvUnhover()" onclick="gvSelectStar(5)">⭐</span>
+        </div>
+        <div class="gv-star-hint" id="gvStarHint">별을 클릭해 평가하세요</div>
+        <button class="gv-vote-btn" id="gvVoteBtn" onclick="gvVote()" disabled>평가하기</button>
       </div>
+
+      <!-- 투표 완료 후 -->
+      <div id="gvVotedSection" style="display:none">
+        <div class="gv-voted-info">
+          <div class="gv-voted-stars" id="gvVotedStars">⭐⭐⭐⭐⭐</div>
+          <div class="gv-voted-score" id="gvVotedScore">5점 평가 완료!</div>
+          <div class="gv-voted-count" id="gvVotedCount"></div>
+        </div>
+      </div>
+
+      <div class="gv-wait-notice" id="gvWaitNotice">⏳ 다음 포스터를 기다리는 중...</div>
     </div>
   </div>
 </div>
@@ -285,36 +263,21 @@
 <div class="gv-toast" id="gvToast"></div>
 
 <script>
-let gvRoomId = null;
-let gvRoomName = '';
-let gvCurrentPoster = null;
-let gvMyVote = false;
-let gvPollTimer = null;
-let gvPhase = 0;
+let gvRoomId = null, gvRoomName = '', gvCurrentPoster = null;
+let gvMyScore = 0, gvSelectedStar = 0, gvPollTimer = null, gvPhase = 0;
 const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const STAR_HINTS = ['', '아쉬워요 😢', '조금 아쉬워요 😕', '보통이에요 😊', '좋아요 👍', '최고예요! 🔥'];
 const RANK_EMOJI = ['🥇','🥈','🥉'];
 
-// Phase 전환 — Phase 3은 .gv-wrap 바깥에 있어서 별도 처리
 function gvShowPhase(n) {
-  // .gv-wrap 안의 Phase 0,1,2,4
-  document.querySelectorAll('.gv-phase').forEach((el, i) => {
-    el.classList.toggle('active', i === n);
-  });
-  // Phase 3 별도
-  const p3 = document.getElementById('gvPhase3');
-  p3.classList.toggle('active', n === 3);
-
-  // 투표 중이면 body에 클래스 추가 (nav 숨김)
+  document.querySelectorAll('.gv-phase').forEach((el, i) => el.classList.toggle('active', i === n));
+  document.getElementById('gvPhase3').classList.toggle('active', n === 3);
+  document.getElementById('gvWrap').style.display = n === 3 ? 'none' : '';
   document.body.classList.toggle('gv-voting-mode', n === 3);
-
-  // .gv-wrap 자체도 숨김/표시
-  const wrap = document.querySelector('.gv-wrap');
-  if (wrap) wrap.style.display = n === 3 ? 'none' : '';
-
   gvPhase = n;
 }
 
-// ── Phase 0: 방 목록 ──
+// ── Phase 0 ──
 async function gvLoadRooms() {
   try {
     const res = await fetch('/api/gallery/rooms/');
@@ -325,11 +288,11 @@ async function gvLoadRooms() {
       return;
     }
     list.innerHTML = d.rooms.map(r => `
-      <div class="gv-room-item" onclick="gvSelectRoom(${r.id}, '${r.name.replace(/'/g,"\\'")}', '${r.status}')">
+      <div class="gv-room-item" onclick="gvSelectRoom(${r.id}, '${r.name.replace(/'/g,"\\'")}')">
         <div>
           <div class="gv-room-item-name">${r.name}
-            <span class="gv-badge ${r.status === 'waiting' ? 'waiting' : ''}">
-              ${r.status === 'waiting' ? '대기중' : '진행중'}
+            <span class="gv-badge ${r.status==='waiting'?'waiting':''}">
+              ${r.status==='waiting'?'대기중':'진행중'}
             </span>
           </div>
           <div class="gv-room-item-sub">탭하여 입장</div>
@@ -340,112 +303,122 @@ async function gvLoadRooms() {
   } catch(e) { gvToast('방 목록을 불러올 수 없어요.'); }
 }
 
-function gvSelectRoom(roomId, roomName, status) {
-  gvRoomId = roomId;
-  gvRoomName = roomName;
+function gvSelectRoom(roomId, roomName) {
+  gvRoomId = roomId; gvRoomName = roomName;
   document.getElementById('gvJoinRoomName').textContent = roomName;
   document.getElementById('gvNameInput').value = '';
   gvShowPhase(1);
 }
 
-// ── Phase 1: 이름 입력 ──
+// ── Phase 1 ──
 async function gvJoin() {
   const name = document.getElementById('gvNameInput').value.trim();
   if (!name) { gvToast('이름을 입력해주세요!'); return; }
   try {
     const res = await fetch('/api/gallery/join/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
       body: JSON.stringify({ room_id: gvRoomId, name })
     });
     const d = await res.json();
-    if (!d.ok) { gvToast(d.error || '입장 실패'); return; }
+    if (!d.ok) { gvToast(d.error||'입장 실패'); return; }
     document.getElementById('gvWaitTitle').textContent = `"${gvRoomName}" 에 입장했어요!`;
     gvShowPhase(2);
-    gvStartPolling();
+    clearInterval(gvPollTimer);
+    gvPoll();
+    gvPollTimer = setInterval(gvPoll, 2000);
   } catch(e) { gvToast('오류가 발생했어요.'); }
 }
 
 // ── 폴링 ──
-function gvStartPolling() {
-  clearInterval(gvPollTimer);
-  gvPoll();
-  gvPollTimer = setInterval(gvPoll, 2000);
-}
-
 async function gvPoll() {
   if (!gvRoomId) return;
   try {
     const res = await fetch(`/api/gallery/state/?room_id=${gvRoomId}`);
     const d = await res.json();
     if (!d.ok) return;
-    gvApplyState(d);
+    if (d.status === 'waiting') { if (gvPhase!==2) gvShowPhase(2); return; }
+    if (d.status === 'done') { clearInterval(gvPollTimer); gvShowResults(d.results); return; }
+    if (!d.poster) return;
+    gvApplyVoting(d);
   } catch(e) {}
 }
 
-function gvApplyState(d) {
-  if (d.status === 'waiting') {
-    if (gvPhase !== 2) gvShowPhase(2);
-    return;
-  }
-  if (d.status === 'done') {
-    clearInterval(gvPollTimer);
-    gvShowResults(d.results);
-    return;
-  }
-
-  if (!d.poster) return;
+function gvApplyVoting(d) {
   const poster = d.poster;
-  gvMyVote = d.my_vote;
+  const prevId = gvCurrentPoster?.id;
   gvCurrentPoster = poster;
+  gvMyScore = d.my_score || 0;
 
-  if (gvPhase !== 3) gvShowPhase(3);
+  if (gvPhase !== 3) { gvShowPhase(3); gvResetStars(); }
 
-  // 진행 표시
-  document.getElementById('gvProgressText').textContent =
-    `${poster.index + 1} / ${poster.total} 번째 작품`;
-  document.getElementById('gvProgressFill').style.width =
-    `${((poster.index + 1) / poster.total) * 100}%`;
-  document.getElementById('gvPosterTitle').textContent = poster.title || `작품 ${poster.index + 1}`;
+  // 포스터 바뀌면 별점 초기화
+  if (prevId && prevId !== poster.id) { gvResetStars(); gvMyScore = d.my_score || 0; }
 
-  // 이미지
+  document.getElementById('gvProgressText').textContent = `${poster.index+1} / ${poster.total} 번째 작품`;
+  document.getElementById('gvProgressFill').style.width = `${((poster.index+1)/poster.total)*100}%`;
+  document.getElementById('gvPosterTitle').textContent = poster.title || `작품 ${poster.index+1}`;
+
   const img = document.getElementById('gvPosterImg');
   if (img.src !== location.origin + poster.image_url) img.src = poster.image_url;
 
-  // 하트 버튼 상태
-  const btn = document.getElementById('gvHeartBtn');
-  const label = document.getElementById('gvHeartLabel');
-  const notice = document.getElementById('gvWaitNotice');
-  if (gvMyVote) {
-    btn.classList.add('voted'); btn.disabled = true;
-    label.textContent = '하트 보냈어요! ✓';
-    notice.style.display = 'block';
+  if (gvMyScore > 0) {
+    gvShowVotedState(gvMyScore, poster.vote_count, poster.avg_score);
   } else {
-    btn.classList.remove('voted'); btn.disabled = false;
-    label.textContent = '하트 보내기';
-    notice.style.display = 'none';
+    document.getElementById('gvStarSection').style.display = '';
+    document.getElementById('gvVotedSection').style.display = 'none';
+    document.getElementById('gvWaitNotice').style.display = 'none';
+    gvRenderStars(gvSelectedStar, false);
   }
-  document.getElementById('gvHeartCount').textContent =
-    poster.vote_count > 0 ? `❤️ ${poster.vote_count}개` : '';
 }
 
-// ── 투표 ──
+// ── 별점 ──
+function gvHover(n) { if (gvMyScore > 0) return; gvRenderStars(n, true); document.getElementById('gvStarHint').textContent = STAR_HINTS[n]; }
+function gvUnhover() { if (gvMyScore > 0) return; gvRenderStars(gvSelectedStar, false); document.getElementById('gvStarHint').textContent = gvSelectedStar ? STAR_HINTS[gvSelectedStar] : '별을 클릭해 평가하세요'; }
+
+function gvSelectStar(n) {
+  if (gvMyScore > 0) return;
+  gvSelectedStar = n;
+  gvRenderStars(n, false);
+  document.getElementById('gvStarHint').textContent = STAR_HINTS[n];
+  document.getElementById('gvVoteBtn').disabled = false;
+}
+
+function gvRenderStars(n, hover) {
+  document.querySelectorAll('.gv-star').forEach((el, i) => {
+    el.classList.toggle('on', i < n);
+  });
+}
+
+function gvResetStars() {
+  gvSelectedStar = 0;
+  document.getElementById('gvStarSection').style.display = '';
+  document.getElementById('gvVotedSection').style.display = 'none';
+  document.getElementById('gvWaitNotice').style.display = 'none';
+  document.getElementById('gvVoteBtn').disabled = true;
+  document.getElementById('gvStarHint').textContent = '별을 클릭해 평가하세요';
+  gvRenderStars(0, false);
+}
+
+function gvShowVotedState(myScore, voteCount, avgScore) {
+  document.getElementById('gvStarSection').style.display = 'none';
+  document.getElementById('gvVotedSection').style.display = '';
+  document.getElementById('gvWaitNotice').style.display = 'block';
+  document.getElementById('gvVotedStars').textContent = '⭐'.repeat(myScore) + '☆'.repeat(5 - myScore);
+  document.getElementById('gvVotedScore').textContent = `${myScore}점 평가 완료!`;
+  document.getElementById('gvVotedCount').textContent = `전체 평균 ⭐${avgScore}점 (${voteCount}명 참여)`;
+}
+
 async function gvVote() {
-  if (!gvCurrentPoster || gvMyVote) return;
+  if (!gvCurrentPoster || !gvSelectedStar) return;
   try {
     const res = await fetch('/api/gallery/vote/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-      body: JSON.stringify({ poster_id: gvCurrentPoster.id })
+      method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify({ poster_id: gvCurrentPoster.id, score: gvSelectedStar })
     });
     const d = await res.json();
-    if (!d.ok) { gvToast(d.error || '투표 실패'); return; }
-    gvMyVote = true;
-    const btn = document.getElementById('gvHeartBtn');
-    btn.classList.add('voted'); btn.disabled = true;
-    document.getElementById('gvHeartLabel').textContent = '하트 보냈어요! ✓';
-    document.getElementById('gvHeartCount').textContent = `❤️ ${d.vote_count}개`;
-    document.getElementById('gvWaitNotice').style.display = 'block';
+    if (!d.ok) { gvToast(d.error||'평가 실패'); return; }
+    gvMyScore = gvSelectedStar;
+    gvShowVotedState(gvSelectedStar, d.vote_count, d.avg_score);
   } catch(e) { gvToast('오류가 발생했어요.'); }
 }
 
@@ -453,16 +426,22 @@ async function gvVote() {
 function gvShowResults(results) {
   gvShowPhase(4);
   const list = document.getElementById('gvResultList');
-  list.innerHTML = (results || []).map((r, i) => `
-    <div class="gv-result-item ${i < 3 ? 'rank'+(i+1) : ''}">
-      <div class="gv-rank-num">${RANK_EMOJI[i] || (i+1)}</div>
-      <img class="gv-result-img" src="${r.image_url}" alt="${r.title}">
-      <div class="gv-result-info">
-        <div class="gv-result-title">${r.title || '작품 '+(r.order+1)}</div>
-        <div class="gv-result-votes">❤️ ${r.vote_count}표</div>
-      </div>
-    </div>
-  `).join('');
+  list.innerHTML = (results||[]).map((r, i) => {
+    const stars = r.avg_score > 0
+      ? '⭐'.repeat(Math.round(r.avg_score)) + '☆'.repeat(5-Math.round(r.avg_score))
+      : '—';
+    return `
+      <div class="gv-result-item ${i<3?'rank'+(i+1):''}">
+        <div class="gv-result-rank">${RANK_EMOJI[i]||(i+1)}</div>
+        <img class="gv-result-img" src="${r.image_url}" alt="${r.title}">
+        <div class="gv-result-info">
+          <div class="gv-result-title">${r.title||'작품 '+(r.order+1)}</div>
+          <div class="gv-result-stars-row">${stars}</div>
+          <div class="gv-result-score">평균 ⭐ ${r.avg_score}점</div>
+          <div class="gv-result-count">${r.vote_count}명 참여</div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function gvToast(msg) {

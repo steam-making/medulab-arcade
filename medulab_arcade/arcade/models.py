@@ -852,6 +852,7 @@ class GalleryVote(models.Model):
     poster = models.ForeignKey(GalleryPoster, on_delete=models.CASCADE, related_name='votes')
     voter_name = models.CharField('투표자 이름', max_length=30)
     voter_session = models.CharField('세션키', max_length=64)
+    score = models.IntegerField('별점', default=5)  # 1~5
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

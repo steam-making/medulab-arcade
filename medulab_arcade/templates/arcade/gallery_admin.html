@@ -8,6 +8,11 @@
   :root { --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --orange:#FF9142; --green:#3DDC97; --ink:#2E2A4A; }
   body { background:linear-gradient(150deg,#FFF6FB 0%,#F1F0FF 45%,#EAF7FF 100%) !important; }
 
+  /* 컨트롤 중 네비게이션 숨김 */
+  body.ga-ctrl-mode nav, body.ga-ctrl-mode header,
+  body.ga-ctrl-mode .navbar, body.ga-ctrl-mode .site-header { display:none !important; }
+  body.ga-ctrl-mode { background:#1e1a3e !important; }
+
   /* ── 공통 ── */
   .ga-phase { display:none; }
   .ga-phase.active { display:block; }
@@ -22,8 +27,6 @@
   .ga-btn { padding:9px 18px; border-radius:10px; font-size:13px; font-weight:700;
     cursor:pointer; border:none; transition:all .15s; }
   .ga-btn.start { background:linear-gradient(120deg,#3DDC97,#22c77c); color:#fff; box-shadow:0 3px 10px rgba(61,220,151,.3); }
-  .ga-btn.next  { background:linear-gradient(120deg,#3FA9F5,#1a7fd4); color:#fff; box-shadow:0 3px 10px rgba(63,169,245,.3); }
-  .ga-btn.end   { background:linear-gradient(120deg,#FF9142,#FF6B00); color:#fff; box-shadow:0 3px 10px rgba(255,145,66,.3); }
   .ga-btn.del   { background:#fff; color:#FF6FA5; border:1.5px solid #FF6FA5; }
   .ga-btn.ctrl  { background:linear-gradient(120deg,#8C6BFA,#3FA9F5); color:#fff; box-shadow:0 3px 10px rgba(140,107,250,.3); }
   .ga-btn:disabled { opacity:.4; cursor:not-allowed; }
@@ -80,58 +83,91 @@
   .ga-copy-link:hover { background:#F1EEFF; }
   .ga-room-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
 
-  /* ── Phase 1: 투표 컨트롤 ── */
-  .gac-header { display:flex; align-items:center; gap:14px; margin-bottom:24px; flex-wrap:wrap; }
-  .gac-back-btn { padding:8px 18px; border:1.5px solid #d8d2f0; border-radius:10px;
-    background:#fff; font-size:13px; font-weight:700; color:#8C6BFA; cursor:pointer; }
-  .gac-back-btn:hover { background:#F1EEFF; }
-  .gac-room-title { font-size:20px; font-weight:900; color:var(--ink); }
-  .gac-info-row { display:flex; gap:18px; align-items:center; margin-bottom:6px; flex-wrap:wrap; }
-  .gac-stat { font-size:13px; color:#7a7498; font-weight:700; }
-  .gac-stat span { color:var(--purple); }
-  .gac-progress-bar { height:7px; background:#e8e3fa; border-radius:999px; overflow:hidden; margin-bottom:20px; }
-  .gac-progress-fill { height:100%; background:linear-gradient(90deg,#8C6BFA,#3FA9F5); border-radius:999px; transition:width .4s; }
+  /* ── Phase 1: 전체화면 투표 컨트롤 ── */
+  #gaPhase1 { display:none; flex-direction:column; min-height:100vh; }
+  #gaPhase1.active { display:flex; }
 
-  .gac-poster-wrap { background:#fff; border-radius:20px; overflow:hidden;
-    box-shadow:0 8px 32px rgba(140,107,250,.12); border:2px solid #e8e3fa;
-    margin-bottom:24px; max-height:55vh; display:flex; justify-content:center; align-items:center; background:#f0eeff; }
-  .gac-poster-wrap img { max-width:100%; max-height:55vh; object-fit:contain; display:block; }
-  .gac-poster-title { text-align:center; font-size:18px; font-weight:800; color:var(--ink); margin-bottom:6px; }
-  .gac-vote-count { text-align:center; font-size:14px; color:#FF6FA5; font-weight:800; margin-bottom:20px; }
+  .gac-topbar {
+    background:rgba(30,26,62,.95); backdrop-filter:blur(8px);
+    padding:12px 20px; display:flex; align-items:center; gap:14px;
+    position:sticky; top:0; z-index:10; border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .gac-back-btn { padding:7px 14px; border:1.5px solid rgba(255,255,255,.25); border-radius:8px;
+    background:transparent; font-size:12px; font-weight:700; color:#c4bde8; cursor:pointer;
+    flex-shrink:0; transition:all .15s; }
+  .gac-back-btn:hover { background:rgba(255,255,255,.1); }
+  .gac-room-label { font-size:14px; font-weight:900; color:#fff; flex-shrink:0; }
+  .gac-topbar .bar { flex:1; height:6px; background:rgba(255,255,255,.15); border-radius:999px; overflow:hidden; }
+  .gac-topbar .fill { height:100%; background:linear-gradient(90deg,#8C6BFA,#3FA9F5); border-radius:999px; transition:width .5s; }
+  .gac-topbar-progress { font-size:12px; font-weight:800; color:#c4bde8; flex-shrink:0; }
 
-  .gac-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-  .gac-btn-next { padding:14px 40px; border:none; border-radius:14px; cursor:pointer; font-size:16px;
-    font-weight:900; background:linear-gradient(120deg,#3FA9F5,#1a7fd4); color:#fff;
-    box-shadow:0 5px 18px rgba(63,169,245,.35); transition:all .18s; }
+  .gac-main { display:grid; grid-template-columns:1fr 320px; flex:1; }
+
+  .gac-poster-side { background:#1e1a3e; display:flex; align-items:center; justify-content:center;
+    padding:24px; min-height:calc(100vh - 52px); }
+  .gac-poster-side img { max-width:100%; max-height:calc(100vh - 110px); object-fit:contain;
+    border-radius:16px; box-shadow:0 16px 60px rgba(0,0,0,.5); }
+
+  .gac-ctrl-panel { background:#fff; display:flex; flex-direction:column;
+    padding:24px 20px; gap:16px; border-left:1px solid #ede8fa; overflow-y:auto; }
+  .gac-panel-label { font-size:10px; font-weight:800; color:#b0aac8; letter-spacing:.8px; text-transform:uppercase; }
+  .gac-panel-title { font-size:18px; font-weight:900; color:var(--ink); line-height:1.4; word-break:keep-all; }
+  .gac-divider { height:1px; background:#ede8fa; }
+
+  .gac-stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .gac-stat-box { background:#F8F7FF; border-radius:12px; padding:12px 14px; text-align:center; }
+  .gac-stat-val { font-size:26px; font-weight:900; color:var(--ink); line-height:1; }
+  .gac-stat-lbl { font-size:11px; font-weight:700; color:#9a96b4; margin-top:4px; }
+  .gac-avg-score { text-align:center; font-size:22px; font-weight:900; color:#FF9142; }
+  .gac-avg-stars { font-size:18px; letter-spacing:2px; text-align:center; color:#FFB800; }
+
+  .gac-btn-next {
+    width:100%; padding:15px; border:none; border-radius:14px; cursor:pointer;
+    font-size:15px; font-weight:900; background:linear-gradient(120deg,#3FA9F5,#1a7fd4);
+    color:#fff; box-shadow:0 4px 16px rgba(63,169,245,.35); transition:all .18s;
+  }
   .gac-btn-next:hover:not(:disabled) { opacity:.9; transform:translateY(-2px); }
   .gac-btn-next:disabled { opacity:.4; cursor:not-allowed; transform:none; }
-  .gac-btn-end { padding:14px 32px; border:none; border-radius:14px; cursor:pointer; font-size:15px;
-    font-weight:800; background:linear-gradient(120deg,#FF9142,#FF6B00); color:#fff;
-    box-shadow:0 4px 16px rgba(255,145,66,.3); transition:all .18s; }
+  .gac-btn-end {
+    width:100%; padding:13px; border:none; border-radius:14px; cursor:pointer;
+    font-size:14px; font-weight:800; background:linear-gradient(120deg,#FF9142,#FF6B00);
+    color:#fff; box-shadow:0 4px 14px rgba(255,145,66,.3); transition:all .18s;
+  }
   .gac-btn-end:hover { opacity:.9; transform:translateY(-1px); }
 
   /* ── Phase 2: 결과 ── */
-  .gac-result-hero { text-align:center; padding:20px 0 24px; }
-  .gac-result-hero h2 { font-size:24px; font-weight:900; color:var(--ink); margin:0 0 4px; }
-  .gac-result-hero p { font-size:13px; color:#7a7498; margin:0; }
-  .gac-result-list { display:flex; flex-direction:column; gap:12px; }
-  .gac-result-item { background:#fff; border-radius:16px; overflow:hidden;
-    box-shadow:0 4px 14px rgba(140,107,250,.08); border:2px solid #e8e3fa;
-    display:flex; align-items:center; gap:14px; padding:12px 16px; }
-  .gac-result-item.rank1 { border-color:#FFD700; background:linear-gradient(120deg,#FFFDF0,#fff); }
+  .gac-result-wrap { max-width:700px; margin:0 auto; padding:32px 20px 80px; }
+  .gac-result-hero { text-align:center; padding:0 0 28px; }
+  .gac-result-hero h2 { font-size:32px; font-weight:900; color:var(--ink); margin:0 0 6px; }
+  .gac-result-hero p { font-size:14px; color:#7a7498; margin:0; }
+
+  .gac-result-list { display:flex; flex-direction:column; gap:16px; }
+  .gac-result-item { background:#fff; border-radius:20px; overflow:hidden;
+    box-shadow:0 6px 24px rgba(140,107,250,.1); border:2px solid #e8e3fa;
+    display:flex; align-items:center; }
+  .gac-result-item.rank1 { border-color:#FFD700; box-shadow:0 8px 32px rgba(255,215,0,.25); }
   .gac-result-item.rank2 { border-color:#C0C0C0; }
   .gac-result-item.rank3 { border-color:#CD7F32; }
-  .gac-rank-num { font-size:24px; font-weight:900; min-width:32px; text-align:center; }
-  .gac-result-img { width:68px; height:68px; object-fit:cover; border-radius:10px; flex-shrink:0; }
-  .gac-result-title { font-size:14px; font-weight:800; color:var(--ink); }
-  .gac-result-votes { font-size:13px; color:#FF6FA5; font-weight:800; margin-top:2px; }
-  .gac-result-back { text-align:center; margin-top:24px; }
+  .gac-rank-num { font-size:34px; font-weight:900; min-width:68px; text-align:center;
+    padding:16px 0; flex-shrink:0; }
+  .gac-result-img { width:110px; height:110px; object-fit:cover; flex-shrink:0; }
+  .gac-result-info { flex:1; min-width:0; padding:16px 18px; }
+  .gac-result-title { font-size:17px; font-weight:900; color:var(--ink);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:6px; }
+  .gac-result-stars-row { font-size:22px; letter-spacing:2px; margin-bottom:4px; }
+  .gac-result-score { font-size:16px; font-weight:800; color:#FF9142; }
+  .gac-result-count { font-size:12px; color:#9a96b4; margin-top:2px; }
+  .gac-result-back { text-align:center; margin-top:28px; }
   .gac-result-back button { padding:12px 32px; border:1.5px solid #d8d2f0; border-radius:12px;
     background:#fff; font-size:14px; font-weight:700; color:#8C6BFA; cursor:pointer; }
 
-  @media (max-width:600px) {
-    .gac-actions { flex-direction:column; }
-    .gac-btn-next, .gac-btn-end { width:100%; }
+  @media (max-width:700px) {
+    .gac-main { grid-template-columns:1fr; }
+    .gac-poster-side { min-height:60vw; padding:14px; }
+    .gac-poster-side img { max-height:60vw; }
+    .gac-ctrl-panel { padding:16px 14px; gap:12px; }
+    .gac-result-img { width:80px; height:80px; }
+    .gac-result-hero h2 { font-size:24px; }
   }
 </style>
 {% endblock %}
@@ -210,31 +246,54 @@
     </div>
   </div>
 
-  <!-- ══ Phase 1: 투표 컨트롤 ══ -->
-  <div class="ga-phase" id="gaPhase1">
-    <div class="gac-header">
-      <button class="gac-back-btn" onclick="gaGoList()">← 방 목록</button>
-      <div class="gac-room-title" id="gacRoomTitle"></div>
-    </div>
-    <div class="gac-info-row">
-      <div class="gac-stat">포스터 <span id="gacProgressText">-</span></div>
-      <div class="gac-stat">👥 <span id="gacMemberCount">-</span>명 접속중</div>
-      <div class="gac-stat">❤️ 현재 <span id="gacVoteCount">0</span>표</div>
-    </div>
-    <div class="gac-progress-bar"><div class="gac-progress-fill" id="gacProgressFill" style="width:0%"></div></div>
-    <div class="gac-poster-title" id="gacPosterTitle"></div>
-    <div class="gac-vote-count" id="gacVoteLabel"></div>
-    <div class="gac-poster-wrap">
+</div><!-- /.ga-wrap -->
+
+<!-- ══ Phase 1: 전체화면 투표 컨트롤 ══ -->
+<div class="ga-phase" id="gaPhase1">
+  <div class="gac-topbar">
+    <button class="gac-back-btn" onclick="gaGoList()">← 방 목록</button>
+    <div class="gac-room-label" id="gacRoomLabel"></div>
+    <div class="bar"><div class="fill" id="gacProgressFill" style="width:0%"></div></div>
+    <div class="gac-topbar-progress" id="gacProgressText">1 / 1</div>
+  </div>
+  <div class="gac-main">
+    <!-- 왼쪽: 포스터 -->
+    <div class="gac-poster-side">
       <img id="gacPosterImg" src="" alt="포스터">
     </div>
-    <div class="gac-actions">
+    <!-- 오른쪽: 컨트롤 패널 -->
+    <div class="gac-ctrl-panel">
+      <div>
+        <div class="gac-panel-label">현재 작품</div>
+        <div class="gac-panel-title" id="gacPosterTitle">—</div>
+      </div>
+      <div class="gac-divider"></div>
+
+      <div class="gac-stats-grid">
+        <div class="gac-stat-box">
+          <div class="gac-stat-val" id="gacMemberCount">0</div>
+          <div class="gac-stat-lbl">👥 접속자</div>
+        </div>
+        <div class="gac-stat-box">
+          <div class="gac-stat-val" id="gacVoteCount">0</div>
+          <div class="gac-stat-lbl">⭐ 평가 수</div>
+        </div>
+      </div>
+      <div>
+        <div class="gac-avg-stars" id="gacAvgStars">☆☆☆☆☆</div>
+        <div class="gac-avg-score" id="gacAvgScore">평균 — 점</div>
+      </div>
+      <div class="gac-divider"></div>
+
       <button class="gac-btn-next" id="gacNextBtn" onclick="gaCtrlNext()">⏭ 다음 포스터</button>
       <button class="gac-btn-end" onclick="gaCtrlEnd()">🏁 투표 종료</button>
     </div>
   </div>
+</div>
 
-  <!-- ══ Phase 2: 결과 ══ -->
-  <div class="ga-phase" id="gaPhase2">
+<!-- ══ Phase 2: 결과 ══ -->
+<div class="ga-phase" id="gaPhase2">
+  <div class="gac-result-wrap">
     <div class="gac-result-hero">
       <h2>🏆 최종 결과</h2>
       <p id="gacResultRoomName"></p>
@@ -244,19 +303,21 @@
       <button onclick="gaGoList()">← 방 목록으로</button>
     </div>
   </div>
-
 </div>
+
 <div class="ga-toast" id="gaToast"></div>
 
 <script>
 const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 const RANK_EMOJI = ['🥇','🥈','🥉'];
-let gaCurrRoomId = null;
-let gaCtrlTimer = null;
+let gaCurrRoomId = null, gaCtrlTimer = null, gaPhaseIdx = 0;
 
 // ── 화면 전환 ──
 function gaShowPhase(n) {
   document.querySelectorAll('.ga-phase').forEach((el, i) => el.classList.toggle('active', i === n));
+  document.body.classList.toggle('ga-ctrl-mode', n === 1);
+  document.querySelector('.ga-wrap').style.display = n === 0 ? '' : 'none';
+  gaPhaseIdx = n;
 }
 function gaGoList() {
   clearInterval(gaCtrlTimer);
@@ -313,7 +374,7 @@ async function gaCreateRoom() {
   finally { btn.disabled = false; btn.textContent = '방 만들기'; }
 }
 
-// ── 투표 시작 (방 목록 → 컨트롤 화면) ──
+// ── 투표 시작 ──
 async function gaStartVoting(roomId, roomName) {
   const fd = new FormData();
   fd.append('action', 'start');
@@ -324,10 +385,10 @@ async function gaStartVoting(roomId, roomName) {
   gaOpenControl(roomId, roomName);
 }
 
-// ── 컨트롤 화면 열기 (이미 voting 중인 방) ──
+// ── 컨트롤 화면 열기 ──
 function gaOpenControl(roomId, roomName) {
   gaCurrRoomId = roomId;
-  document.getElementById('gacRoomTitle').textContent = roomName;
+  document.getElementById('gacRoomLabel').textContent = roomName;
   gaShowPhase(1);
   gaCtrlPoll();
   clearInterval(gaCtrlTimer);
@@ -345,34 +406,30 @@ async function gaCtrlPoll() {
     const state = await stateRes.json();
     const stats = await statsRes.json();
     if (!state.ok) return;
-
-    // 접속자 수
     if (stats.ok) document.getElementById('gacMemberCount').textContent = stats.member_count;
-
     if (state.status === 'done') {
       clearInterval(gaCtrlTimer);
       gaShowResultsData(state.results);
       return;
     }
     if (!state.poster) return;
-
     const p = state.poster;
-    document.getElementById('gacProgressText').textContent = `${p.index + 1} / ${p.total}`;
-    document.getElementById('gacProgressFill').style.width = `${((p.index + 1) / p.total) * 100}%`;
-    document.getElementById('gacPosterTitle').textContent = p.title || `작품 ${p.index + 1}`;
+    document.getElementById('gacProgressText').textContent = `${p.index+1} / ${p.total}`;
+    document.getElementById('gacProgressFill').style.width = `${((p.index+1)/p.total)*100}%`;
+    document.getElementById('gacPosterTitle').textContent = p.title || `작품 ${p.index+1}`;
     document.getElementById('gacVoteCount').textContent = p.vote_count;
-    document.getElementById('gacVoteLabel').textContent = p.vote_count > 0 ? `❤️ ${p.vote_count}표` : '';
-
+    const avg = p.avg_score || 0;
+    document.getElementById('gacAvgScore').textContent = avg > 0 ? `평균 ⭐ ${avg}점` : '아직 평가 없음';
+    document.getElementById('gacAvgStars').textContent = avg > 0
+      ? '⭐'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg)) : '☆☆☆☆☆';
     const img = document.getElementById('gacPosterImg');
     if (img.src !== location.origin + p.image_url) img.src = p.image_url;
-
-    // 마지막 포스터면 "다음" 버튼 텍스트 변경
     const nextBtn = document.getElementById('gacNextBtn');
     if (p.index + 1 >= p.total) {
-      nextBtn.textContent = '🏁 투표 종료';
+      nextBtn.textContent = '🏁 마지막 → 투표 종료';
       nextBtn.onclick = gaCtrlEnd;
     } else {
-      nextBtn.textContent = `⏭ 다음 포스터 (${p.index + 2}/${p.total})`;
+      nextBtn.textContent = `⏭ 다음 포스터 (${p.index+2}/${p.total})`;
       nextBtn.onclick = gaCtrlNext;
     }
   } catch(e) {}
@@ -380,35 +437,27 @@ async function gaCtrlPoll() {
 
 // ── 다음 포스터 ──
 async function gaCtrlNext() {
-  const fd = new FormData();
-  fd.append('action', 'next');
-  fd.append('csrfmiddlewaretoken', CSRF);
+  const fd = new FormData(); fd.append('action','next'); fd.append('csrfmiddlewaretoken',CSRF);
   const res = await fetch(`/api/gallery/room/${gaCurrRoomId}/control/`, { method:'POST', body:fd });
   const d = await res.json();
-  if (!d.ok) { gaToast(d.error || '오류'); return; }
+  if (!d.ok) { gaToast(d.error||'오류'); return; }
   if (d.status === 'done') {
     clearInterval(gaCtrlTimer);
     const stateRes = await fetch(`/api/gallery/state/?room_id=${gaCurrRoomId}`);
-    const state = await stateRes.json();
-    gaShowResultsData(state.results);
-  } else {
-    gaCtrlPoll();
-  }
+    gaShowResultsData((await stateRes.json()).results);
+  } else { gaCtrlPoll(); }
 }
 
 // ── 투표 종료 ──
 async function gaCtrlEnd() {
   if (!confirm('투표를 종료하고 결과를 보시겠어요?')) return;
-  const fd = new FormData();
-  fd.append('action', 'end');
-  fd.append('csrfmiddlewaretoken', CSRF);
+  const fd = new FormData(); fd.append('action','end'); fd.append('csrfmiddlewaretoken',CSRF);
   const res = await fetch(`/api/gallery/room/${gaCurrRoomId}/control/`, { method:'POST', body:fd });
   const d = await res.json();
-  if (!d.ok) { gaToast(d.error || '오류'); return; }
+  if (!d.ok) { gaToast(d.error||'오류'); return; }
   clearInterval(gaCtrlTimer);
   const stateRes = await fetch(`/api/gallery/state/?room_id=${gaCurrRoomId}`);
-  const state = await stateRes.json();
-  gaShowResultsData(state.results);
+  gaShowResultsData((await stateRes.json()).results);
 }
 
 // ── 결과 표시 ──
@@ -422,24 +471,33 @@ async function gaShowResultsFromRoom(roomId) {
 function gaShowResultsData(results) {
   gaShowPhase(2);
   const list = document.getElementById('gacResultList');
-  if (!results || !results.length) { list.innerHTML = '<p style="text-align:center;color:#9a96b4;">투표 결과가 없어요.</p>'; return; }
-  list.innerHTML = results.map((r, i) => `
-    <div class="gac-result-item ${i < 3 ? 'rank'+(i+1) : ''}">
-      <div class="gac-rank-num">${RANK_EMOJI[i] || (i+1)}</div>
-      <img class="gac-result-img" src="${r.image_url}" alt="${r.title}">
-      <div>
-        <div class="gac-result-title">${r.title || '작품 '+(r.order+1)}</div>
-        <div class="gac-result-votes">❤️ ${r.vote_count}표</div>
-      </div>
-    </div>
-  `).join('');
+  if (!results || !results.length) {
+    list.innerHTML = '<p style="text-align:center;color:#9a96b4;padding:32px 0;">투표 결과가 없어요.</p>';
+    return;
+  }
+  list.innerHTML = results.map((r, i) => {
+    const avg = r.avg_score || 0;
+    const stars = avg > 0
+      ? '⭐'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg))
+      : '—';
+    return `
+      <div class="gac-result-item ${i<3?'rank'+(i+1):''}">
+        <div class="gac-rank-num">${RANK_EMOJI[i]||(i+1)}</div>
+        <img class="gac-result-img" src="${r.image_url}" alt="${r.title}">
+        <div class="gac-result-info">
+          <div class="gac-result-title">${r.title||'작품 '+(r.order+1)}</div>
+          <div class="gac-result-stars-row">${stars}</div>
+          <div class="gac-result-score">평균 ⭐ ${avg}점</div>
+          <div class="gac-result-count">${r.vote_count}명 참여</div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 // ── 방 삭제 ──
 async function gaDeleteRoom(roomId, name) {
   if (!confirm(`"${name}" 방을 삭제하면 포스터 이미지도 모두 삭제됩니다.\n계속할까요?`)) return;
-  const fd = new FormData();
-  fd.append('csrfmiddlewaretoken', CSRF);
+  const fd = new FormData(); fd.append('csrfmiddlewaretoken', CSRF);
   const res = await fetch(`/api/gallery/room/${roomId}/delete/`, { method:'POST', body:fd });
   const d = await res.json();
   if (d.ok) { gaToast('방이 삭제됐어요.'); document.getElementById(`gaCard${roomId}`)?.remove(); }
@@ -467,7 +525,7 @@ function gaToast(msg) {
 // ── 접속자 수 폴링 (방 목록 화면) ──
 const GA_ROOM_IDS = [{% for room in rooms %}{{ room.id }}{% if not forloop.last %},{% endif %}{% endfor %}];
 async function gaPollMembers() {
-  if (!document.getElementById('gaPhase0').classList.contains('active')) return;
+  if (gaPhaseIdx !== 0) return;
   for (const roomId of GA_ROOM_IDS) {
     const el = document.getElementById(`gaMemberCount${roomId}`);
     if (!el) continue;

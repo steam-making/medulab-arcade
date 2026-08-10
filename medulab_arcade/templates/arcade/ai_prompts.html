@@ -72,6 +72,7 @@
   .icon-prob    { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); }
   .icon-story   { background: linear-gradient(135deg, #E8FFF5, #C8F5E0); }
   .icon-script  { background: linear-gradient(135deg, #FFF8E1, #FFECB3); }
+  .icon-gallery { background: linear-gradient(135deg, #FFF0F6, #FFD6E8); }
 
   @media (max-width: 600px) {
     .ap-hero h1 { font-size: 24px; }
@@ -116,6 +117,22 @@
       <h2>발표대본 작성기</h2>
       <p>발표 자료를 AI에 주면 초등·중고등 맞춤 발표 대본 프롬프트를 바로 복사할 수 있어요.</p>
       <span class="ap-tag active">이용 가능</span>
+    </a>
+
+    <a href="{% url 'gallery_vote' %}" class="ap-card">
+      <div class="ap-card-icon icon-gallery">🖼️</div>
+      <h2>작품 평가단</h2>
+      <p>포스터를 하나씩 보며 하트로 투표! 마지막엔 인기 작품 순위를 확인해요.</p>
+      <span class="ap-tag active">이용 가능</span>
+      {% if user.is_staff %}
+      <div style="margin-top:10px;">
+        <a href="{% url 'gallery_admin' %}" onclick="event.stopPropagation()"
+          style="font-size:11px;font-weight:800;color:#FF9142;text-decoration:none;
+          background:#FFF3E0;padding:3px 10px;border-radius:999px;display:inline-block;">
+          ⚙️ 관리자 설정
+        </a>
+      </div>
+      {% endif %}
     </a>
 
     <div class="ap-card coming-soon">

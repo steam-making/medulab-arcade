@@ -791,3 +791,65 @@ class ProblemMember(models.Model):
 
     def __str__(self):
         return f"{self.room.team_name} - {self.name}"
+
+
+# ── 작품 평가단 ──────────────────────────────────────────────
+
+def _gallery_upload_path(instance, filename):
+    return f'gallery/{instance.room_id}/{filename}'
+
+
+class GalleryRoom(models.Model):
+    STATUS = [('waiting', '대기중'), ('voting', '투표중'), ('done', '완료')]
+    name = models.CharField('방 이름', max_length=50)
+    status = models.CharField('상태', max_length=10, choices=STATUS, default='waiting')
+    current_index = models.IntegerField('현재 포스터 인덱스', default=-1)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'gallery_room'
+        verbose_name = '작품 평가단 방'
+        verbose_name_plural = '작품 평가단 방'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.name
+
+
+class GalleryPoster(models.Model):
+    room = models.ForeignKey(GalleryRoom, on_delete=models.CASCADE, related_name='posters')
+    image = models.ImageField('이미지', upload_to=_gallery_upload_path)
+    title = models.CharField('제목', max_length=100, blank=True)
+    order = models.PositiveIntegerField('순서', default=0)
+
+    class Meta:
+        db_table = 'gallery_poster'
+        verbose_name = '포스터'
+        verbose_name_plural = '포스터'
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.room.name} #{self.order}"
+
+
+class GalleryVote(models.Model):
+    poster = models.ForeignKey(GalleryPoster, on_delete=models.CASCADE, related_name='votes')
+    voter_name = models.CharField('투표자 이름', max_length=30)
+    voter_session = models.CharField('세션키', max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'gallery_vote'
+        verbose_name = '투표'
+        verbose_name_plural = '투표'
+        unique_together = [('poster', 'voter_session')]
+
+    def __str__(self):
+        return f"{self.poster} ← {self.voter_name}"
+
+
+@receiver(post_delete, sender=GalleryRoom)
+def _delete_gallery_room_files(sender, instance, **kwargs):
+    folder = os.path.join(settings.MEDIA_ROOT, 'gallery', str(instance.id))
+    if os.path.exists(folder):
+        shutil.rmtree(folder)

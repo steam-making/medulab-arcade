@@ -1,0 +1,297 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}작품 평가단 관리 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root { --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --orange:#FF9142; --green:#3DDC97; --ink:#2E2A4A; }
+  body { background:linear-gradient(150deg,#FFF6FB 0%,#F1F0FF 45%,#EAF7FF 100%) !important; }
+  .ga-wrap { max-width:900px; margin:0 auto; padding:36px 20px 80px; }
+  .ga-back { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700;
+    color:#8C6BFA; text-decoration:none; margin-bottom:24px; }
+  .ga-hero { text-align:center; margin-bottom:32px; }
+  .ga-hero h1 { font-size:26px; font-weight:900; color:var(--ink); margin:0 0 6px; }
+  .ga-hero p { font-size:13px; color:#7a7498; margin:0; }
+
+  /* 방 생성 폼 */
+  .ga-create-box { background:#fff; border-radius:20px; padding:24px 28px;
+    box-shadow:0 6px 24px rgba(140,107,250,.1); border:2px solid #e8e3fa; margin-bottom:32px; }
+  .ga-create-box h2 { font-size:16px; font-weight:800; color:var(--ink); margin:0 0 16px; }
+  .ga-field { margin-bottom:14px; }
+  .ga-field label { font-size:13px; font-weight:700; color:#5a5480; display:block; margin-bottom:6px; }
+  .ga-field input[type=text] {
+    width:100%; box-sizing:border-box; padding:11px 14px; border:1.5px solid #d8d2f0;
+    border-radius:10px; font-size:14px; color:var(--ink); outline:none;
+  }
+  .ga-field input[type=text]:focus { border-color:#8C6BFA; box-shadow:0 0 0 3px rgba(140,107,250,.12); }
+  .ga-upload-area {
+    border:2px dashed #c4bde8; border-radius:14px; padding:28px 20px;
+    text-align:center; cursor:pointer; transition:all .2s; background:#FAFAFE;
+  }
+  .ga-upload-area:hover, .ga-upload-area.drag { border-color:#8C6BFA; background:#F5F2FF; }
+  .ga-upload-area .icon { font-size:32px; margin-bottom:8px; }
+  .ga-upload-area p { font-size:13px; color:#7a7498; margin:0; }
+  .ga-upload-area strong { color:#8C6BFA; }
+  #gaFileInput { display:none; }
+  .ga-file-preview { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+  .ga-file-thumb { position:relative; width:80px; }
+  .ga-file-thumb img { width:80px; height:80px; object-fit:cover; border-radius:10px;
+    border:2px solid #e0d8f8; }
+  .ga-file-thumb .fname { font-size:10px; color:#7a7498; text-align:center;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:3px; }
+  .ga-file-thumb .rm { position:absolute; top:-6px; right:-6px; width:20px; height:20px;
+    border-radius:50%; background:#FF6FA5; color:#fff; font-size:12px; font-weight:700;
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .ga-submit-btn {
+    width:100%; padding:14px; border:none; border-radius:12px; cursor:pointer;
+    font-size:15px; font-weight:800; background:linear-gradient(120deg,#8C6BFA,#3FA9F5);
+    color:#fff; box-shadow:0 4px 16px rgba(140,107,250,.3); transition:all .18s;
+  }
+  .ga-submit-btn:hover { opacity:.9; transform:translateY(-1px); }
+  .ga-submit-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+  /* 방 목록 */
+  .ga-rooms h2 { font-size:16px; font-weight:800; color:var(--ink); margin:0 0 14px; }
+  .ga-room-card {
+    background:#fff; border-radius:18px; padding:20px 22px; margin-bottom:16px;
+    box-shadow:0 4px 16px rgba(140,107,250,.08); border:2px solid #e8e3fa;
+  }
+  .ga-room-top { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .ga-room-name { font-size:17px; font-weight:800; color:var(--ink); }
+  .ga-room-meta { font-size:12px; color:#9a96b4; margin-top:2px; }
+  .ga-badge {
+    display:inline-block; font-size:11px; font-weight:800; padding:4px 12px;
+    border-radius:999px; margin-left:8px;
+  }
+  .ga-badge.waiting { background:#F1EEFF; color:#8C6BFA; }
+  .ga-badge.voting { background:#E8FFF5; color:#22c77c; }
+  .ga-badge.done { background:#f5f5f5; color:#aaa; }
+
+  .ga-poster-strip { display:flex; gap:8px; margin:14px 0; flex-wrap:wrap; }
+  .ga-poster-strip img { width:64px; height:64px; object-fit:cover; border-radius:8px;
+    border:2px solid #e0d8f8; }
+
+  .ga-room-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .ga-btn {
+    padding:9px 18px; border-radius:10px; font-size:13px; font-weight:700;
+    cursor:pointer; border:none; transition:all .15s;
+  }
+  .ga-btn.start { background:linear-gradient(120deg,#3DDC97,#22c77c); color:#fff;
+    box-shadow:0 3px 10px rgba(61,220,151,.3); }
+  .ga-btn.next { background:linear-gradient(120deg,#3FA9F5,#1a7fd4); color:#fff;
+    box-shadow:0 3px 10px rgba(63,169,245,.3); }
+  .ga-btn.end { background:linear-gradient(120deg,#FF9142,#FF6B00); color:#fff;
+    box-shadow:0 3px 10px rgba(255,145,66,.3); }
+  .ga-btn.del { background:#fff; color:#FF6FA5; border:1.5px solid #FF6FA5; }
+  .ga-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .ga-btn:hover:not(:disabled) { opacity:.88; transform:translateY(-1px); }
+
+  .ga-link-row { display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .ga-link-box { flex:1; padding:8px 12px; background:#F8F7FF; border-radius:8px;
+    font-size:12px; color:#7a7498; border:1px solid #e0d8f8; word-break:break-all; }
+  .ga-copy-link { padding:7px 14px; border:1.5px solid #8C6BFA; border-radius:8px;
+    background:#fff; color:#8C6BFA; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .ga-copy-link:hover { background:#F1EEFF; }
+
+  .ga-toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+    background:#2E2A4A; color:#fff; font-size:14px; font-weight:700; padding:12px 28px;
+    border-radius:999px; box-shadow:0 6px 24px rgba(0,0,0,.2); z-index:9999;
+    opacity:0; transition:opacity .3s; pointer-events:none; }
+  .ga-toast.show { opacity:1; }
+
+  @media (max-width:600px) {
+    .ga-room-top { flex-direction:column; align-items:flex-start; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ga-wrap">
+  <a href="{% url 'ai_prompts' %}" class="ga-back">← AI 프롬프트 생성기로</a>
+
+  <div class="ga-hero">
+    <h1>🖼️ 작품 평가단 관리</h1>
+    <p>방을 만들고 포스터를 업로드한 뒤 투표를 진행하세요.</p>
+  </div>
+
+  <!-- 방 생성 -->
+  <div class="ga-create-box">
+    <h2>➕ 새 방 만들기</h2>
+    <div class="ga-field">
+      <label>방 이름</label>
+      <input type="text" id="gaRoomName" placeholder="예: 3반 환경 포스터 발표" maxlength="50">
+    </div>
+    <div class="ga-field">
+      <label>포스터 이미지 (여러 장 선택 가능)</label>
+      <div class="ga-upload-area" id="gaDropZone" onclick="document.getElementById('gaFileInput').click()">
+        <div class="icon">📁</div>
+        <p><strong>클릭</strong>하거나 여기에 파일을 끌어다 놓으세요</p>
+        <p style="margin-top:4px;font-size:11px;">JPG, PNG, WEBP 지원</p>
+      </div>
+      <input type="file" id="gaFileInput" multiple accept="image/*">
+      <div class="ga-file-preview" id="gaFilePreview"></div>
+    </div>
+    <button class="ga-submit-btn" id="gaCreateBtn" onclick="gaCreateRoom()">방 만들기</button>
+  </div>
+
+  <!-- 방 목록 -->
+  <div class="ga-rooms">
+    <h2>📋 방 목록</h2>
+    <div id="gaRoomList">
+      {% for room in rooms %}
+      <div class="ga-room-card" id="gaCard{{ room.id }}">
+        <div class="ga-room-top">
+          <div>
+            <div class="ga-room-name">
+              {{ room.name }}
+              <span class="ga-badge {{ room.status }}">
+                {% if room.status == 'waiting' %}대기중{% elif room.status == 'voting' %}투표중{% else %}완료{% endif %}
+              </span>
+            </div>
+            <div class="ga-room-meta">포스터 {{ room.posters.count }}장 · {{ room.created_at|date:"m/d H:i" }}</div>
+          </div>
+        </div>
+        <div class="ga-poster-strip">
+          {% for poster in room.posters.all %}
+          <img src="{{ poster.image.url }}" title="{{ poster.title }}" alt="{{ poster.title }}">
+          {% endfor %}
+        </div>
+        <div class="ga-link-row">
+          <div class="ga-link-box" id="gaLink{{ room.id }}">{{ request.scheme }}://{{ request.get_host }}/tools/gallery-vote/</div>
+          <button class="ga-copy-link" onclick="gaCopyLink('gaLink{{ room.id }}')">🔗 링크 복사</button>
+        </div>
+        <div class="ga-room-actions">
+          {% if room.status == 'waiting' %}
+          <button class="ga-btn start" onclick="gaControl({{ room.id }}, 'start')">▶ 투표 시작</button>
+          {% endif %}
+          {% if room.status == 'voting' %}
+          <button class="ga-btn next" id="gaNextBtn{{ room.id }}" onclick="gaControl({{ room.id }}, 'next')">⏭ 다음 포스터 ({{ room.current_index|add:1 }}/{{ room.posters.count }})</button>
+          <button class="ga-btn end" onclick="gaControl({{ room.id }}, 'end')">🏁 투표 종료</button>
+          {% endif %}
+          <button class="ga-btn del" onclick="gaDeleteRoom({{ room.id }}, '{{ room.name }}')">🗑 방 삭제</button>
+        </div>
+      </div>
+      {% empty %}
+      <p style="color:#9a96b4;text-align:center;padding:32px 0;" id="gaEmptyMsg">아직 만들어진 방이 없어요.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="ga-toast" id="gaToast"></div>
+
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+// ── 파일 선택 / 드래그앤드롭 ──
+let gaFiles = [];
+const dropZone = document.getElementById('gaDropZone');
+const fileInput = document.getElementById('gaFileInput');
+
+fileInput.addEventListener('change', e => gaAddFiles([...e.target.files]));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag');
+  gaAddFiles([...e.dataTransfer.files].filter(f => f.type.startsWith('image/')));
+});
+
+function gaAddFiles(newFiles) {
+  newFiles.forEach(f => { if (!gaFiles.find(x => x.name === f.name && x.size === f.size)) gaFiles.push(f); });
+  gaRenderPreviews();
+}
+
+function gaRenderPreviews() {
+  const wrap = document.getElementById('gaFilePreview');
+  wrap.innerHTML = '';
+  gaFiles.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    const div = document.createElement('div');
+    div.className = 'ga-file-thumb';
+    div.innerHTML = `<img src="${url}"><button class="rm" onclick="gaRemoveFile(${i})">✕</button><div class="fname">${f.name}</div>`;
+    wrap.appendChild(div);
+  });
+}
+
+function gaRemoveFile(idx) {
+  gaFiles.splice(idx, 1);
+  gaRenderPreviews();
+}
+
+// ── 방 생성 ──
+async function gaCreateRoom() {
+  const name = document.getElementById('gaRoomName').value.trim();
+  if (!name) { gaToast('방 이름을 입력해주세요.'); return; }
+  if (gaFiles.length === 0) { gaToast('포스터 이미지를 선택해주세요.'); return; }
+  const btn = document.getElementById('gaCreateBtn');
+  btn.disabled = true; btn.textContent = '업로드 중...';
+  const fd = new FormData();
+  fd.append('name', name);
+  gaFiles.forEach(f => fd.append('images', f));
+  fd.append('csrfmiddlewaretoken', CSRF);
+  try {
+    const res = await fetch('/api/gallery/room/create/', { method:'POST', body:fd });
+    const d = await res.json();
+    if (d.ok) {
+      gaToast(`"${d.name}" 방이 만들어졌어요!`);
+      document.getElementById('gaRoomName').value = '';
+      gaFiles = [];
+      document.getElementById('gaFilePreview').innerHTML = '';
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      gaToast(d.error || '오류 발생');
+    }
+  } catch(e) { gaToast('네트워크 오류'); }
+  finally { btn.disabled = false; btn.textContent = '방 만들기'; }
+}
+
+// ── 투표 컨트롤 ──
+async function gaControl(roomId, action) {
+  const fd = new FormData();
+  fd.append('action', action);
+  fd.append('csrfmiddlewaretoken', CSRF);
+  const res = await fetch(`/api/gallery/room/${roomId}/control/`, { method:'POST', body:fd });
+  const d = await res.json();
+  if (d.ok) {
+    gaToast(action === 'start' ? '투표를 시작했어요!' : action === 'next' ? '다음 포스터로 넘어갔어요.' : '투표를 종료했어요.');
+    setTimeout(() => location.reload(), 800);
+  } else {
+    gaToast(d.error || '오류');
+  }
+}
+
+// ── 방 삭제 ──
+async function gaDeleteRoom(roomId, name) {
+  if (!confirm(`"${name}" 방을 삭제하면 포스터 이미지도 모두 삭제됩니다.\n계속할까요?`)) return;
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', CSRF);
+  const res = await fetch(`/api/gallery/room/${roomId}/delete/`, { method:'POST', body:fd });
+  const d = await res.json();
+  if (d.ok) {
+    gaToast('방이 삭제됐어요.');
+    document.getElementById(`gaCard${roomId}`)?.remove();
+  } else {
+    gaToast(d.error || '오류');
+  }
+}
+
+// ── 링크 복사 ──
+function gaCopyLink(elemId) {
+  const text = document.getElementById(elemId).textContent;
+  navigator.clipboard.writeText(text).catch(() => {
+    const t = document.createElement('textarea');
+    t.value = text; document.body.appendChild(t); t.select();
+    document.execCommand('copy'); document.body.removeChild(t);
+  });
+  gaToast('링크가 복사됐어요!');
+}
+
+// ── 토스트 ──
+function gaToast(msg) {
+  const el = document.getElementById('gaToast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
+{% endblock %}

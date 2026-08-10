@@ -2988,3 +2988,182 @@ def api_refresh_session(request):
 
 
 
+
+
+# ═══════════════════════════════════════════════════════════
+# 작품 평가단
+# ═══════════════════════════════════════════════════════════
+
+def gallery_admin(request):
+    if not request.user.is_staff:
+        return redirect('home')
+    from .models import GalleryRoom
+    rooms = GalleryRoom.objects.prefetch_related('posters').all()
+    return render(request, 'arcade/gallery_admin.html', {'rooms': rooms})
+
+
+def gallery_vote(request):
+    return render(request, 'arcade/gallery_vote.html')
+
+
+@require_POST
+def api_gallery_room_create(request):
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    from .models import GalleryRoom, GalleryPoster
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'ok': False, 'error': '방 이름을 입력해주세요.'})
+    images = request.FILES.getlist('images')
+    if not images:
+        return JsonResponse({'ok': False, 'error': '포스터 이미지를 하나 이상 업로드해주세요.'})
+    room = GalleryRoom.objects.create(name=name)
+    for i, img in enumerate(images):
+        title = img.name.rsplit('.', 1)[0]
+        GalleryPoster.objects.create(room=room, image=img, title=title, order=i)
+    return JsonResponse({'ok': True, 'room_id': room.id, 'name': room.name})
+
+
+@require_POST
+def api_gallery_room_delete(request, room_id):
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    from .models import GalleryRoom
+    try:
+        room = GalleryRoom.objects.get(id=room_id)
+        room.delete()
+        return JsonResponse({'ok': True})
+    except GalleryRoom.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': '방을 찾을 수 없습니다.'})
+
+
+@require_POST
+def api_gallery_control(request, room_id):
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    from .models import GalleryRoom
+    try:
+        room = GalleryRoom.objects.get(id=room_id)
+    except GalleryRoom.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': '방 없음'})
+    action = request.POST.get('action')
+    poster_count = room.posters.count()
+    if action == 'start':
+        if room.status != 'waiting':
+            return JsonResponse({'ok': False, 'error': '이미 시작됐습니다.'})
+        room.status = 'voting'
+        room.current_index = 0
+    elif action == 'next':
+        if room.status != 'voting':
+            return JsonResponse({'ok': False, 'error': '진행 중이 아닙니다.'})
+        next_idx = room.current_index + 1
+        if next_idx >= poster_count:
+            room.status = 'done'
+        else:
+            room.current_index = next_idx
+    elif action == 'end':
+        room.status = 'done'
+    else:
+        return JsonResponse({'ok': False, 'error': '알 수 없는 액션'})
+    room.save()
+    return JsonResponse({'ok': True, 'status': room.status, 'current_index': room.current_index})
+
+
+def api_gallery_rooms(request):
+    from .models import GalleryRoom
+    rooms = GalleryRoom.objects.exclude(status='done').order_by('-created_at')
+    return JsonResponse({'rooms': [{'id': r.id, 'name': r.name, 'status': r.status} for r in rooms]})
+
+
+@require_POST
+def api_gallery_join(request):
+    from .models import GalleryRoom
+    data = json.loads(request.body)
+    room_id = data.get('room_id')
+    voter_name = data.get('name', '').strip()
+    if not voter_name:
+        return JsonResponse({'ok': False, 'error': '이름을 입력해주세요.'})
+    try:
+        room = GalleryRoom.objects.get(id=room_id)
+    except GalleryRoom.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': '방을 찾을 수 없습니다.'})
+    if not request.session.session_key:
+        request.session.create()
+    request.session['gallery_room_id'] = room.id
+    request.session['gallery_voter_name'] = voter_name
+    request.session.modified = True
+    return JsonResponse({'ok': True, 'room_id': room.id, 'room_name': room.name,
+                         'session_key': request.session.session_key})
+
+
+def api_gallery_state(request):
+    from .models import GalleryRoom, GalleryVote
+    room_id = request.GET.get('room_id')
+    try:
+        room = GalleryRoom.objects.get(id=room_id)
+    except GalleryRoom.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': '방 없음'})
+
+    session_key = request.session.session_key or ''
+    poster_data = None
+    my_vote = False
+
+    if room.status == 'voting' and room.current_index >= 0:
+        posters = list(room.posters.all())
+        if room.current_index < len(posters):
+            poster = posters[room.current_index]
+            my_vote = GalleryVote.objects.filter(
+                poster=poster, voter_session=session_key
+            ).exists()
+            poster_data = {
+                'id': poster.id,
+                'title': poster.title,
+                'image_url': poster.image.url,
+                'vote_count': poster.votes.count(),
+                'index': room.current_index,
+                'total': len(posters),
+            }
+
+    results = None
+    if room.status == 'done':
+        results = []
+        for poster in room.posters.all():
+            results.append({
+                'id': poster.id,
+                'title': poster.title,
+                'image_url': poster.image.url,
+                'vote_count': poster.votes.count(),
+                'order': poster.order,
+            })
+        results.sort(key=lambda x: -x['vote_count'])
+
+    return JsonResponse({
+        'ok': True,
+        'status': room.status,
+        'current_index': room.current_index,
+        'poster': poster_data,
+        'my_vote': my_vote,
+        'results': results,
+    })
+
+
+@require_POST
+def api_gallery_vote(request):
+    from .models import GalleryPoster, GalleryVote
+    data = json.loads(request.body)
+    poster_id = data.get('poster_id')
+    voter_name = request.session.get('gallery_voter_name', '')
+    session_key = request.session.session_key or ''
+    if not session_key or not voter_name:
+        return JsonResponse({'ok': False, 'error': '세션 정보가 없습니다. 다시 입장해주세요.'})
+    try:
+        poster = GalleryPoster.objects.select_related('room').get(id=poster_id)
+    except GalleryPoster.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': '포스터 없음'})
+    if poster.room.status != 'voting':
+        return JsonResponse({'ok': False, 'error': '투표 중인 방이 아닙니다.'})
+    _, created = GalleryVote.objects.get_or_create(
+        poster=poster, voter_session=session_key,
+        defaults={'voter_name': voter_name}
+    )
+    return JsonResponse({'ok': True, 'created': created, 'vote_count': poster.votes.count()})

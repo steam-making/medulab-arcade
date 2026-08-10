@@ -1,0 +1,368 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}작품 평가단 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root { --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --orange:#FF9142; --green:#3DDC97; --ink:#2E2A4A; }
+  body { background:linear-gradient(150deg,#FFF6FB 0%,#F1F0FF 45%,#EAF7FF 100%) !important; }
+  .gv-wrap { max-width:680px; margin:0 auto; padding:36px 20px 80px; }
+  .gv-back { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700;
+    color:#8C6BFA; text-decoration:none; margin-bottom:24px; }
+  .gv-hero { text-align:center; margin-bottom:28px; }
+  .gv-hero .badge { display:inline-block; background:linear-gradient(120deg,#FF9142,#FFC93C);
+    color:#fff; font-size:13px; font-weight:800; padding:5px 18px; border-radius:999px; margin-bottom:12px; }
+  .gv-hero h1 { font-size:26px; font-weight:900; margin:0 0 6px;
+    background:linear-gradient(120deg,var(--orange),var(--purple));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .gv-hero p { font-size:13px; color:#7a7498; margin:0; }
+
+  /* Phase 공통 */
+  .gv-phase { display:none; }
+  .gv-phase.active { display:block; }
+
+  /* Phase 0: 방 목록 */
+  .gv-room-list { display:flex; flex-direction:column; gap:14px; }
+  .gv-room-item {
+    background:#fff; border-radius:18px; padding:20px 22px;
+    box-shadow:0 4px 16px rgba(140,107,250,.08); border:2px solid #e8e3fa;
+    cursor:pointer; transition:all .18s; display:flex; align-items:center; justify-content:space-between;
+  }
+  .gv-room-item:hover { border-color:#8C6BFA; transform:translateY(-2px); box-shadow:0 8px 24px rgba(140,107,250,.15); }
+  .gv-room-item-name { font-size:17px; font-weight:800; color:var(--ink); }
+  .gv-room-item-sub { font-size:12px; color:#9a96b4; margin-top:3px; }
+  .gv-room-arrow { font-size:20px; color:#c4bde8; }
+  .gv-badge { display:inline-block; font-size:11px; font-weight:800; padding:3px 10px;
+    border-radius:999px; margin-left:8px; background:#E8FFF5; color:#22c77c; }
+  .gv-badge.waiting { background:#F1EEFF; color:#8C6BFA; }
+  .gv-empty { text-align:center; padding:48px 0; color:#9a96b4; font-size:14px; }
+
+  /* Phase 1: 이름 입력 */
+  .gv-name-box { background:#fff; border-radius:20px; padding:32px 28px;
+    box-shadow:0 6px 24px rgba(140,107,250,.1); border:2px solid #e8e3fa; text-align:center; }
+  .gv-name-box h2 { font-size:20px; font-weight:900; color:var(--ink); margin:0 0 6px; }
+  .gv-name-box .sub { font-size:13px; color:#7a7498; margin-bottom:24px; }
+  .gv-name-input { width:100%; box-sizing:border-box; padding:14px 16px; border:2px solid #d8d2f0;
+    border-radius:12px; font-size:16px; text-align:center; color:var(--ink); outline:none; }
+  .gv-name-input:focus { border-color:#8C6BFA; box-shadow:0 0 0 3px rgba(140,107,250,.15); }
+  .gv-join-btn { width:100%; padding:14px; border:none; border-radius:12px; cursor:pointer;
+    font-size:15px; font-weight:800; background:linear-gradient(120deg,#8C6BFA,#3FA9F5); color:#fff;
+    box-shadow:0 4px 16px rgba(140,107,250,.3); margin-top:14px; transition:all .18s; }
+  .gv-join-btn:hover { opacity:.9; transform:translateY(-1px); }
+
+  /* Phase 2: 대기실 */
+  .gv-waiting { text-align:center; padding:60px 20px; }
+  .gv-waiting .spin { font-size:48px; animation:gvSpin 2s linear infinite; display:inline-block; }
+  @keyframes gvSpin { to { transform:rotate(360deg); } }
+  .gv-waiting h2 { font-size:20px; font-weight:800; color:var(--ink); margin:20px 0 8px; }
+  .gv-waiting p { font-size:13px; color:#7a7498; }
+
+  /* Phase 3: 투표 */
+  .gv-vote-header { text-align:center; margin-bottom:20px; }
+  .gv-progress { font-size:13px; color:#9a96b4; margin-bottom:6px; }
+  .gv-progress-bar { height:6px; background:#e8e3fa; border-radius:999px; overflow:hidden; margin-bottom:16px; }
+  .gv-progress-fill { height:100%; background:linear-gradient(90deg,#8C6BFA,#3FA9F5); border-radius:999px; transition:width .4s; }
+  .gv-poster-title { font-size:20px; font-weight:900; color:var(--ink); }
+
+  .gv-poster-img-wrap { position:relative; margin:20px 0; border-radius:20px; overflow:hidden;
+    box-shadow:0 8px 32px rgba(140,107,250,.15); max-height:60vh; display:flex; justify-content:center;
+    background:#f0eeff; }
+  .gv-poster-img-wrap img { max-width:100%; max-height:60vh; object-fit:contain; display:block; }
+
+  .gv-heart-row { text-align:center; margin-top:24px; }
+  .gv-heart-btn {
+    font-size:28px; padding:16px 40px; border:3px solid #FF6FA5; border-radius:999px;
+    background:#fff; cursor:pointer; transition:all .2s; color:#FF6FA5;
+    font-weight:900; display:inline-flex; align-items:center; gap:10px;
+    box-shadow:0 4px 16px rgba(255,111,165,.15);
+  }
+  .gv-heart-btn:hover:not(:disabled) { background:#FFF0F6; transform:scale(1.06); }
+  .gv-heart-btn.voted { background:linear-gradient(120deg,#FF6FA5,#FF9142);
+    color:#fff; border-color:transparent; box-shadow:0 6px 20px rgba(255,111,165,.4); }
+  .gv-heart-btn:disabled { cursor:not-allowed; }
+  .gv-heart-count { font-size:14px; color:#9a96b4; margin-top:12px; }
+  .gv-wait-msg { font-size:13px; color:#8C6BFA; margin-top:16px; font-weight:700; }
+
+  /* Phase 4: 결과 */
+  .gv-result-hero { text-align:center; padding:24px 0 28px; }
+  .gv-result-hero h2 { font-size:24px; font-weight:900; color:var(--ink); margin:0 0 4px; }
+  .gv-result-hero p { font-size:13px; color:#7a7498; margin:0; }
+
+  .gv-result-list { display:flex; flex-direction:column; gap:14px; }
+  .gv-result-item {
+    background:#fff; border-radius:18px; overflow:hidden;
+    box-shadow:0 4px 16px rgba(140,107,250,.08); border:2px solid #e8e3fa;
+    display:flex; align-items:center; gap:16px; padding:14px 18px;
+  }
+  .gv-result-item.rank1 { border-color:#FFD700; box-shadow:0 6px 24px rgba(255,215,0,.2); background:linear-gradient(120deg,#FFFDF0,#fff); }
+  .gv-result-item.rank2 { border-color:#C0C0C0; }
+  .gv-result-item.rank3 { border-color:#CD7F32; }
+  .gv-rank-num { font-size:26px; font-weight:900; min-width:36px; text-align:center; }
+  .gv-result-img { width:72px; height:72px; object-fit:cover; border-radius:12px; flex-shrink:0; }
+  .gv-result-info { flex:1; min-width:0; }
+  .gv-result-title { font-size:15px; font-weight:800; color:var(--ink);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .gv-result-votes { font-size:13px; color:#FF6FA5; font-weight:800; margin-top:3px; }
+
+  .gv-toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+    background:#2E2A4A; color:#fff; font-size:14px; font-weight:700; padding:12px 28px;
+    border-radius:999px; box-shadow:0 6px 24px rgba(0,0,0,.2); z-index:9999;
+    opacity:0; transition:opacity .3s; pointer-events:none; }
+  .gv-toast.show { opacity:1; }
+
+  @media (max-width:600px) {
+    .gv-hero h1 { font-size:22px; }
+    .gv-heart-btn { padding:14px 28px; font-size:24px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gv-wrap">
+  <a href="{% url 'ai_prompts' %}" class="gv-back">← AI 프롬프트 생성기로</a>
+
+  <div class="gv-hero">
+    <div class="badge">🖼️ MEDULAB GALLERY</div>
+    <h1>작품 평가단</h1>
+    <p>포스터를 보고 마음에 드는 작품에 하트를 눌러주세요!</p>
+  </div>
+
+  <!-- Phase 0: 방 목록 -->
+  <div class="gv-phase active" id="gvPhase0">
+    <div class="gv-room-list" id="gvRoomList">
+      <div class="gv-empty">방 목록을 불러오는 중...</div>
+    </div>
+    <div style="text-align:center;margin-top:20px;">
+      <button onclick="gvLoadRooms()" style="background:none;border:1.5px solid #c4bde8;border-radius:10px;
+        padding:8px 20px;font-size:13px;color:#8C6BFA;cursor:pointer;font-weight:700;">🔄 새로고침</button>
+    </div>
+  </div>
+
+  <!-- Phase 1: 이름 입력 -->
+  <div class="gv-phase" id="gvPhase1">
+    <div class="gv-name-box">
+      <h2 id="gvJoinRoomName">방 이름</h2>
+      <p class="sub">이름을 입력하고 입장하세요!</p>
+      <input type="text" class="gv-name-input" id="gvNameInput" placeholder="이름 입력" maxlength="20"
+        onkeydown="if(event.key==='Enter')gvJoin()">
+      <button class="gv-join-btn" onclick="gvJoin()">입장하기 →</button>
+    </div>
+  </div>
+
+  <!-- Phase 2: 대기실 -->
+  <div class="gv-phase" id="gvPhase2">
+    <div class="gv-waiting">
+      <div class="spin">⏳</div>
+      <h2 id="gvWaitTitle">곧 시작해요!</h2>
+      <p>선생님이 투표를 시작하면 포스터가 나타나요.</p>
+    </div>
+  </div>
+
+  <!-- Phase 3: 투표 -->
+  <div class="gv-phase" id="gvPhase3">
+    <div class="gv-vote-header">
+      <div class="gv-progress" id="gvProgressText"></div>
+      <div class="gv-progress-bar"><div class="gv-progress-fill" id="gvProgressFill" style="width:0%"></div></div>
+      <div class="gv-poster-title" id="gvPosterTitle"></div>
+    </div>
+    <div class="gv-poster-img-wrap">
+      <img id="gvPosterImg" src="" alt="포스터">
+    </div>
+    <div class="gv-heart-row">
+      <button class="gv-heart-btn" id="gvHeartBtn" onclick="gvVote()">
+        ❤️ <span id="gvHeartLabel">하트 보내기</span>
+      </button>
+      <div class="gv-heart-count" id="gvHeartCount"></div>
+      <div class="gv-wait-msg" id="gvWaitMsg" style="display:none">다음 포스터를 기다리는 중...</div>
+    </div>
+  </div>
+
+  <!-- Phase 4: 결과 -->
+  <div class="gv-phase" id="gvPhase4">
+    <div class="gv-result-hero">
+      <h2>🏆 투표 결과</h2>
+      <p>모두 수고했어요!</p>
+    </div>
+    <div class="gv-result-list" id="gvResultList"></div>
+  </div>
+</div>
+
+<div class="gv-toast" id="gvToast"></div>
+
+<script>
+let gvRoomId = null;
+let gvRoomName = '';
+let gvCurrentPoster = null;
+let gvMyVote = false;
+let gvPollTimer = null;
+let gvPhase = 0;
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const RANK_EMOJI = ['🥇','🥈','🥉'];
+
+function gvShowPhase(n) {
+  document.querySelectorAll('.gv-phase').forEach((el, i) => {
+    el.classList.toggle('active', i === n);
+  });
+  gvPhase = n;
+}
+
+// ── Phase 0: 방 목록 ──
+async function gvLoadRooms() {
+  try {
+    const res = await fetch('/api/gallery/rooms/');
+    const d = await res.json();
+    const list = document.getElementById('gvRoomList');
+    if (!d.rooms.length) {
+      list.innerHTML = '<div class="gv-empty">현재 열린 방이 없어요.<br>선생님이 방을 만들면 여기에 나타나요!</div>';
+      return;
+    }
+    list.innerHTML = d.rooms.map(r => `
+      <div class="gv-room-item" onclick="gvSelectRoom(${r.id}, '${r.name.replace(/'/g,"\\'")}', '${r.status}')">
+        <div>
+          <div class="gv-room-item-name">${r.name}
+            <span class="gv-badge ${r.status === 'waiting' ? 'waiting' : ''}">
+              ${r.status === 'waiting' ? '대기중' : '진행중'}
+            </span>
+          </div>
+          <div class="gv-room-item-sub">탭하여 입장</div>
+        </div>
+        <div class="gv-room-arrow">›</div>
+      </div>
+    `).join('');
+  } catch(e) { gvToast('방 목록을 불러올 수 없어요.'); }
+}
+
+function gvSelectRoom(roomId, roomName, status) {
+  gvRoomId = roomId;
+  gvRoomName = roomName;
+  document.getElementById('gvJoinRoomName').textContent = roomName;
+  document.getElementById('gvNameInput').value = '';
+  gvShowPhase(1);
+}
+
+// ── Phase 1: 이름 입력 ──
+async function gvJoin() {
+  const name = document.getElementById('gvNameInput').value.trim();
+  if (!name) { gvToast('이름을 입력해주세요!'); return; }
+  try {
+    const res = await fetch('/api/gallery/join/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ room_id: gvRoomId, name })
+    });
+    const d = await res.json();
+    if (!d.ok) { gvToast(d.error || '입장 실패'); return; }
+    document.getElementById('gvWaitTitle').textContent = `"${gvRoomName}" 에 입장했어요!`;
+    gvShowPhase(2);
+    gvStartPolling();
+  } catch(e) { gvToast('오류가 발생했어요.'); }
+}
+
+// ── 폴링 ──
+function gvStartPolling() {
+  clearInterval(gvPollTimer);
+  gvPoll();
+  gvPollTimer = setInterval(gvPoll, 2000);
+}
+
+async function gvPoll() {
+  if (!gvRoomId) return;
+  try {
+    const res = await fetch(`/api/gallery/state/?room_id=${gvRoomId}`);
+    const d = await res.json();
+    if (!d.ok) return;
+    gvApplyState(d);
+  } catch(e) {}
+}
+
+function gvApplyState(d) {
+  if (d.status === 'waiting') {
+    if (gvPhase !== 2) gvShowPhase(2);
+    return;
+  }
+  if (d.status === 'done') {
+    clearInterval(gvPollTimer);
+    gvShowResults(d.results);
+    return;
+  }
+  // voting
+  if (!d.poster) return;
+  const poster = d.poster;
+  gvMyVote = d.my_vote;
+  gvCurrentPoster = poster;
+
+  if (gvPhase !== 3) gvShowPhase(3);
+
+  // 진행 표시
+  document.getElementById('gvProgressText').textContent =
+    `${poster.index + 1} / ${poster.total} 번째 작품`;
+  document.getElementById('gvProgressFill').style.width =
+    `${((poster.index + 1) / poster.total) * 100}%`;
+  document.getElementById('gvPosterTitle').textContent = poster.title || `작품 ${poster.index + 1}`;
+
+  // 이미지
+  const img = document.getElementById('gvPosterImg');
+  if (img.src !== location.origin + poster.image_url) img.src = poster.image_url;
+
+  // 하트 버튼
+  const btn = document.getElementById('gvHeartBtn');
+  const label = document.getElementById('gvHeartLabel');
+  if (gvMyVote) {
+    btn.classList.add('voted');
+    btn.disabled = true;
+    label.textContent = '하트 보냈어요!';
+  } else {
+    btn.classList.remove('voted');
+    btn.disabled = false;
+    label.textContent = '하트 보내기';
+  }
+  document.getElementById('gvHeartCount').textContent =
+    poster.vote_count > 0 ? `❤️ ${poster.vote_count}개` : '';
+}
+
+// ── 투표 ──
+async function gvVote() {
+  if (!gvCurrentPoster || gvMyVote) return;
+  try {
+    const res = await fetch('/api/gallery/vote/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ poster_id: gvCurrentPoster.id })
+    });
+    const d = await res.json();
+    if (!d.ok) { gvToast(d.error || '투표 실패'); return; }
+    gvMyVote = true;
+    const btn = document.getElementById('gvHeartBtn');
+    btn.classList.add('voted'); btn.disabled = true;
+    document.getElementById('gvHeartLabel').textContent = '하트 보냈어요!';
+    document.getElementById('gvHeartCount').textContent = `❤️ ${d.vote_count}개`;
+  } catch(e) { gvToast('오류가 발생했어요.'); }
+}
+
+// ── 결과 ──
+function gvShowResults(results) {
+  gvShowPhase(4);
+  const list = document.getElementById('gvResultList');
+  list.innerHTML = results.map((r, i) => `
+    <div class="gv-result-item ${i < 3 ? 'rank' + (i+1) : ''}">
+      <div class="gv-rank-num">${RANK_EMOJI[i] || (i+1)}</div>
+      <img class="gv-result-img" src="${r.image_url}" alt="${r.title}">
+      <div class="gv-result-info">
+        <div class="gv-result-title">${r.title || '작품 ' + (r.order + 1)}</div>
+        <div class="gv-result-votes">❤️ ${r.vote_count}표</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function gvToast(msg) {
+  const el = document.getElementById('gvToast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// 초기 로드
+gvLoadRooms();
+</script>
+{% endblock %}

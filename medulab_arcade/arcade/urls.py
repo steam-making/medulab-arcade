@@ -49,6 +49,17 @@ urlpatterns = [
     path('board/contests/<int:pk>/update/', views.board_contest_update, name='board_contest_update'),
     path('board/contests/<int:pk>/delete/', views.board_contest_delete, name='board_contest_delete'),
     path('api/contests/crawl-thinkcontest/', views.api_crawl_thinkcontest, name='api_crawl_thinkcontest'),
+
+    # 작품 평가단
+    path('tools/gallery-vote/', views.gallery_vote, name='gallery_vote'),
+    path('tools/gallery-admin/', views.gallery_admin, name='gallery_admin'),
+    path('api/gallery/rooms/', views.api_gallery_rooms, name='api_gallery_rooms'),
+    path('api/gallery/join/', views.api_gallery_join, name='api_gallery_join'),
+    path('api/gallery/state/', views.api_gallery_state, name='api_gallery_state'),
+    path('api/gallery/vote/', views.api_gallery_vote, name='api_gallery_vote'),
+    path('api/gallery/room/create/', views.api_gallery_room_create, name='api_gallery_room_create'),
+    path('api/gallery/room/<int:room_id>/delete/', views.api_gallery_room_delete, name='api_gallery_room_delete'),
+    path('api/gallery/room/<int:room_id>/control/', views.api_gallery_control, name='api_gallery_control'),
     path('my-report/', views.my_report, name='my_report'),
     path('api/attendance/submit/', views.api_submit_attendance, name='api_submit_attendance'),
     path('api/session/refresh/', views.api_refresh_session, name='api_refresh_session'),

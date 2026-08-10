@@ -291,18 +291,33 @@
   .ci-nav-next:hover { opacity: .9; }
 
   /* ── 학년 선택 버튼 ── */
-  .ci-grade-wrap { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+  .ci-grade-wrap { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
   .ci-grade-sep {
-    width: 1px; height: 26px; background: #C8EDD8; margin: 0 2px; flex-shrink: 0;
+    width: 1px; height: 28px; background: #D0D8E0; margin: 0 4px; flex-shrink: 0;
   }
   .ci-grade-btn {
-    padding: 7px 13px; border-radius: 10px; border: 2px solid #D5EEE0;
-    background: #FAFFFE; font-size: 13px; font-weight: 700; color: var(--ink);
-    cursor: pointer; transition: border-color .2s, background .2s, color .2s;
-    line-height: 1;
+    padding: 7px 13px; border-radius: 10px; border: 2px solid transparent;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all .2s; line-height: 1;
   }
-  .ci-grade-btn:hover { border-color: var(--green); background: #F4FFF8; }
-  .ci-grade-btn.selected { border-color: var(--green); background: #E8FFF2; color: #1A8050; }
+  /* 초등 — 초록 계열 */
+  .ci-grade-btn.elem {
+    background: #E8FFF2; border-color: #A8E6C0; color: #1A7A4A;
+  }
+  .ci-grade-btn.elem:hover { background: #D0F5E3; border-color: #2ECC71; }
+  .ci-grade-btn.elem.selected { background: #2ECC71; border-color: #27AE60; color: #fff; }
+  /* 중학 — 파랑 계열 */
+  .ci-grade-btn.middle {
+    background: #E8F4FF; border-color: #A8D0F0; color: #1A4E8C;
+  }
+  .ci-grade-btn.middle:hover { background: #D0E8FF; border-color: #3FA9F5; }
+  .ci-grade-btn.middle.selected { background: #3FA9F5; border-color: #2980B9; color: #fff; }
+  /* 고등 — 보라 계열 */
+  .ci-grade-btn.high {
+    background: #F2EEFF; border-color: #C8B4F5; color: #5A2D9C;
+  }
+  .ci-grade-btn.high:hover { background: #E5D8FF; border-color: #8C6BFA; }
+  .ci-grade-btn.high.selected { background: #8C6BFA; border-color: #7B5CE8; color: #fff; }
 
   /* ── 팁 ── */
   .ci-tip {
@@ -395,20 +410,20 @@
     <div class="ci-field">
       <label class="ci-label">학년</label>
       <div class="ci-grade-wrap" id="ciGradeWrap">
-        <button type="button" class="ci-grade-btn" data-grade="초1" onclick="selectGrade(this)">초1</button>
-        <button type="button" class="ci-grade-btn" data-grade="초2" onclick="selectGrade(this)">초2</button>
-        <button type="button" class="ci-grade-btn" data-grade="초3" onclick="selectGrade(this)">초3</button>
-        <button type="button" class="ci-grade-btn" data-grade="초4" onclick="selectGrade(this)">초4</button>
-        <button type="button" class="ci-grade-btn" data-grade="초5" onclick="selectGrade(this)">초5</button>
-        <button type="button" class="ci-grade-btn" data-grade="초6" onclick="selectGrade(this)">초6</button>
+        <button type="button" class="ci-grade-btn elem" data-grade="초1" onclick="selectGrade(this)">초1</button>
+        <button type="button" class="ci-grade-btn elem" data-grade="초2" onclick="selectGrade(this)">초2</button>
+        <button type="button" class="ci-grade-btn elem" data-grade="초3" onclick="selectGrade(this)">초3</button>
+        <button type="button" class="ci-grade-btn elem" data-grade="초4" onclick="selectGrade(this)">초4</button>
+        <button type="button" class="ci-grade-btn elem" data-grade="초5" onclick="selectGrade(this)">초5</button>
+        <button type="button" class="ci-grade-btn elem" data-grade="초6" onclick="selectGrade(this)">초6</button>
         <div class="ci-grade-sep"></div>
-        <button type="button" class="ci-grade-btn" data-grade="중1" onclick="selectGrade(this)">중1</button>
-        <button type="button" class="ci-grade-btn" data-grade="중2" onclick="selectGrade(this)">중2</button>
-        <button type="button" class="ci-grade-btn" data-grade="중3" onclick="selectGrade(this)">중3</button>
+        <button type="button" class="ci-grade-btn middle" data-grade="중1" onclick="selectGrade(this)">중1</button>
+        <button type="button" class="ci-grade-btn middle" data-grade="중2" onclick="selectGrade(this)">중2</button>
+        <button type="button" class="ci-grade-btn middle" data-grade="중3" onclick="selectGrade(this)">중3</button>
         <div class="ci-grade-sep"></div>
-        <button type="button" class="ci-grade-btn" data-grade="고1" onclick="selectGrade(this)">고1</button>
-        <button type="button" class="ci-grade-btn" data-grade="고2" onclick="selectGrade(this)">고2</button>
-        <button type="button" class="ci-grade-btn" data-grade="고3" onclick="selectGrade(this)">고3</button>
+        <button type="button" class="ci-grade-btn high" data-grade="고1" onclick="selectGrade(this)">고1</button>
+        <button type="button" class="ci-grade-btn high" data-grade="고2" onclick="selectGrade(this)">고2</button>
+        <button type="button" class="ci-grade-btn high" data-grade="고3" onclick="selectGrade(this)">고3</button>
       </div>
     </div>
 

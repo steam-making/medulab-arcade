@@ -142,8 +142,20 @@
   .gac-stat-box { background:#F8F7FF; border-radius:12px; padding:12px 14px; text-align:center; }
   .gac-stat-val { font-size:26px; font-weight:900; color:var(--ink); line-height:1; }
   .gac-stat-lbl { font-size:11px; font-weight:700; color:#9a96b4; margin-top:4px; }
-  .gac-avg-score { text-align:center; font-size:22px; font-weight:900; color:#FF9142; }
-  .gac-avg-stars { font-size:18px; letter-spacing:2px; text-align:center; color:#FFB800; }
+
+  /* 타이머 */
+  .gac-timer-box { background:#1e1a3e; border-radius:14px; padding:14px; text-align:center; }
+  .gac-timer-val { font-size:42px; font-weight:900; color:#fff; letter-spacing:2px; font-variant-numeric:tabular-nums; line-height:1; }
+  .gac-timer-lbl { font-size:11px; font-weight:700; color:#8C6BFA; margin-top:4px; }
+  .gac-timer-box.danger .gac-timer-val { color:#FF6FA5; animation:gacBlink .6s step-end infinite; }
+  .gac-timer-box.done-time .gac-timer-val { color:#FF9142; }
+  @keyframes gacBlink { 50% { opacity:.3; } }
+  .gac-no-timer { font-size:13px; color:#9a96b4; text-align:center; display:none; }
+
+  /* 타이머 설정 */
+  .ga-timer-select { width:100%; padding:10px 12px; border:1.5px solid #d8d2f0; border-radius:10px;
+    font-size:14px; color:var(--ink); outline:none; background:#fff; cursor:pointer; }
+  .ga-timer-select:focus { border-color:#8C6BFA; }
 
   .gac-btn-next {
     width:100%; padding:15px; border:none; border-radius:14px; cursor:pointer;
@@ -237,6 +249,17 @@
           <div class="ga-total-score" id="gaTotalScore"></div>
         </div>
       </div>
+      <div class="ga-field">
+        <label>포스터당 평가 시간</label>
+        <select class="ga-timer-select" id="gaVoteDuration">
+          <option value="0">⏱ 무제한</option>
+          <option value="60">1분</option>
+          <option value="90">1분 30초</option>
+          <option value="120">2분</option>
+          <option value="180">3분</option>
+          <option value="300">5분</option>
+        </select>
+      </div>
       <button class="ga-submit-btn" id="gaCreateBtn" onclick="gaCreateRoom()">방 만들기</button>
     </div>
 
@@ -307,6 +330,14 @@
       </div>
       <div class="gac-divider"></div>
 
+      <!-- 타이머 -->
+      <div class="gac-timer-box" id="gacTimerBox">
+        <div class="gac-timer-val" id="gacTimerVal">—</div>
+        <div class="gac-timer-lbl">남은 평가 시간</div>
+      </div>
+      <div class="gac-no-timer" id="gacNoTimer">⏱ 타이머 없음 (무제한)</div>
+
+      <!-- 접속자 / 평가완료 -->
       <div class="gac-stats-grid">
         <div class="gac-stat-box">
           <div class="gac-stat-val" id="gacMemberCount">0</div>
@@ -314,12 +345,8 @@
         </div>
         <div class="gac-stat-box">
           <div class="gac-stat-val" id="gacVoteCount">0</div>
-          <div class="gac-stat-lbl">⭐ 평가 수</div>
+          <div class="gac-stat-lbl">✅ 평가완료</div>
         </div>
-      </div>
-      <div>
-        <div class="gac-avg-stars" id="gacAvgStars">☆☆☆☆☆</div>
-        <div class="gac-avg-score" id="gacAvgScore">평균 — 점</div>
       </div>
       <div class="gac-divider"></div>
 
@@ -348,7 +375,8 @@
 <script>
 const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 const RANK_EMOJI = ['🥇','🥈','🥉'];
-let gaCurrRoomId = null, gaCtrlTimer = null, gaPhaseIdx = 0;
+let gaCurrRoomId = null, gaCtrlTimer = null, gaTimerTick = null, gaPhaseIdx = 0;
+let gaVoteDuration = 0, gaPosterStartedTs = null;
 
 // ── 평가항목 ──
 const CARBON_PRESET = [
@@ -402,8 +430,8 @@ function gaShowPhase(n) {
   gaPhaseIdx = n;
 }
 function gaGoList() {
-  clearInterval(gaCtrlTimer);
-  gaCtrlTimer = null;
+  clearInterval(gaCtrlTimer); gaCtrlTimer = null;
+  clearInterval(gaTimerTick); gaTimerTick = null;
   gaCurrRoomId = null;
   gaShowPhase(0);
 }
@@ -447,6 +475,7 @@ async function gaCreateRoom() {
   fd.append('name', name);
   gaFiles.forEach(f => fd.append('images', f));
   fd.append('criteria', JSON.stringify(gaGetCriteriaJson()));
+  fd.append('vote_duration', document.getElementById('gaVoteDuration').value);
   fd.append('csrfmiddlewaretoken', CSRF);
   try {
     const res = await fetch('/api/gallery/room/create/', { method:'POST', body:fd });
@@ -476,6 +505,22 @@ function gaOpenControl(roomId, roomName) {
   gaCtrlPoll();
   clearInterval(gaCtrlTimer);
   gaCtrlTimer = setInterval(gaCtrlPoll, 2000);
+  clearInterval(gaTimerTick);
+  gaTimerTick = setInterval(gaTickTimer, 1000);
+}
+
+// ── 타이머 틱 (1초마다) ──
+function gaTickTimer() {
+  if (!gaVoteDuration || !gaPosterStartedTs) return;
+  const elapsed = Date.now() / 1000 - gaPosterStartedTs;
+  const remaining = Math.max(0, Math.ceil(gaVoteDuration - elapsed));
+  const box = document.getElementById('gacTimerBox');
+  const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+  const ss = String(remaining % 60).padStart(2, '0');
+  document.getElementById('gacTimerVal').textContent = `${mm}:${ss}`;
+  box.classList.toggle('danger', remaining > 0 && remaining <= 10);
+  box.classList.toggle('done-time', remaining === 0);
+  if (remaining === 0) document.getElementById('gacTimerVal').textContent = '시간종료';
 }
 
 // ── 컨트롤 폴링 ──
@@ -491,7 +536,7 @@ async function gaCtrlPoll() {
     if (!state.ok) return;
     if (stats.ok) document.getElementById('gacMemberCount').textContent = stats.member_count;
     if (state.status === 'done') {
-      clearInterval(gaCtrlTimer);
+      clearInterval(gaCtrlTimer); clearInterval(gaTimerTick);
       gaShowResultsData(state.results);
       return;
     }
@@ -501,12 +546,21 @@ async function gaCtrlPoll() {
     document.getElementById('gacProgressFill').style.width = `${((p.index+1)/p.total)*100}%`;
     document.getElementById('gacPosterTitle').textContent = p.title || `작품 ${p.index+1}`;
     document.getElementById('gacVoteCount').textContent = p.vote_count;
-    const avg = p.avg_score || 0;
-    document.getElementById('gacAvgScore').textContent = avg > 0 ? `평균 ⭐ ${avg}점` : '아직 평가 없음';
-    document.getElementById('gacAvgStars').textContent = avg > 0
-      ? '⭐'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg)) : '☆☆☆☆☆';
     const img = document.getElementById('gacPosterImg');
     if (img.src !== location.origin + p.image_url) img.src = p.image_url;
+
+    // 타이머 상태 업데이트
+    gaVoteDuration = state.vote_duration || 0;
+    gaPosterStartedTs = state.poster_started_ts || null;
+    const timerBox = document.getElementById('gacTimerBox');
+    const noTimer  = document.getElementById('gacNoTimer');
+    if (gaVoteDuration > 0) {
+      timerBox.style.display = ''; noTimer.style.display = 'none';
+      gaTickTimer();
+    } else {
+      timerBox.style.display = 'none'; noTimer.style.display = 'block';
+    }
+
     const nextBtn = document.getElementById('gacNextBtn');
     if (p.index + 1 >= p.total) {
       nextBtn.textContent = '🏁 마지막 → 투표 종료';
@@ -525,10 +579,13 @@ async function gaCtrlNext() {
   const d = await res.json();
   if (!d.ok) { gaToast(d.error||'오류'); return; }
   if (d.status === 'done') {
-    clearInterval(gaCtrlTimer);
+    clearInterval(gaCtrlTimer); clearInterval(gaTimerTick);
     const stateRes = await fetch(`/api/gallery/state/?room_id=${gaCurrRoomId}`);
     gaShowResultsData((await stateRes.json()).results);
-  } else { gaCtrlPoll(); }
+  } else {
+    gaPosterStartedTs = Date.now() / 1000; // 즉시 타이머 리셋
+    gaCtrlPoll();
+  }
 }
 
 // ── 투표 종료 ──

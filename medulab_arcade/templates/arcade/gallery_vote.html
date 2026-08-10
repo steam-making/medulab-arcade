@@ -127,7 +127,7 @@
   }
   .gv-ci-star:hover, .gv-ci-star.on { filter:none; transform:scale(1.12); }
   .gv-ci-star.on { filter:drop-shadow(0 2px 4px rgba(255,193,60,.5)); }
-  .gv-criteria-total { text-align:right; font-size:12px; font-weight:800; color:#FF9142; padding-top:4px; }
+  .gv-criteria-total { display:none; }
 
   .gv-wait-notice { text-align:center; font-size:13px; font-weight:700; color:#8C6BFA;
     background:#F1EEFF; border-radius:12px; padding:12px; display:none; }
@@ -136,6 +136,7 @@
     font-size:12px; color:#5a5480; background:#F8F7FF; border-radius:8px; padding:7px 10px; }
   .gv-vc-name { font-weight:700; }
   .gv-vc-stars { font-size:14px; letter-spacing:1px; }
+  .gv-voted-count, .gv-vc-pts { display:none !important; }
 
   /* Phase 4: 결과 */
   .gv-result-wrap { max-width:680px; margin:0 auto; padding:32px 20px 80px; }
@@ -445,8 +446,7 @@ function gvShowVotedState(myScore, voteCount, avgScore) {
   document.getElementById('gvVotedCriteriaSection').style.display = 'none';
   document.getElementById('gvWaitNotice').style.display = 'block';
   document.getElementById('gvVotedStars').textContent = '⭐'.repeat(myScore) + '☆'.repeat(5 - myScore);
-  document.getElementById('gvVotedScore').textContent = `${myScore}점 평가 완료!`;
-  document.getElementById('gvVotedCount').textContent = `전체 평균 ⭐${avgScore}점 (${voteCount}명 참여)`;
+  document.getElementById('gvVotedScore').textContent = '평가 완료! ✓';
 }
 
 // ── 평가항목별 별점 ──
@@ -508,13 +508,11 @@ function gvShowVotedCriteriaState(voteCount, avgScore) {
   Object.keys(gvMyCriteriaScores).forEach(k => { if (!scores[k]) scores[k] = gvMyCriteriaScores[k]; });
   vcList.innerHTML = gvCriteria.map(c => {
     const s = parseInt(scores[c.id] || scores[String(c.id)] || 0);
-    const pts = s > 0 ? ((s/5)*c.max_score).toFixed(1) : '—';
     return `<div class="gv-vc-row">
       <span class="gv-vc-name">${c.name}</span>
-      <span class="gv-vc-stars">${'⭐'.repeat(s)}${'☆'.repeat(5-s)} <b style="color:#FF9142;margin-left:4px">${pts}점</b></span>
+      <span class="gv-vc-stars">${'⭐'.repeat(s)}${'☆'.repeat(5-s)}</span>
     </div>`;
   }).join('');
-  document.getElementById('gvVotedCriteriaCount').textContent = `전체 평균 ${avgScore}점 (${voteCount}명 참여)`;
 }
 
 // ── 공통 초기화 ──

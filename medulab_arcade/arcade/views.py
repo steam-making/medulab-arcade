@@ -3017,7 +3017,8 @@ def api_gallery_room_create(request):
     images = request.FILES.getlist('images')
     if not images:
         return JsonResponse({'ok': False, 'error': '포스터 이미지를 하나 이상 업로드해주세요.'})
-    room = GalleryRoom.objects.create(name=name)
+    vote_duration = max(0, int(request.POST.get('vote_duration', 0)))
+    room = GalleryRoom.objects.create(name=name, vote_duration=vote_duration)
     for i, img in enumerate(images):
         title = img.name.rsplit('.', 1)[0]
         GalleryPoster.objects.create(room=room, image=img, title=title, order=i)
@@ -3062,6 +3063,7 @@ def api_gallery_control(request, room_id):
         room = GalleryRoom.objects.get(id=room_id)
     except GalleryRoom.DoesNotExist:
         return JsonResponse({'ok': False, 'error': '방 없음'})
+    from django.utils import timezone
     action = request.POST.get('action')
     poster_count = room.posters.count()
     if action == 'start':
@@ -3069,6 +3071,7 @@ def api_gallery_control(request, room_id):
             return JsonResponse({'ok': False, 'error': '이미 시작됐습니다.'})
         room.status = 'voting'
         room.current_index = 0
+        room.poster_started_at = timezone.now()
     elif action == 'next':
         if room.status != 'voting':
             return JsonResponse({'ok': False, 'error': '진행 중이 아닙니다.'})
@@ -3077,6 +3080,7 @@ def api_gallery_control(request, room_id):
             room.status = 'done'
         else:
             room.current_index = next_idx
+            room.poster_started_at = timezone.now()
     elif action == 'end':
         room.status = 'done'
     else:
@@ -3223,6 +3227,12 @@ def api_gallery_state(request):
         for c in criteria_objs
     ]
 
+    # 타이머 정보
+    from django.utils import timezone
+    poster_started_ts = None
+    if room.poster_started_at:
+        poster_started_ts = room.poster_started_at.timestamp()
+
     return JsonResponse({
         'ok': True,
         'status': room.status,
@@ -3232,6 +3242,8 @@ def api_gallery_state(request):
         'my_criteria_scores': my_criteria_scores,
         'criteria': criteria_info,
         'results': results,
+        'vote_duration': room.vote_duration,
+        'poster_started_ts': poster_started_ts,
     })
 
 

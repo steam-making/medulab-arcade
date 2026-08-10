@@ -804,6 +804,8 @@ class GalleryRoom(models.Model):
     name = models.CharField('방 이름', max_length=50)
     status = models.CharField('상태', max_length=10, choices=STATUS, default='waiting')
     current_index = models.IntegerField('현재 포스터 인덱스', default=-1)
+    vote_duration = models.IntegerField('평가 시간(초)', default=0)  # 0=무제한
+    poster_started_at = models.DateTimeField('포스터 시작 시각', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

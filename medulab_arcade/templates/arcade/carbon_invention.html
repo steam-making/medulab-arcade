@@ -325,22 +325,37 @@
     padding: 10px 14px; font-size: 13px; color: #795548; margin-bottom: 18px;
   }
 
-  /* ── GPT 도우미 카드 ── */
+  /* ── AI 도우미 토글 버튼 ── */
+  .ci-help-toggle {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 12px 16px; margin-bottom: 16px;
+    border: 2px dashed #AED6F1; border-radius: 14px;
+    background: #F0F8FF; color: #1A5276;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: background .2s, border-color .2s;
+    text-align: left;
+  }
+  .ci-help-toggle:hover { background: #E0F0FF; border-color: #3FA9F5; }
+  .ci-help-toggle.open { background: #E8F4FD; border-color: #3FA9F5; border-style: solid; }
+  .ci-help-toggle-arrow { margin-left: auto; font-size: 12px; transition: transform .25s; }
+  .ci-help-toggle.open .ci-help-toggle-arrow { transform: rotate(180deg); }
+
+  /* ── AI 도우미 카드 ── */
   .ci-gpt-helper {
+    display: none;
     background: linear-gradient(135deg, #E8F4FD, #EAF7FF);
     border: 2px solid #AED6F1; border-radius: 16px;
     padding: 16px; margin-bottom: 20px;
   }
+  .ci-gpt-helper.open { display: block; animation: fadeIn .25s ease; }
   .ci-gpt-header {
     display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px;
   }
-  .ci-gpt-icon { font-size: 28px; flex-shrink: 0; }
+  .ci-gpt-icon { font-size: 26px; flex-shrink: 0; }
   .ci-gpt-header-text strong {
     display: block; font-size: 14px; font-weight: 800; color: #1A5276;
   }
-  .ci-gpt-header-text span {
-    font-size: 12px; color: #5D6D7E;
-  }
+  .ci-gpt-header-text span { font-size: 12px; color: #5D6D7E; }
   .ci-gpt-field-badge {
     display: inline-flex; align-items: center; gap: 5px;
     background: #2980B9; color: #fff;
@@ -349,12 +364,11 @@
   }
   .ci-gpt-prompt-box {
     background: #fff; border: 1.5px solid #AED6F1; border-radius: 10px;
-    padding: 12px; font-size: 12px; color: #2C3E50; line-height: 1.7;
-    white-space: pre-wrap; max-height: 160px; overflow-y: auto;
-    margin-bottom: 10px; font-family: inherit;
+    padding: 14px; font-size: 13px; color: #2C3E50; line-height: 1.8;
+    white-space: pre-wrap; margin-bottom: 12px; font-family: inherit;
   }
   .ci-gpt-copy-btn {
-    padding: 7px 16px; border-radius: 10px;
+    padding: 8px 18px; border-radius: 10px;
     background: linear-gradient(120deg, #2980B9, #3FA9F5);
     color: #fff; font-size: 13px; font-weight: 700;
     border: none; cursor: pointer; transition: opacity .2s;
@@ -455,18 +469,24 @@
       </div>
     </div>
 
-    <!-- GPT 도우미 -->
-    <div class="ci-gpt-helper">
+    <!-- AI 도우미 토글 -->
+    <button type="button" class="ci-help-toggle" id="ciHelpToggle" onclick="toggleGptHelper()">
+      🤖 탄소 문제 찾기 어려워요 — AI 도움 받기
+      <span class="ci-help-toggle-arrow">▼</span>
+    </button>
+
+    <!-- AI 도우미 카드 (기본 숨김) -->
+    <div class="ci-gpt-helper" id="ciGptHelper">
       <div class="ci-gpt-header">
         <div class="ci-gpt-icon">🤖</div>
         <div class="ci-gpt-header-text">
-          <strong>ChatGPT로 아이디어 찾기</strong>
-          <span>탄소 문제를 찾기 어려우면 아래 프롬프트를 ChatGPT에 붙여넣어 보세요!</span>
+          <strong>AI로 아이디어 찾기</strong>
+          <span>아래 프롬프트를 AI에 붙여넣으면 탄소 문제 예시를 받을 수 있어요!</span>
         </div>
       </div>
       <div class="ci-gpt-field-badge" id="ciGptFieldBadge">⚡ 에너지 절약 분야</div>
       <div class="ci-gpt-prompt-box" id="ciGptPrompt"></div>
-      <button class="ci-gpt-copy-btn" id="ciGptCopyBtn" onclick="copyGptPrompt()">📋 ChatGPT 프롬프트 복사</button>
+      <button class="ci-gpt-copy-btn" id="ciGptCopyBtn" onclick="copyGptPrompt()">📋 AI 프롬프트 복사</button>
     </div>
 
     <div class="ci-field">
@@ -905,23 +925,34 @@ function toggleExamples(event, btn){
 // ── 스텝 상태 ──
 let ciStep = 1;
 
-// ── GPT 도우미 ──
+// ── AI 도우미 ──
 const GPT_FIELD_ICONS = {
   '에너지 절약':'⚡','친환경 이동':'🚲','쓰레기·자원순환':'♻️',
   '음식·급식':'🍱','물·환경':'💧','학교·생활 자유주제':'🏫'
 };
+
+function toggleGptHelper(){
+  const helper = document.getElementById('ciGptHelper');
+  const toggle = document.getElementById('ciHelpToggle');
+  const isOpen = helper.classList.toggle('open');
+  toggle.classList.toggle('open', isOpen);
+  if(isOpen) updateGptHelper();
+}
 
 function updateGptHelper(){
   const field = ciSelectedField || v('ciFieldCustom') || '선택한 분야';
   const icon = GPT_FIELD_ICONS[field] || '🌿';
   document.getElementById('ciGptFieldBadge').textContent = icon + ' ' + field + ' 분야 탄소 문제 찾기';
 
-  const gradeLabel = ciSelectedGrade || '초등학생(또는 중학생)';
+  const grade = ciSelectedGrade;
+  const gradeIntro = grade ? '저는 ' + grade + '이에요.' : '저는 초등학생(또는 중학생)이에요.';
+  const gradeSuffix = grade ? grade + '이 이해할 수 있게' : '초등학생이 쉽게 이해할 수 있게';
+
   const prompt =
-'저는 ' + gradeLabel + '이에요.\n' +
+gradeIntro + '\n' +
 '"' + field + '" 분야에서 탄소중립 발명품을 만들려고 해요.\n\n' +
 '이 분야에서 실제 생활 속에서 발생하는 탄소 문제를 3가지 예시로 알려주세요.\n' +
-'각각 아래 형식으로 초등학생이 쉽게 이해할 수 있게 설명해주세요:\n\n' +
+'각각 아래 형식으로 ' + gradeSuffix + ' 설명해주세요:\n\n' +
 '① 어떤 탄소 문제인가요? (2~3문장으로 설명)\n' +
 '② 이 문제는 주로 어디서 발생하나요?\n' +
 '   (집 / 학교 / 길거리 / 식당 / 교통수단 중에서 선택)\n' +
@@ -935,9 +966,9 @@ async function copyGptPrompt(){
   const btn = document.getElementById('ciGptCopyBtn');
   try {
     await navigator.clipboard.writeText(text);
-    btn.textContent = '✅ 복사됨! ChatGPT에 붙여넣기 하세요';
+    btn.textContent = '✅ 복사됨! AI에 붙여넣기 하세요';
     btn.classList.add('copied');
-    setTimeout(()=>{ btn.textContent='📋 ChatGPT 프롬프트 복사'; btn.classList.remove('copied'); }, 3000);
+    setTimeout(()=>{ btn.textContent='📋 AI 프롬프트 복사'; btn.classList.remove('copied'); }, 3000);
   } catch(e){ alert('복사 실패. 직접 선택 후 Ctrl+C 해주세요.'); }
 }
 
@@ -945,7 +976,11 @@ function showStep(n){
   document.querySelectorAll('.ci-step').forEach(el => el.classList.remove('active'));
   const target = document.querySelector('.ci-step[data-step="' + n + '"]');
   if(target) target.classList.add('active');
-  if(n === 2) updateGptHelper();
+  if(n === 2){
+    // Step2 진입 시 도우미 닫힘 상태로 초기화
+    document.getElementById('ciGptHelper').classList.remove('open');
+    document.getElementById('ciHelpToggle').classList.remove('open');
+  }
 
   const results = document.getElementById('ciResults');
   const nav = document.getElementById('ciNav');

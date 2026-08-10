@@ -11,6 +11,7 @@ urlpatterns = [
     path('api/login-helper/links/', views.api_login_helper_links_save, name='api_login_helper_links_save'),
     path('tools/my-avatar/', views.my_avatar, name='my_avatar'),
     path('tools/team-name/', views.team_name, name='team_name'),
+    path('tools/carbon-invention/', views.carbon_invention, name='carbon_invention'),
     path('tools/problem-finder/', views.problem_finder, name='problem_finder'),
     path('tools/presentation-script/', views.presentation_script, name='presentation_script'),
     path('api/presentation-prompt/save/', views.api_presentation_prompt_save, name='api_presentation_prompt_save'),

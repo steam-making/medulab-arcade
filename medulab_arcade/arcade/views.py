@@ -178,6 +178,10 @@ def team_name(request):
     return render(request, 'arcade/team_name.html')
 
 
+def carbon_invention(request):
+    return render(request, 'arcade/carbon_invention.html')
+
+
 def problem_finder(request):
     return render(request, 'arcade/problem_finder.html')
 

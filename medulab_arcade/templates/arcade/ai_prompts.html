@@ -73,6 +73,7 @@
   .icon-story   { background: linear-gradient(135deg, #E8FFF5, #C8F5E0); }
   .icon-script  { background: linear-gradient(135deg, #FFF8E1, #FFECB3); }
   .icon-gallery { background: linear-gradient(135deg, #FFF0F6, #FFD6E8); }
+  .icon-carbon  { background: linear-gradient(135deg, #E8FFF0, #C3F5D8); }
 
   @media (max-width: 600px) {
     .ap-hero h1 { font-size: 24px; }
@@ -123,6 +124,13 @@
       <div class="ap-card-icon icon-gallery">🖼️</div>
       <h2>작품 평가단</h2>
       <p>포스터를 하나씩 보며 하트로 투표! 마지막엔 인기 작품 순위를 확인해요.</p>
+      <span class="ap-tag active">이용 가능</span>
+    </a>
+
+    <a href="{% url 'carbon_invention' %}" class="ap-card">
+      <div class="ap-card-icon icon-carbon">🌿</div>
+      <h2>탄소중립 발명품</h2>
+      <p>발명 분야·아이디어·스케치까지 입력하면 이미지 프롬프트와 포스터 프롬프트가 완성돼요.</p>
       <span class="ap-tag active">이용 가능</span>
     </a>
 

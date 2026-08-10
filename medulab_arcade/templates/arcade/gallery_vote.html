@@ -126,6 +126,13 @@
     <div class="badge">🖼️ MEDULAB GALLERY</div>
     <h1>작품 평가단</h1>
     <p>포스터를 보고 마음에 드는 작품에 하트를 눌러주세요!</p>
+    {% if user.is_staff %}
+    <a href="{% url 'gallery_admin' %}" style="display:inline-block;margin-top:12px;
+      font-size:12px;font-weight:800;color:#FF9142;text-decoration:none;
+      background:#FFF3E0;padding:5px 16px;border-radius:999px;border:1.5px solid #FFD0A0;">
+      ⚙️ 관리자 설정
+    </a>
+    {% endif %}
   </div>
 
   <!-- Phase 0: 방 목록 -->

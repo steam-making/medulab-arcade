@@ -124,15 +124,6 @@
       <h2>작품 평가단</h2>
       <p>포스터를 하나씩 보며 하트로 투표! 마지막엔 인기 작품 순위를 확인해요.</p>
       <span class="ap-tag active">이용 가능</span>
-      {% if user.is_staff %}
-      <div style="margin-top:10px;">
-        <a href="{% url 'gallery_admin' %}" onclick="event.stopPropagation()"
-          style="font-size:11px;font-weight:800;color:#FF9142;text-decoration:none;
-          background:#FFF3E0;padding:3px 10px;border-radius:999px;display:inline-block;">
-          ⚙️ 관리자 설정
-        </a>
-      </div>
-      {% endif %}
     </a>
 
     <div class="ap-card coming-soon">

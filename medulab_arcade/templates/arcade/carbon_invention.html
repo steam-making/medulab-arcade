@@ -290,6 +290,20 @@
   .ci-nav-next { background: linear-gradient(120deg, var(--green), var(--teal)); color: #fff; }
   .ci-nav-next:hover { opacity: .9; }
 
+  /* ── 학년 선택 버튼 ── */
+  .ci-grade-wrap { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+  .ci-grade-sep {
+    width: 1px; height: 26px; background: #C8EDD8; margin: 0 2px; flex-shrink: 0;
+  }
+  .ci-grade-btn {
+    padding: 7px 13px; border-radius: 10px; border: 2px solid #D5EEE0;
+    background: #FAFFFE; font-size: 13px; font-weight: 700; color: var(--ink);
+    cursor: pointer; transition: border-color .2s, background .2s, color .2s;
+    line-height: 1;
+  }
+  .ci-grade-btn:hover { border-color: var(--green); background: #F4FFF8; }
+  .ci-grade-btn.selected { border-color: var(--green); background: #E8FFF2; color: #1A8050; }
+
   /* ── 팁 ── */
   .ci-tip {
     background: #FFFDE7; border: 2px solid #FFF176; border-radius: 12px;
@@ -373,8 +387,28 @@
         <input class="ci-input" id="ciName" placeholder="예) 홍길동" />
       </div>
       <div class="ci-field">
-        <label class="ci-label">학교/학년반 <span class="hint">(선택)</span></label>
-        <input class="ci-input" id="ciSchool" placeholder="예) 메듀초 6학년 2반" />
+        <label class="ci-label">학교 <span class="hint">(선택)</span></label>
+        <input class="ci-input" id="ciSchool" placeholder="예) 메듀초등학교" />
+      </div>
+    </div>
+
+    <div class="ci-field">
+      <label class="ci-label">학년</label>
+      <div class="ci-grade-wrap" id="ciGradeWrap">
+        <button type="button" class="ci-grade-btn" data-grade="초1" onclick="selectGrade(this)">초1</button>
+        <button type="button" class="ci-grade-btn" data-grade="초2" onclick="selectGrade(this)">초2</button>
+        <button type="button" class="ci-grade-btn" data-grade="초3" onclick="selectGrade(this)">초3</button>
+        <button type="button" class="ci-grade-btn" data-grade="초4" onclick="selectGrade(this)">초4</button>
+        <button type="button" class="ci-grade-btn" data-grade="초5" onclick="selectGrade(this)">초5</button>
+        <button type="button" class="ci-grade-btn" data-grade="초6" onclick="selectGrade(this)">초6</button>
+        <div class="ci-grade-sep"></div>
+        <button type="button" class="ci-grade-btn" data-grade="중1" onclick="selectGrade(this)">중1</button>
+        <button type="button" class="ci-grade-btn" data-grade="중2" onclick="selectGrade(this)">중2</button>
+        <button type="button" class="ci-grade-btn" data-grade="중3" onclick="selectGrade(this)">중3</button>
+        <div class="ci-grade-sep"></div>
+        <button type="button" class="ci-grade-btn" data-grade="고1" onclick="selectGrade(this)">고1</button>
+        <button type="button" class="ci-grade-btn" data-grade="고2" onclick="selectGrade(this)">고2</button>
+        <button type="button" class="ci-grade-btn" data-grade="고3" onclick="selectGrade(this)">고3</button>
       </div>
     </div>
 
@@ -830,6 +864,14 @@ function updateProgress(){
 })();
 
 let ciSelectedField = '';
+let ciSelectedGrade = '';
+
+function selectGrade(btn){
+  document.querySelectorAll('.ci-grade-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  ciSelectedGrade = btn.dataset.grade;
+}
+
 function selectField(card){
   document.querySelectorAll('.ci-fc').forEach(c => c.classList.remove('selected'));
   card.classList.add('selected');
@@ -859,8 +901,9 @@ function updateGptHelper(){
   const icon = GPT_FIELD_ICONS[field] || '🌿';
   document.getElementById('ciGptFieldBadge').textContent = icon + ' ' + field + ' 분야 탄소 문제 찾기';
 
+  const gradeLabel = ciSelectedGrade || '초등학생(또는 중학생)';
   const prompt =
-'저는 초등학생(또는 중학생)이에요.\n' +
+'저는 ' + gradeLabel + '이에요.\n' +
 '"' + field + '" 분야에서 탄소중립 발명품을 만들려고 해요.\n\n' +
 '이 분야에서 실제 생활 속에서 발생하는 탄소 문제를 3가지 예시로 알려주세요.\n' +
 '각각 아래 형식으로 초등학생이 쉽게 이해할 수 있게 설명해주세요:\n\n' +
@@ -1091,7 +1134,7 @@ function v(id){ return (document.getElementById(id)?.value||'').trim(); }
 // ── 프롬프트 생성 ──
 function generateResults(){
   const data={
-    name:v('ciName'), school:v('ciSchool'), team:v('ciTeam'),
+    name:v('ciName'), school:v('ciSchool'), grade:ciSelectedGrade, team:v('ciTeam'),
     field: ciSelectedField || v('ciFieldCustom'),
     problem:v('ciProblem'), places:getChecked('ciPlaces'), whyCarbon:v('ciWhyCarbon'),
     inventionName:v('ciInventionName'), solveProblem:v('ciSolveProblem'),
@@ -1144,7 +1187,7 @@ function generateResults(){
     :(data.carbonEffect?'\n  '+data.carbonEffect:'');
   const memberLine=data.members?'\n\n발표 팀원: '+data.members:'';
   const schoolLine=(data.school||data.name)?
-    '\n발명가: '+data.name+(data.school?' | '+data.school:'')+(data.team?' | 팀: '+data.team:''):'';
+    '\n발명가: '+data.name+(data.grade?' '+data.grade:'')+(data.school?' | '+data.school:'')+(data.team?' | 팀: '+data.team:''):'';
 
   document.getElementById('ciPosterPrompt').textContent =
 '[탄소중립 발명품 포스터 AI 생성 프롬프트]\n\n' +

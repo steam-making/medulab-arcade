@@ -832,6 +832,23 @@ class GalleryPoster(models.Model):
         return f"{self.room.name} #{self.order}"
 
 
+class GalleryCriteria(models.Model):
+    room = models.ForeignKey(GalleryRoom, on_delete=models.CASCADE, related_name='criteria')
+    name = models.CharField('항목명', max_length=50)
+    description = models.CharField('설명', max_length=200, blank=True)
+    max_score = models.PositiveIntegerField('배점', default=20)
+    order = models.PositiveIntegerField('순서', default=0)
+
+    class Meta:
+        db_table = 'gallery_criteria'
+        verbose_name = '평가항목'
+        verbose_name_plural = '평가항목'
+        ordering = ['order']
+
+    def __str__(self):
+        return f'{self.name} ({self.max_score}점)'
+
+
 class GalleryMember(models.Model):
     room = models.ForeignKey(GalleryRoom, on_delete=models.CASCADE, related_name='members')
     name = models.CharField('이름', max_length=30)
@@ -850,6 +867,7 @@ class GalleryMember(models.Model):
 
 class GalleryVote(models.Model):
     poster = models.ForeignKey(GalleryPoster, on_delete=models.CASCADE, related_name='votes')
+    criteria = models.ForeignKey(GalleryCriteria, on_delete=models.CASCADE, null=True, blank=True, related_name='votes')
     voter_name = models.CharField('투표자 이름', max_length=30)
     voter_session = models.CharField('세션키', max_length=64)
     score = models.IntegerField('별점', default=5)  # 1~5
@@ -859,7 +877,7 @@ class GalleryVote(models.Model):
         db_table = 'gallery_vote'
         verbose_name = '투표'
         verbose_name_plural = '투표'
-        unique_together = [('poster', 'voter_session')]
+        unique_together = [('poster', 'voter_session', 'criteria')]
 
     def __str__(self):
         return f"{self.poster} ← {self.voter_name}"

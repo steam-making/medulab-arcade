@@ -32,6 +32,30 @@
   .ga-btn:disabled { opacity:.4; cursor:not-allowed; }
   .ga-btn:hover:not(:disabled) { opacity:.88; transform:translateY(-1px); }
 
+  /* ── 평가항목 ── */
+  .ga-criteria-box { border:1.5px solid #e0d8f8; border-radius:14px; padding:16px 18px; margin-top:14px; background:#FAFAFE; }
+  .ga-criteria-box h3 { font-size:13px; font-weight:800; color:#5a5480; margin:0 0 10px; }
+  .ga-preset-row { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .ga-preset-btn { padding:7px 14px; border:1.5px solid #8C6BFA; border-radius:8px;
+    background:#fff; color:#8C6BFA; font-size:12px; font-weight:800; cursor:pointer; transition:all .15s; }
+  .ga-preset-btn:hover { background:#F1EEFF; }
+  .ga-criteria-list { display:flex; flex-direction:column; gap:8px; }
+  .ga-criteria-row { display:grid; grid-template-columns:1fr 1.6fr 60px 28px; gap:6px; align-items:center; }
+  .ga-criteria-row input { padding:8px 10px; border:1.5px solid #d8d2f0; border-radius:8px;
+    font-size:13px; color:var(--ink); outline:none; width:100%; box-sizing:border-box; }
+  .ga-criteria-row input:focus { border-color:#8C6BFA; }
+  .ga-criteria-row input[type=number] { text-align:center; }
+  .ga-criteria-row .rm-c { background:none; border:none; color:#ccc; font-size:18px;
+    cursor:pointer; padding:0; line-height:1; }
+  .ga-criteria-row .rm-c:hover { color:#FF6FA5; }
+  .ga-criteria-header { display:grid; grid-template-columns:1fr 1.6fr 60px 28px; gap:6px;
+    font-size:11px; font-weight:700; color:#9a96b4; padding:0 2px; }
+  .ga-add-criteria { padding:7px 14px; border:1.5px dashed #c4bde8; border-radius:8px;
+    background:none; color:#8C6BFA; font-size:12px; font-weight:700; cursor:pointer;
+    width:100%; margin-top:6px; transition:all .15s; }
+  .ga-add-criteria:hover { border-color:#8C6BFA; background:#F5F2FF; }
+  .ga-total-score { font-size:12px; font-weight:800; color:#FF9142; text-align:right; padding-top:6px; }
+
   /* ── Phase 0: 방 목록 ── */
   .ga-hero { text-align:center; margin-bottom:32px; }
   .ga-hero h1 { font-size:26px; font-weight:900; color:var(--ink); margin:0 0 6px; }
@@ -199,6 +223,20 @@
         <input type="file" id="gaFileInput" multiple accept="image/*">
         <div class="ga-file-preview" id="gaFilePreview"></div>
       </div>
+      <div class="ga-field">
+        <label>평가항목 <span style="color:#9a96b4;font-weight:500;">(선택)</span></label>
+        <div class="ga-criteria-box">
+          <div class="ga-preset-row">
+            <button type="button" class="ga-preset-btn" onclick="gaApplyCarbonPreset()">🌿 탄소중립 항목 불러오기</button>
+          </div>
+          <div class="ga-criteria-header">
+            <span>항목 이름</span><span>설명</span><span style="text-align:center">배점</span><span></span>
+          </div>
+          <div class="ga-criteria-list" id="gaCriteriaList"></div>
+          <button type="button" class="ga-add-criteria" onclick="gaAddCriteriaRow()">+ 항목 추가</button>
+          <div class="ga-total-score" id="gaTotalScore"></div>
+        </div>
+      </div>
       <button class="ga-submit-btn" id="gaCreateBtn" onclick="gaCreateRoom()">방 만들기</button>
     </div>
 
@@ -312,6 +350,50 @@ const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 const RANK_EMOJI = ['🥇','🥈','🥉'];
 let gaCurrRoomId = null, gaCtrlTimer = null, gaPhaseIdx = 0;
 
+// ── 평가항목 ──
+const CARBON_PRESET = [
+  { name:'탄소중립효과',        description:'탄소 감축 효과의 구체성과 규모', max_score:25 },
+  { name:'창의성',              description:'아이디어의 독창성과 참신함',       max_score:25 },
+  { name:'실현가능성',          description:'현실적 실행 가능 여부',            max_score:20 },
+  { name:'AI활용 및 설계 표현', description:'AI 도구 활용과 설계 시각화',       max_score:15 },
+  { name:'포스터전달력',        description:'메시지 전달의 명확성과 디자인',    max_score:15 },
+];
+function gaAddCriteriaRow(name='', description='', max_score=20) {
+  const list = document.getElementById('gaCriteriaList');
+  const idx = list.children.length;
+  const row = document.createElement('div');
+  row.className = 'ga-criteria-row';
+  row.innerHTML = `
+    <input type="text" placeholder="항목 이름" value="${name}" oninput="gaUpdateTotal()">
+    <input type="text" placeholder="설명 (선택)" value="${description}">
+    <input type="number" placeholder="점" value="${max_score}" min="1" max="100" oninput="gaUpdateTotal()">
+    <button type="button" class="rm-c" onclick="this.closest('.ga-criteria-row').remove();gaUpdateTotal()">×</button>`;
+  list.appendChild(row);
+  gaUpdateTotal();
+}
+function gaUpdateTotal() {
+  const rows = document.querySelectorAll('.ga-criteria-row');
+  let total = 0;
+  rows.forEach(r => { total += parseInt(r.querySelector('input[type=number]').value) || 0; });
+  const el = document.getElementById('gaTotalScore');
+  el.textContent = rows.length > 0 ? `합계: ${total}점` : '';
+}
+function gaApplyCarbonPreset() {
+  document.getElementById('gaCriteriaList').innerHTML = '';
+  CARBON_PRESET.forEach(c => gaAddCriteriaRow(c.name, c.description, c.max_score));
+}
+function gaGetCriteriaJson() {
+  const rows = document.querySelectorAll('.ga-criteria-row');
+  const result = [];
+  rows.forEach(r => {
+    const inputs = r.querySelectorAll('input');
+    const name = inputs[0].value.trim();
+    if (!name) return;
+    result.push({ name, description: inputs[1].value.trim(), max_score: parseInt(inputs[2].value) || 20 });
+  });
+  return result;
+}
+
 // ── 화면 전환 ──
 function gaShowPhase(n) {
   document.querySelectorAll('.ga-phase').forEach((el, i) => el.classList.toggle('active', i === n));
@@ -364,6 +446,7 @@ async function gaCreateRoom() {
   const fd = new FormData();
   fd.append('name', name);
   gaFiles.forEach(f => fd.append('images', f));
+  fd.append('criteria', JSON.stringify(gaGetCriteriaJson()));
   fd.append('csrfmiddlewaretoken', CSRF);
   try {
     const res = await fetch('/api/gallery/room/create/', { method:'POST', body:fd });

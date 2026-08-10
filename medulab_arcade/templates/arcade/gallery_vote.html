@@ -88,7 +88,7 @@
   .gv-panel-title { font-size:17px; font-weight:900; color:var(--ink); line-height:1.4; word-break:keep-all; }
   .gv-divider { height:1px; background:#ede8fa; }
 
-  /* 별점 */
+  /* 단일 별점 (평가항목 없는 방) */
   .gv-star-label { font-size:13px; font-weight:800; color:#5a5480; text-align:center; }
   .gv-stars { display:flex; justify-content:center; gap:6px; margin:4px 0; }
   .gv-star {
@@ -106,15 +106,36 @@
   }
   .gv-vote-btn:hover:not(:disabled) { opacity:.9; transform:translateY(-2px); }
   .gv-vote-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
-  .gv-vote-btn.done { background:linear-gradient(120deg,#3DDC97,#22c77c); box-shadow:0 4px 16px rgba(61,220,151,.35); }
 
   .gv-voted-info { text-align:center; }
   .gv-voted-score { font-size:24px; font-weight:900; color:var(--ink); }
   .gv-voted-stars { font-size:22px; letter-spacing:2px; }
   .gv-voted-count { font-size:12px; color:#9a96b4; margin-top:4px; }
 
+  /* 평가항목별 별점 */
+  .gv-criteria-list { display:flex; flex-direction:column; gap:10px; }
+  .gv-criteria-item { background:#F8F7FF; border-radius:12px; padding:10px 12px; }
+  .gv-ci-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .gv-ci-name { font-size:13px; font-weight:800; color:var(--ink); }
+  .gv-ci-score { font-size:11px; font-weight:700; color:#8C6BFA; background:#E8E3FA;
+    padding:2px 8px; border-radius:999px; }
+  .gv-ci-desc { font-size:11px; color:#9a96b4; margin-bottom:6px; line-height:1.4; }
+  .gv-ci-stars { display:flex; gap:4px; }
+  .gv-ci-star {
+    font-size:26px; cursor:pointer; transition:transform .12s, filter .12s;
+    filter:grayscale(1) opacity(.3); line-height:1;
+  }
+  .gv-ci-star:hover, .gv-ci-star.on { filter:none; transform:scale(1.12); }
+  .gv-ci-star.on { filter:drop-shadow(0 2px 4px rgba(255,193,60,.5)); }
+  .gv-criteria-total { text-align:right; font-size:12px; font-weight:800; color:#FF9142; padding-top:4px; }
+
   .gv-wait-notice { text-align:center; font-size:13px; font-weight:700; color:#8C6BFA;
     background:#F1EEFF; border-radius:12px; padding:12px; display:none; }
+  .gv-voted-criteria { display:flex; flex-direction:column; gap:6px; }
+  .gv-vc-row { display:flex; justify-content:space-between; align-items:center;
+    font-size:12px; color:#5a5480; background:#F8F7FF; border-radius:8px; padding:7px 10px; }
+  .gv-vc-name { font-weight:700; }
+  .gv-vc-stars { font-size:14px; letter-spacing:1px; }
 
   /* Phase 4: 결과 */
   .gv-result-wrap { max-width:680px; margin:0 auto; padding:32px 20px 80px; }
@@ -232,8 +253,16 @@
       </div>
       <div class="gv-divider"></div>
 
-      <!-- 별점 선택 (투표 전) -->
-      <div id="gvStarSection">
+      <!-- 평가항목별 별점 (투표 전) -->
+      <div id="gvCriteriaSection" style="display:none">
+        <div class="gv-star-label" style="text-align:left;margin-bottom:8px;">항목별 평가</div>
+        <div class="gv-criteria-list" id="gvCriteriaList"></div>
+        <div class="gv-criteria-total" id="gvCriteriaTotal"></div>
+        <button class="gv-vote-btn" id="gvCriteriaVoteBtn" onclick="gvVote()" disabled style="margin-top:10px">평가 제출</button>
+      </div>
+
+      <!-- 단일 별점 선택 (평가항목 없는 방, 투표 전) -->
+      <div id="gvStarSection" style="display:none">
         <div class="gv-star-label">별점을 선택하세요</div>
         <div class="gv-stars" id="gvStars">
           <span class="gv-star" data-s="1" onmouseenter="gvHover(1)" onmouseleave="gvUnhover()" onclick="gvSelectStar(1)">⭐</span>
@@ -246,13 +275,19 @@
         <button class="gv-vote-btn" id="gvVoteBtn" onclick="gvVote()" disabled>평가하기</button>
       </div>
 
-      <!-- 투표 완료 후 -->
+      <!-- 투표 완료 후 (단일) -->
       <div id="gvVotedSection" style="display:none">
         <div class="gv-voted-info">
           <div class="gv-voted-stars" id="gvVotedStars">⭐⭐⭐⭐⭐</div>
-          <div class="gv-voted-score" id="gvVotedScore">5점 평가 완료!</div>
+          <div class="gv-voted-score" id="gvVotedScore">평가 완료!</div>
           <div class="gv-voted-count" id="gvVotedCount"></div>
         </div>
+      </div>
+
+      <!-- 투표 완료 후 (항목별) -->
+      <div id="gvVotedCriteriaSection" style="display:none">
+        <div class="gv-voted-criteria" id="gvVotedCriteriaList"></div>
+        <div class="gv-voted-count" id="gvVotedCriteriaCount" style="text-align:center;margin-top:6px;"></div>
       </div>
 
       <div class="gv-wait-notice" id="gvWaitNotice">⏳ 다음 포스터를 기다리는 중...</div>
@@ -265,6 +300,7 @@
 <script>
 let gvRoomId = null, gvRoomName = '', gvCurrentPoster = null;
 let gvMyScore = 0, gvSelectedStar = 0, gvPollTimer = null, gvPhase = 0;
+let gvCriteria = [], gvCriteriaScores = {}, gvMyCriteriaScores = {};
 const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 const STAR_HINTS = ['', '아쉬워요 😢', '조금 아쉬워요 😕', '보통이에요 😊', '좋아요 👍', '최고예요! 🔥'];
 const RANK_EMOJI = ['🥇','🥈','🥉'];
@@ -347,12 +383,20 @@ function gvApplyVoting(d) {
   const poster = d.poster;
   const prevId = gvCurrentPoster?.id;
   gvCurrentPoster = poster;
-  gvMyScore = d.my_score || 0;
+  gvCriteria = d.criteria || [];
+  const hasCriteria = gvCriteria.length > 0;
 
-  if (gvPhase !== 3) { gvShowPhase(3); gvResetStars(); }
+  if (gvPhase !== 3) { gvShowPhase(3); gvResetVote(); }
 
-  // 포스터 바뀌면 별점 초기화
-  if (prevId && prevId !== poster.id) { gvResetStars(); gvMyScore = d.my_score || 0; }
+  // 포스터 바뀌면 초기화
+  if (prevId && prevId !== poster.id) {
+    gvResetVote();
+    gvMyScore = d.my_score || 0;
+    gvMyCriteriaScores = d.my_criteria_scores || {};
+  } else {
+    gvMyScore = d.my_score || 0;
+    gvMyCriteriaScores = d.my_criteria_scores || {};
+  }
 
   document.getElementById('gvProgressText').textContent = `${poster.index+1} / ${poster.total} 번째 작품`;
   document.getElementById('gvProgressFill').style.width = `${((poster.index+1)/poster.total)*100}%`;
@@ -361,20 +405,30 @@ function gvApplyVoting(d) {
   const img = document.getElementById('gvPosterImg');
   if (img.src !== location.origin + poster.image_url) img.src = poster.image_url;
 
-  if (gvMyScore > 0) {
-    gvShowVotedState(gvMyScore, poster.vote_count, poster.avg_score);
+  if (hasCriteria) {
+    const allVoted = Object.keys(gvMyCriteriaScores).length === gvCriteria.length;
+    if (allVoted) {
+      gvShowVotedCriteriaState(poster.vote_count, poster.avg_score);
+    } else {
+      gvRenderCriteriaStars();
+    }
   } else {
-    document.getElementById('gvStarSection').style.display = '';
-    document.getElementById('gvVotedSection').style.display = 'none';
-    document.getElementById('gvWaitNotice').style.display = 'none';
-    gvRenderStars(gvSelectedStar, false);
+    if (gvMyScore > 0) {
+      gvShowVotedState(gvMyScore, poster.vote_count, poster.avg_score);
+    } else {
+      document.getElementById('gvStarSection').style.display = '';
+      document.getElementById('gvCriteriaSection').style.display = 'none';
+      document.getElementById('gvVotedSection').style.display = 'none';
+      document.getElementById('gvVotedCriteriaSection').style.display = 'none';
+      document.getElementById('gvWaitNotice').style.display = 'none';
+      gvRenderStars(gvSelectedStar, false);
+    }
   }
 }
 
-// ── 별점 ──
+// ── 단일 별점 ──
 function gvHover(n) { if (gvMyScore > 0) return; gvRenderStars(n, true); document.getElementById('gvStarHint').textContent = STAR_HINTS[n]; }
 function gvUnhover() { if (gvMyScore > 0) return; gvRenderStars(gvSelectedStar, false); document.getElementById('gvStarHint').textContent = gvSelectedStar ? STAR_HINTS[gvSelectedStar] : '별을 클릭해 평가하세요'; }
-
 function gvSelectStar(n) {
   if (gvMyScore > 0) return;
   gvSelectedStar = n;
@@ -382,43 +436,125 @@ function gvSelectStar(n) {
   document.getElementById('gvStarHint').textContent = STAR_HINTS[n];
   document.getElementById('gvVoteBtn').disabled = false;
 }
-
-function gvRenderStars(n, hover) {
-  document.querySelectorAll('.gv-star').forEach((el, i) => {
-    el.classList.toggle('on', i < n);
-  });
+function gvRenderStars(n) {
+  document.querySelectorAll('.gv-star').forEach((el, i) => el.classList.toggle('on', i < n));
 }
-
-function gvResetStars() {
-  gvSelectedStar = 0;
-  document.getElementById('gvStarSection').style.display = '';
-  document.getElementById('gvVotedSection').style.display = 'none';
-  document.getElementById('gvWaitNotice').style.display = 'none';
-  document.getElementById('gvVoteBtn').disabled = true;
-  document.getElementById('gvStarHint').textContent = '별을 클릭해 평가하세요';
-  gvRenderStars(0, false);
-}
-
 function gvShowVotedState(myScore, voteCount, avgScore) {
   document.getElementById('gvStarSection').style.display = 'none';
   document.getElementById('gvVotedSection').style.display = '';
+  document.getElementById('gvVotedCriteriaSection').style.display = 'none';
   document.getElementById('gvWaitNotice').style.display = 'block';
   document.getElementById('gvVotedStars').textContent = '⭐'.repeat(myScore) + '☆'.repeat(5 - myScore);
   document.getElementById('gvVotedScore').textContent = `${myScore}점 평가 완료!`;
   document.getElementById('gvVotedCount').textContent = `전체 평균 ⭐${avgScore}점 (${voteCount}명 참여)`;
 }
 
+// ── 평가항목별 별점 ──
+function gvRenderCriteriaStars() {
+  document.getElementById('gvCriteriaSection').style.display = '';
+  document.getElementById('gvStarSection').style.display = 'none';
+  document.getElementById('gvVotedSection').style.display = 'none';
+  document.getElementById('gvVotedCriteriaSection').style.display = 'none';
+  document.getElementById('gvWaitNotice').style.display = 'none';
+  const list = document.getElementById('gvCriteriaList');
+  list.innerHTML = gvCriteria.map(c => {
+    const saved = parseInt(gvCriteriaScores[c.id] || gvMyCriteriaScores[String(c.id)] || 0);
+    const stars = [1,2,3,4,5].map(n =>
+      `<span class="gv-ci-star${saved>=n?' on':''}" data-cid="${c.id}" data-n="${n}"
+        onmouseenter="gvCiHover(${c.id},${n})" onmouseleave="gvCiUnhover(${c.id})"
+        onclick="gvCiSelect(${c.id},${n})">⭐</span>`
+    ).join('');
+    return `<div class="gv-criteria-item" id="gvCi${c.id}">
+      <div class="gv-ci-header">
+        <span class="gv-ci-name">${c.name}</span>
+        <span class="gv-ci-score">${c.max_score}점</span>
+      </div>
+      ${c.description ? `<div class="gv-ci-desc">${c.description}</div>` : ''}
+      <div class="gv-ci-stars" id="gvCiStars${c.id}">${stars}</div>
+    </div>`;
+  }).join('');
+  gvUpdateCriteriaTotal();
+}
+function gvCiHover(cid, n) {
+  document.querySelectorAll(`#gvCiStars${cid} .gv-ci-star`).forEach((el, i) => el.classList.toggle('on', i < n));
+}
+function gvCiUnhover(cid) {
+  const saved = gvCriteriaScores[cid] || 0;
+  document.querySelectorAll(`#gvCiStars${cid} .gv-ci-star`).forEach((el, i) => el.classList.toggle('on', i < saved));
+}
+function gvCiSelect(cid, n) {
+  gvCriteriaScores[cid] = n;
+  document.querySelectorAll(`#gvCiStars${cid} .gv-ci-star`).forEach((el, i) => el.classList.toggle('on', i < n));
+  gvUpdateCriteriaTotal();
+}
+function gvUpdateCriteriaTotal() {
+  const allSelected = gvCriteria.every(c => gvCriteriaScores[c.id] > 0);
+  document.getElementById('gvCriteriaVoteBtn').disabled = !allSelected;
+  const totalMax = gvCriteria.reduce((s, c) => s + c.max_score, 0);
+  const myTotal = gvCriteria.reduce((s, c) => s + ((gvCriteriaScores[c.id] || 0) / 5) * c.max_score, 0);
+  if (allSelected) {
+    document.getElementById('gvCriteriaTotal').textContent = `예상 점수: ${myTotal.toFixed(1)} / ${totalMax}점`;
+  } else {
+    document.getElementById('gvCriteriaTotal').textContent = `모든 항목을 평가해주세요 (${Object.keys(gvCriteriaScores).length}/${gvCriteria.length})`;
+  }
+}
+function gvShowVotedCriteriaState(voteCount, avgScore) {
+  document.getElementById('gvCriteriaSection').style.display = 'none';
+  document.getElementById('gvVotedSection').style.display = 'none';
+  document.getElementById('gvVotedCriteriaSection').style.display = '';
+  document.getElementById('gvWaitNotice').style.display = 'block';
+  const vcList = document.getElementById('gvVotedCriteriaList');
+  const scores = {...gvCriteriaScores};
+  Object.keys(gvMyCriteriaScores).forEach(k => { if (!scores[k]) scores[k] = gvMyCriteriaScores[k]; });
+  vcList.innerHTML = gvCriteria.map(c => {
+    const s = parseInt(scores[c.id] || scores[String(c.id)] || 0);
+    const pts = s > 0 ? ((s/5)*c.max_score).toFixed(1) : '—';
+    return `<div class="gv-vc-row">
+      <span class="gv-vc-name">${c.name}</span>
+      <span class="gv-vc-stars">${'⭐'.repeat(s)}${'☆'.repeat(5-s)} <b style="color:#FF9142;margin-left:4px">${pts}점</b></span>
+    </div>`;
+  }).join('');
+  document.getElementById('gvVotedCriteriaCount').textContent = `전체 평균 ${avgScore}점 (${voteCount}명 참여)`;
+}
+
+// ── 공통 초기화 ──
+function gvResetVote() {
+  gvSelectedStar = 0; gvCriteriaScores = {};
+  ['gvStarSection','gvCriteriaSection','gvVotedSection','gvVotedCriteriaSection'].forEach(id =>
+    document.getElementById(id).style.display = 'none');
+  document.getElementById('gvWaitNotice').style.display = 'none';
+  if (document.getElementById('gvVoteBtn')) document.getElementById('gvVoteBtn').disabled = true;
+  if (document.getElementById('gvCriteriaVoteBtn')) document.getElementById('gvCriteriaVoteBtn').disabled = true;
+  document.getElementById('gvStarHint').textContent = '별을 클릭해 평가하세요';
+  gvRenderStars(0);
+}
+
 async function gvVote() {
-  if (!gvCurrentPoster || !gvSelectedStar) return;
+  if (!gvCurrentPoster) return;
+  const hasCriteria = gvCriteria.length > 0;
   try {
+    let body;
+    if (hasCriteria) {
+      const allSet = gvCriteria.every(c => gvCriteriaScores[c.id] > 0);
+      if (!allSet) { gvToast('모든 항목을 평가해주세요!'); return; }
+      body = { poster_id: gvCurrentPoster.id, criteria_scores: gvCriteriaScores };
+    } else {
+      if (!gvSelectedStar) return;
+      body = { poster_id: gvCurrentPoster.id, score: gvSelectedStar };
+    }
     const res = await fetch('/api/gallery/vote/', {
       method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body: JSON.stringify({ poster_id: gvCurrentPoster.id, score: gvSelectedStar })
+      body: JSON.stringify(body)
     });
     const d = await res.json();
     if (!d.ok) { gvToast(d.error||'평가 실패'); return; }
-    gvMyScore = gvSelectedStar;
-    gvShowVotedState(gvSelectedStar, d.vote_count, d.avg_score);
+    if (hasCriteria) {
+      gvMyCriteriaScores = {...gvCriteriaScores};
+      gvShowVotedCriteriaState(d.vote_count, d.avg_score);
+    } else {
+      gvMyScore = gvSelectedStar;
+      gvShowVotedState(gvSelectedStar, d.vote_count, d.avg_score);
+    }
   } catch(e) { gvToast('오류가 발생했어요.'); }
 }
 

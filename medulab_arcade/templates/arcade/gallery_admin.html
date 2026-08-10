@@ -276,7 +276,9 @@
           </div>
           <div class="ga-room-meta">
             포스터 {{ room.posters.count }}장 · {{ room.created_at|date:"m/d H:i" }}
+            {% if room.status != 'done' %}
             &nbsp;·&nbsp; 👥 <span id="gaMemberCount{{ room.id }}">-</span>명 접속중
+            {% endif %}
           </div>
           <div class="ga-poster-strip">
             {% for poster in room.posters.all %}
@@ -683,7 +685,7 @@ function gaToast(msg) {
 }
 
 // ── 접속자 수 폴링 (방 목록 화면) ──
-const GA_ROOM_IDS = [{% for room in rooms %}{{ room.id }}{% if not forloop.last %},{% endif %}{% endfor %}];
+const GA_ROOM_IDS = [{% for room in rooms %}{% if room.status != 'done' %}{{ room.id }}{% if not forloop.last %},{% endif %}{% endif %}{% endfor %}].filter(Boolean);
 async function gaPollMembers() {
   if (gaPhaseIdx !== 0) return;
   for (const roomId of GA_ROOM_IDS) {

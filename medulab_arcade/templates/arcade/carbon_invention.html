@@ -14,13 +14,10 @@
     color: var(--ink);
   }
 
-  /* ── 전체 레이아웃 ── */
   .ci-wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
 
-  /* ── 상단 히어로 ── */
-  .ci-hero {
-    text-align: center; padding: 28px 16px 20px; margin-bottom: 24px;
-  }
+  /* ── 히어로 ── */
+  .ci-hero { text-align: center; padding: 28px 16px 20px; margin-bottom: 20px; }
   .ci-hero .badge {
     display: inline-block;
     background: linear-gradient(120deg, var(--green), var(--teal));
@@ -35,39 +32,31 @@
   }
   .ci-hero p { font-size: 14px; color: var(--gray); margin: 0; }
 
-  /* ── 진행 바 ── */
-  .ci-progress {
+  /* ── 진행 바 (숫자만, 라벨은 아래 텍스트로) ── */
+  .ci-progress-row {
     display: flex; align-items: center; justify-content: center;
-    gap: 0; margin-bottom: 28px; flex-wrap: nowrap; overflow-x: auto;
-    padding-bottom: 4px;
+    gap: 0; flex-wrap: nowrap; padding: 0 4px;
   }
-  .ci-progress-item {
-    display: flex; align-items: center; gap: 0;
-    flex-shrink: 0;
-  }
+  .ci-progress-item { display: flex; align-items: center; flex-shrink: 0; }
   .ci-pb {
-    width: 32px; height: 32px; border-radius: 50%;
+    width: 30px; height: 30px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 12px; font-weight: 800;
     background: #e0f2ea; color: #9abfaa;
     transition: background .3s, color .3s, transform .2s;
-    cursor: default; position: relative;
   }
-  .ci-pb.active { background: var(--green); color: #fff; transform: scale(1.15); }
+  .ci-pb.active { background: var(--green); color: #fff; transform: scale(1.18); }
   .ci-pb.done { background: var(--teal); color: #fff; }
-  .ci-pb-label {
-    display: none; /* show on larger screens */
-    position: absolute; top: 36px; left: 50%; transform: translateX(-50%);
-    white-space: nowrap; font-size: 10px; color: var(--gray); font-weight: 600;
-  }
-  .ci-pb.active .ci-pb-label,
-  .ci-pb.done .ci-pb-label { color: var(--teal); }
-  @media(min-width:600px) { .ci-pb-label { display: block; } }
   .ci-progress-line {
-    width: 28px; height: 3px; background: #e0f2ea; flex-shrink: 0;
-    transition: background .3s;
+    width: 22px; height: 3px; background: #e0f2ea;
+    transition: background .3s; flex-shrink: 0;
   }
   .ci-progress-line.done { background: var(--teal); }
+  .ci-step-label {
+    text-align: center; font-size: 13px; font-weight: 700; color: var(--teal);
+    margin: 8px 0 20px; letter-spacing: .3px;
+  }
+  .ci-step-label span { color: var(--gray); font-weight: 400; }
 
   /* ── 스텝 카드 ── */
   .ci-step {
@@ -80,9 +69,7 @@
   .ci-step.active { display: block; }
   @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
 
-  .ci-step-header {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
-  }
+  .ci-step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
   .ci-step-num {
     width: 40px; height: 40px; border-radius: 14px; flex-shrink: 0;
     background: linear-gradient(135deg, var(--green), var(--teal));
@@ -95,8 +82,7 @@
   /* ── 폼 공통 ── */
   .ci-field { margin-bottom: 18px; }
   .ci-label {
-    display: block; font-size: 13px; font-weight: 700; color: var(--ink);
-    margin-bottom: 6px;
+    display: block; font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 6px;
   }
   .ci-label .req { color: #E74C3C; margin-left: 2px; }
   .ci-label .hint { font-weight: 400; color: var(--gray); font-size: 12px; margin-left: 6px; }
@@ -106,26 +92,68 @@
     background: #FAFFFE; transition: border-color .2s;
     box-sizing: border-box; font-family: inherit;
   }
-  .ci-input:focus, .ci-textarea:focus, .ci-select:focus {
-    outline: none; border-color: var(--green);
-  }
+  .ci-input:focus, .ci-textarea:focus, .ci-select:focus { outline: none; border-color: var(--green); }
   .ci-textarea { resize: vertical; min-height: 80px; }
 
-  /* ── 발명 분야 선택 ── */
-  .ci-field-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 10px;
+  /* ── 발명 분야 카드 ── */
+  .ci-field-cards {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
   }
-  .ci-field-btn {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 14px; border-radius: 14px; cursor: pointer;
-    border: 2px solid #D5EEE0; background: #FAFFFE;
-    font-size: 13px; font-weight: 600; color: var(--ink);
-    transition: border-color .2s, background .2s; user-select: none;
+  @media(max-width:480px){ .ci-field-cards { grid-template-columns: 1fr; } }
+
+  .ci-fc {
+    border: 2px solid #D5EEE0; border-radius: 16px;
+    background: #FAFFFE; cursor: pointer;
+    transition: border-color .2s, background .2s;
+    overflow: hidden;
   }
-  .ci-field-btn .icon { font-size: 22px; }
-  .ci-field-btn:hover { border-color: var(--green); background: #F0FFF5; }
-  .ci-field-btn.selected { border-color: var(--green); background: #E8FFF2; color: #1A8050; }
+  .ci-fc:hover { border-color: var(--green); background: #F4FFF8; }
+  .ci-fc.selected { border-color: var(--green); background: #E8FFF2; }
+  .ci-fc.selected .ci-fc-name { color: #1A8050; }
+
+  .ci-fc-header {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 14px 14px 10px; cursor: pointer;
+  }
+  .ci-fc-icon { font-size: 26px; flex-shrink: 0; line-height: 1.2; }
+  .ci-fc-info { flex: 1; min-width: 0; }
+  .ci-fc-name { font-size: 14px; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
+  .ci-fc-desc { font-size: 12px; color: var(--gray); line-height: 1.5; }
+
+  .ci-fc-example-btn {
+    display: flex; align-items: center; gap: 5px;
+    margin: 0 14px 10px; padding: 6px 10px;
+    border: 1.5px solid #C8EDD8; border-radius: 8px;
+    background: #F0FFF7; color: var(--teal);
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    transition: background .2s; width: fit-content;
+  }
+  .ci-fc-example-btn:hover { background: #DFF5EB; }
+  .ci-fc-example-arrow { transition: transform .2s; }
+  .ci-fc-example-btn.open .ci-fc-example-arrow { transform: rotate(180deg); }
+
+  .ci-fc-examples {
+    display: none; padding: 0 14px 12px;
+    border-top: 1.5px dashed #C8EDD8; margin-top: 0;
+    background: #F7FFFB;
+  }
+  .ci-fc-examples.open { display: block; }
+  .ci-fc-examples ul {
+    margin: 10px 0 0; padding: 0; list-style: none;
+  }
+  .ci-fc-examples ul li {
+    font-size: 12px; color: #2D6A4F; padding: 4px 0;
+    display: flex; align-items: flex-start; gap: 6px;
+  }
+  .ci-fc-examples ul li::before { content: '✦'; color: var(--teal); flex-shrink:0; }
+
+  /* 직접입력 */
+  .ci-fc-custom {
+    border: 2px dashed #C8EDD8; border-radius: 16px;
+    background: #FAFFFE; padding: 14px;
+    grid-column: 1 / -1;
+  }
+  .ci-fc-custom-label { font-size: 13px; font-weight: 700; color: var(--gray); margin-bottom: 8px; }
 
   /* ── 체크박스 ── */
   .ci-checks { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -139,7 +167,7 @@
   .ci-check.checked { border-color: var(--teal); background: #E0FAF2; color: #0E7A5A; }
   .ci-check input[type=checkbox] { display: none; }
 
-  /* ── 작동 원리 4단계 ── */
+  /* ── 작동 원리 ── */
   .ci-flow { display: flex; flex-direction: column; gap: 12px; }
   .ci-flow-step {
     display: flex; align-items: flex-start; gap: 12px;
@@ -154,35 +182,30 @@
   .ci-flow-content { flex: 1; }
   .ci-flow-label { font-size: 12px; font-weight: 700; color: var(--teal); margin-bottom: 4px; }
 
-  /* ── AI 기능 체크박스 ── */
+  /* ── AI 기능 ── */
   .ci-ai-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 
-  /* ── 탄소중립 효과 전문 (fill-in) ── */
+  /* ── 탄소 효과 fill-in ── */
   .ci-fill-template {
     background: #F0FFF5; border: 2px solid #C8EDD8; border-radius: 14px;
     padding: 16px; font-size: 14px; line-height: 2; color: var(--ink);
   }
   .ci-fill-input {
-    display: inline-block; min-width: 100px; border: none; border-bottom: 2px solid var(--teal);
+    display: inline-block; min-width: 80px; border: none; border-bottom: 2px solid var(--teal);
     background: transparent; font-size: 14px; color: #0E7A5A; font-weight: 700;
     padding: 0 4px; text-align: center; font-family: inherit;
   }
   .ci-fill-input:focus { outline: none; border-bottom-color: var(--green); }
 
-  /* ── 캔버스 영역 ── */
+  /* ── 캔버스 ── */
   .ci-canvas-wrap {
     background: #fff; border: 2px solid #C8EDD8; border-radius: 16px;
-    overflow: hidden; margin-bottom: 12px; position: relative;
-    touch-action: none;
-    cursor: crosshair;
+    overflow: hidden; margin-bottom: 12px;
+    touch-action: none; cursor: crosshair;
   }
-  #ciCanvas {
-    display: block; width: 100%; height: auto;
-    touch-action: none;
-  }
+  #ciCanvas { display: block; width: 100%; height: auto; touch-action: none; }
   .ci-canvas-toolbar {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-    margin-bottom: 12px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px;
   }
   .ci-tool-btn {
     padding: 6px 12px; border-radius: 10px; border: 2px solid #D5EEE0;
@@ -205,11 +228,9 @@
   .ci-size-btn.active { border-color: var(--green); background: #E8FFF2; color: var(--green); }
   .ci-sep { width: 1px; height: 24px; background: #D5EEE0; }
 
-  /* ── 스케치 주석 목록 ── */
+  /* ── 주석 ── */
   .ci-annotations { margin-top: 8px; }
-  .ci-ann-row {
-    display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
-  }
+  .ci-ann-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
   .ci-ann-num {
     width: 28px; height: 28px; border-radius: 50%; background: var(--teal);
     color: #fff; font-size: 12px; font-weight: 800;
@@ -221,10 +242,8 @@
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
 
-  /* ── 발표 준비 ── */
-  .ci-member-row {
-    display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
-  }
+  /* ── 발표 ── */
+  .ci-member-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
   .ci-member-del {
     padding: 6px 10px; border-radius: 10px; border: 2px solid #fcc;
     background: #fff; color: #E74C3C; cursor: pointer; font-size: 14px;
@@ -236,13 +255,9 @@
   .ci-result-section {
     background: var(--card-bg); border-radius: 20px; padding: 22px;
     box-shadow: 0 6px 24px rgba(30,90,60,0.08);
-    border: 2px solid rgba(46,204,113,0.12);
-    margin-bottom: 20px;
+    border: 2px solid rgba(46,204,113,0.12); margin-bottom: 20px;
   }
-  .ci-result-section h3 {
-    font-size: 17px; font-weight: 800; margin: 0 0 12px;
-    display: flex; align-items: center; gap: 8px;
-  }
+  .ci-result-section h3 { font-size: 17px; font-weight: 800; margin: 0 0 12px; }
   .ci-result-body {
     background: #F5FFFA; border: 2px solid #C8EDD8; border-radius: 12px;
     padding: 14px; font-size: 13px; line-height: 1.8; white-space: pre-wrap;
@@ -257,45 +272,33 @@
   }
   .ci-copy-btn:hover { opacity: .85; }
   .ci-copy-btn.copied { background: linear-gradient(120deg, #999, #aaa); }
-
   .ci-sketch-result { text-align: center; }
   .ci-sketch-preview {
-    max-width: 100%; border-radius: 12px; border: 2px solid #C8EDD8;
-    margin-bottom: 10px;
+    max-width: 100%; border-radius: 12px; border: 2px solid #C8EDD8; margin-bottom: 10px;
   }
 
   /* ── 네비게이션 ── */
   .ci-nav {
-    display: flex; gap: 12px; justify-content: space-between;
-    margin-top: 24px;
+    display: flex; gap: 12px; justify-content: space-between; margin-top: 24px;
   }
   .ci-nav-btn {
     padding: 12px 28px; border-radius: 14px; font-size: 15px; font-weight: 800;
-    border: none; cursor: pointer; transition: all .2s;
-    min-width: 110px;
+    border: none; cursor: pointer; transition: all .2s; min-width: 110px;
   }
-  .ci-nav-prev {
-    background: #E8F5EE; color: var(--gray);
-  }
+  .ci-nav-prev { background: #E8F5EE; color: var(--gray); }
   .ci-nav-prev:hover { background: #D5EEE0; }
-  .ci-nav-next {
-    background: linear-gradient(120deg, var(--green), var(--teal));
-    color: #fff;
-  }
+  .ci-nav-next { background: linear-gradient(120deg, var(--green), var(--teal)); color: #fff; }
   .ci-nav-next:hover { opacity: .9; }
-  .ci-nav-next:disabled { opacity: .5; cursor: default; }
 
-  /* ── 추가 추천 배너 ── */
+  /* ── 팁 ── */
   .ci-tip {
     background: #FFFDE7; border: 2px solid #FFF176; border-radius: 12px;
     padding: 10px 14px; font-size: 13px; color: #795548; margin-bottom: 18px;
   }
 
-  /* ── 반응형 ── */
   @media(max-width:520px) {
     .ci-hero h1 { font-size: 22px; }
     .ci-step { padding: 20px 16px; }
-    .ci-field-grid { grid-template-columns: repeat(2, 1fr); }
     .ci-nav-btn { min-width: 90px; font-size: 14px; padding: 10px 18px; }
   }
 </style>
@@ -304,19 +307,18 @@
 {% block content %}
 <div class="ci-wrap">
 
-  <!-- 히어로 -->
   <div class="ci-hero">
     <div class="badge">🌿 탄소중립 발명품 AI 디자인</div>
     <h1>탄소중립 발명품 만들기</h1>
     <p>단계별로 입력하면 이미지·포스터 AI 프롬프트가 자동으로 완성돼요!</p>
   </div>
 
-  <!-- 진행 바 -->
-  <div class="ci-progress" id="ciProgress">
-    <!-- JS로 채움 -->
-  </div>
+  <!-- 진행 바 (숫자만) -->
+  <div class="ci-progress-row" id="ciProgress"></div>
+  <!-- 단계 이름 텍스트 -->
+  <div class="ci-step-label" id="ciStepLabel">1 / 9 단계 &nbsp;<span>기본 정보 &amp; 발명 분야</span></div>
 
-  <!-- ── STEP 1: 기본 정보 + 발명 분야 ── -->
+  <!-- ── STEP 1 ── -->
   <div class="ci-step active" data-step="1">
     <div class="ci-step-header">
       <div class="ci-step-num">1</div>
@@ -326,7 +328,7 @@
       </div>
     </div>
 
-    <div class="ci-tip">💡 추가 추천: 팀 이름과 발표자 정보를 입력하면 포스터에도 활용돼요!</div>
+    <div class="ci-tip">💡 팀 이름·발표자 정보를 입력하면 포스터 프롬프트에도 활용돼요!</div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="ci-field">
@@ -353,31 +355,11 @@
 
     <div class="ci-field">
       <label class="ci-label">발명 분야 선택 <span class="req">*</span></label>
-      <div class="ci-field-grid" id="ciFieldGrid">
-        <div class="ci-field-btn" data-field="생활/가정" onclick="selectField(this)">
-          <span class="icon">🏠</span><span>생활/가정</span>
-        </div>
-        <div class="ci-field-btn" data-field="환경/에너지" onclick="selectField(this)">
-          <span class="icon">🌿</span><span>환경/에너지</span>
-        </div>
-        <div class="ci-field-btn" data-field="교통/이동" onclick="selectField(this)">
-          <span class="icon">🚗</span><span>교통/이동</span>
-        </div>
-        <div class="ci-field-btn" data-field="음식/농업" onclick="selectField(this)">
-          <span class="icon">🍎</span><span>음식/농업</span>
-        </div>
-        <div class="ci-field-btn" data-field="IT/디지털" onclick="selectField(this)">
-          <span class="icon">📱</span><span>IT/디지털</span>
-        </div>
-        <div class="ci-field-btn" data-field="건강/의료" onclick="selectField(this)">
-          <span class="icon">🏥</span><span>건강/의료</span>
-        </div>
-      </div>
-      <input class="ci-input" id="ciFieldCustom" placeholder="기타 직접 입력 (선택 후에도 수정 가능)" style="margin-top:10px" />
+      <div class="ci-field-cards" id="ciFieldCards"><!-- JS 렌더링 --></div>
     </div>
   </div>
 
-  <!-- ── STEP 2: 문제 발견 ── -->
+  <!-- ── STEP 2 ── -->
   <div class="ci-step" data-step="2">
     <div class="ci-step-header">
       <div class="ci-step-num">2</div>
@@ -386,13 +368,11 @@
         <div class="ci-step-subtitle">어떤 불편함이나 탄소 문제를 발견했나요?</div>
       </div>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">내가 발견한 문제 <span class="req">*</span></label>
       <textarea class="ci-textarea" id="ciProblem" rows="4"
-        placeholder="예) 음식을 배달할 때 일회용 플라스틱 포장재가 너무 많이 나와서 탄소가 많이 발생해요."></textarea>
+        placeholder="예) 교실 에어컨이 사람이 없을 때도 계속 켜져 있어서 전기가 낭비돼요."></textarea>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">어디서 발생하는 문제인가요?</label>
       <div class="ci-checks" id="ciPlaces">
@@ -405,15 +385,14 @@
         <label class="ci-check"><input type="checkbox" value="기타"><span>📍 기타</span></label>
       </div>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">왜 탄소(온실가스)가 발생하나요? <span class="hint">(선택)</span></label>
       <textarea class="ci-textarea" id="ciWhyCarbon" rows="3"
-        placeholder="예) 일회용 플라스틱을 만들고 태울 때 이산화탄소가 많이 나와요."></textarea>
+        placeholder="예) 전기를 만드는 과정에서 이산화탄소가 발생하는데, 전기를 낭비하면 그만큼 탄소도 늘어나요."></textarea>
     </div>
   </div>
 
-  <!-- ── STEP 3: 발명품 아이디어 ── -->
+  <!-- ── STEP 3 ── -->
   <div class="ci-step" data-step="3">
     <div class="ci-step-header">
       <div class="ci-step-num">3</div>
@@ -422,38 +401,34 @@
         <div class="ci-step-subtitle">어떤 발명품을 만들 건가요?</div>
       </div>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">발명품 이름 <span class="req">*</span></label>
-      <input class="ci-input" id="ciInventionName" placeholder="예) 스마트 에코패키지" />
+      <input class="ci-input" id="ciInventionName" placeholder="예) 스마트 에너지 교실" />
     </div>
-
     <div class="ci-field">
       <label class="ci-label">해결하려는 문제</label>
       <textarea class="ci-textarea" id="ciSolveProblem" rows="3"
-        placeholder="예) 배달 음식 포장에서 발생하는 플라스틱 쓰레기와 탄소 배출을 줄이고 싶어요."></textarea>
+        placeholder="예) 사람이 없는 교실의 전기·에어컨이 계속 켜져 있는 문제를 해결하고 싶어요."></textarea>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">주요 기능 (3가지) <span class="req">*</span></label>
-      <input class="ci-input" id="ciFunc1" placeholder="기능 1: 예) 음식 보온·보냉이 가능한 생분해 용기" style="margin-bottom:8px" />
-      <input class="ci-input" id="ciFunc2" placeholder="기능 2: 예) QR코드로 탄소 절감량 실시간 확인" style="margin-bottom:8px" />
-      <input class="ci-input" id="ciFunc3" placeholder="기능 3: 예) 반납하면 포인트로 교환되는 앱 연동" />
+      <input class="ci-input" id="ciFunc1" placeholder="기능 1: 예) 사람 감지 센서로 빈 교실 자동 절전" style="margin-bottom:8px" />
+      <input class="ci-input" id="ciFunc2" placeholder="기능 2: 예) 앱으로 전기 사용량 실시간 확인" style="margin-bottom:8px" />
+      <input class="ci-input" id="ciFunc3" placeholder="기능 3: 예) 절전 목표 달성 시 반 포인트 적립" />
     </div>
-
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="ci-field">
         <label class="ci-label">누가 사용하나요?</label>
-        <input class="ci-input" id="ciWhoUses" placeholder="예) 배달 음식을 자주 시키는 사람들" />
+        <input class="ci-input" id="ciWhoUses" placeholder="예) 초등학교 학생·선생님" />
       </div>
       <div class="ci-field">
         <label class="ci-label">어디서 사용하나요?</label>
-        <input class="ci-input" id="ciWhereUse" placeholder="예) 가정, 음식점, 편의점" />
+        <input class="ci-input" id="ciWhereUse" placeholder="예) 교실, 도서관, 복도" />
       </div>
     </div>
   </div>
 
-  <!-- ── STEP 4: 작동 원리 ── -->
+  <!-- ── STEP 4 ── -->
   <div class="ci-step" data-step="4">
     <div class="ci-step-header">
       <div class="ci-step-num">4</div>
@@ -462,40 +437,39 @@
         <div class="ci-step-subtitle">발명품이 어떻게 작동하는지 4단계로 설명해봐요</div>
       </div>
     </div>
-
     <div class="ci-flow">
       <div class="ci-flow-step">
         <div class="ci-flow-num">1</div>
         <div class="ci-flow-content">
           <div class="ci-flow-label">① 입력 / 감지</div>
-          <input class="ci-input" id="ciFlow1" placeholder="예) 사용자가 앱에서 주문하면 포장재 종류를 선택해요." />
+          <input class="ci-input" id="ciFlow1" placeholder="예) 교실 출입구 센서가 사람이 나갔는지 감지해요." />
         </div>
       </div>
       <div class="ci-flow-step">
         <div class="ci-flow-num">2</div>
         <div class="ci-flow-content">
           <div class="ci-flow-label">② 처리 / 분석</div>
-          <input class="ci-input" id="ciFlow2" placeholder="예) AI가 음식 종류와 양에 맞는 최적 포장재를 추천해요." />
+          <input class="ci-input" id="ciFlow2" placeholder="예) AI가 5분 이상 아무도 없으면 절전 모드를 결정해요." />
         </div>
       </div>
       <div class="ci-flow-step">
         <div class="ci-flow-num">3</div>
         <div class="ci-flow-content">
           <div class="ci-flow-label">③ 실행 / 제어</div>
-          <input class="ci-input" id="ciFlow3" placeholder="예) 생분해 용기로 포장된 음식이 배달돼요." />
+          <input class="ci-input" id="ciFlow3" placeholder="예) 조명과 에어컨이 자동으로 꺼져요." />
         </div>
       </div>
       <div class="ci-flow-step">
         <div class="ci-flow-num">4</div>
         <div class="ci-flow-content">
           <div class="ci-flow-label">④ 결과 / 효과</div>
-          <input class="ci-input" id="ciFlow4" placeholder="예) 앱에서 탄소 절감량을 확인하고 포인트를 받아요." />
+          <input class="ci-input" id="ciFlow4" placeholder="예) 앱에서 절약된 전기량과 탄소 감소량을 확인할 수 있어요." />
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── STEP 5: AI 기능 ── -->
+  <!-- ── STEP 5 ── -->
   <div class="ci-step" data-step="5">
     <div class="ci-step-header">
       <div class="ci-step-num">5</div>
@@ -504,7 +478,6 @@
         <div class="ci-step-subtitle">발명품에 어떤 AI 기능을 추가할 건가요?</div>
       </div>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">AI 기능 선택 (여러 개 가능)</label>
       <div class="ci-ai-checks ci-checks" id="ciAiChecks">
@@ -518,15 +491,14 @@
         <label class="ci-check"><input type="checkbox" value="번역하기"><span>🌐 번역하기</span></label>
       </div>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">우리 발명품에서 AI가 하는 역할</label>
       <textarea class="ci-textarea" id="ciAiRole" rows="4"
-        placeholder="예) AI가 사용자의 주문 패턴을 학습해서 가장 적합한 친환경 포장재를 자동으로 추천하고, 탄소 절감량을 계산해요."></textarea>
+        placeholder="예) AI가 교실 사용 패턴을 학습해서 수업 시간이 아닐 때 미리 절전 모드로 전환하고, 반별 전기 절약 현황을 비교해요."></textarea>
     </div>
   </div>
 
-  <!-- ── STEP 6: 탄소중립 효과 ── -->
+  <!-- ── STEP 6 ── -->
   <div class="ci-step" data-step="6">
     <div class="ci-step-header">
       <div class="ci-step-num">6</div>
@@ -535,22 +507,17 @@
         <div class="ci-step-subtitle">발명품이 어떻게 탄소를 줄이는지 설명해봐요</div>
       </div>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">탄소를 줄이는 방법</label>
       <textarea class="ci-textarea" id="ciCarbonHow" rows="3"
-        placeholder="예) 생분해되는 포장재를 사용하고, AI로 포장재 낭비를 최소화해요."></textarea>
+        placeholder="예) 불필요한 전기 사용을 줄여서 전기 생산 시 발생하는 이산화탄소를 줄여요."></textarea>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">예상 효과</label>
       <textarea class="ci-textarea" id="ciCarbonEffect" rows="3"
-        placeholder="예) 가정에서 배달 음식을 시킬 때 1회당 플라스틱 사용을 80% 줄이고, 연간 탄소 배출을 30% 감소시킬 수 있어요."></textarea>
+        placeholder="예) 학교 전체에 적용하면 연간 전기 사용량을 20% 줄이고, 탄소 배출을 약 5톤 감소시킬 수 있어요."></textarea>
     </div>
-
-    <div class="ci-tip" style="margin-top:4px">
-      💡 추가 추천 항목: 아래 문장을 완성해봐요!
-    </div>
+    <div class="ci-tip" style="margin-top:4px">💡 아래 문장을 완성해봐요!</div>
     <div class="ci-fill-template">
       우리 발명품 <input class="ci-fill-input" id="ciFill1" placeholder="발명품이름" size="10" />은(는)
       <input class="ci-fill-input" id="ciFill2" placeholder="어떤 방법으로" size="14" />
@@ -564,39 +531,34 @@
     </div>
   </div>
 
-  <!-- ── STEP 7: 홍보 문구 ── -->
+  <!-- ── STEP 7 ── -->
   <div class="ci-step" data-step="7">
     <div class="ci-step-header">
       <div class="ci-step-num">7</div>
       <div>
         <div class="ci-step-title">홍보 문구 만들기</div>
-        <div class="ci-step-subtitle">포스터에 들어갈 멋진 한 줄 소개를 만들어봐요 (추가 추천 항목)</div>
+        <div class="ci-step-subtitle">포스터에 들어갈 멋진 한 줄 소개를 만들어봐요</div>
       </div>
     </div>
-
     <div class="ci-tip">💡 좋은 홍보 문구는 포스터에서 눈에 확 띄어요! AI한테 여러 개 추천받고 골라도 좋아요.</div>
-
     <div class="ci-field">
       <label class="ci-label">발명품 한 줄 슬로건 <span class="req">*</span></label>
-      <input class="ci-input" id="ciSlogan" placeholder="예) 배달은 스마트하게, 지구는 깨끗하게!" />
+      <input class="ci-input" id="ciSlogan" placeholder="예) 비어있는 교실, AI가 알아서 끌게요!" />
     </div>
-
     <div class="ci-field">
       <label class="ci-label">포스터 메인 제목 <span class="hint">(발명품 이름과 달라도 됩니다)</span></label>
-      <input class="ci-input" id="ciPosterTitle" placeholder="예) 에코패키지 — AI가 만드는 탄소제로 배달" />
+      <input class="ci-input" id="ciPosterTitle" placeholder="예) 스마트 에너지 교실 — AI가 지키는 탄소제로 학교" />
     </div>
-
     <div class="ci-field">
-      <label class="ci-label">발명품 설명 (50자 이내)</label>
-      <input class="ci-input" id="ciShortDesc" placeholder="예) AI가 추천하는 생분해 포장재로 탄소 배출 80% 감소!" maxlength="80" />
+      <label class="ci-label">발명품 설명 (한 줄)</label>
+      <input class="ci-input" id="ciShortDesc" placeholder="예) AI 절전 시스템으로 학교 탄소 배출 20% 감소!" maxlength="80" />
     </div>
-
     <div class="ci-tip" style="background:#E8F5FF;border-color:#90CAF9;color:#1A5276">
-      💬 AI 추천받기: ChatGPT에 "다음 발명품의 포스터 홍보 문구를 5개 추천해줘: [발명품 이름, 기능 요약]" 라고 입력해보세요!
+      💬 ChatGPT에 "다음 발명품의 포스터 홍보 문구를 5개 추천해줘: [발명품 이름, 기능 요약]" 라고 입력해보세요!
     </div>
   </div>
 
-  <!-- ── STEP 8: 발명품 스케치 ── -->
+  <!-- ── STEP 8 ── -->
   <div class="ci-step" data-step="8">
     <div class="ci-step-header">
       <div class="ci-step-num">8</div>
@@ -605,42 +567,33 @@
         <div class="ci-step-subtitle">발명품의 모양을 그려보세요. 그린 그림은 AI에 바로 복사할 수 있어요!</div>
       </div>
     </div>
-
-    <!-- 툴바 -->
     <div class="ci-canvas-toolbar">
-      <!-- 도구 -->
       <button class="ci-tool-btn active" id="ciToolPen" onclick="setTool('pen')">✏️ 펜</button>
       <button class="ci-tool-btn" id="ciToolEraser" onclick="setTool('eraser')">🧹 지우개</button>
       <div class="ci-sep"></div>
-      <!-- 색상 -->
       <div class="ci-color-btn active" data-color="#1E3A2F" style="background:#1E3A2F" onclick="setColor(this)" title="검정"></div>
       <div class="ci-color-btn" data-color="#E74C3C" style="background:#E74C3C" onclick="setColor(this)" title="빨강"></div>
       <div class="ci-color-btn" data-color="#2980B9" style="background:#2980B9" onclick="setColor(this)" title="파랑"></div>
       <div class="ci-color-btn" data-color="#27AE60" style="background:#27AE60" onclick="setColor(this)" title="초록"></div>
       <div class="ci-color-btn" data-color="#F39C12" style="background:#F39C12" onclick="setColor(this)" title="주황"></div>
       <div class="ci-sep"></div>
-      <!-- 굵기 -->
       <div class="ci-size-btn active" data-size="2" onclick="setSize(this)" title="얇게">S</div>
       <div class="ci-size-btn" data-size="5" onclick="setSize(this)" title="보통">M</div>
       <div class="ci-size-btn" data-size="10" onclick="setSize(this)" title="굵게">L</div>
       <div class="ci-sep"></div>
       <button class="ci-tool-btn" onclick="clearCanvas()">🗑️ 전체 지우기</button>
     </div>
-
-    <!-- 캔버스 -->
     <div class="ci-canvas-wrap">
       <canvas id="ciCanvas" width="800" height="500"></canvas>
     </div>
-
-    <!-- 주석 목록 -->
     <div class="ci-field">
-      <label class="ci-label">부품/기능 주석 <span class="hint">(발명품 부위 설명 — AI 프롬프트에 반영됩니다)</span></label>
+      <label class="ci-label">부품/기능 주석 <span class="hint">(AI 프롬프트에 반영됩니다)</span></label>
       <div id="ciAnnotations" class="ci-annotations"></div>
       <button type="button" class="ci-tool-btn" onclick="addAnnotation()" style="margin-top:6px">+ 주석 추가</button>
     </div>
   </div>
 
-  <!-- ── STEP 9: 발표 준비 ── -->
+  <!-- ── STEP 9 ── -->
   <div class="ci-step" data-step="9">
     <div class="ci-step-header">
       <div class="ci-step-num">9</div>
@@ -649,7 +602,6 @@
         <div class="ci-step-subtitle">발표 시간과 역할을 정해봐요</div>
       </div>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">발표 시간 <span class="req">*</span></label>
       <select class="ci-select" id="ciPresTime">
@@ -663,20 +615,17 @@
         <option value="자유">자유</option>
       </select>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">발표자 역할 분담 <span class="hint">(팀 발표인 경우)</span></label>
       <div id="ciMembers"></div>
       <button type="button" class="ci-tool-btn" onclick="addMember()" style="margin-top:6px">+ 팀원 추가</button>
     </div>
-
     <div class="ci-field">
       <label class="ci-label">예상 질문 대비 <span class="hint">(선택)</span></label>
       <input class="ci-input" id="ciQ1" placeholder="예상 질문 1: 예) 이 발명품은 실제로 만들 수 있나요?" style="margin-bottom:8px" />
       <input class="ci-input" id="ciQ2" placeholder="예상 질문 2: 예) 탄소를 얼마나 줄일 수 있나요?" style="margin-bottom:8px" />
       <input class="ci-input" id="ciQ3" placeholder="예상 질문 3" />
     </div>
-
     <div class="ci-field">
       <label class="ci-label">발표 준비 메모 <span class="hint">(선택)</span></label>
       <textarea class="ci-textarea" id="ciPresMemo" rows="3"
@@ -684,9 +633,8 @@
     </div>
   </div>
 
-  <!-- ── RESULTS ── -->
+  <!-- ── 결과 ── -->
   <div class="ci-results" id="ciResults">
-
     <div class="ci-result-section">
       <h3>🎨 발명품 스케치</h3>
       <div class="ci-sketch-result">
@@ -696,21 +644,18 @@
         <button class="ci-copy-btn" onclick="downloadSketch()" style="margin-left:8px;background:linear-gradient(120deg,#3FA9F5,#2980B9)">⬇️ 이미지 저장</button>
       </div>
     </div>
-
     <div class="ci-result-section">
       <h3>🖼️ 발명품 이미지 AI 프롬프트</h3>
       <p style="font-size:13px;color:var(--gray);margin:0 0 10px">ChatGPT, DALL-E, Stable Diffusion 등에 붙여넣으면 발명품 이미지를 만들 수 있어요.</p>
       <div class="ci-result-body" id="ciImagePrompt"></div>
       <button class="ci-copy-btn" id="ciCopyImage" onclick="copyText('ciImagePrompt','ciCopyImage')">📋 프롬프트 복사</button>
     </div>
-
     <div class="ci-result-section">
       <h3>📄 포스터 AI 프롬프트</h3>
       <p style="font-size:13px;color:var(--gray);margin:0 0 10px">ChatGPT 또는 포스터 생성 AI에 붙여넣으면 탄소중립 발명품 포스터를 만들 수 있어요.</p>
       <div class="ci-result-body" id="ciPosterPrompt"></div>
       <button class="ci-copy-btn" id="ciCopyPoster" onclick="copyText('ciPosterPrompt','ciCopyPoster')">📋 프롬프트 복사</button>
     </div>
-
     <div style="text-align:center;margin-top:20px">
       <button class="ci-nav-btn ci-nav-next" onclick="restartTool()" style="background:linear-gradient(120deg,#6B7C6E,#aaa)">
         🔄 처음부터 다시하기
@@ -724,27 +669,57 @@
     <button class="ci-nav-btn ci-nav-next" id="ciNextBtn" onclick="nextStep()">다음 →</button>
   </div>
 
-</div><!-- /ci-wrap -->
+</div>
 
 <script>
-// ── 상태 ──
-let ciStep = 1;
-const CI_TOTAL = 9;
-let ciSelectedField = '';
+// ── 발명 분야 데이터 ──
+const CI_FIELDS = [
+  {
+    name: '에너지 절약', icon: '⚡',
+    desc: '전기, 냉난방, 조명 등의 에너지 낭비를 줄이는 발명품',
+    examples: ['사람이 없으면 자동으로 꺼지는 교실 조명', '전기를 많이 사용하는 기기를 알려주는 스마트 콘센트', '햇빛을 활용하는 충전 가방']
+  },
+  {
+    name: '친환경 이동', icon: '🚲',
+    desc: '자동차 사용이나 이동 과정에서 발생하는 탄소를 줄이는 발명품',
+    examples: ['자전거 발전 충전기', '걸으면 전기를 만드는 신발', '친환경 등하교 이동 도우미']
+  },
+  {
+    name: '쓰레기·자원순환', icon: '♻️',
+    desc: '쓰레기를 줄이거나 재활용을 쉽게 만드는 발명품',
+    examples: ['AI 자동 분리수거 쓰레기통', '다시 사용할 수 있는 배달 포장 상자', '페트병을 자동으로 압축하는 기계']
+  },
+  {
+    name: '음식·급식', icon: '🍱',
+    desc: '음식물 쓰레기와 식품 생산 과정의 탄소를 줄이는 발명품',
+    examples: ['급식 잔반량을 알려주는 스마트 식판', '냉장고 속 유통기한을 알려주는 장치', '남은 음식을 새로운 요리로 추천해 주는 AI 기기']
+  },
+  {
+    name: '물·환경', icon: '💧',
+    desc: '물을 절약하거나 자연환경을 보호하는 발명품',
+    examples: ['사용한 물의 양을 알려주는 수도꼭지', '빗물을 모아 화분에 주는 장치', '샤워 시간을 알려주는 절수 타이머']
+  },
+  {
+    name: '학교·생활 자유주제', icon: '🏫',
+    desc: '학교나 집에서 발견한 탄소 문제를 자유롭게 해결하는 발명품',
+    examples: ['종이를 절약하는 스마트 학습기', '교실 탄소배출량을 알려주는 AI 전광판', '사용하지 않는 물건을 서로 교환해 주는 공유 보관함']
+  }
+];
+
+const STEP_LABELS = ['기본정보·분야','문제 발견하기','발명품 아이디어','작동 원리','AI 기능','탄소중립 효과','홍보 문구','발명품 스케치','발표 준비'];
 
 // ── 진행 바 초기화 ──
-const STEP_LABELS = ['기본정보','문제발견','아이디어','작동원리','AI기능','탄소효과','홍보문구','스케치','발표준비'];
 (function initProgress(){
   const wrap = document.getElementById('ciProgress');
-  for(let i = 1; i <= CI_TOTAL; i++){
+  for(let i = 1; i <= 9; i++){
     const item = document.createElement('div');
     item.className = 'ci-progress-item';
-    const btn = document.createElement('div');
-    btn.className = 'ci-pb' + (i === 1 ? ' active' : '');
-    btn.id = 'ciPb' + i;
-    btn.innerHTML = `${i}<span class="ci-pb-label">${STEP_LABELS[i-1]}</span>`;
-    item.appendChild(btn);
-    if(i < CI_TOTAL){
+    const pb = document.createElement('div');
+    pb.className = 'ci-pb' + (i===1 ? ' active' : '');
+    pb.id = 'ciPb' + i;
+    pb.textContent = i;
+    item.appendChild(pb);
+    if(i < 9){
       const line = document.createElement('div');
       line.className = 'ci-progress-line';
       line.id = 'ciLine' + i;
@@ -755,37 +730,94 @@ const STEP_LABELS = ['기본정보','문제발견','아이디어','작동원리'
 })();
 
 function updateProgress(){
-  for(let i=1;i<=CI_TOTAL;i++){
+  for(let i=1;i<=9;i++){
     const pb = document.getElementById('ciPb'+i);
     pb.className = 'ci-pb';
     if(i < ciStep) pb.classList.add('done');
     else if(i === ciStep) pb.classList.add('active');
-    if(i < CI_TOTAL){
+    if(i < 9){
       const line = document.getElementById('ciLine'+i);
       line.className = 'ci-progress-line' + (i < ciStep ? ' done' : '');
     }
   }
+  document.getElementById('ciStepLabel').innerHTML =
+    ciStep + ' / 9 단계 &nbsp;<span>' + STEP_LABELS[ciStep-1] + '</span>';
 }
 
-// ── 스텝 전환 ──
+// ── 발명 분야 카드 렌더링 ──
+(function renderFieldCards(){
+  const wrap = document.getElementById('ciFieldCards');
+  CI_FIELDS.forEach((f, idx) => {
+    const card = document.createElement('div');
+    card.className = 'ci-fc';
+    card.dataset.field = f.name;
+    card.innerHTML =
+      '<div class="ci-fc-header" onclick="selectField(this.parentElement)">' +
+        '<div class="ci-fc-icon">' + f.icon + '</div>' +
+        '<div class="ci-fc-info">' +
+          '<div class="ci-fc-name">' + f.name + '</div>' +
+          '<div class="ci-fc-desc">' + f.desc + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<button type="button" class="ci-fc-example-btn" onclick="toggleExamples(event,this)">' +
+        '예시 보기 <span class="ci-fc-example-arrow">▼</span>' +
+      '</button>' +
+      '<div class="ci-fc-examples">' +
+        '<ul>' + f.examples.map(e => '<li>' + e + '</li>').join('') + '</ul>' +
+      '</div>';
+    wrap.appendChild(card);
+  });
+
+  // 직접 입력
+  const custom = document.createElement('div');
+  custom.className = 'ci-fc-custom';
+  custom.innerHTML =
+    '<div class="ci-fc-custom-label">✍️ 기타 / 직접 입력</div>' +
+    '<input class="ci-input" id="ciFieldCustom" placeholder="분야를 직접 입력해주세요 (예: 패션·섬유)" />';
+  wrap.appendChild(custom);
+})();
+
+let ciSelectedField = '';
+function selectField(card){
+  document.querySelectorAll('.ci-fc').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  ciSelectedField = card.dataset.field;
+  const customInput = document.getElementById('ciFieldCustom');
+  if(customInput) customInput.value = '';
+}
+
+function toggleExamples(event, btn){
+  event.stopPropagation();
+  const exDiv = btn.nextElementSibling;
+  const isOpen = exDiv.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+}
+
+// ── 스텝 상태 ──
+let ciStep = 1;
+
 function showStep(n){
   document.querySelectorAll('.ci-step').forEach(el => el.classList.remove('active'));
-  const target = document.querySelector(`.ci-step[data-step="${n}"]`);
+  const target = document.querySelector('.ci-step[data-step="' + n + '"]');
   if(target) target.classList.add('active');
 
   const results = document.getElementById('ciResults');
   const nav = document.getElementById('ciNav');
+  const progressRow = document.getElementById('ciProgress');
+  const stepLabelEl = document.getElementById('ciStepLabel');
 
   if(n === 'results'){
     results.classList.add('active');
     nav.style.display = 'none';
+    progressRow.style.display = 'none';
+    stepLabelEl.style.display = 'none';
   } else {
     results.classList.remove('active');
     nav.style.display = 'flex';
-    const prevBtn = document.getElementById('ciPrevBtn');
-    const nextBtn = document.getElementById('ciNextBtn');
-    prevBtn.style.display = n === 1 ? 'none' : '';
-    nextBtn.textContent = n === CI_TOTAL ? '프롬프트 생성 ✨' : '다음 →';
+    progressRow.style.display = 'flex';
+    stepLabelEl.style.display = 'block';
+    document.getElementById('ciPrevBtn').style.display = n === 1 ? 'none' : '';
+    document.getElementById('ciNextBtn').textContent = n === 9 ? '프롬프트 생성 ✨' : '다음 →';
   }
   updateProgress();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -793,7 +825,7 @@ function showStep(n){
 
 function nextStep(){
   if(!validateStep(ciStep)) return;
-  if(ciStep >= CI_TOTAL){
+  if(ciStep >= 9){
     generateResults();
     showStep('results');
   } else {
@@ -816,35 +848,22 @@ function validateStep(n){
     if(!field){ alert('발명 분야를 선택하거나 직접 입력해주세요.'); return false; }
   }
   if(n===2){
-    const prob = document.getElementById('ciProblem').value.trim();
-    if(!prob){ alert('발견한 문제를 입력해주세요.'); return false; }
+    if(!document.getElementById('ciProblem').value.trim()){ alert('발견한 문제를 입력해주세요.'); return false; }
   }
   if(n===3){
-    const inv = document.getElementById('ciInventionName').value.trim();
-    const f1 = document.getElementById('ciFunc1').value.trim();
-    if(!inv){ alert('발명품 이름을 입력해주세요.'); return false; }
-    if(!f1){ alert('주요 기능을 최소 1가지 입력해주세요.'); return false; }
+    if(!document.getElementById('ciInventionName').value.trim()){ alert('발명품 이름을 입력해주세요.'); return false; }
+    if(!document.getElementById('ciFunc1').value.trim()){ alert('주요 기능을 최소 1가지 입력해주세요.'); return false; }
   }
   if(n===7){
-    const sl = document.getElementById('ciSlogan').value.trim();
-    if(!sl){ alert('발명품 슬로건을 입력해주세요.'); return false; }
+    if(!document.getElementById('ciSlogan').value.trim()){ alert('발명품 슬로건을 입력해주세요.'); return false; }
   }
   if(n===9){
-    const t = document.getElementById('ciPresTime').value;
-    if(!t){ alert('발표 시간을 선택해주세요.'); return false; }
+    if(!document.getElementById('ciPresTime').value){ alert('발표 시간을 선택해주세요.'); return false; }
   }
   return true;
 }
 
-// ── 발명 분야 선택 ──
-function selectField(el){
-  document.querySelectorAll('.ci-field-btn').forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-  ciSelectedField = el.dataset.field;
-  document.getElementById('ciFieldCustom').value = ciSelectedField;
-}
-
-// ── 체크박스 토글 ──
+// ── 체크박스 ──
 document.querySelectorAll('.ci-check').forEach(label => {
   label.addEventListener('click', function(){
     const cb = this.querySelector('input[type=checkbox]');
@@ -857,15 +876,14 @@ document.querySelectorAll('.ci-check').forEach(label => {
 let annCount = 0;
 function addAnnotation(){
   annCount++;
+  const n = annCount;
   const div = document.createElement('div');
   div.className = 'ci-ann-row';
-  div.id = 'ann'+annCount;
-  const n = annCount;
-  div.innerHTML = `
-    <div class="ci-ann-num">${annCount}</div>
-    <input class="ci-input" style="flex:1" placeholder="예) ① 센서 — 온도를 측정해요" />
-    <div class="ci-ann-del" onclick="document.getElementById('ann${n}').remove()">✕</div>
-  `;
+  div.id = 'ann' + n;
+  div.innerHTML =
+    '<div class="ci-ann-num">' + n + '</div>' +
+    '<input class="ci-input" style="flex:1" placeholder="예) ① 센서 — 온도를 측정해요" />' +
+    '<div class="ci-ann-del" onclick="document.getElementById(\'ann' + n + '\').remove()">✕</div>';
   document.getElementById('ciAnnotations').appendChild(div);
 }
 
@@ -873,19 +891,18 @@ function addAnnotation(){
 let memberCount = 0;
 function addMember(){
   memberCount++;
+  const n = memberCount;
   const div = document.createElement('div');
   div.className = 'ci-member-row';
-  const n = memberCount;
-  div.id = 'mem'+n;
-  div.innerHTML = `
-    <input class="ci-input" style="flex:1" placeholder="이름 예) 홍길동" />
-    <input class="ci-input" style="flex:2" placeholder="역할 예) 발명품 설명, 포스터 소개" />
-    <button class="ci-member-del" onclick="document.getElementById('mem${n}').remove()">✕</button>
-  `;
+  div.id = 'mem' + n;
+  div.innerHTML =
+    '<input class="ci-input" style="flex:1" placeholder="이름" />' +
+    '<input class="ci-input" style="flex:2" placeholder="역할 예) 발명품 소개, 작동 원리 설명" />' +
+    '<button class="ci-member-del" onclick="document.getElementById(\'mem' + n + '\').remove()">✕</button>';
   document.getElementById('ciMembers').appendChild(div);
 }
 
-// ── 캔버스 드로잉 ──
+// ── 캔버스 ──
 const canvas = document.getElementById('ciCanvas');
 const ctx = canvas.getContext('2d');
 let drawing = false;
@@ -893,51 +910,28 @@ let penTool = 'pen';
 let penColor = '#1E3A2F';
 let penSize = 2;
 
-// 흰 배경 초기화
 ctx.fillStyle = '#ffffff';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 function getPos(e){
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  if(e.touches){
-    return {
-      x:(e.touches[0].clientX - rect.left)*scaleX,
-      y:(e.touches[0].clientY - rect.top)*scaleY
-    };
-  }
-  return {
-    x:(e.clientX - rect.left)*scaleX,
-    y:(e.clientY - rect.top)*scaleY
-  };
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  if(e.touches) return {x:(e.touches[0].clientX-rect.left)*sx, y:(e.touches[0].clientY-rect.top)*sy};
+  return {x:(e.clientX-rect.left)*sx, y:(e.clientY-rect.top)*sy};
 }
 
-function startDraw(e){
-  e.preventDefault();
-  drawing = true;
-  const pos = getPos(e);
-  ctx.beginPath();
-  ctx.moveTo(pos.x, pos.y);
-}
-
+function startDraw(e){ e.preventDefault(); drawing=true; const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
 function draw(e){
-  if(!drawing) return;
-  e.preventDefault();
-  const pos = getPos(e);
-  ctx.lineTo(pos.x, pos.y);
-  ctx.strokeStyle = penTool === 'eraser' ? '#ffffff' : penColor;
-  ctx.lineWidth = penTool === 'eraser' ? penSize * 5 : penSize;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  if(!drawing) return; e.preventDefault();
+  const p=getPos(e);
+  ctx.lineTo(p.x,p.y);
+  ctx.strokeStyle = penTool==='eraser' ? '#ffffff' : penColor;
+  ctx.lineWidth = penTool==='eraser' ? penSize*5 : penSize;
+  ctx.lineCap='round'; ctx.lineJoin='round';
   ctx.stroke();
 }
-
-function endDraw(e){
-  if(!drawing) return;
-  drawing = false;
-  ctx.beginPath();
-}
+function endDraw(){ drawing=false; ctx.beginPath(); }
 
 canvas.addEventListener('mousedown', startDraw);
 canvas.addEventListener('mousemove', draw);
@@ -948,225 +942,154 @@ canvas.addEventListener('touchmove', draw, {passive:false});
 canvas.addEventListener('touchend', endDraw);
 
 function setTool(t){
-  penTool = t;
+  penTool=t;
   document.getElementById('ciToolPen').classList.toggle('active', t==='pen');
   document.getElementById('ciToolEraser').classList.toggle('active', t==='eraser');
 }
-
 function setColor(el){
   document.querySelectorAll('.ci-color-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  penColor = el.dataset.color;
-  if(penTool === 'eraser') setTool('pen');
+  el.classList.add('active'); penColor=el.dataset.color;
+  if(penTool==='eraser') setTool('pen');
 }
-
 function setSize(el){
   document.querySelectorAll('.ci-size-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  penSize = parseInt(el.dataset.size);
+  el.classList.add('active'); penSize=parseInt(el.dataset.size);
 }
-
 function clearCanvas(){
   if(!confirm('스케치를 모두 지울까요?')) return;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
 }
 
-// ── 스케치 복사 ──
 async function copySketch(){
-  const btn = document.getElementById('ciCopySketch');
+  const btn=document.getElementById('ciCopySketch');
   try {
-    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-    btn.textContent = '✅ 복사됨!';
-    btn.classList.add('copied');
+    const blob=await new Promise(res=>canvas.toBlob(res,'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+    btn.textContent='✅ 복사됨!'; btn.classList.add('copied');
     setTimeout(()=>{btn.textContent='📋 이미지 복사하기';btn.classList.remove('copied');},2000);
   } catch(err){
-    // 클립보드 API 미지원 시 새탭으로 열기
-    const url = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url; a.target = '_blank'; a.click();
-    btn.textContent = '✅ 새 탭 열림!';
-    setTimeout(()=>{btn.textContent='📋 이미지 복사하기';},2000);
+    const a=document.createElement('a'); a.href=canvas.toDataURL('image/png'); a.target='_blank'; a.click();
   }
 }
-
 function downloadSketch(){
-  const a = document.createElement('a');
-  a.download = '탄소중립_발명품_스케치.png';
-  a.href = canvas.toDataURL('image/png');
-  a.click();
+  const a=document.createElement('a');
+  a.download='탄소중립_발명품_스케치.png'; a.href=canvas.toDataURL('image/png'); a.click();
 }
 
-// ── 텍스트 복사 ──
 async function copyText(elemId, btnId){
-  const text = document.getElementById(elemId).textContent;
-  const btn = document.getElementById(btnId);
+  const text=document.getElementById(elemId).textContent;
+  const btn=document.getElementById(btnId);
   try {
     await navigator.clipboard.writeText(text);
-    btn.textContent = '✅ 복사됨!';
-    btn.classList.add('copied');
+    btn.textContent='✅ 복사됨!'; btn.classList.add('copied');
     setTimeout(()=>{btn.textContent='📋 프롬프트 복사';btn.classList.remove('copied');},2000);
-  } catch(err){
-    alert('복사 실패. 직접 선택 후 Ctrl+C 해주세요.');
-  }
+  } catch(err){ alert('복사 실패. 직접 선택 후 Ctrl+C 해주세요.'); }
 }
 
 // ── 데이터 수집 ──
-function getChecked(containerId){
-  return Array.from(document.querySelectorAll(`#${containerId} input[type=checkbox]:checked`))
-    .map(cb => cb.value);
-}
-
+function getChecked(id){ return Array.from(document.querySelectorAll('#'+id+' input[type=checkbox]:checked')).map(c=>c.value); }
 function getAnnotations(){
   return Array.from(document.querySelectorAll('#ciAnnotations .ci-ann-row'))
-    .map((row,i) => {
-      const input = row.querySelector('input');
-      return input && input.value.trim() ? `${i+1}. ${input.value.trim()}` : null;
-    }).filter(Boolean).join('\n');
+    .map((row,i)=>{ const inp=row.querySelector('input'); return inp&&inp.value.trim()?((i+1)+'. '+inp.value.trim()):null; })
+    .filter(Boolean).join('\n');
 }
-
 function getMembers(){
   return Array.from(document.querySelectorAll('#ciMembers .ci-member-row'))
-    .map(row => {
-      const inputs = row.querySelectorAll('input');
-      const name = inputs[0]?.value.trim();
-      const role = inputs[1]?.value.trim();
-      return name ? `${name}${role ? ` (${role})` : ''}` : null;
-    }).filter(Boolean).join(', ');
+    .map(row=>{ const ins=row.querySelectorAll('input'); const nm=ins[0]?.value.trim(); const rl=ins[1]?.value.trim(); return nm?(nm+(rl?' ('+rl+')':'')):null; })
+    .filter(Boolean).join(', ');
 }
-
-function v(id){ return (document.getElementById(id)?.value || '').trim(); }
+function v(id){ return (document.getElementById(id)?.value||'').trim(); }
 
 // ── 프롬프트 생성 ──
 function generateResults(){
-  const data = {
-    name: v('ciName'),
-    school: v('ciSchool'),
-    team: v('ciTeam'),
-    field: v('ciFieldCustom') || ciSelectedField,
-    problem: v('ciProblem'),
-    places: getChecked('ciPlaces'),
-    whyCarbon: v('ciWhyCarbon'),
-    inventionName: v('ciInventionName'),
-    solveProblem: v('ciSolveProblem'),
-    func1: v('ciFunc1'),
-    func2: v('ciFunc2'),
-    func3: v('ciFunc3'),
-    whoUses: v('ciWhoUses'),
-    whereUse: v('ciWhereUse'),
-    flow1: v('ciFlow1'),
-    flow2: v('ciFlow2'),
-    flow3: v('ciFlow3'),
-    flow4: v('ciFlow4'),
-    aiChecked: getChecked('ciAiChecks'),
-    aiRole: v('ciAiRole'),
-    carbonHow: v('ciCarbonHow'),
-    carbonEffect: v('ciCarbonEffect'),
-    fill1: v('ciFill1'), fill2: v('ciFill2'), fill3: v('ciFill3'),
-    fill4: v('ciFill4'), fill5: v('ciFill5'),
-    slogan: v('ciSlogan'),
-    posterTitle: v('ciPosterTitle') || v('ciInventionName'),
-    shortDesc: v('ciShortDesc'),
-    presTime: v('ciPresTime'),
-    members: getMembers(),
-    q1: v('ciQ1'), q2: v('ciQ2'), q3: v('ciQ3'),
-    annotations: getAnnotations(),
+  const data={
+    name:v('ciName'), school:v('ciSchool'), team:v('ciTeam'),
+    field: ciSelectedField || v('ciFieldCustom'),
+    problem:v('ciProblem'), places:getChecked('ciPlaces'), whyCarbon:v('ciWhyCarbon'),
+    inventionName:v('ciInventionName'), solveProblem:v('ciSolveProblem'),
+    func1:v('ciFunc1'), func2:v('ciFunc2'), func3:v('ciFunc3'),
+    whoUses:v('ciWhoUses'), whereUse:v('ciWhereUse'),
+    flow1:v('ciFlow1'), flow2:v('ciFlow2'), flow3:v('ciFlow3'), flow4:v('ciFlow4'),
+    aiChecked:getChecked('ciAiChecks'), aiRole:v('ciAiRole'),
+    carbonHow:v('ciCarbonHow'), carbonEffect:v('ciCarbonEffect'),
+    fill1:v('ciFill1'), fill2:v('ciFill2'), fill3:v('ciFill3'), fill4:v('ciFill4'), fill5:v('ciFill5'),
+    slogan:v('ciSlogan'), posterTitle:v('ciPosterTitle')||v('ciInventionName'), shortDesc:v('ciShortDesc'),
+    presTime:v('ciPresTime'), members:getMembers(),
+    q1:v('ciQ1'), q2:v('ciQ2'), q3:v('ciQ3'),
+    annotations:getAnnotations()
   };
 
-  // ── 스케치 이미지 ──
   document.getElementById('ciSketchImg').src = canvas.toDataURL('image/png');
 
-  // ── 이미지 프롬프트 ──
-  const funcs = [data.func1, data.func2, data.func3].filter(Boolean).join(', ');
-  const ai = data.aiChecked.length ? data.aiChecked.join(', ') : (data.aiRole ? 'AI 기반 기능' : '없음');
-  const ann = data.annotations ? `\n\n주요 부품 설명:\n${data.annotations}` : '';
+  const funcs=[data.func1,data.func2,data.func3].filter(Boolean).join(', ');
+  const ai=data.aiChecked.length?data.aiChecked.join(', '):(data.aiRole?'AI 기반 기능':'없음');
+  const ann=data.annotations?'\n\n주요 부품 설명:\n'+data.annotations:'';
 
-  const imgPrompt =
-`[탄소중립 발명품 이미지 생성 프롬프트]
+  document.getElementById('ciImagePrompt').textContent =
+'[탄소중립 발명품 이미지 생성 프롬프트]\n\n' +
+'발명품 이름: ' + (data.inventionName||'(미입력)') + '\n' +
+'발명 분야: ' + (data.field||'(미입력)') + '\n\n' +
+'발명품 설명:\n"' + (data.inventionName||'발명품') + '"은(는) ' +
+(data.whereUse||'생활 속') + '에서 ' + (data.whoUses||'사람들') + '이 사용하는 탄소중립 발명품입니다.\n' +
+'주요 기능: ' + (funcs||'(미입력)') + '\n' +
+'AI 기능: ' + ai +
+(data.carbonEffect?'\n탄소중립 효과: '+data.carbonEffect:'') + ann + '\n\n' +
+'🎨 이미지 스타일 요청:\n' +
+'- 미래지향적이고 깔끔한 3D 제품 렌더링 이미지\n' +
+'- 흰색 또는 연한 그라데이션 배경\n' +
+'- 발명품의 주요 기능과 구조가 잘 보이도록 표현\n' +
+'- 친환경적인 색상 (초록, 하늘색, 흰색 계열)\n' +
+'- 실제 제품처럼 사실적이고 세밀하게 표현\n' +
+'- 스마트하고 혁신적인 느낌의 디자인';
 
-발명품 이름: ${data.inventionName || '(미입력)'}
-발명 분야: ${data.field || '(미입력)'}
-
-발명품 설명:
-"${data.inventionName}"은(는) ${data.whereUse || '생활 속'}에서 ${data.whoUses || '사람들'}이 사용하는 탄소중립 발명품입니다.
-주요 기능: ${funcs || '(미입력)'}
-AI 기능: ${ai}
-탄소중립 효과: ${data.carbonEffect || data.carbonHow || '탄소 배출 감소'}${ann}
-
-🎨 이미지 스타일 요청:
-- 미래지향적이고 깔끔한 3D 제품 렌더링 이미지
-- 흰색 또는 연한 그라데이션 배경
-- 발명품의 주요 기능과 구조가 잘 보이도록 표현
-- 친환경적인 색상 (초록, 하늘색, 흰색 계열)
-- 실제 제품처럼 사실적이고 세밀하게 표현
-- 스마트하고 혁신적인 느낌의 디자인`;
-
-  document.getElementById('ciImagePrompt').textContent = imgPrompt;
-
-  // ── 포스터 프롬프트 ──
-  const places = data.places.length ? data.places.join(', ') : '일상생활';
-  const flowLines = [
-    data.flow1 ? `  1단계 (입력/감지): ${data.flow1}` : null,
-    data.flow2 ? `  2단계 (처리/분석): ${data.flow2}` : null,
-    data.flow3 ? `  3단계 (실행/제어): ${data.flow3}` : null,
-    data.flow4 ? `  4단계 (결과/효과): ${data.flow4}` : null,
+  const places=data.places.length?data.places.join(', '):'일상생활';
+  const flowLines=[
+    data.flow1?'  1단계 (입력/감지): '+data.flow1:null,
+    data.flow2?'  2단계 (처리/분석): '+data.flow2:null,
+    data.flow3?'  3단계 (실행/제어): '+data.flow3:null,
+    data.flow4?'  4단계 (결과/효과): '+data.flow4:null,
   ].filter(Boolean).join('\n');
+  const fillSentence=(data.fill1&&data.fill2)?
+    '\n  "'+data.fill1+'"은(는) '+data.fill2+'으로 탄소를 줄일 수 있습니다. 기존보다 '+
+    (data.fill3||'더')+' 효율적이며, '+(data.fill4||data.whoUses||'사용자')+'가 사용하면 '+
+    (data.fill5||data.carbonEffect||'탄소 절감')+' 효과가 있습니다.'
+    :(data.carbonEffect?'\n  '+data.carbonEffect:'');
+  const memberLine=data.members?'\n\n발표 팀원: '+data.members:'';
+  const schoolLine=(data.school||data.name)?
+    '\n발명가: '+data.name+(data.school?' | '+data.school:'')+(data.team?' | 팀: '+data.team:''):'';
 
-  const fillSentence = (data.fill1 && data.fill2)
-    ? `\n  "${data.fill1}"은(는) ${data.fill2}으로 탄소를 줄일 수 있습니다. 기존보다 ${data.fill3 || '더'} 효율적이며, ${data.fill4 || data.whoUses || '사용자'}가 사용하면 ${data.fill5 || data.carbonEffect || '탄소 절감'} 효과가 있습니다.`
-    : (data.carbonEffect ? `\n  ${data.carbonEffect}` : '');
-
-  const memberLine = data.members ? `\n\n발표 팀원: ${data.members}` : '';
-  const schoolLine = (data.school || data.name) ? `\n발명가: ${data.name}${data.school?' | '+data.school:''}${data.team?' | 팀: '+data.team:''}` : '';
-
-  const posterPrompt =
-`[탄소중립 발명품 포스터 AI 생성 프롬프트]
-
-아래 내용으로 탄소중립 발명품 포스터를 만들어주세요.
-${schoolLine}
-
-═══ 포스터 내용 ═══
-
-① 발명품 이름: ${data.inventionName || '(미입력)'}
-② 포스터 제목: ${data.posterTitle || data.inventionName || '(미입력)'}
-③ 슬로건/홍보 문구: ${data.slogan || '(미입력)'}
-④ 한 줄 소개: ${data.shortDesc || data.solveProblem || '탄소중립을 위한 스마트 발명품'}
-
-⑤ 발명 분야: ${data.field || '(미입력)'}
-⑥ 발명 배경 (발견한 문제):
-  ${data.problem || '(미입력)'}
-  발생 장소: ${places}${data.whyCarbon ? '\n  탄소 발생 이유: '+data.whyCarbon : ''}
-
-⑦ 주요 기능:
-  - ${data.func1 || '(미입력)'}${data.func2 ? '\n  - '+data.func2 : ''}${data.func3 ? '\n  - '+data.func3 : ''}
-
-⑧ 사용 대상: ${data.whoUses || '(미입력)'}
-   사용 장소: ${data.whereUse || '(미입력)'}
-
-⑨ 작동 원리 (4단계):
-${flowLines || '  (미입력)'}
-
-⑩ AI 기능: ${ai}${data.aiRole ? '\n  AI 역할: '+data.aiRole : ''}
-
-⑪ 탄소중립 효과:${fillSentence || '\n  '+data.carbonHow || '\n  (미입력)'}
-
-═══ 포스터 디자인 요청 ═══
-
-- 친환경 색상 (초록, 하늘색, 흰색 계열) 활용
-- 깔끔하고 현대적인 레이아웃, 여백 충분히
-- 큰 제목과 슬로건 강조 (눈에 잘 띄게)
-- 주요 기능은 아이콘 또는 그래픽으로 시각화
-- 작동 원리는 화살표 흐름도(플로우차트)로 표현
-- 탄소 절감 효과는 숫자/그래프로 강조
-- A4 세로 비율 레이아웃
-- 초등·중학생 수준에서 이해하기 쉬운 시각적 표현
-- 전체적으로 스마트하고 친환경적인 느낌의 디자인${memberLine}`;
-
-  document.getElementById('ciPosterPrompt').textContent = posterPrompt;
+  document.getElementById('ciPosterPrompt').textContent =
+'[탄소중립 발명품 포스터 AI 생성 프롬프트]\n\n' +
+'아래 내용으로 탄소중립 발명품 포스터를 만들어주세요.' + schoolLine + '\n\n' +
+'═══ 포스터 내용 ═══\n\n' +
+'① 발명품 이름: ' + (data.inventionName||'(미입력)') + '\n' +
+'② 포스터 제목: ' + (data.posterTitle||data.inventionName||'(미입력)') + '\n' +
+'③ 슬로건/홍보 문구: ' + (data.slogan||'(미입력)') + '\n' +
+'④ 한 줄 소개: ' + (data.shortDesc||data.solveProblem||'탄소중립을 위한 스마트 발명품') + '\n\n' +
+'⑤ 발명 분야: ' + (data.field||'(미입력)') + '\n' +
+'⑥ 발명 배경 (발견한 문제):\n  ' + (data.problem||'(미입력)') +
+'  \n  발생 장소: ' + places +
+(data.whyCarbon?'\n  탄소 발생 이유: '+data.whyCarbon:'') + '\n\n' +
+'⑦ 주요 기능:\n' +
+'  - ' + (data.func1||'(미입력)') +
+(data.func2?'\n  - '+data.func2:'') + (data.func3?'\n  - '+data.func3:'') + '\n\n' +
+'⑧ 사용 대상: ' + (data.whoUses||'(미입력)') + '\n' +
+'   사용 장소: ' + (data.whereUse||'(미입력)') + '\n\n' +
+'⑨ 작동 원리 (4단계):\n' + (flowLines||'  (미입력)') + '\n\n' +
+'⑩ AI 기능: ' + ai + (data.aiRole?'\n  AI 역할: '+data.aiRole:'') + '\n\n' +
+'⑪ 탄소중립 효과:' + (fillSentence||'\n  '+(data.carbonHow||'(미입력)')) + '\n\n' +
+'═══ 포스터 디자인 요청 ═══\n\n' +
+'- 친환경 색상 (초록, 하늘색, 흰색 계열) 활용\n' +
+'- 깔끔하고 현대적인 레이아웃, 여백 충분히\n' +
+'- 큰 제목과 슬로건 강조 (눈에 잘 띄게)\n' +
+'- 주요 기능은 아이콘 또는 그래픽으로 시각화\n' +
+'- 작동 원리는 화살표 흐름도(플로우차트)로 표현\n' +
+'- 탄소 절감 효과는 숫자/그래프로 강조\n' +
+'- A4 세로 비율 레이아웃\n' +
+'- 초등·중학생 수준에서 이해하기 쉬운 시각적 표현\n' +
+'- 전체적으로 스마트하고 친환경적인 느낌의 디자인' + memberLine;
 }
 
-// ── 다시하기 ──
 function restartTool(){
   if(!confirm('처음부터 다시 하시겠어요? 입력한 내용이 모두 지워져요.')) return;
   location.reload();

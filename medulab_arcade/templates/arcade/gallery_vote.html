@@ -302,12 +302,15 @@
 let gvRoomId = null, gvRoomName = '', gvCurrentPoster = null;
 let gvMyScore = 0, gvSelectedStar = 0, gvPollTimer = null, gvPhase = 0;
 let gvCriteria = [], gvCriteriaScores = {}, gvMyCriteriaScores = {};
+let gvHasCriteria = false, gvMaxTotalScore = 5;
 const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 const STAR_HINTS = ['', '아쉬워요 😢', '조금 아쉬워요 😕', '보통이에요 😊', '좋아요 👍', '최고예요! 🔥'];
 const RANK_EMOJI = ['🥇','🥈','🥉'];
 
 function gvShowPhase(n) {
-  document.querySelectorAll('.gv-phase').forEach((el, i) => el.classList.toggle('active', i === n));
+  // .gv-phase DOM 순서: idx0=Phase0, idx1=Phase1, idx2=Phase2, idx3=Phase4
+  const domIdx = n === 4 ? 3 : n;
+  document.querySelectorAll('.gv-phase').forEach((el, i) => el.classList.toggle('active', i === domIdx));
   document.getElementById('gvPhase3').classList.toggle('active', n === 3);
   document.getElementById('gvWrap').style.display = n === 3 ? 'none' : '';
   document.body.classList.toggle('gv-voting-mode', n === 3);
@@ -374,7 +377,13 @@ async function gvPoll() {
     const d = await res.json();
     if (!d.ok) return;
     if (d.status === 'waiting') { if (gvPhase!==2) gvShowPhase(2); return; }
-    if (d.status === 'done') { clearInterval(gvPollTimer); gvShowResults(d.results); return; }
+    if (d.status === 'done') {
+      clearInterval(gvPollTimer);
+      gvHasCriteria = d.has_criteria || false;
+      gvMaxTotalScore = d.max_total_score || 5;
+      gvShowResults(d.results);
+      return;
+    }
     if (!d.poster) return;
     gvApplyVoting(d);
   } catch(e) {}
@@ -560,18 +569,29 @@ async function gvVote() {
 function gvShowResults(results) {
   gvShowPhase(4);
   const list = document.getElementById('gvResultList');
+  const hasCrit = gvHasCriteria;
+  const maxScore = gvMaxTotalScore || 5;
   list.innerHTML = (results||[]).map((r, i) => {
-    const stars = r.avg_score > 0
-      ? '⭐'.repeat(Math.round(r.avg_score)) + '☆'.repeat(5-Math.round(r.avg_score))
-      : '—';
+    let scoreHtml;
+    if (hasCrit) {
+      const pct = maxScore > 0 ? Math.round((r.avg_score / maxScore) * 100) : 0;
+      const starCount = Math.round((r.avg_score / maxScore) * 5);
+      const starsStr = '⭐'.repeat(Math.max(0, Math.min(5, starCount))) + '☆'.repeat(Math.max(0, 5 - Math.min(5, starCount)));
+      scoreHtml = `<div class="gv-result-stars-row">${starsStr}</div>
+        <div class="gv-result-score">${r.avg_score} / ${maxScore}점</div>`;
+    } else {
+      const s = Math.max(0, Math.min(5, Math.round(r.avg_score)));
+      const starsStr = s > 0 ? '⭐'.repeat(s) + '☆'.repeat(5-s) : '—';
+      scoreHtml = `<div class="gv-result-stars-row">${starsStr}</div>
+        <div class="gv-result-score">평균 ⭐ ${r.avg_score}점</div>`;
+    }
     return `
       <div class="gv-result-item ${i<3?'rank'+(i+1):''}">
         <div class="gv-result-rank">${RANK_EMOJI[i]||(i+1)}</div>
         <img class="gv-result-img" src="${r.image_url}" alt="${r.title}">
         <div class="gv-result-info">
           <div class="gv-result-title">${r.title||'작품 '+(r.order+1)}</div>
-          <div class="gv-result-stars-row">${stars}</div>
-          <div class="gv-result-score">평균 ⭐ ${r.avg_score}점</div>
+          ${scoreHtml}
           <div class="gv-result-count">${r.vote_count}명 참여</div>
         </div>
       </div>`;

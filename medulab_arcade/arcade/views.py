@@ -3226,6 +3226,7 @@ def api_gallery_state(request):
         {'id': c.id, 'name': c.name, 'description': c.description, 'max_score': c.max_score}
         for c in criteria_objs
     ]
+    max_total_score = sum(c.max_score for c in criteria_objs) if criteria_objs else 5
 
     # 타이머 정보
     from django.utils import timezone
@@ -3244,6 +3245,8 @@ def api_gallery_state(request):
         'results': results,
         'vote_duration': room.vote_duration,
         'poster_started_ts': poster_started_ts,
+        'has_criteria': has_criteria,
+        'max_total_score': max_total_score,
     })
 
 

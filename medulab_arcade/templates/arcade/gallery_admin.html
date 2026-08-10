@@ -377,6 +377,7 @@ const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 const RANK_EMOJI = ['🥇','🥈','🥉'];
 let gaCurrRoomId = null, gaCtrlTimer = null, gaTimerTick = null, gaPhaseIdx = 0;
 let gaVoteDuration = 0, gaPosterStartedTs = null;
+let gaHasCriteria = false, gaMaxTotalScore = 5;
 
 // ── 평가항목 ──
 const CARBON_PRESET = [
@@ -537,6 +538,8 @@ async function gaCtrlPoll() {
     if (stats.ok) document.getElementById('gacMemberCount').textContent = stats.member_count;
     if (state.status === 'done') {
       clearInterval(gaCtrlTimer); clearInterval(gaTimerTick);
+      gaHasCriteria = state.has_criteria || false;
+      gaMaxTotalScore = state.max_total_score || 5;
       gaShowResultsData(state.results);
       return;
     }
@@ -581,9 +584,12 @@ async function gaCtrlNext() {
   if (d.status === 'done') {
     clearInterval(gaCtrlTimer); clearInterval(gaTimerTick);
     const stateRes = await fetch(`/api/gallery/state/?room_id=${gaCurrRoomId}`);
-    gaShowResultsData((await stateRes.json()).results);
+    const st = await stateRes.json();
+    gaHasCriteria = st.has_criteria || false;
+    gaMaxTotalScore = st.max_total_score || 5;
+    gaShowResultsData(st.results);
   } else {
-    gaPosterStartedTs = Date.now() / 1000; // 즉시 타이머 리셋
+    gaPosterStartedTs = Date.now() / 1000;
     gaCtrlPoll();
   }
 }
@@ -595,9 +601,12 @@ async function gaCtrlEnd() {
   const res = await fetch(`/api/gallery/room/${gaCurrRoomId}/control/`, { method:'POST', body:fd });
   const d = await res.json();
   if (!d.ok) { gaToast(d.error||'오류'); return; }
-  clearInterval(gaCtrlTimer);
+  clearInterval(gaCtrlTimer); clearInterval(gaTimerTick);
   const stateRes = await fetch(`/api/gallery/state/?room_id=${gaCurrRoomId}`);
-  gaShowResultsData((await stateRes.json()).results);
+  const st = await stateRes.json();
+  gaHasCriteria = st.has_criteria || false;
+  gaMaxTotalScore = st.max_total_score || 5;
+  gaShowResultsData(st.results);
 }
 
 // ── 결과 표시 ──
@@ -605,6 +614,8 @@ async function gaShowResultsFromRoom(roomId) {
   gaCurrRoomId = roomId;
   const res = await fetch(`/api/gallery/state/?room_id=${roomId}`);
   const d = await res.json();
+  gaHasCriteria = d.has_criteria || false;
+  gaMaxTotalScore = d.max_total_score || 5;
   gaShowResultsData(d.results);
 }
 
@@ -615,19 +626,28 @@ function gaShowResultsData(results) {
     list.innerHTML = '<p style="text-align:center;color:#9a96b4;padding:32px 0;">투표 결과가 없어요.</p>';
     return;
   }
+  const maxScore = gaMaxTotalScore || 5;
   list.innerHTML = results.map((r, i) => {
     const avg = r.avg_score || 0;
-    const stars = avg > 0
-      ? '⭐'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg))
-      : '—';
+    let scoreHtml;
+    if (gaHasCriteria) {
+      const starCount = Math.max(0, Math.min(5, Math.round((avg / maxScore) * 5)));
+      const starsStr = '⭐'.repeat(starCount) + '☆'.repeat(5 - starCount);
+      scoreHtml = `<div class="gac-result-stars-row">${starsStr}</div>
+        <div class="gac-result-score">${avg} / ${maxScore}점</div>`;
+    } else {
+      const s = Math.max(0, Math.min(5, Math.round(avg)));
+      const starsStr = s > 0 ? '⭐'.repeat(s) + '☆'.repeat(5 - s) : '—';
+      scoreHtml = `<div class="gac-result-stars-row">${starsStr}</div>
+        <div class="gac-result-score">평균 ⭐ ${avg}점</div>`;
+    }
     return `
       <div class="gac-result-item ${i<3?'rank'+(i+1):''}">
         <div class="gac-rank-num">${RANK_EMOJI[i]||(i+1)}</div>
         <img class="gac-result-img" src="${r.image_url}" alt="${r.title}">
         <div class="gac-result-info">
           <div class="gac-result-title">${r.title||'작품 '+(r.order+1)}</div>
-          <div class="gac-result-stars-row">${stars}</div>
-          <div class="gac-result-score">평균 ⭐ ${avg}점</div>
+          ${scoreHtml}
           <div class="gac-result-count">${r.vote_count}명 참여</div>
         </div>
       </div>`;

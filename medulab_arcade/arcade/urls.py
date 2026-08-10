@@ -60,6 +60,7 @@ urlpatterns = [
     path('api/gallery/room/create/', views.api_gallery_room_create, name='api_gallery_room_create'),
     path('api/gallery/room/<int:room_id>/delete/', views.api_gallery_room_delete, name='api_gallery_room_delete'),
     path('api/gallery/room/<int:room_id>/control/', views.api_gallery_control, name='api_gallery_control'),
+    path('api/gallery/room/<int:room_id>/stats/', views.api_gallery_room_stats, name='api_gallery_room_stats'),
     path('my-report/', views.my_report, name='my_report'),
     path('api/attendance/submit/', views.api_submit_attendance, name='api_submit_attendance'),
     path('api/session/refresh/', views.api_refresh_session, name='api_refresh_session'),

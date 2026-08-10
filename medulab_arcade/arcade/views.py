@@ -3075,9 +3075,22 @@ def api_gallery_rooms(request):
     return JsonResponse({'rooms': [{'id': r.id, 'name': r.name, 'status': r.status} for r in rooms]})
 
 
+def api_gallery_room_stats(request, room_id):
+    """관리자용: 방 접속자 수 조회"""
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False}, status=403)
+    from .models import GalleryRoom, GalleryMember
+    try:
+        room = GalleryRoom.objects.get(id=room_id)
+    except GalleryRoom.DoesNotExist:
+        return JsonResponse({'ok': False})
+    members = list(GalleryMember.objects.filter(room=room).values('name', 'last_seen').order_by('last_seen'))
+    return JsonResponse({'ok': True, 'member_count': len(members), 'members': members})
+
+
 @require_POST
 def api_gallery_join(request):
-    from .models import GalleryRoom
+    from .models import GalleryRoom, GalleryMember
     data = json.loads(request.body)
     room_id = data.get('room_id')
     voter_name = data.get('name', '').strip()
@@ -3089,11 +3102,16 @@ def api_gallery_join(request):
         return JsonResponse({'ok': False, 'error': '방을 찾을 수 없습니다.'})
     if not request.session.session_key:
         request.session.create()
+    session_key = request.session.session_key
+    GalleryMember.objects.update_or_create(
+        room=room, session_key=session_key,
+        defaults={'name': voter_name}
+    )
     request.session['gallery_room_id'] = room.id
     request.session['gallery_voter_name'] = voter_name
     request.session.modified = True
     return JsonResponse({'ok': True, 'room_id': room.id, 'room_name': room.name,
-                         'session_key': request.session.session_key})
+                         'session_key': session_key})
 
 
 def api_gallery_state(request):

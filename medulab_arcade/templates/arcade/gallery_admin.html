@@ -149,7 +149,10 @@
                 {% if room.status == 'waiting' %}대기중{% elif room.status == 'voting' %}투표중{% else %}완료{% endif %}
               </span>
             </div>
-            <div class="ga-room-meta">포스터 {{ room.posters.count }}장 · {{ room.created_at|date:"m/d H:i" }}</div>
+            <div class="ga-room-meta">
+              포스터 {{ room.posters.count }}장 · {{ room.created_at|date:"m/d H:i" }}
+              &nbsp;·&nbsp; 👥 <span class="ga-member-count" id="gaMemberCount{{ room.id }}">-</span>명 접속중
+            </div>
           </div>
         </div>
         <div class="ga-poster-strip">
@@ -292,6 +295,26 @@ function gaToast(msg) {
   const el = document.getElementById('gaToast');
   el.textContent = msg; el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── 접속자 수 폴링 ──
+const GA_ROOM_IDS = [{% for room in rooms %}{{ room.id }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+async function gaPollMembers() {
+  for (const roomId of GA_ROOM_IDS) {
+    const el = document.getElementById(`gaMemberCount${roomId}`);
+    if (!el) continue;
+    try {
+      const res = await fetch(`/api/gallery/room/${roomId}/stats/`);
+      const d = await res.json();
+      if (d.ok) el.textContent = d.member_count;
+    } catch(e) {}
+  }
+}
+
+if (GA_ROOM_IDS.length > 0) {
+  gaPollMembers();
+  setInterval(gaPollMembers, 3000);
 }
 </script>
 {% endblock %}

@@ -832,6 +832,22 @@ class GalleryPoster(models.Model):
         return f"{self.room.name} #{self.order}"
 
 
+class GalleryMember(models.Model):
+    room = models.ForeignKey(GalleryRoom, on_delete=models.CASCADE, related_name='members')
+    name = models.CharField('이름', max_length=30)
+    session_key = models.CharField('세션키', max_length=64)
+    last_seen = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'gallery_member'
+        verbose_name = '평가단 참여자'
+        verbose_name_plural = '평가단 참여자'
+        unique_together = [('room', 'session_key')]
+
+    def __str__(self):
+        return f"{self.room.name} - {self.name}"
+
+
 class GalleryVote(models.Model):
     poster = models.ForeignKey(GalleryPoster, on_delete=models.CASCADE, related_name='votes')
     voter_name = models.CharField('투표자 이름', max_length=30)

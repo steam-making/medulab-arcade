@@ -159,7 +159,10 @@
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:6px; }
   .gv-result-stars-row { font-size:20px; letter-spacing:2px; margin-bottom:4px; }
   .gv-result-score { font-size:15px; font-weight:800; color:#FF9142; }
+  .gv-result-breakdown { font-size:11px; color:#9a96b4; margin-top:2px; }
   .gv-result-count { font-size:12px; color:#9a96b4; margin-top:2px; }
+  .gv-participation-bar { height:5px; border-radius:3px; background:#eee; margin-top:5px; overflow:hidden; }
+  .gv-participation-bar-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#8C6BFA,#3FA9F5); transition:width .4s; }
 
   .gv-toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
     background:#2E2A4A; color:#fff; font-size:14px; font-weight:700; padding:12px 28px;
@@ -572,18 +575,24 @@ function gvShowResults(results) {
   const hasCrit = gvHasCriteria;
   const maxScore = gvMaxTotalScore || 5;
   list.innerHTML = (results||[]).map((r, i) => {
+    const avg = r.avg_score || 0;
+    const finalScore = r.final_score != null ? r.final_score : avg;
+    const participationScore = r.participation_score || 0;
+    const participationRate = r.participation_rate || 0;
+    const voteCount = r.vote_count || 0;
     let scoreHtml;
     if (hasCrit) {
-      const pct = maxScore > 0 ? Math.round((r.avg_score / maxScore) * 100) : 0;
-      const starCount = Math.round((r.avg_score / maxScore) * 5);
-      const starsStr = '⭐'.repeat(Math.max(0, Math.min(5, starCount))) + '☆'.repeat(Math.max(0, 5 - Math.min(5, starCount)));
+      const starCount = Math.max(0, Math.min(5, Math.round((avg / maxScore) * 5)));
+      const starsStr = '⭐'.repeat(starCount) + '☆'.repeat(5 - starCount);
       scoreHtml = `<div class="gv-result-stars-row">${starsStr}</div>
-        <div class="gv-result-score">${r.avg_score} / ${maxScore}점</div>`;
+        <div class="gv-result-score">최종 ${finalScore}점</div>
+        <div class="gv-result-breakdown">평가 ${avg} + 참여보너스 ${participationScore}</div>`;
     } else {
-      const s = Math.max(0, Math.min(5, Math.round(r.avg_score)));
+      const s = Math.max(0, Math.min(5, Math.round(avg)));
       const starsStr = s > 0 ? '⭐'.repeat(s) + '☆'.repeat(5-s) : '—';
       scoreHtml = `<div class="gv-result-stars-row">${starsStr}</div>
-        <div class="gv-result-score">평균 ⭐ ${r.avg_score}점</div>`;
+        <div class="gv-result-score">최종 ${finalScore}점</div>
+        <div class="gv-result-breakdown">평가 ${avg} + 참여보너스 ${participationScore}</div>`;
     }
     return `
       <div class="gv-result-item ${i<3?'rank'+(i+1):''}">
@@ -592,7 +601,8 @@ function gvShowResults(results) {
         <div class="gv-result-info">
           <div class="gv-result-title">${r.title||'작품 '+(r.order+1)}</div>
           ${scoreHtml}
-          <div class="gv-result-count">${r.vote_count}명 참여</div>
+          <div class="gv-result-count">👥 ${voteCount}명 참여</div>
+          <div class="gv-participation-bar"><div class="gv-participation-bar-fill" style="width:${participationRate}%"></div></div>
         </div>
       </div>`;
   }).join('');

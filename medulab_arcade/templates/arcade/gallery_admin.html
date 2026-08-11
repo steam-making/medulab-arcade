@@ -192,7 +192,10 @@
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:6px; }
   .gac-result-stars-row { font-size:22px; letter-spacing:2px; margin-bottom:4px; }
   .gac-result-score { font-size:16px; font-weight:800; color:#FF9142; }
+  .gac-result-breakdown { font-size:11px; color:#9a96b4; margin-top:2px; }
   .gac-result-count { font-size:12px; color:#9a96b4; margin-top:2px; }
+  .gac-participation-bar { height:5px; border-radius:3px; background:#eee; margin-top:5px; overflow:hidden; }
+  .gac-participation-bar-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#8C6BFA,#3FA9F5); transition:width .4s; }
   .gac-result-back { text-align:center; margin-top:28px; }
   .gac-result-back button { padding:12px 32px; border:1.5px solid #d8d2f0; border-radius:12px;
     background:#fff; font-size:14px; font-weight:700; color:#8C6BFA; cursor:pointer; }
@@ -383,11 +386,12 @@ let gaHasCriteria = false, gaMaxTotalScore = 5;
 
 // ── 평가항목 ──
 const CARBON_PRESET = [
-  { name:'탄소중립효과',        description:'탄소 감축 효과의 구체성과 규모', max_score:25 },
-  { name:'창의성',              description:'아이디어의 독창성과 참신함',       max_score:25 },
-  { name:'실현가능성',          description:'현실적 실행 가능 여부',            max_score:20 },
+  { name:'탄소중립효과',        description:'탄소 감축 효과의 구체성과 규모', max_score:20 },
+  { name:'창의성',              description:'아이디어의 독창성과 참신함',       max_score:20 },
+  { name:'실현가능성',          description:'현실적 실행 가능 여부',            max_score:15 },
   { name:'AI활용 및 설계 표현', description:'AI 도구 활용과 설계 시각화',       max_score:15 },
   { name:'포스터전달력',        description:'메시지 전달의 명확성과 디자인',    max_score:15 },
+  { name:'발표력',              description:'발표 내용의 전달력과 자신감',       max_score:15 },
 ];
 function gaAddCriteriaRow(name='', description='', max_score=20) {
   const list = document.getElementById('gaCriteriaList');
@@ -631,17 +635,23 @@ function gaShowResultsData(results) {
   const maxScore = gaMaxTotalScore || 5;
   list.innerHTML = results.map((r, i) => {
     const avg = r.avg_score || 0;
+    const finalScore = r.final_score != null ? r.final_score : avg;
+    const participationScore = r.participation_score || 0;
+    const participationRate = r.participation_rate || 0;
+    const voteCount = r.vote_count || 0;
     let scoreHtml;
     if (gaHasCriteria) {
       const starCount = Math.max(0, Math.min(5, Math.round((avg / maxScore) * 5)));
       const starsStr = '⭐'.repeat(starCount) + '☆'.repeat(5 - starCount);
       scoreHtml = `<div class="gac-result-stars-row">${starsStr}</div>
-        <div class="gac-result-score">${avg} / ${maxScore}점</div>`;
+        <div class="gac-result-score">최종 ${finalScore}점</div>
+        <div class="gac-result-breakdown">평가 ${avg} + 참여보너스 ${participationScore}</div>`;
     } else {
       const s = Math.max(0, Math.min(5, Math.round(avg)));
       const starsStr = s > 0 ? '⭐'.repeat(s) + '☆'.repeat(5 - s) : '—';
       scoreHtml = `<div class="gac-result-stars-row">${starsStr}</div>
-        <div class="gac-result-score">평균 ⭐ ${avg}점</div>`;
+        <div class="gac-result-score">최종 ${finalScore}점</div>
+        <div class="gac-result-breakdown">평가 ${avg} + 참여보너스 ${participationScore}</div>`;
     }
     return `
       <div class="gac-result-item ${i<3?'rank'+(i+1):''}">
@@ -650,7 +660,8 @@ function gaShowResultsData(results) {
         <div class="gac-result-info">
           <div class="gac-result-title">${r.title||'작품 '+(r.order+1)}</div>
           ${scoreHtml}
-          <div class="gac-result-count">${r.vote_count}명 참여</div>
+          <div class="gac-result-count">👥 ${voteCount}명 참여</div>
+          <div class="gac-participation-bar"><div class="gac-participation-bar-fill" style="width:${participationRate}%"></div></div>
         </div>
       </div>`;
   }).join('');

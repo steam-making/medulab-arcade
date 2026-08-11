@@ -3139,7 +3139,7 @@ def api_gallery_join(request):
 
 
 def api_gallery_state(request):
-    from .models import GalleryRoom, GalleryVote, GalleryCriteria
+    from .models import GalleryRoom, GalleryVote, GalleryCriteria, GalleryMember
     from django.db.models import Avg, Count
     room_id = request.GET.get('room_id')
     try:
@@ -3202,6 +3202,8 @@ def api_gallery_state(request):
 
     results = None
     if room.status == 'done':
+        PARTICIPATION_MAX = 10
+        total_members = GalleryMember.objects.filter(room=room).count()
         results = []
         for poster in room.posters.all():
             if has_criteria:
@@ -3216,15 +3218,21 @@ def api_gallery_state(request):
                 agg = poster.votes.filter(criteria__isnull=True).aggregate(avg=Avg('score'), count=Count('id'))
                 vote_count = agg['count'] or 0
                 total = round(agg['avg'] or 0, 1)
+            participation_rate = min(vote_count / max(1, total_members), 1.0)
+            participation_score = round(participation_rate * PARTICIPATION_MAX, 1)
+            final_score = round(total + participation_score, 1)
             results.append({
                 'id': poster.id,
                 'title': poster.title,
                 'image_url': poster.image.url,
                 'vote_count': vote_count,
                 'avg_score': round(total, 1),
+                'participation_score': participation_score,
+                'participation_rate': round(participation_rate * 100),
+                'final_score': final_score,
                 'order': poster.order,
             })
-        results.sort(key=lambda x: (-x['avg_score'], -x['vote_count']))
+        results.sort(key=lambda x: (-x['final_score'], -x['vote_count']))
 
     criteria_info = [
         {'id': c.id, 'name': c.name, 'description': c.description, 'max_score': c.max_score}

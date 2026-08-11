@@ -19,65 +19,65 @@
     color:#fff; font-size:12px; font-weight:bold; padding:4px 14px;
     border-radius:999px; margin-bottom:14px;
   }
-  .sf-hero h1 { font-size:22px; font-weight:900; margin:0 0 6px; color:var(--ink); }
-  .sf-hero p { font-size:13px; color:#7a7498; margin:0; }
+  .sf-hero h1 { font-size:26px; font-weight:900; margin:0 0 6px; color:var(--ink); }
+  .sf-hero p { font-size:15px; color:#7a7498; margin:0; }
 
   .sf-card {
-    background:#fff; border-radius:20px; padding:22px 20px;
+    background:#fff; border-radius:20px; padding:24px 22px;
     box-shadow:0 4px 18px rgba(46,204,113,.1); border:1.5px solid #d4f5e2;
-    margin-bottom:16px;
+    margin-bottom:18px;
   }
   .sf-section-title {
-    font-size:14px; font-weight:900; color:var(--teal); margin:0 0 14px;
+    font-size:16px; font-weight:900; color:var(--teal); margin:0 0 16px;
     display:flex; align-items:center; gap:6px;
   }
   .sf-name-input {
-    width:100%; padding:12px 14px; border:1.5px solid #d4f5e2; border-radius:12px;
-    font-size:15px; font-family:inherit; box-sizing:border-box;
+    width:100%; padding:14px 16px; border:1.5px solid #d4f5e2; border-radius:12px;
+    font-size:17px; font-family:inherit; box-sizing:border-box;
     outline:none; transition:border-color .2s;
   }
   .sf-name-input:focus { border-color:var(--green); }
   .sf-name-row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
   .sf-grade-select {
-    padding:12px 14px; border:1.5px solid #d4f5e2; border-radius:12px;
-    font-size:15px; font-family:inherit; outline:none; background:#fff;
+    padding:14px 16px; border:1.5px solid #d4f5e2; border-radius:12px;
+    font-size:17px; font-family:inherit; outline:none; background:#fff;
     cursor:pointer; transition:border-color .2s; white-space:nowrap;
   }
   .sf-grade-select:focus { border-color:var(--green); }
 
   /* 별점 공통 */
   .sf-star-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:2px; }
-  .sf-star-num { font-size:11px; font-weight:800; color:#aaa; }
-  .sf-stars { display:flex; gap:6px; margin-top:4px; }
+  .sf-star-num { font-size:13px; font-weight:800; color:#aaa; }
+  .sf-stars { display:flex; gap:8px; margin-top:6px; }
   .sf-star {
-    font-size:28px; cursor:pointer; opacity:.35; transition:opacity .15s, transform .15s;
+    font-size:36px; cursor:pointer; opacity:.35; transition:opacity .15s, transform .15s;
     user-select:none;
   }
   .sf-star.on { opacity:1; }
   .sf-star:hover { transform:scale(1.15); }
 
   /* 전체 만족도 */
-  .sf-overall-label { font-size:13px; color:#7a7498; margin-bottom:8px; }
-  .sf-overall-hint { font-size:12px; color:#aaa; margin-top:6px; min-height:18px; }
+  .sf-overall-label { font-size:15px; color:#7a7498; margin-bottom:8px; }
+  .sf-overall-hint { font-size:15px; color:#555; margin-top:8px; min-height:22px; font-weight:700; }
 
   /* 차시별 */
-  .sf-session-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f0f0f0; }
+  .sf-session-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #f0f0f0; }
   .sf-session-row:last-child { border-bottom:none; }
-  .sf-session-num { min-width:24px; height:24px; border-radius:8px; background:var(--green);
-    color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .sf-session-name { font-size:13px; font-weight:700; flex:1; color:var(--ink); min-width:0; }
+  .sf-session-num { min-width:28px; height:28px; border-radius:8px; background:var(--green);
+    color:#fff; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sf-session-name { font-size:15px; font-weight:700; flex:1; color:var(--ink); min-width:0; }
   .sf-session-stars { display:flex; gap:4px; }
   .sf-session-star-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:1px; }
-  .sf-session-star-num { font-size:10px; font-weight:800; color:#bbb; }
-  .sf-session-star { font-size:22px; cursor:pointer; opacity:.3; transition:opacity .15s; user-select:none; }
+  .sf-session-star-num { font-size:11px; font-weight:800; color:#bbb; }
+  .sf-session-star { font-size:26px; cursor:pointer; opacity:.3; transition:opacity .15s; user-select:none; }
   .sf-session-star.on { opacity:1; }
 
   /* 체크박스 그리드 */
-  .sf-checks { display:flex; flex-wrap:wrap; gap:8px; }
+  .sf-checks { display:flex; flex-wrap:wrap; gap:10px; }
   .sf-check-label {
-    display:flex; align-items:center; gap:6px; padding:7px 13px;
+    display:flex; align-items:center; gap:6px; padding:10px 16px;
     border:1.5px solid #d4f5e2; border-radius:20px; cursor:pointer;
-    font-size:12px; font-weight:700; color:#5a7a65; background:#f8fdf9;
+    font-size:14px; font-weight:700; color:#5a7a65; background:#f8fdf9;
     transition:all .15s;
   }
   .sf-check-label:hover { border-color:var(--green); background:#e8f8f0; }
@@ -85,35 +85,35 @@
   .sf-check-label.checked { border-color:var(--teal); background:#d4f5e2; color:var(--teal); }
 
   /* 라디오 */
-  .sf-radios { display:flex; flex-direction:column; gap:8px; }
+  .sf-radios { display:flex; flex-direction:column; gap:10px; }
   .sf-radio-label {
-    display:flex; align-items:center; gap:10px; padding:11px 14px;
+    display:flex; align-items:center; gap:12px; padding:14px 16px;
     border:1.5px solid #d4f5e2; border-radius:12px; cursor:pointer;
-    font-size:13px; font-weight:700; color:#5a7a65; background:#f8fdf9;
+    font-size:15px; font-weight:700; color:#5a7a65; background:#f8fdf9;
     transition:all .15s;
   }
   .sf-radio-label:hover { border-color:var(--green); background:#e8f8f0; }
   .sf-radio-label input { display:none; }
   .sf-radio-label.checked { border-color:var(--teal); background:#d4f5e2; color:var(--teal); }
   .sf-radio-dot {
-    width:16px; height:16px; border-radius:50%; border:2px solid #aaa;
+    width:20px; height:20px; border-radius:50%; border:2px solid #aaa;
     flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s;
   }
   .sf-radio-label.checked .sf-radio-dot { border-color:var(--teal); background:var(--teal); }
-  .sf-radio-dot::after { content:''; width:6px; height:6px; border-radius:50%; background:#fff; }
+  .sf-radio-dot::after { content:''; width:8px; height:8px; border-radius:50%; background:#fff; }
 
   /* 텍스트에리아 */
   .sf-textarea {
-    width:100%; padding:12px 14px; border:1.5px solid #d4f5e2; border-radius:12px;
-    font-size:13px; font-family:inherit; line-height:1.7; resize:vertical;
-    box-sizing:border-box; outline:none; transition:border-color .2s; min-height:80px;
+    width:100%; padding:14px 16px; border:1.5px solid #d4f5e2; border-radius:12px;
+    font-size:15px; font-family:inherit; line-height:1.8; resize:vertical;
+    box-sizing:border-box; outline:none; transition:border-color .2s; min-height:90px;
   }
   .sf-textarea:focus { border-color:var(--green); }
 
   /* 제출 버튼 */
   .sf-submit-btn {
-    width:100%; padding:16px; border:none; border-radius:16px; cursor:pointer;
-    font-size:16px; font-weight:900; color:#fff;
+    width:100%; padding:18px; border:none; border-radius:16px; cursor:pointer;
+    font-size:18px; font-weight:900; color:#fff;
     background:linear-gradient(120deg,var(--green),#3FA9F5);
     box-shadow:0 4px 16px rgba(46,204,113,.35); transition:opacity .2s, transform .2s;
     margin-top:8px;

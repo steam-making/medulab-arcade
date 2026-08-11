@@ -87,6 +87,17 @@
   .sr-toggle { background:none; border:1.5px solid #d4f5e2; border-radius:10px; padding:7px 16px;
     font-size:12px; font-weight:800; color:var(--teal); cursor:pointer; margin-top:10px; }
   .sr-toggle:hover { background:#e8f8f0; }
+
+  /* 의견 모아보기 */
+  .sr-comment-list { display:flex; flex-direction:column; gap:8px; }
+  .sr-comment-item {
+    font-size:14px; color:#444; line-height:1.7; background:#f0fff6;
+    border-left:3px solid var(--green); border-radius:0 10px 10px 0;
+    padding:10px 14px;
+  }
+  .sr-comment-item.bad {
+    background:#fff8f0; border-left-color:#e67e22;
+  }
 </style>
 {% endblock %}
 
@@ -274,31 +285,18 @@
     </div>
   </div>
 
-  <!-- 개별 응답 -->
-  <div class="sr-card">
-    <div class="sr-card-title">📝 개별 응답 ({{ total }}명)</div>
-    <div id="srResponses">
-      {% for r in responses %}
-      <div class="sr-response-item">
-        <div class="sr-resp-header">
-          <div class="sr-resp-name">{{ r.respondent_name }}{% if r.respondent_school %} <span style="font-size:12px;font-weight:700;color:#3FA9F5;background:#e8f4ff;padding:2px 8px;border-radius:8px;margin-left:4px;">{{ r.respondent_school }}</span>{% endif %}{% if r.respondent_grade %} <span style="font-size:12px;font-weight:700;color:#7a7498;background:#f0fff6;padding:2px 8px;border-radius:8px;margin-left:2px;">{{ r.respondent_grade }}</span>{% endif %}</div>
-          <div class="sr-resp-stars">{% for i in "12345" %}{% if forloop.counter <= r.overall_score %}⭐{% else %}☆{% endif %}{% endfor %}</div>
-          <div class="sr-resp-date">{{ r.created_at|date:"m/d H:i" }}</div>
-        </div>
-        <div class="sr-resp-grid">
-          <div class="sr-resp-field"><strong>재참여 의향</strong>{{ r.attend_again|default:"—" }}</div>
-          <div class="sr-resp-field"><strong>추천 의향</strong>{{ r.recommend|default:"—" }}</div>
-          {% if r.favorite_sessions %}<div class="sr-resp-field"><strong>재미있었던 차시</strong>{{ r.favorite_sessions|join:", " }}차시</div>{% endif %}
-          {% if r.hardest_sessions %}<div class="sr-resp-field"><strong>어려웠던 차시</strong>{{ r.hardest_sessions|join:", " }}차시</div>{% endif %}
-          {% if r.motivations %}<div class="sr-resp-field" style="grid-column:1/-1"><strong>참여 동기</strong>{{ r.motivations|join:" · " }}</div>{% endif %}
-          {% if r.ai_interests %}<div class="sr-resp-field" style="grid-column:1/-1"><strong>배우고 싶은 AI 분야</strong>{{ r.ai_interests|join:" · " }}</div>{% endif %}
-        </div>
-        {% if r.good_points %}<div class="sr-resp-comment"><div class="sr-resp-comment-label">💚 좋았던 점</div>{{ r.good_points }}</div>{% endif %}
-        {% if r.bad_points %}<div class="sr-resp-comment" style="background:#fff8f0"><div class="sr-resp-comment-label" style="color:#e67e22">💭 아쉬웠던 점</div>{{ r.bad_points }}</div>{% endif %}
-      </div>
-      {% endfor %}
-    </div>
+  <!-- 좋았던 점 모아보기 -->
+  <div class="sr-card" id="srGoodCard" style="display:none">
+    <div class="sr-card-title">💚 좋았던 점 모아보기</div>
+    <div class="sr-comment-list" id="srGoodList"></div>
   </div>
+
+  <!-- 아쉬웠던 점 모아보기 -->
+  <div class="sr-card" id="srBadCard" style="display:none">
+    <div class="sr-card-title">💭 아쉬웠던 점 모아보기</div>
+    <div class="sr-comment-list" id="srBadList"></div>
+  </div>
+
   {% endif %}
 </div>
 
@@ -361,5 +359,25 @@ aiInterestOptions.forEach((opt, i) => {
   if(bar) bar.style.width=(total>0?Math.round(cnt/total*100):0)+'%';
   if(cntEl) cntEl.textContent=cnt+'명';
 });
+
+// 좋았던 점 / 아쉬웠던 점 모아보기
+const goodList = document.getElementById('srGoodList');
+const badList = document.getElementById('srBadList');
+responses.forEach(r => {
+  if(r.good_points && goodList) {
+    const el = document.createElement('div');
+    el.className = 'sr-comment-item';
+    el.textContent = r.good_points;
+    goodList.appendChild(el);
+  }
+  if(r.bad_points && badList) {
+    const el = document.createElement('div');
+    el.className = 'sr-comment-item bad';
+    el.textContent = r.bad_points;
+    badList.appendChild(el);
+  }
+});
+if(goodList && goodList.children.length > 0) document.getElementById('srGoodCard').style.display = '';
+if(badList && badList.children.length > 0) document.getElementById('srBadCard').style.display = '';
 </script>
 {% endblock %}

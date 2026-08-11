@@ -3452,7 +3452,9 @@ def survey_detail(request, slug):
             {'overall_score': r.overall_score, 'session_scores': r.session_scores,
              'favorite_sessions': r.favorite_sessions, 'hardest_sessions': r.hardest_sessions,
              'ai_interests': r.ai_interests or [],
-             'grade': r.respondent_grade}
+             'grade': r.respondent_grade,
+             'good_points': r.good_points or '',
+             'bad_points': r.bad_points or ''}
             for r in responses
         ])
         sessions_js = _json.dumps([s['num'] for s in sessions])

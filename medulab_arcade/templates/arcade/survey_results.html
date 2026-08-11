@@ -259,7 +259,7 @@
       {% for r in responses %}
       <div class="sr-response-item">
         <div class="sr-resp-header">
-          <div class="sr-resp-name">{{ r.respondent_name }}</div>
+          <div class="sr-resp-name">{{ r.respondent_name }}{% if r.respondent_grade %} <span style="font-size:12px;font-weight:700;color:#7a7498;background:#f0fff6;padding:2px 8px;border-radius:8px;margin-left:4px;">{{ r.respondent_grade }}</span>{% endif %}</div>
           <div class="sr-resp-stars">{% for i in "12345" %}{% if forloop.counter <= r.overall_score %}⭐{% else %}☆{% endif %}{% endfor %}</div>
           <div class="sr-resp-date">{{ r.created_at|date:"m/d H:i" }}</div>
         </div>
@@ -268,6 +268,7 @@
           <div class="sr-resp-field"><strong>추천 의향</strong>{{ r.recommend|default:"—" }}</div>
           {% if r.favorite_sessions %}<div class="sr-resp-field"><strong>재미있었던 차시</strong>{{ r.favorite_sessions|join:", " }}차시</div>{% endif %}
           {% if r.hardest_sessions %}<div class="sr-resp-field"><strong>어려웠던 차시</strong>{{ r.hardest_sessions|join:", " }}차시</div>{% endif %}
+          {% if r.ai_interests %}<div class="sr-resp-field" style="grid-column:1/-1"><strong>배우고 싶은 AI 분야</strong>{{ r.ai_interests|join:" · " }}</div>{% endif %}
         </div>
         {% if r.good_points %}<div class="sr-resp-comment"><div class="sr-resp-comment-label">💚 좋았던 점</div>{{ r.good_points }}</div>{% endif %}
         {% if r.bad_points %}<div class="sr-resp-comment" style="background:#fff8f0"><div class="sr-resp-comment-label" style="color:#e67e22">💭 아쉬웠던 점</div>{{ r.bad_points }}</div>{% endif %}
@@ -285,7 +286,7 @@ const sessionNums = {{ sessions_js|safe }};
 const sessionAvgs = {{ session_avgs_json|safe }};
 const favDist = {{ fav_counts_json|safe }};
 const hardDist = {{ hard_counts_json|safe }};
-const aiInterestOptions = {{ ai_interest_options|safe }};
+const aiInterestOptions = {{ ai_interest_options_json|safe }};
 const aiInterestCounts = {{ ai_interest_counts_json|safe }};
 
 // 전체 만족도 분포

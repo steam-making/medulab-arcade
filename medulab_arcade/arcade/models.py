@@ -913,6 +913,7 @@ class SatisfactionSurvey(models.Model):
 class SatisfactionResponse(models.Model):
     survey = models.ForeignKey(SatisfactionSurvey, on_delete=models.CASCADE, related_name='responses')
     respondent_name = models.CharField('이름', max_length=30)
+    respondent_grade = models.CharField('학년', max_length=20, blank=True)
     session_key = models.CharField('세션키', max_length=100)
     overall_score = models.IntegerField('전체 만족도')
     session_scores = models.JSONField('차시별 만족도', default=dict)

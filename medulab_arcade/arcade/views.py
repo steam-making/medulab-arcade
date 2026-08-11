@@ -3423,7 +3423,9 @@ def survey_detail(request, slug):
         import json as _json
         responses_json = _json.dumps([
             {'overall_score': r.overall_score, 'session_scores': r.session_scores,
-             'favorite_sessions': r.favorite_sessions, 'hardest_sessions': r.hardest_sessions}
+             'favorite_sessions': r.favorite_sessions, 'hardest_sessions': r.hardest_sessions,
+             'ai_interests': r.ai_interests or [],
+             'grade': r.respondent_grade}
             for r in responses
         ])
         sessions_js = _json.dumps([s['num'] for s in sessions])
@@ -3431,6 +3433,7 @@ def survey_detail(request, slug):
         fav_counts_json = _json.dumps(fav_counts)
         hard_counts_json = _json.dumps(hard_counts)
         ai_interest_counts_json = _json.dumps(ai_interest_counts)
+        ai_interest_options_json = _json.dumps(AI_INTEREST_OPTIONS)
         return render(request, 'arcade/survey_results.html', {
             'survey': survey, 'responses': responses, 'total': total,
             'total_students': total_students,
@@ -3445,6 +3448,7 @@ def survey_detail(request, slug):
             'fav_counts_json': fav_counts_json,
             'hard_counts_json': hard_counts_json,
             'ai_interest_counts_json': ai_interest_counts_json,
+            'ai_interest_options_json': ai_interest_options_json,
         })
 
     # 학생: 날짜 체크
@@ -3495,6 +3499,7 @@ def api_survey_submit(request, slug):
     name = str(data.get('name', '')).strip()
     if not name:
         return JsonResponse({'ok': False, 'error': '이름을 입력해주세요.'})
+    grade = str(data.get('grade', '')).strip()
     overall_score = int(data.get('overall_score', 0))
     if not (1 <= overall_score <= 5):
         return JsonResponse({'ok': False, 'error': '전체 만족도를 선택해주세요.'})
@@ -3502,7 +3507,7 @@ def api_survey_submit(request, slug):
     session_scores = {str(s['num']): int(data.get(f'session_{s["num"]}', 0))
                       for s in sessions if data.get(f'session_{s["num"]}')}
     SatisfactionResponse.objects.create(
-        survey=survey, respondent_name=name, session_key=session_key,
+        survey=survey, respondent_name=name, respondent_grade=grade, session_key=session_key,
         overall_score=overall_score, session_scores=session_scores,
         favorite_sessions=data.get('favorite_sessions', []),
         hardest_sessions=data.get('hardest_sessions', []),

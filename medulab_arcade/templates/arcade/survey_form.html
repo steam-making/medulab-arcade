@@ -37,6 +37,13 @@
     outline:none; transition:border-color .2s;
   }
   .sf-name-input:focus { border-color:var(--green); }
+  .sf-name-row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
+  .sf-grade-select {
+    padding:12px 14px; border:1.5px solid #d4f5e2; border-radius:12px;
+    font-size:15px; font-family:inherit; outline:none; background:#fff;
+    cursor:pointer; transition:border-color .2s; white-space:nowrap;
+  }
+  .sf-grade-select:focus { border-color:var(--green); }
 
   /* 별점 공통 */
   .sf-star-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:2px; }
@@ -155,10 +162,21 @@
 
   <div id="sfForm">
 
-    <!-- 이름 -->
+    <!-- 이름 + 학년 -->
     <div class="sf-card">
-      <div class="sf-section-title">👤 이름을 입력해주세요</div>
-      <input class="sf-name-input" id="sfName" type="text" placeholder="이름 입력" maxlength="20" />
+      <div class="sf-section-title">👤 이름과 학년을 입력해주세요</div>
+      <div class="sf-name-row">
+        <input class="sf-name-input" id="sfName" type="text" placeholder="이름 입력" maxlength="20" />
+        <select class="sf-grade-select" id="sfGrade">
+          <option value="">학년 선택</option>
+          <option value="1학년">1학년</option>
+          <option value="2학년">2학년</option>
+          <option value="3학년">3학년</option>
+          <option value="4학년">4학년</option>
+          <option value="5학년">5학년</option>
+          <option value="6학년">6학년</option>
+        </select>
+      </div>
     </div>
 
     <!-- 전체 만족도 -->
@@ -318,7 +336,9 @@ async function sfSubmit() {
   const errEl = document.getElementById('sfError');
   errEl.textContent = '';
 
+  const grade = document.getElementById('sfGrade').value;
   if (!name) { errEl.textContent = '이름을 입력해주세요.'; return; }
+  if (!grade) { errEl.textContent = '학년을 선택해주세요.'; return; }
   if (!sfOverallScore) { errEl.textContent = '전체 만족도를 선택해주세요.'; return; }
 
   const favSessions = [...document.querySelectorAll('#sfFavChecks input:checked')].map(c => parseInt(c.value));
@@ -328,7 +348,7 @@ async function sfSubmit() {
   const recommendEl = document.querySelector('#sfRecommendRadios .sf-radio-label.checked input');
 
   const payload = {
-    name, overall_score: sfOverallScore,
+    name, grade, overall_score: sfOverallScore,
     favorite_sessions: favSessions, hardest_sessions: hardSessions,
     attend_again: attendEl ? attendEl.value : '',
     recommend: recommendEl ? recommendEl.value : '',

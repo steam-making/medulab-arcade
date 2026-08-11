@@ -69,7 +69,7 @@
   .sf-question-text { font-size:15px; font-weight:700; color:var(--ink); line-height:1.55; }
   .sf-question-scale { display:flex; gap:6px; }
   .sf-q-star-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; flex:1; }
-  .sf-q-label { font-size:10px; font-weight:800; color:#aaa; text-align:center; line-height:1.3; word-break:keep-all; }
+  .sf-q-label { font-size:13px; font-weight:800; color:#aaa; text-align:center; white-space:nowrap; }
   .sf-q-star { font-size:26px; cursor:pointer; opacity:.3; transition:opacity .15s; user-select:none; }
   .sf-q-star.on { opacity:1; }
   .sf-q-hint { font-size:13px; color:var(--teal); font-weight:700; margin-top:6px; min-height:18px; text-align:center; }
@@ -249,7 +249,7 @@
         </div>
         <div class="sf-question-scale" id="sfQ{{ q.num }}">
           <div class="sf-q-star-wrap">
-            <div class="sf-q-label">매우<br>그렇다</div>
+            <div class="sf-q-label">매우그렇다</div>
             <span class="sf-q-star" data-v="5" onclick="sfSetQuestion({{ q.num }},5)">⭐</span>
           </div>
           <div class="sf-q-star-wrap">
@@ -257,15 +257,15 @@
             <span class="sf-q-star" data-v="4" onclick="sfSetQuestion({{ q.num }},4)">⭐</span>
           </div>
           <div class="sf-q-star-wrap">
-            <div class="sf-q-label">보통<br>이다</div>
+            <div class="sf-q-label">보통이다</div>
             <span class="sf-q-star" data-v="3" onclick="sfSetQuestion({{ q.num }},3)">⭐</span>
           </div>
           <div class="sf-q-star-wrap">
-            <div class="sf-q-label">그렇지<br>않다</div>
+            <div class="sf-q-label">아니다</div>
             <span class="sf-q-star" data-v="2" onclick="sfSetQuestion({{ q.num }},2)">⭐</span>
           </div>
           <div class="sf-q-star-wrap">
-            <div class="sf-q-label">전혀<br>그렇지<br>않다</div>
+            <div class="sf-q-label">전혀아니다</div>
             <span class="sf-q-star" data-v="1" onclick="sfSetQuestion({{ q.num }},1)">⭐</span>
           </div>
         </div>

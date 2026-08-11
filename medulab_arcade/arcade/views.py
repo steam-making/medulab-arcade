@@ -3341,26 +3341,65 @@ SURVEY_CONFIGS = [
 ]
 
 
+def _get_survey_sessions(survey):
+    return survey.sessions_data if survey.sessions_data else CAMP_SESSIONS
+
+
 def survey_home(request):
     from .models import SatisfactionSurvey
     for cfg in SURVEY_CONFIGS:
-        SatisfactionSurvey.objects.get_or_create(slug=cfg['slug'], defaults={'title': cfg['title']})
+        survey, created = SatisfactionSurvey.objects.get_or_create(
+            slug=cfg['slug'],
+            defaults={
+                'title': cfg['title'],
+                'expected_count': cfg.get('total_students', 0),
+                'sessions_data': CAMP_SESSIONS,
+            }
+        )
+        if not created:
+            changed = False
+            if survey.expected_count == 0 and cfg.get('total_students'):
+                survey.expected_count = cfg['total_students']
+                changed = True
+            if not survey.sessions_data:
+                survey.sessions_data = CAMP_SESSIONS
+                changed = True
+            if changed:
+                survey.save()
+    from django.utils import timezone as tz
+    today = tz.localdate()
     surveys = SatisfactionSurvey.objects.filter(is_active=True).order_by('id')
-    return render(request, 'arcade/survey_home.html', {'surveys': surveys})
+    import json as _json
+    surveys_data = []
+    for s in surveys:
+        surveys_data.append({
+            'id': s.id, 'title': s.title, 'slug': s.slug,
+            'active_date': s.active_date.strftime('%Y-%m-%d') if s.active_date else '',
+            'expected_count': s.expected_count,
+            'response_count': s.responses.count(),
+            'sessions_data': s.sessions_data or CAMP_SESSIONS,
+        })
+    return render(request, 'arcade/survey_home.html', {
+        'surveys': surveys,
+        'surveys_json': _json.dumps(surveys_data),
+        'ai_interest_options': AI_INTEREST_OPTIONS,
+        'today': today,
+    })
 
 
 def survey_detail(request, slug):
     from .models import SatisfactionSurvey, SatisfactionResponse
+    from django.utils import timezone as tz
     survey = get_object_or_404(SatisfactionSurvey, slug=slug)
+    sessions = _get_survey_sessions(survey)
 
     if request.user.is_staff:
         responses = list(survey.responses.all().order_by('created_at'))
         total = len(responses)
-        cfg = next((c for c in SURVEY_CONFIGS if c['slug'] == survey.slug), {})
-        total_students = cfg.get('total_students', 0)
+        total_students = survey.expected_count
         avg_overall = round(sum(r.overall_score for r in responses) / total, 1) if total else 0
         session_avgs = {}
-        for s in CAMP_SESSIONS:
+        for s in sessions:
             scores = [r.session_scores.get(str(s['num'])) for r in responses if r.session_scores.get(str(s['num']))]
             session_avgs[s['num']] = round(sum(scores) / len(scores), 1) if scores else 0
         attend_counts = {}
@@ -3387,7 +3426,7 @@ def survey_detail(request, slug):
              'favorite_sessions': r.favorite_sessions, 'hardest_sessions': r.hardest_sessions}
             for r in responses
         ])
-        sessions_js = _json.dumps([s['num'] for s in CAMP_SESSIONS])
+        sessions_js = _json.dumps([s['num'] for s in sessions])
         session_avgs_json = _json.dumps(session_avgs)
         fav_counts_json = _json.dumps(fav_counts)
         hard_counts_json = _json.dumps(hard_counts)
@@ -3398,7 +3437,7 @@ def survey_detail(request, slug):
             'avg_overall': avg_overall, 'session_avgs': session_avgs,
             'attend_counts': attend_counts, 'recommend_counts': recommend_counts,
             'fav_counts': fav_counts, 'hard_counts': hard_counts,
-            'sessions': CAMP_SESSIONS,
+            'sessions': sessions,
             'ai_interest_options': AI_INTEREST_OPTIONS,
             'ai_interest_counts': ai_interest_counts,
             'responses_json': responses_json, 'sessions_js': sessions_js,
@@ -3406,6 +3445,14 @@ def survey_detail(request, slug):
             'fav_counts_json': fav_counts_json,
             'hard_counts_json': hard_counts_json,
             'ai_interest_counts_json': ai_interest_counts_json,
+        })
+
+    # 학생: 날짜 체크
+    today = tz.localdate()
+    if survey.active_date and survey.active_date != today:
+        return render(request, 'arcade/survey_form.html', {
+            'survey': survey, 'not_today': True,
+            'active_date': survey.active_date,
         })
 
     if not request.session.session_key:
@@ -3425,7 +3472,7 @@ def survey_detail(request, slug):
         {'value': '추천하지 않아요', 'label': '👎 추천하지 않아요'},
     ]
     return render(request, 'arcade/survey_form.html', {
-        'survey': survey, 'sessions': CAMP_SESSIONS, 'already_submitted': already,
+        'survey': survey, 'sessions': sessions, 'already_submitted': already,
         'attend_options': attend_options, 'recommend_options': recommend_options,
         'ai_interest_options': AI_INTEREST_OPTIONS,
     })
@@ -3434,7 +3481,11 @@ def survey_detail(request, slug):
 @require_POST
 def api_survey_submit(request, slug):
     from .models import SatisfactionSurvey, SatisfactionResponse
+    from django.utils import timezone as tz
     survey = get_object_or_404(SatisfactionSurvey, slug=slug)
+    # 날짜 체크
+    if survey.active_date and survey.active_date != tz.localdate():
+        return JsonResponse({'ok': False, 'error': '오늘은 만족도 조사 날이 아니에요.'})
     if not request.session.session_key:
         request.session.create()
     session_key = request.session.session_key
@@ -3447,8 +3498,9 @@ def api_survey_submit(request, slug):
     overall_score = int(data.get('overall_score', 0))
     if not (1 <= overall_score <= 5):
         return JsonResponse({'ok': False, 'error': '전체 만족도를 선택해주세요.'})
+    sessions = _get_survey_sessions(survey)
     session_scores = {str(s['num']): int(data.get(f'session_{s["num"]}', 0))
-                      for s in CAMP_SESSIONS if data.get(f'session_{s["num"]}')}
+                      for s in sessions if data.get(f'session_{s["num"]}')}
     SatisfactionResponse.objects.create(
         survey=survey, respondent_name=name, session_key=session_key,
         overall_score=overall_score, session_scores=session_scores,
@@ -3461,3 +3513,104 @@ def api_survey_submit(request, slug):
         bad_points=str(data.get('bad_points', '')),
     )
     return JsonResponse({'ok': True})
+
+
+@require_POST
+def api_survey_update(request, slug):
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    from .models import SatisfactionSurvey
+    survey = get_object_or_404(SatisfactionSurvey, slug=slug)
+    data = json.loads(request.body)
+    if 'title' in data:
+        survey.title = str(data['title']).strip()
+    if 'active_date' in data:
+        from datetime import date
+        try:
+            survey.active_date = date.fromisoformat(data['active_date']) if data['active_date'] else None
+        except ValueError:
+            return JsonResponse({'ok': False, 'error': '날짜 형식 오류'})
+    if 'expected_count' in data:
+        survey.expected_count = int(data['expected_count'] or 0)
+    if 'sessions_data' in data:
+        sessions = data['sessions_data']
+        if isinstance(sessions, list):
+            survey.sessions_data = [{'num': i + 1, 'title': str(s.get('title', '')).strip()}
+                                     for i, s in enumerate(sessions) if str(s.get('title', '')).strip()]
+    survey.save()
+    return JsonResponse({'ok': True})
+
+
+@require_POST
+def api_survey_clone(request, slug):
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    from .models import SatisfactionSurvey
+    import re as _re
+    source = get_object_or_404(SatisfactionSurvey, slug=slug)
+    data = json.loads(request.body)
+    title = str(data.get('title', '')).strip()
+    if not title:
+        return JsonResponse({'ok': False, 'error': '제목을 입력해주세요.'})
+    from datetime import date
+    active_date = None
+    if data.get('active_date'):
+        try:
+            active_date = date.fromisoformat(data['active_date'])
+        except ValueError:
+            return JsonResponse({'ok': False, 'error': '날짜 형식 오류'})
+    base_slug = _re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-') or 'survey'
+    new_slug = base_slug
+    counter = 2
+    while SatisfactionSurvey.objects.filter(slug=new_slug).exists():
+        new_slug = f'{base_slug}-{counter}'
+        counter += 1
+    new_survey = SatisfactionSurvey.objects.create(
+        title=title, slug=new_slug,
+        active_date=active_date,
+        expected_count=int(data.get('expected_count') or source.expected_count),
+        sessions_data=source.sessions_data or CAMP_SESSIONS,
+    )
+    return JsonResponse({'ok': True, 'slug': new_survey.slug, 'title': new_survey.title})
+
+
+@require_POST
+def api_survey_reset(request, slug):
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    from .models import SatisfactionSurvey
+    survey = get_object_or_404(SatisfactionSurvey, slug=slug)
+    deleted, _ = survey.responses.all().delete()
+    return JsonResponse({'ok': True, 'deleted': deleted})
+
+
+@require_POST
+def api_survey_create(request):
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': '권한 없음'}, status=403)
+    from .models import SatisfactionSurvey
+    import re as _re
+    from datetime import date
+    data = json.loads(request.body)
+    title = str(data.get('title', '')).strip()
+    if not title:
+        return JsonResponse({'ok': False, 'error': '제목을 입력해주세요.'})
+    active_date = None
+    if data.get('active_date'):
+        try:
+            active_date = date.fromisoformat(data['active_date'])
+        except ValueError:
+            return JsonResponse({'ok': False, 'error': '날짜 형식 오류'})
+    base_slug = _re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-') or 'survey'
+    new_slug = base_slug
+    counter = 2
+    while SatisfactionSurvey.objects.filter(slug=new_slug).exists():
+        new_slug = f'{base_slug}-{counter}'
+        counter += 1
+    survey = SatisfactionSurvey.objects.create(
+        title=title, slug=new_slug,
+        active_date=active_date,
+        expected_count=int(data.get('expected_count') or 0),
+        sessions_data=CAMP_SESSIONS,
+    )
+    return JsonResponse({'ok': True, 'slug': survey.slug, 'title': survey.title})

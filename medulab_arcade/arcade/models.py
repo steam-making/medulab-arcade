@@ -896,6 +896,9 @@ class SatisfactionSurvey(models.Model):
     title = models.CharField('제목', max_length=200)
     slug = models.SlugField('슬러그', max_length=100, unique=True)
     is_active = models.BooleanField('활성', default=True)
+    active_date = models.DateField('수업 날짜', null=True, blank=True)
+    expected_count = models.IntegerField('예상 참여 인원', default=0)
+    sessions_data = models.JSONField('차시 목록', default=list)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

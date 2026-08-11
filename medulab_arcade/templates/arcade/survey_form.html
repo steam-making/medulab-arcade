@@ -132,7 +132,14 @@
 <div class="sf-wrap">
   <div class="sf-back"><a href="{% url 'survey_home' %}">← 만족도 조사 목록으로</a></div>
 
-  {% if already_submitted %}
+  {% if not_today %}
+  <div class="sf-done" style="border-color:#d4e6ff; background:#f0f7ff;">
+    <div class="icon">📅</div>
+    <h2 style="color:#3FA9F5;">오늘은 조사 날이 아니에요!</h2>
+    <p>만족도 조사는 <strong>{{ active_date|date:"m월 d일" }}</strong>에 참여할 수 있어요.</p>
+  </div>
+
+  {% elif already_submitted %}
   <div class="sf-done">
     <div class="icon">✅</div>
     <h2>이미 참여하셨어요!</h2>

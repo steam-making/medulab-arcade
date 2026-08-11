@@ -5,44 +5,91 @@
 
 {% block extra_css %}
 <style>
-  :root { --teal:#2ecc71; --ink:#2E2A4A; }
-  body {
-    background: linear-gradient(150deg,#f0fff6 0%,#e8f8ff 50%,#f5f0ff 100%) !important;
-    color: var(--ink);
-  }
+  :root { --teal:#2ecc71; --ink:#2E2A4A; --purple:#8C6BFA; --blue:#3FA9F5; }
+  body { background:linear-gradient(150deg,#f0fff6 0%,#e8f8ff 50%,#f5f0ff 100%) !important; color:var(--ink); }
   .sv-wrap { max-width:860px; margin:0 auto; padding:40px 20px 80px; }
-  .sv-hero { text-align:center; padding:0 0 36px; }
-  .sv-hero .badge {
-    display:inline-block; background:linear-gradient(120deg,#2ecc71,#3FA9F5);
-    color:#fff; font-size:13px; font-weight:bold; letter-spacing:1px;
-    padding:5px 16px; border-radius:999px; margin-bottom:16px;
-  }
-  .sv-hero h1 { font-size:30px; font-weight:900; margin:0 0 10px; color:var(--ink); }
-  .sv-hero p { font-size:14px; color:#7a7498; margin:0; }
-  .sv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; }
-  .sv-card {
-    background:#fff; border-radius:24px; padding:28px 24px;
-    box-shadow:0 6px 24px rgba(46,204,113,.12);
-    border:2px solid rgba(46,204,113,.15);
-    text-decoration:none; color:var(--ink);
-    display:block; transition:transform .2s, box-shadow .2s;
-  }
-  .sv-card:hover { transform:translateY(-5px); box-shadow:0 14px 36px rgba(46,204,113,.22); }
-  .sv-card-icon {
-    width:56px; height:56px; border-radius:18px; font-size:28px;
-    display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(135deg,#d4f5e2,#a8edca); margin-bottom:16px;
-  }
-  .sv-card h2 { font-size:18px; font-weight:800; margin:0 0 8px; }
-  .sv-card p { font-size:13px; color:#7a7498; margin:0 0 16px; line-height:1.6; }
-  .sv-btn {
-    display:inline-block; padding:9px 20px; border-radius:12px; font-size:13px; font-weight:800;
-    border:none; cursor:pointer;
-  }
-  .sv-btn-student { background:linear-gradient(120deg,#2ecc71,#27ae60); color:#fff; }
-  .sv-btn-admin { background:linear-gradient(120deg,#8C6BFA,#3FA9F5); color:#fff; }
   .sv-back { margin-bottom:24px; }
-  .sv-back a { color:#8C6BFA; font-size:14px; font-weight:700; text-decoration:none; }
+  .sv-back a { color:var(--purple); font-size:14px; font-weight:700; text-decoration:none; }
+  .sv-hero { text-align:center; padding:0 0 32px; }
+  .sv-hero .badge { display:inline-block; background:linear-gradient(120deg,#2ecc71,#3FA9F5); color:#fff; font-size:13px; font-weight:bold; letter-spacing:1px; padding:5px 16px; border-radius:999px; margin-bottom:16px; }
+  .sv-hero h1 { font-size:28px; font-weight:900; margin:0 0 8px; color:var(--ink); }
+  .sv-hero p { font-size:14px; color:#7a7498; margin:0; }
+
+  /* 학생용 카드 */
+  .sv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; }
+  .sv-card { background:#fff; border-radius:24px; padding:28px 24px; box-shadow:0 6px 24px rgba(46,204,113,.12); border:2px solid rgba(46,204,113,.15); text-decoration:none; color:var(--ink); display:block; transition:transform .2s, box-shadow .2s; }
+  .sv-card:hover { transform:translateY(-5px); box-shadow:0 14px 36px rgba(46,204,113,.22); }
+  .sv-card.sv-inactive { opacity:.6; cursor:default; pointer-events:none; }
+  .sv-card-icon { width:56px; height:56px; border-radius:18px; font-size:28px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#d4f5e2,#a8edca); margin-bottom:16px; }
+  .sv-card h2 { font-size:18px; font-weight:800; margin:0 0 6px; }
+  .sv-card p { font-size:13px; color:#7a7498; margin:0 0 6px; line-height:1.6; }
+  .sv-card-date { font-size:12px; font-weight:700; color:#3FA9F5; margin-bottom:12px; }
+  .sv-btn { display:inline-block; padding:9px 20px; border-radius:12px; font-size:13px; font-weight:800; border:none; cursor:pointer; }
+  .sv-btn-student { background:linear-gradient(120deg,#2ecc71,#27ae60); color:#fff; }
+  .sv-btn-inactive { background:#e0e0e0; color:#999; }
+
+  /* 관리자 카드 */
+  .sv-admin-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .sv-admin-title { font-size:16px; font-weight:900; color:var(--ink); }
+  .sv-new-btn { background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; border:none; padding:10px 20px; border-radius:12px; font-size:13px; font-weight:800; cursor:pointer; }
+
+  .sv-admin-card { background:#fff; border-radius:20px; padding:20px 22px; box-shadow:0 4px 18px rgba(46,204,113,.1); border:1.5px solid #d4f5e2; margin-bottom:16px; }
+  .sv-admin-card-top { display:flex; align-items:flex-start; gap:14px; }
+  .sv-admin-icon { width:48px; height:48px; border-radius:14px; font-size:24px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#d4f5e2,#a8edca); flex-shrink:0; }
+  .sv-admin-info { flex:1; min-width:0; }
+  .sv-admin-name { font-size:16px; font-weight:900; color:var(--ink); margin-bottom:4px; }
+  .sv-admin-meta { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .sv-meta-chip { font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; }
+  .sv-meta-date { background:#e8f4ff; color:#3FA9F5; }
+  .sv-meta-nodate { background:#f5f5f5; color:#aaa; }
+  .sv-meta-count { background:#f0fff6; color:#27ae60; }
+
+  /* 완료율 바 */
+  .sv-progress-row { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .sv-progress-label { font-size:12px; font-weight:700; color:#7a7498; min-width:80px; }
+  .sv-progress-bar { flex:1; background:#e8f8f0; border-radius:999px; height:10px; overflow:hidden; }
+  .sv-progress-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--teal),var(--blue)); }
+  .sv-progress-num { font-size:12px; font-weight:800; color:var(--teal); min-width:52px; text-align:right; }
+
+  /* 액션 버튼 */
+  .sv-admin-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .sv-action-btn { padding:8px 14px; border-radius:10px; font-size:12px; font-weight:800; border:none; cursor:pointer; transition:opacity .15s; }
+  .sv-action-btn:hover { opacity:.85; }
+  .sv-btn-result { background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; text-decoration:none; display:inline-block; }
+  .sv-btn-edit { background:#f0fff6; color:var(--teal); border:1.5px solid #c3f5d8; }
+  .sv-btn-clone { background:#f0f4ff; color:var(--purple); border:1.5px solid #d8d0ff; }
+  .sv-btn-reset { background:#fff5f5; color:#e74c3c; border:1.5px solid #ffd5d5; }
+
+  /* 모달 공통 */
+  .sv-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
+  .sv-modal-overlay.open { display:flex; }
+  .sv-modal { background:#fff; border-radius:24px; padding:28px 26px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+  .sv-modal-title { font-size:18px; font-weight:900; color:var(--ink); margin:0 0 20px; }
+  .sv-modal-label { font-size:12px; font-weight:800; color:#7a7498; margin-bottom:6px; display:block; }
+  .sv-modal-input { width:100%; padding:11px 14px; border:1.5px solid #d4f5e2; border-radius:12px; font-size:14px; font-family:inherit; box-sizing:border-box; outline:none; }
+  .sv-modal-input:focus { border-color:var(--teal); }
+  .sv-modal-group { margin-bottom:14px; }
+  .sv-modal-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .sv-modal-actions { display:flex; gap:10px; margin-top:20px; }
+  .sv-modal-confirm { flex:1; padding:13px; border:none; border-radius:12px; font-size:14px; font-weight:900; cursor:pointer; background:linear-gradient(120deg,var(--teal),var(--blue)); color:#fff; }
+  .sv-modal-cancel { padding:13px 20px; border:1.5px solid #ddd; border-radius:12px; font-size:14px; font-weight:800; cursor:pointer; background:#fff; color:#666; }
+  .sv-modal-danger { background:linear-gradient(120deg,#e74c3c,#c0392b); }
+  .sv-modal-msg { font-size:13px; color:#e74c3c; font-weight:700; margin-top:8px; min-height:20px; }
+
+  /* 차시 편집 */
+  .sv-session-list { display:flex; flex-direction:column; gap:6px; margin-top:6px; }
+  .sv-session-item { display:flex; align-items:center; gap:8px; }
+  .sv-session-num-badge { min-width:24px; height:24px; border-radius:8px; background:var(--teal); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sv-session-input { flex:1; padding:8px 12px; border:1.5px solid #d4f5e2; border-radius:10px; font-size:13px; font-family:inherit; outline:none; }
+  .sv-session-input:focus { border-color:var(--teal); }
+  .sv-session-del { background:none; border:none; cursor:pointer; color:#e74c3c; font-size:16px; font-weight:900; padding:2px 6px; }
+  .sv-session-add { background:none; border:1.5px dashed #c3f5d8; border-radius:10px; padding:8px; font-size:13px; font-weight:700; color:var(--teal); cursor:pointer; width:100%; margin-top:4px; }
+  .sv-session-add:hover { background:#f0fff6; }
+
+  @media(max-width:600px) {
+    .sv-modal-row { grid-template-columns:1fr; }
+    .sv-admin-actions { flex-direction:column; }
+  }
 </style>
 {% endblock %}
 
@@ -52,23 +99,332 @@
   <div class="sv-hero">
     <div class="badge">📋 SATISFACTION SURVEY</div>
     <h1>만족도 조사</h1>
+    {% if user.is_staff %}
+    <p>관리자 모드 — 설문을 편집·복제·초기화할 수 있어요.</p>
+    {% else %}
     <p>참여한 캠프를 선택해서 만족도 조사에 참여해 주세요!</p>
+    {% endif %}
   </div>
+
+  {% if user.is_staff %}
+  <!-- ══════════ 관리자 뷰 ══════════ -->
+  <div class="sv-admin-header">
+    <div class="sv-admin-title">📋 설문 목록</div>
+    <button class="sv-new-btn" onclick="openNewModal()">＋ 새 설문 만들기</button>
+  </div>
+
+  <div id="svAdminList">
+    {% for survey in surveys %}
+    {% with rc=survey.responses.count %}
+    <div class="sv-admin-card" id="svCard{{ survey.slug|slugify }}">
+      <div class="sv-admin-card-top">
+        <div class="sv-admin-icon">📝</div>
+        <div class="sv-admin-info">
+          <div class="sv-admin-name">{{ survey.title }}</div>
+          <div class="sv-admin-meta">
+            {% if survey.active_date %}
+            <span class="sv-meta-chip sv-meta-date">📅 {{ survey.active_date|date:"Y년 m월 d일" }}</span>
+            {% else %}
+            <span class="sv-meta-chip sv-meta-nodate">📅 날짜 미설정</span>
+            {% endif %}
+            {% if survey.expected_count %}
+            <span class="sv-meta-chip sv-meta-count">👥 {{ survey.expected_count }}명</span>
+            {% endif %}
+          </div>
+          {% if survey.expected_count %}
+          <div class="sv-progress-row">
+            <span class="sv-progress-label">완료 현황</span>
+            <div class="sv-progress-bar">
+              <div class="sv-progress-fill" style="width:{% widthratio rc survey.expected_count 100 %}%"></div>
+            </div>
+            <span class="sv-progress-num">{{ rc }} / {{ survey.expected_count }}명</span>
+          </div>
+          {% else %}
+          <div style="font-size:12px;color:#7a7498;margin-bottom:12px;">응답 {{ rc }}명</div>
+          {% endif %}
+          <div class="sv-admin-actions">
+            <a href="{% url 'survey_detail' survey.slug %}" class="sv-action-btn sv-btn-result">📊 결과 보기</a>
+            <button class="sv-action-btn sv-btn-edit" onclick="openEditModal('{{ survey.slug }}')">✏️ 편집</button>
+            <button class="sv-action-btn sv-btn-clone" onclick="openCloneModal('{{ survey.slug }}')">📋 복제</button>
+            <button class="sv-action-btn sv-btn-reset" onclick="openResetModal('{{ survey.slug }}', '{{ survey.title }}')">🗑️ 초기화</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div style="text-align:center;color:#9a96b4;padding:40px;">등록된 설문이 없어요.</div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <!-- ══════════ 학생 뷰 ══════════ -->
   <div class="sv-grid">
     {% for survey in surveys %}
-    <a href="{% url 'survey_detail' survey.slug %}" class="sv-card">
+    <a href="{% url 'survey_detail' survey.slug %}"
+       class="sv-card {% if survey.active_date and survey.active_date != today %}sv-inactive{% endif %}">
       <div class="sv-card-icon">📝</div>
       <h2>{{ survey.title }}</h2>
-      <p>6가지 활동에 대한 만족도를 별점으로 평가하고 의견을 남겨주세요!</p>
-      {% if user.is_staff %}
-        <span class="sv-btn sv-btn-admin">📊 결과 보기</span>
+      {% if survey.active_date %}
+      <div class="sv-card-date">📅 {{ survey.active_date|date:"m월 d일" }}에 참여 가능</div>
+      {% endif %}
+      <p>5가지 활동에 대한 만족도를 별점으로 평가하고 의견을 남겨주세요!</p>
+      {% if survey.active_date and survey.active_date != today %}
+        <span class="sv-btn sv-btn-inactive">📅 수업일에 참여 가능</span>
       {% else %}
         <span class="sv-btn sv-btn-student">✏️ 참여하기</span>
       {% endif %}
     </a>
-    {% empty %}
-    <p style="text-align:center;color:#9a96b4;">등록된 만족도 조사가 없어요.</p>
     {% endfor %}
   </div>
+  {% endif %}
 </div>
+
+{% if user.is_staff %}
+<!-- ══════ 편집 모달 ══════ -->
+<div class="sv-modal-overlay" id="editModal">
+  <div class="sv-modal">
+    <div class="sv-modal-title">✏️ 설문 편집</div>
+    <div class="sv-modal-group">
+      <label class="sv-modal-label">설문 제목</label>
+      <input class="sv-modal-input" id="editTitle" type="text" placeholder="설문 제목" />
+    </div>
+    <div class="sv-modal-row">
+      <div class="sv-modal-group">
+        <label class="sv-modal-label">수업 날짜</label>
+        <input class="sv-modal-input" id="editDate" type="date" />
+      </div>
+      <div class="sv-modal-group">
+        <label class="sv-modal-label">예상 참여 인원</label>
+        <input class="sv-modal-input" id="editCount" type="number" min="0" placeholder="0" />
+      </div>
+    </div>
+    <div class="sv-modal-group">
+      <label class="sv-modal-label">차시 목록</label>
+      <div class="sv-session-list" id="editSessionList"></div>
+      <button class="sv-session-add" onclick="addEditSession()">＋ 차시 추가</button>
+    </div>
+    <div class="sv-modal-msg" id="editMsg"></div>
+    <div class="sv-modal-actions">
+      <button class="sv-modal-cancel" onclick="closeModal('editModal')">취소</button>
+      <button class="sv-modal-confirm" onclick="submitEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ 복제 모달 ══════ -->
+<div class="sv-modal-overlay" id="cloneModal">
+  <div class="sv-modal">
+    <div class="sv-modal-title">📋 설문 복제</div>
+    <div class="sv-modal-group">
+      <label class="sv-modal-label">새 설문 제목</label>
+      <input class="sv-modal-input" id="cloneTitle" type="text" placeholder="새 설문 제목" />
+    </div>
+    <div class="sv-modal-row">
+      <div class="sv-modal-group">
+        <label class="sv-modal-label">수업 날짜</label>
+        <input class="sv-modal-input" id="cloneDate" type="date" />
+      </div>
+      <div class="sv-modal-group">
+        <label class="sv-modal-label">예상 참여 인원</label>
+        <input class="sv-modal-input" id="cloneCount" type="number" min="0" placeholder="0" />
+      </div>
+    </div>
+    <div class="sv-modal-msg" id="cloneMsg"></div>
+    <div class="sv-modal-actions">
+      <button class="sv-modal-cancel" onclick="closeModal('cloneModal')">취소</button>
+      <button class="sv-modal-confirm" onclick="submitClone()">복제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ 새 설문 모달 ══════ -->
+<div class="sv-modal-overlay" id="newModal">
+  <div class="sv-modal">
+    <div class="sv-modal-title">＋ 새 설문 만들기</div>
+    <div class="sv-modal-group">
+      <label class="sv-modal-label">설문 제목</label>
+      <input class="sv-modal-input" id="newTitle" type="text" placeholder="예: AI그린탄소중립캠프(14일)" />
+    </div>
+    <div class="sv-modal-row">
+      <div class="sv-modal-group">
+        <label class="sv-modal-label">수업 날짜</label>
+        <input class="sv-modal-input" id="newDate" type="date" />
+      </div>
+      <div class="sv-modal-group">
+        <label class="sv-modal-label">예상 참여 인원</label>
+        <input class="sv-modal-input" id="newCount" type="number" min="0" placeholder="0" />
+      </div>
+    </div>
+    <div class="sv-modal-msg" id="newMsg"></div>
+    <div class="sv-modal-actions">
+      <button class="sv-modal-cancel" onclick="closeModal('newModal')">취소</button>
+      <button class="sv-modal-confirm" onclick="submitNew()">만들기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ 초기화 확인 모달 ══════ -->
+<div class="sv-modal-overlay" id="resetModal">
+  <div class="sv-modal">
+    <div class="sv-modal-title">🗑️ 결과 초기화</div>
+    <p style="font-size:14px;color:#555;line-height:1.7;" id="resetModalMsg"></p>
+    <div class="sv-modal-msg" id="resetMsg"></div>
+    <div class="sv-modal-actions">
+      <button class="sv-modal-cancel" onclick="closeModal('resetModal')">취소</button>
+      <button class="sv-modal-confirm sv-modal-danger" onclick="submitReset()">초기화</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+const surveysData = {{ surveys_json|safe }};
+
+let currentSlug = '';
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.sv-modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if(e.target === el) el.classList.remove('open'); });
+});
+
+/* ── 편집 ── */
+function openEditModal(slug) {
+  currentSlug = slug;
+  const s = surveysData.find(x => x.slug === slug);
+  if (!s) return;
+  document.getElementById('editTitle').value = s.title;
+  document.getElementById('editDate').value = s.active_date || '';
+  document.getElementById('editCount').value = s.expected_count || '';
+  document.getElementById('editMsg').textContent = '';
+  renderEditSessions(s.sessions_data || []);
+  openModal('editModal');
+}
+
+function renderEditSessions(sessions) {
+  const list = document.getElementById('editSessionList');
+  list.innerHTML = '';
+  sessions.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'sv-session-item';
+    row.innerHTML = `
+      <div class="sv-session-num-badge">${i+1}</div>
+      <input class="sv-session-input" value="${s.title || ''}" placeholder="차시 이름" />
+      <button class="sv-session-del" onclick="delEditSession(this)">✕</button>`;
+    list.appendChild(row);
+  });
+}
+
+function addEditSession() {
+  const list = document.getElementById('editSessionList');
+  const n = list.children.length + 1;
+  const row = document.createElement('div');
+  row.className = 'sv-session-item';
+  row.innerHTML = `
+    <div class="sv-session-num-badge">${n}</div>
+    <input class="sv-session-input" value="" placeholder="차시 이름" />
+    <button class="sv-session-del" onclick="delEditSession(this)">✕</button>`;
+  list.appendChild(row);
+  row.querySelector('input').focus();
+}
+
+function delEditSession(btn) {
+  btn.closest('.sv-session-item').remove();
+  document.querySelectorAll('#editSessionList .sv-session-num-badge').forEach((el,i) => el.textContent = i+1);
+}
+
+async function submitEdit() {
+  const title = document.getElementById('editTitle').value.trim();
+  const msg = document.getElementById('editMsg');
+  if (!title) { msg.textContent = '제목을 입력해주세요.'; return; }
+  const sessions = [...document.querySelectorAll('#editSessionList .sv-session-input')]
+    .map((el, i) => ({ num: i+1, title: el.value.trim() }))
+    .filter(s => s.title);
+  const res = await fetch(`/api/survey/${currentSlug}/update/`, {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body: JSON.stringify({
+      title,
+      active_date: document.getElementById('editDate').value || null,
+      expected_count: parseInt(document.getElementById('editCount').value || 0),
+      sessions_data: sessions,
+    })
+  });
+  const d = await res.json();
+  if (d.ok) { location.reload(); } else { msg.textContent = d.error || '오류가 발생했어요.'; }
+}
+
+/* ── 복제 ── */
+function openCloneModal(slug) {
+  currentSlug = slug;
+  const s = surveysData.find(x => x.slug === slug);
+  document.getElementById('cloneTitle').value = s ? s.title + ' (복사본)' : '';
+  document.getElementById('cloneDate').value = '';
+  document.getElementById('cloneCount').value = s ? s.expected_count || '' : '';
+  document.getElementById('cloneMsg').textContent = '';
+  openModal('cloneModal');
+}
+
+async function submitClone() {
+  const title = document.getElementById('cloneTitle').value.trim();
+  const msg = document.getElementById('cloneMsg');
+  if (!title) { msg.textContent = '제목을 입력해주세요.'; return; }
+  const res = await fetch(`/api/survey/${currentSlug}/clone/`, {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body: JSON.stringify({
+      title,
+      active_date: document.getElementById('cloneDate').value || null,
+      expected_count: parseInt(document.getElementById('cloneCount').value || 0),
+    })
+  });
+  const d = await res.json();
+  if (d.ok) { location.reload(); } else { msg.textContent = d.error || '오류가 발생했어요.'; }
+}
+
+/* ── 새 설문 ── */
+function openNewModal() {
+  document.getElementById('newTitle').value = '';
+  document.getElementById('newDate').value = '';
+  document.getElementById('newCount').value = '';
+  document.getElementById('newMsg').textContent = '';
+  openModal('newModal');
+}
+
+async function submitNew() {
+  const title = document.getElementById('newTitle').value.trim();
+  const msg = document.getElementById('newMsg');
+  if (!title) { msg.textContent = '제목을 입력해주세요.'; return; }
+  const res = await fetch('/api/survey/create/', {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body: JSON.stringify({
+      title,
+      active_date: document.getElementById('newDate').value || null,
+      expected_count: parseInt(document.getElementById('newCount').value || 0),
+    })
+  });
+  const d = await res.json();
+  if (d.ok) { location.reload(); } else { msg.textContent = d.error || '오류가 발생했어요.'; }
+}
+
+/* ── 초기화 ── */
+let resetSlug = '';
+function openResetModal(slug, title) {
+  resetSlug = slug;
+  document.getElementById('resetModalMsg').innerHTML =
+    `<strong>${title}</strong>의 모든 응답 데이터를 삭제합니다.<br>이 작업은 되돌릴 수 없어요. 정말 초기화할까요?`;
+  document.getElementById('resetMsg').textContent = '';
+  openModal('resetModal');
+}
+
+async function submitReset() {
+  const msg = document.getElementById('resetMsg');
+  const res = await fetch(`/api/survey/${resetSlug}/reset/`, {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body: JSON.stringify({})
+  });
+  const d = await res.json();
+  if (d.ok) { location.reload(); } else { msg.textContent = d.error || '오류가 발생했어요.'; }
+}
+</script>
+{% endif %}
 {% endblock %}

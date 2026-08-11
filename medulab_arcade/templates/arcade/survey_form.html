@@ -60,17 +60,26 @@
   .sf-overall-label { font-size:15px; color:#7a7498; margin-bottom:8px; }
   .sf-overall-hint { font-size:15px; color:#555; margin-top:8px; min-height:22px; font-weight:700; }
 
-  /* 차시별 */
-  .sf-session-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #f0f0f0; }
-  .sf-session-row:last-child { border-bottom:none; }
-  .sf-session-num { min-width:28px; height:28px; border-radius:8px; background:var(--green);
-    color:#fff; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .sf-session-name { font-size:15px; font-weight:700; flex:1; color:var(--ink); min-width:0; }
-  .sf-session-stars { display:flex; gap:4px; }
-  .sf-session-star-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:1px; }
-  .sf-session-star-num { font-size:11px; font-weight:800; color:#bbb; }
-  .sf-session-star { font-size:26px; cursor:pointer; opacity:.3; transition:opacity .15s; user-select:none; }
-  .sf-session-star.on { opacity:1; }
+  /* 설문 문항 */
+  .sf-question-row { padding:14px 0; border-bottom:1px solid #f0f0f0; }
+  .sf-question-row:last-child { border-bottom:none; }
+  .sf-question-header { display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; }
+  .sf-question-num { min-width:28px; height:28px; border-radius:8px; background:var(--green);
+    color:#fff; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
+  .sf-question-text { font-size:15px; font-weight:700; color:var(--ink); line-height:1.55; }
+  .sf-question-scale { display:flex; gap:6px; }
+  .sf-q-star-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; flex:1; }
+  .sf-q-label { font-size:10px; font-weight:800; color:#aaa; text-align:center; line-height:1.3; word-break:keep-all; }
+  .sf-q-star { font-size:26px; cursor:pointer; opacity:.3; transition:opacity .15s; user-select:none; }
+  .sf-q-star.on { opacity:1; }
+  .sf-q-hint { font-size:13px; color:var(--teal); font-weight:700; margin-top:6px; min-height:18px; text-align:center; }
+  /* 기타 입력 */
+  .sf-other-input {
+    width:100%; padding:11px 14px; border:1.5px solid #d4f5e2; border-radius:12px;
+    font-size:15px; font-family:inherit; box-sizing:border-box; outline:none;
+    margin-top:10px; transition:border-color .2s;
+  }
+  .sf-other-input:focus { border-color:var(--green); }
 
   /* 체크박스 그리드 */
   .sf-checks { display:flex; flex-wrap:wrap; gap:10px; }
@@ -190,6 +199,13 @@
           {{ opt }}
         </label>
         {% endfor %}
+        <label class="sf-check-label" id="sfMotivOtherLabel" onclick="sfToggleMotivOther(this)">
+          <input type="checkbox" value="기타" />
+          ✏️ 기타 직접 입력
+        </label>
+      </div>
+      <div id="sfMotivOtherWrap" style="display:none;">
+        <input class="sf-other-input" id="sfMotivOther" type="text" placeholder="기타 내용을 직접 입력해주세요" maxlength="50" />
       </div>
     </div>
 
@@ -208,21 +224,38 @@
       <div class="sf-overall-hint" id="sfOverallHint"></div>
     </div>
 
-    <!-- 차시별 만족도 -->
+    <!-- 만족도 설문 문항 -->
     <div class="sf-card">
-      <div class="sf-section-title">📚 차시별 만족도</div>
-      {% for s in sessions %}
-      <div class="sf-session-row">
-        <div class="sf-session-num">{{ s.num }}</div>
-        <div class="sf-session-name">{{ s.title }}</div>
-        <div class="sf-session-stars" id="sfSS{{ s.num }}">
-          {% for n in "12345" %}
-          <div class="sf-session-star-wrap">
-            <span class="sf-session-star-num">{{ n }}</span>
-            <span class="sf-session-star" data-n="{{ n }}" data-sid="{{ s.num }}" onclick="sfSetSession({{ s.num }},{{ n }})">⭐</span>
-          </div>
-          {% endfor %}
+      <div class="sf-section-title">📋 만족도 설문</div>
+      {% for q in survey_questions %}
+      <div class="sf-question-row">
+        <div class="sf-question-header">
+          <div class="sf-question-num">{{ q.num }}</div>
+          <div class="sf-question-text">{{ q.text }}</div>
         </div>
+        <div class="sf-question-scale" id="sfQ{{ q.num }}">
+          <div class="sf-q-star-wrap">
+            <div class="sf-q-label">전혀<br>그렇지<br>않다</div>
+            <span class="sf-q-star" onclick="sfSetQuestion({{ q.num }},1)">⭐</span>
+          </div>
+          <div class="sf-q-star-wrap">
+            <div class="sf-q-label">그렇지<br>않다</div>
+            <span class="sf-q-star" onclick="sfSetQuestion({{ q.num }},2)">⭐</span>
+          </div>
+          <div class="sf-q-star-wrap">
+            <div class="sf-q-label">보통<br>이다</div>
+            <span class="sf-q-star" onclick="sfSetQuestion({{ q.num }},3)">⭐</span>
+          </div>
+          <div class="sf-q-star-wrap">
+            <div class="sf-q-label">그렇다</div>
+            <span class="sf-q-star" onclick="sfSetQuestion({{ q.num }},4)">⭐</span>
+          </div>
+          <div class="sf-q-star-wrap">
+            <div class="sf-q-label">매우<br>그렇다</div>
+            <span class="sf-q-star" onclick="sfSetQuestion({{ q.num }},5)">⭐</span>
+          </div>
+        </div>
+        <div class="sf-q-hint" id="sfQH{{ q.num }}"></div>
       </div>
       {% endfor %}
     </div>
@@ -318,8 +351,9 @@
 
 <script>
 const OVERALL_LABELS = ['','별로였어요 😞','조금 아쉬워요 😐','보통이에요 😊','좋았어요 😄','매우 좋았어요! 🥰'];
+const QUESTION_LABELS = ['','전혀 그렇지 않다 😞','그렇지 않다 😐','보통이다 😊','그렇다 😄','매우 그렇다! 🥰'];
 let sfOverallScore = 0;
-const sfSessionScores = {};
+const sfQuestionScores = {};
 
 function sfSetOverall(n) {
   sfOverallScore = n;
@@ -327,15 +361,27 @@ function sfSetOverall(n) {
   document.getElementById('sfOverallHint').textContent = OVERALL_LABELS[n] || '';
 }
 
-function sfSetSession(sid, n) {
-  sfSessionScores[sid] = n;
-  document.querySelectorAll(`#sfSS${sid} .sf-session-star`).forEach((el, i) => el.classList.toggle('on', i < n));
+function sfSetQuestion(qid, n) {
+  sfQuestionScores[qid] = n;
+  document.querySelectorAll(`#sfQ${qid} .sf-q-star`).forEach((el, i) => el.classList.toggle('on', i < n));
+  const hint = document.getElementById(`sfQH${qid}`);
+  if (hint) hint.textContent = QUESTION_LABELS[n] || '';
 }
 
 function sfToggleCheck(label, type) {
   setTimeout(() => {
     const cb = label.querySelector('input[type=checkbox]');
     label.classList.toggle('checked', cb.checked);
+  }, 0);
+}
+
+function sfToggleMotivOther(label) {
+  setTimeout(() => {
+    const cb = label.querySelector('input[type=checkbox]');
+    label.classList.toggle('checked', cb.checked);
+    const wrap = document.getElementById('sfMotivOtherWrap');
+    wrap.style.display = cb.checked ? 'block' : 'none';
+    if (!cb.checked) document.getElementById('sfMotivOther').value = '';
   }, 0);
 }
 
@@ -359,13 +405,16 @@ async function sfSubmit() {
 
   const favSessions = [...document.querySelectorAll('#sfFavChecks input:checked')].map(c => parseInt(c.value));
   const hardSessions = [...document.querySelectorAll('#sfHardChecks input:checked')].map(c => parseInt(c.value));
-  const motivations = [...document.querySelectorAll('#sfMotivChecks input:checked')].map(c => c.value);
+  const motivChecked = [...document.querySelectorAll('#sfMotivChecks input:checked')];
+  const motivations = motivChecked.filter(c => c.value !== '기타').map(c => c.value);
+  const motivationOther = document.getElementById('sfMotivOther').value.trim();
   const aiInterests = [...document.querySelectorAll('#sfAiChecks input:checked')].map(c => c.value);
   const attendEl = document.querySelector('#sfAttendRadios .sf-radio-label.checked input');
   const recommendEl = document.querySelector('#sfRecommendRadios .sf-radio-label.checked input');
 
   const payload = {
-    name, school, grade, motivations, overall_score: sfOverallScore,
+    name, school, grade, motivations, motivation_other: motivationOther,
+    overall_score: sfOverallScore,
     favorite_sessions: favSessions, hardest_sessions: hardSessions,
     attend_again: attendEl ? attendEl.value : '',
     recommend: recommendEl ? recommendEl.value : '',
@@ -373,7 +422,7 @@ async function sfSubmit() {
     good_points: document.getElementById('sfGoodPoints').value,
     bad_points: document.getElementById('sfBadPoints').value,
   };
-  Object.entries(sfSessionScores).forEach(([k, v]) => { payload[`session_${k}`] = v; });
+  Object.entries(sfQuestionScores).forEach(([k, v]) => { payload[`session_${k}`] = v; });
 
   const btn = document.getElementById('sfSubmitBtn');
   btn.disabled = true; btn.textContent = '제출 중...';

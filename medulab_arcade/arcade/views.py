@@ -3318,6 +3318,17 @@ def api_gallery_vote(request):
 # 만족도 조사
 # ═══════════════════════════════════════════════════════════
 
+SURVEY_QUESTIONS = [
+    {'num': 1, 'text': '탄소중립이 무엇인지 이해하는 데 도움이 되었다.'},
+    {'num': 2, 'text': 'AI코디니를 활용한 코딩 활동을 이해할 수 있었다.'},
+    {'num': 3, 'text': '음성인식을 활용해 불을 켜고 끄는 활동이 흥미로웠다.'},
+    {'num': 4, 'text': '생성형 AI를 활용해 발명품 아이디어를 만드는 활동이 도움이 되었다.'},
+    {'num': 5, 'text': '내가 생각한 탄소중립 발명품을 직접 설계해 보는 과정이 재미있었다.'},
+    {'num': 6, 'text': '수업의 설명과 활동 난이도는 적절했다.'},
+    {'num': 7, 'text': '활동 중 어려움이 있을 때 선생님이나 보조강사의 도움을 받을 수 있었다.'},
+    {'num': 8, 'text': '직접 작품을 만들고 발표하는 활동이 좋았다.'},
+]
+
 CAMP_SESSIONS = [
     {'num': 1, 'title': '탄소중립 이해하기'},
     {'num': 2, 'title': 'AI코디니 기초 익히기'},
@@ -3411,6 +3422,10 @@ def survey_detail(request, slug):
         for s in sessions:
             scores = [r.session_scores.get(str(s['num'])) for r in responses if r.session_scores.get(str(s['num']))]
             session_avgs[s['num']] = round(sum(scores) / len(scores), 1) if scores else 0
+        question_avgs = {}
+        for q in SURVEY_QUESTIONS:
+            scores = [r.session_scores.get(str(q['num'])) for r in responses if r.session_scores.get(str(q['num']))]
+            question_avgs[q['num']] = round(sum(scores) / len(scores), 1) if scores else 0
         attend_counts = {}
         for r in responses:
             k = r.attend_again
@@ -3448,6 +3463,8 @@ def survey_detail(request, slug):
         ai_interest_options_json = _json.dumps(AI_INTEREST_OPTIONS)
         motivation_counts_json = _json.dumps(motivation_counts)
         motivation_options_json = _json.dumps(MOTIVATION_OPTIONS)
+        question_avgs_json = _json.dumps(question_avgs)
+        questions_js = _json.dumps([q['num'] for q in SURVEY_QUESTIONS])
         return render(request, 'arcade/survey_results.html', {
             'survey': survey, 'responses': responses, 'total': total,
             'total_students': total_students,
@@ -3466,6 +3483,9 @@ def survey_detail(request, slug):
             'motivation_options': MOTIVATION_OPTIONS,
             'motivation_counts_json': motivation_counts_json,
             'motivation_options_json': motivation_options_json,
+            'survey_questions': SURVEY_QUESTIONS,
+            'question_avgs_json': question_avgs_json,
+            'questions_js': questions_js,
         })
 
     # 학생: 날짜 체크
@@ -3494,6 +3514,7 @@ def survey_detail(request, slug):
     ]
     return render(request, 'arcade/survey_form.html', {
         'survey': survey, 'sessions': sessions, 'already_submitted': already,
+        'survey_questions': SURVEY_QUESTIONS,
         'attend_options': attend_options, 'recommend_options': recommend_options,
         'ai_interest_options': AI_INTEREST_OPTIONS,
         'motivation_options': MOTIVATION_OPTIONS,
@@ -3522,12 +3543,15 @@ def api_survey_submit(request, slug):
     overall_score = int(data.get('overall_score', 0))
     if not (1 <= overall_score <= 5):
         return JsonResponse({'ok': False, 'error': '전체 만족도를 선택해주세요.'})
-    sessions = _get_survey_sessions(survey)
-    session_scores = {str(s['num']): int(data.get(f'session_{s["num"]}', 0))
-                      for s in sessions if data.get(f'session_{s["num"]}')}
+    motivations = list(data.get('motivations', []))
+    motivation_other = str(data.get('motivation_other', '')).strip()
+    if motivation_other:
+        motivations.append(f'기타: {motivation_other}')
+    session_scores = {str(q['num']): int(data.get(f'session_{q["num"]}', 0))
+                      for q in SURVEY_QUESTIONS if data.get(f'session_{q["num"]}')}
     SatisfactionResponse.objects.create(
         survey=survey, respondent_name=name, respondent_school=school, respondent_grade=grade,
-        motivations=data.get('motivations', []),
+        motivations=motivations,
         session_key=session_key,
         overall_score=overall_score, session_scores=session_scores,
         favorite_sessions=data.get('favorite_sessions', []),

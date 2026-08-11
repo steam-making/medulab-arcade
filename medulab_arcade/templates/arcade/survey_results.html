@@ -49,11 +49,13 @@
   .sr-overall-stars { font-size:32px; letter-spacing:3px; margin:4px 0; }
   .sr-overall-num { font-size:20px; font-weight:900; color:var(--teal); }
 
-  /* 차시별 바 */
-  .sr-session-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-  .sr-session-num { min-width:22px; height:22px; border-radius:7px; background:var(--green);
-    color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .sr-session-name { font-size:12px; font-weight:700; width:200px; flex-shrink:0; color:var(--ink); }
+  /* 설문 문항 바 */
+  .sr-question-row { margin-bottom:14px; }
+  .sr-question-header { display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; }
+  .sr-question-num { min-width:22px; height:22px; border-radius:7px; background:var(--green);
+    color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+  .sr-question-name { font-size:12px; font-weight:700; color:var(--ink); line-height:1.5; flex:1; }
+  .sr-question-bar-row { display:flex; align-items:center; gap:10px; }
   .sr-bar-wrap { flex:1; background:#e8f8f0; border-radius:999px; height:14px; overflow:hidden; }
   .sr-bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--green),#3FA9F5); transition:width .5s; }
   .sr-bar-score { font-size:12px; font-weight:800; color:var(--teal); min-width:32px; text-align:right; }
@@ -159,17 +161,21 @@
     </div>
   </div>
 
-  <!-- 차시별 -->
+  <!-- 설문 문항별 평균 -->
   <div class="sr-card">
-    <div class="sr-card-title">📚 차시별 평균 만족도</div>
-    {% for s in sessions %}
-    <div class="sr-session-row">
-      <div class="sr-session-num">{{ s.num }}</div>
-      <div class="sr-session-name">{{ s.title }}</div>
-      <div class="sr-bar-wrap">
-        <div class="sr-bar-fill" id="sessionBar{{ s.num }}" style="width:0%"></div>
+    <div class="sr-card-title">📋 설문 문항별 평균 점수</div>
+    {% for q in survey_questions %}
+    <div class="sr-question-row">
+      <div class="sr-question-header">
+        <div class="sr-question-num">{{ q.num }}</div>
+        <div class="sr-question-name">{{ q.text }}</div>
       </div>
-      <div class="sr-bar-score" id="sessionScore{{ s.num }}">—</div>
+      <div class="sr-question-bar-row">
+        <div class="sr-bar-wrap">
+          <div class="sr-bar-fill" id="questionBar{{ q.num }}" style="width:0%"></div>
+        </div>
+        <div class="sr-bar-score" id="questionScore{{ q.num }}">—</div>
+      </div>
     </div>
     {% endfor %}
   </div>
@@ -299,8 +305,9 @@
 <script>
 const responses = {{ responses_json|safe }};
 const total = {{ total }};
+const questionNums = {{ questions_js|safe }};
+const questionAvgs = {{ question_avgs_json|safe }};
 const sessionNums = {{ sessions_js|safe }};
-const sessionAvgs = {{ session_avgs_json|safe }};
 const favDist = {{ fav_counts_json|safe }};
 const hardDist = {{ hard_counts_json|safe }};
 const aiInterestOptions = {{ ai_interest_options_json|safe }};
@@ -319,11 +326,11 @@ responses.forEach(r => { if(r.overall_score) overallDist[r.overall_score] = (ove
   if(cntEl) cntEl.textContent = cnt+'명';
 });
 
-// 차시별 평균 막대
-sessionNums.forEach(s => {
-  const avg = sessionAvgs[s] || 0;
-  const bar = document.getElementById('sessionBar'+s);
-  const score = document.getElementById('sessionScore'+s);
+// 설문 문항별 평균 막대
+questionNums.forEach(q => {
+  const avg = questionAvgs[q] || 0;
+  const bar = document.getElementById('questionBar'+q);
+  const score = document.getElementById('questionScore'+q);
   if(bar) bar.style.width = Math.round(avg/5*100)+'%';
   if(score) score.textContent = avg ? avg.toFixed(1) : '—';
 });

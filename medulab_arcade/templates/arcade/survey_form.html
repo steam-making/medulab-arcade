@@ -214,12 +214,26 @@
       <div class="sf-section-title">⭐ 전체 만족도</div>
       <div class="sf-overall-label">이번 캠프 전체적으로 얼마나 재미있었나요?</div>
       <div class="sf-stars" id="sfOverallStars">
-        {% for n in "12345" %}
         <div class="sf-star-wrap">
-          <span class="sf-star-num">{{ n }}</span>
-          <span class="sf-star" data-n="{{ n }}" onclick="sfSetOverall({{ n }})">⭐</span>
+          <span class="sf-star-num">매우만족</span>
+          <span class="sf-star" data-v="5" onclick="sfSetOverall(5)">⭐</span>
         </div>
-        {% endfor %}
+        <div class="sf-star-wrap">
+          <span class="sf-star-num">만족</span>
+          <span class="sf-star" data-v="4" onclick="sfSetOverall(4)">⭐</span>
+        </div>
+        <div class="sf-star-wrap">
+          <span class="sf-star-num">보통</span>
+          <span class="sf-star" data-v="3" onclick="sfSetOverall(3)">⭐</span>
+        </div>
+        <div class="sf-star-wrap">
+          <span class="sf-star-num">불만족</span>
+          <span class="sf-star" data-v="2" onclick="sfSetOverall(2)">⭐</span>
+        </div>
+        <div class="sf-star-wrap">
+          <span class="sf-star-num">매우불만족</span>
+          <span class="sf-star" data-v="1" onclick="sfSetOverall(1)">⭐</span>
+        </div>
       </div>
       <div class="sf-overall-hint" id="sfOverallHint"></div>
     </div>
@@ -235,24 +249,24 @@
         </div>
         <div class="sf-question-scale" id="sfQ{{ q.num }}">
           <div class="sf-q-star-wrap">
-            <div class="sf-q-label">전혀<br>그렇지<br>않다</div>
-            <span class="sf-q-star" onclick="sfSetQuestion({{ q.num }},1)">⭐</span>
-          </div>
-          <div class="sf-q-star-wrap">
-            <div class="sf-q-label">그렇지<br>않다</div>
-            <span class="sf-q-star" onclick="sfSetQuestion({{ q.num }},2)">⭐</span>
-          </div>
-          <div class="sf-q-star-wrap">
-            <div class="sf-q-label">보통<br>이다</div>
-            <span class="sf-q-star" onclick="sfSetQuestion({{ q.num }},3)">⭐</span>
+            <div class="sf-q-label">매우<br>그렇다</div>
+            <span class="sf-q-star" data-v="5" onclick="sfSetQuestion({{ q.num }},5)">⭐</span>
           </div>
           <div class="sf-q-star-wrap">
             <div class="sf-q-label">그렇다</div>
-            <span class="sf-q-star" onclick="sfSetQuestion({{ q.num }},4)">⭐</span>
+            <span class="sf-q-star" data-v="4" onclick="sfSetQuestion({{ q.num }},4)">⭐</span>
           </div>
           <div class="sf-q-star-wrap">
-            <div class="sf-q-label">매우<br>그렇다</div>
-            <span class="sf-q-star" onclick="sfSetQuestion({{ q.num }},5)">⭐</span>
+            <div class="sf-q-label">보통<br>이다</div>
+            <span class="sf-q-star" data-v="3" onclick="sfSetQuestion({{ q.num }},3)">⭐</span>
+          </div>
+          <div class="sf-q-star-wrap">
+            <div class="sf-q-label">그렇지<br>않다</div>
+            <span class="sf-q-star" data-v="2" onclick="sfSetQuestion({{ q.num }},2)">⭐</span>
+          </div>
+          <div class="sf-q-star-wrap">
+            <div class="sf-q-label">전혀<br>그렇지<br>않다</div>
+            <span class="sf-q-star" data-v="1" onclick="sfSetQuestion({{ q.num }},1)">⭐</span>
           </div>
         </div>
         <div class="sf-q-hint" id="sfQH{{ q.num }}"></div>
@@ -357,13 +371,13 @@ const sfQuestionScores = {};
 
 function sfSetOverall(n) {
   sfOverallScore = n;
-  document.querySelectorAll('#sfOverallStars .sf-star').forEach((el, i) => el.classList.toggle('on', i < n));
+  document.querySelectorAll('#sfOverallStars .sf-star').forEach(el => el.classList.toggle('on', parseInt(el.dataset.v) === n));
   document.getElementById('sfOverallHint').textContent = OVERALL_LABELS[n] || '';
 }
 
 function sfSetQuestion(qid, n) {
   sfQuestionScores[qid] = n;
-  document.querySelectorAll(`#sfQ${qid} .sf-q-star`).forEach((el, i) => el.classList.toggle('on', i < n));
+  document.querySelectorAll(`#sfQ${qid} .sf-q-star`).forEach(el => el.classList.toggle('on', parseInt(el.dataset.v) === n));
   const hint = document.getElementById(`sfQH${qid}`);
   if (hint) hint.textContent = QUESTION_LABELS[n] || '';
 }

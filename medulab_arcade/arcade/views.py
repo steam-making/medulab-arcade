@@ -3322,9 +3322,17 @@ CAMP_SESSIONS = [
     {'num': 1, 'title': '탄소중립 이해하기'},
     {'num': 2, 'title': 'AI코디니 기초 익히기'},
     {'num': 3, 'title': '지니야, 불 켜줘! 만들기'},
-    {'num': 4, 'title': '생성형 AI로 발명품 설계 및 캔바 편집'},
-    {'num': 5, 'title': '탄소중립발명품 구현하기'},
-    {'num': 6, 'title': '발명품 설계 포스터 발표'},
+    {'num': 4, 'title': 'AI로 발명품 아이디어 설계하기'},
+    {'num': 5, 'title': '발명품 포스터 발표'},
+]
+
+AI_INTEREST_OPTIONS = [
+    '생성형 AI·ChatGPT',
+    '코딩·프로그래밍',
+    '로봇·교구 활동',
+    'AI 그림·웹툰 제작',
+    'AI 영상·음악 제작',
+    '게임·메타버스',
 ]
 
 SURVEY_CONFIGS = [
@@ -3363,11 +3371,14 @@ def survey_detail(request, slug):
             recommend_counts[k] = recommend_counts.get(k, 0) + 1
         fav_counts = {}
         hard_counts = {}
+        ai_interest_counts = {}
         for r in responses:
             for n in (r.favorite_sessions or []):
                 fav_counts[int(n)] = fav_counts.get(int(n), 0) + 1
             for n in (r.hardest_sessions or []):
                 hard_counts[int(n)] = hard_counts.get(int(n), 0) + 1
+            for opt in (r.ai_interests or []):
+                ai_interest_counts[opt] = ai_interest_counts.get(opt, 0) + 1
         import json as _json
         responses_json = _json.dumps([
             {'overall_score': r.overall_score, 'session_scores': r.session_scores,
@@ -3378,16 +3389,20 @@ def survey_detail(request, slug):
         session_avgs_json = _json.dumps(session_avgs)
         fav_counts_json = _json.dumps(fav_counts)
         hard_counts_json = _json.dumps(hard_counts)
+        ai_interest_counts_json = _json.dumps(ai_interest_counts)
         return render(request, 'arcade/survey_results.html', {
             'survey': survey, 'responses': responses, 'total': total,
             'avg_overall': avg_overall, 'session_avgs': session_avgs,
             'attend_counts': attend_counts, 'recommend_counts': recommend_counts,
             'fav_counts': fav_counts, 'hard_counts': hard_counts,
             'sessions': CAMP_SESSIONS,
+            'ai_interest_options': AI_INTEREST_OPTIONS,
+            'ai_interest_counts': ai_interest_counts,
             'responses_json': responses_json, 'sessions_js': sessions_js,
             'session_avgs_json': session_avgs_json,
             'fav_counts_json': fav_counts_json,
             'hard_counts_json': hard_counts_json,
+            'ai_interest_counts_json': ai_interest_counts_json,
         })
 
     if not request.session.session_key:
@@ -3409,6 +3424,7 @@ def survey_detail(request, slug):
     return render(request, 'arcade/survey_form.html', {
         'survey': survey, 'sessions': CAMP_SESSIONS, 'already_submitted': already,
         'attend_options': attend_options, 'recommend_options': recommend_options,
+        'ai_interest_options': AI_INTEREST_OPTIONS,
     })
 
 
@@ -3437,6 +3453,7 @@ def api_survey_submit(request, slug):
         hardest_sessions=data.get('hardest_sessions', []),
         attend_again=str(data.get('attend_again', '')),
         recommend=str(data.get('recommend', '')),
+        ai_interests=data.get('ai_interests', []),
         good_points=str(data.get('good_points', '')),
         bad_points=str(data.get('bad_points', '')),
     )

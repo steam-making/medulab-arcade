@@ -917,6 +917,7 @@ class SatisfactionResponse(models.Model):
     hardest_sessions = models.JSONField('어려웠던 차시', default=list)
     attend_again = models.CharField('재참여 의향', max_length=60, blank=True)
     recommend = models.CharField('추천 의향', max_length=60, blank=True)
+    ai_interests = models.JSONField('배우고 싶은 AI 분야', default=list)
     good_points = models.TextField('좋았던 점', blank=True)
     bad_points = models.TextField('아쉬웠던 점', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

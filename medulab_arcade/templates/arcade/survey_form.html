@@ -39,7 +39,9 @@
   .sf-name-input:focus { border-color:var(--green); }
 
   /* 별점 공통 */
-  .sf-stars { display:flex; gap:6px; margin-top:6px; }
+  .sf-star-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:2px; }
+  .sf-star-num { font-size:11px; font-weight:800; color:#aaa; }
+  .sf-stars { display:flex; gap:6px; margin-top:4px; }
   .sf-star {
     font-size:28px; cursor:pointer; opacity:.35; transition:opacity .15s, transform .15s;
     user-select:none;
@@ -58,6 +60,8 @@
     color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .sf-session-name { font-size:13px; font-weight:700; flex:1; color:var(--ink); min-width:0; }
   .sf-session-stars { display:flex; gap:4px; }
+  .sf-session-star-wrap { display:inline-flex; flex-direction:column; align-items:center; gap:1px; }
+  .sf-session-star-num { font-size:10px; font-weight:800; color:#bbb; }
   .sf-session-star { font-size:22px; cursor:pointer; opacity:.3; transition:opacity .15s; user-select:none; }
   .sf-session-star.on { opacity:1; }
 
@@ -139,7 +143,7 @@
   <div class="sf-hero">
     <div class="badge">📋 SATISFACTION SURVEY</div>
     <h1>{{ survey.title }}</h1>
-    <p>솔직하고 진심 어린 의견이 더 좋은 캠프를 만드는 데 큰 도움이 됩니다!</p>
+    <p>여러분의 솔직한 의견이 더 좋은 캠프를 만드는 데 큰 힘이 돼요! 😊</p>
   </div>
 
   <div id="sfForm">
@@ -153,9 +157,14 @@
     <!-- 전체 만족도 -->
     <div class="sf-card">
       <div class="sf-section-title">⭐ 전체 만족도</div>
-      <div class="sf-overall-label">이번 캠프 전체적으로 얼마나 만족하셨나요?</div>
+      <div class="sf-overall-label">이번 캠프 전체적으로 얼마나 재미있었나요?</div>
       <div class="sf-stars" id="sfOverallStars">
-        {% for n in "12345" %}<span class="sf-star" data-n="{{ n }}" onclick="sfSetOverall({{ n }})">⭐</span>{% endfor %}
+        {% for n in "12345" %}
+        <div class="sf-star-wrap">
+          <span class="sf-star-num">{{ n }}</span>
+          <span class="sf-star" data-n="{{ n }}" onclick="sfSetOverall({{ n }})">⭐</span>
+        </div>
+        {% endfor %}
       </div>
       <div class="sf-overall-hint" id="sfOverallHint"></div>
     </div>
@@ -168,7 +177,12 @@
         <div class="sf-session-num">{{ s.num }}</div>
         <div class="sf-session-name">{{ s.title }}</div>
         <div class="sf-session-stars" id="sfSS{{ s.num }}">
-          {% for n in "12345" %}<span class="sf-session-star" data-n="{{ n }}" data-sid="{{ s.num }}" onclick="sfSetSession({{ s.num }},{{ n }})">⭐</span>{% endfor %}
+          {% for n in "12345" %}
+          <div class="sf-session-star-wrap">
+            <span class="sf-session-star-num">{{ n }}</span>
+            <span class="sf-session-star" data-n="{{ n }}" data-sid="{{ s.num }}" onclick="sfSetSession({{ s.num }},{{ n }})">⭐</span>
+          </div>
+          {% endfor %}
         </div>
       </div>
       {% endfor %}
@@ -228,14 +242,27 @@
       </div>
     </div>
 
+    <!-- AI 관심 분야 -->
+    <div class="sf-card">
+      <div class="sf-section-title">🤖 앞으로 배우고 싶은 AI 분야는? <span style="font-weight:500;color:#9a96b4;font-size:12px;">(여러 개 가능)</span></div>
+      <div class="sf-checks" id="sfAiChecks">
+        {% for opt in ai_interest_options %}
+        <label class="sf-check-label" onclick="sfToggleCheck(this,'ai')">
+          <input type="checkbox" value="{{ opt }}" />
+          {{ opt }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
     <!-- 자유 의견 -->
     <div class="sf-card">
       <div class="sf-section-title">💚 좋았던 점 <span style="font-weight:500;color:#9a96b4;font-size:12px;">(선택)</span></div>
-      <textarea class="sf-textarea" id="sfGoodPoints" placeholder="기억에 남는 활동, 좋았던 점을 자유롭게 써주세요!"></textarea>
+      <textarea class="sf-textarea" id="sfGoodPoints" placeholder="가장 재미있었던 것, 좋았던 점을 자유롭게 써주세요!"></textarea>
     </div>
     <div class="sf-card">
-      <div class="sf-section-title">💭 아쉬웠던 점 또는 개선 아이디어 <span style="font-weight:500;color:#9a96b4;font-size:12px;">(선택)</span></div>
-      <textarea class="sf-textarea" id="sfBadPoints" placeholder="더 좋은 캠프를 만들기 위해 솔직한 의견을 남겨주세요!"></textarea>
+      <div class="sf-section-title">💭 아쉬웠던 점이나 바라는 점 <span style="font-weight:500;color:#9a96b4;font-size:12px;">(선택)</span></div>
+      <textarea class="sf-textarea" id="sfBadPoints" placeholder="더 좋아졌으면 하는 점이나 바라는 점을 솔직하게 써주세요!"></textarea>
     </div>
 
     <div class="sf-error" id="sfError"></div>
@@ -289,6 +316,7 @@ async function sfSubmit() {
 
   const favSessions = [...document.querySelectorAll('#sfFavChecks input:checked')].map(c => parseInt(c.value));
   const hardSessions = [...document.querySelectorAll('#sfHardChecks input:checked')].map(c => parseInt(c.value));
+  const aiInterests = [...document.querySelectorAll('#sfAiChecks input:checked')].map(c => c.value);
   const attendEl = document.querySelector('#sfAttendRadios .sf-radio-label.checked input');
   const recommendEl = document.querySelector('#sfRecommendRadios .sf-radio-label.checked input');
 
@@ -297,6 +325,7 @@ async function sfSubmit() {
     favorite_sessions: favSessions, hardest_sessions: hardSessions,
     attend_again: attendEl ? attendEl.value : '',
     recommend: recommendEl ? recommendEl.value : '',
+    ai_interests: aiInterests,
     good_points: document.getElementById('sfGoodPoints').value,
     bad_points: document.getElementById('sfBadPoints').value,
   };

@@ -175,6 +175,22 @@
     </div>
   </div>
 
+  <!-- AI 관심 분야 -->
+  <div class="sr-card">
+    <div class="sr-card-title">🤖 배우고 싶은 AI 분야</div>
+    <div class="sr-dist" id="srAiDist">
+      {% for opt in ai_interest_options %}
+      <div class="sr-dist-row">
+        <div class="sr-dist-label">{{ opt }}</div>
+        <div class="sr-dist-bar-wrap">
+          <div class="sr-dist-bar" id="aiBar{{ forloop.counter }}" style="width:0%"></div>
+        </div>
+        <div class="sr-dist-cnt" id="aiCnt{{ forloop.counter }}">0</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
   <!-- 재참여 / 추천 -->
   <div class="sr-card">
     <div class="sr-card-title">🔄 재참여 의향</div>
@@ -239,6 +255,8 @@ const sessionNums = {{ sessions_js|safe }};
 const sessionAvgs = {{ session_avgs_json|safe }};
 const favDist = {{ fav_counts_json|safe }};
 const hardDist = {{ hard_counts_json|safe }};
+const aiInterestOptions = {{ ai_interest_options|safe }};
+const aiInterestCounts = {{ ai_interest_counts_json|safe }};
 
 // 전체 만족도 분포
 const overallDist = {1:0,2:0,3:0,4:0,5:0};
@@ -267,6 +285,15 @@ sessionNums.forEach(s => {
   const hBar = document.getElementById('hardBar'+s);
   if(fBar){ fBar.style.width=(total>0?Math.round(fCnt/total*100):0)+'%'; document.getElementById('favCnt'+s).textContent=fCnt+'명'; }
   if(hBar){ hBar.style.width=(total>0?Math.round(hCnt/total*100):0)+'%'; document.getElementById('hardCnt'+s).textContent=hCnt+'명'; }
+});
+
+// AI 관심 분야 분포
+aiInterestOptions.forEach((opt, i) => {
+  const cnt = aiInterestCounts[opt]||0;
+  const bar = document.getElementById('aiBar'+(i+1));
+  const cntEl = document.getElementById('aiCnt'+(i+1));
+  if(bar) bar.style.width=(total>0?Math.round(cnt/total*100):0)+'%';
+  if(cntEl) cntEl.textContent=cnt+'명';
 });
 </script>
 {% endblock %}

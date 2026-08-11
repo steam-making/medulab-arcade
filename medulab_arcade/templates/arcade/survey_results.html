@@ -24,6 +24,21 @@
   }
   .sr-card-title { font-size:14px; font-weight:900; color:var(--teal); margin:0 0 14px; }
 
+  /* 완료 현황 배너 */
+  .sr-progress-banner {
+    background:linear-gradient(120deg,#e8fff0,#d4f5e2); border:2px solid #a8edca;
+    border-radius:18px; padding:18px 22px; margin-bottom:16px;
+    display:flex; align-items:center; gap:16px;
+  }
+  .sr-progress-icon { font-size:36px; flex-shrink:0; }
+  .sr-progress-text { flex:1; }
+  .sr-progress-title { font-size:13px; font-weight:900; color:var(--teal); margin-bottom:4px; }
+  .sr-progress-counts { font-size:26px; font-weight:900; color:var(--ink); line-height:1; }
+  .sr-progress-counts span { font-size:14px; font-weight:700; color:#7a7498; }
+  .sr-progress-bar-wrap { width:160px; background:#c3f5d8; border-radius:999px; height:12px; overflow:hidden; flex-shrink:0; }
+  .sr-progress-bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--teal),#3FA9F5); transition:width .6s; }
+  .sr-progress-pct { font-size:16px; font-weight:900; color:var(--teal); min-width:44px; text-align:right; }
+
   /* 총계 박스 */
   .sr-stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
   .sr-stat-box { background:#f0fff6; border-radius:14px; padding:14px 10px; text-align:center; border:1.5px solid #c3f5d8; }
@@ -80,6 +95,21 @@
     <h1>📊 {{ survey.title }} 결과</h1>
     <p>관리자 전용 결과 페이지</p>
   </div>
+
+  <!-- 완료 현황 배너 (응답 없어도 항상 표시) -->
+  {% if total_students %}
+  <div class="sr-progress-banner">
+    <div class="sr-progress-icon">📋</div>
+    <div class="sr-progress-text">
+      <div class="sr-progress-title">설문 완료 현황</div>
+      <div class="sr-progress-counts">{{ total }}명 <span>/ {{ total_students }}명 참여</span></div>
+    </div>
+    <div class="sr-progress-bar-wrap">
+      <div class="sr-progress-bar-fill" style="width:{% widthratio total total_students 100 %}%"></div>
+    </div>
+    <div class="sr-progress-pct">{% widthratio total total_students 100 %}%</div>
+  </div>
+  {% endif %}
 
   {% if total == 0 %}
   <div class="sr-card sr-empty">아직 응답이 없어요.</div>

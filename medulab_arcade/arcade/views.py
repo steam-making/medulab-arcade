@@ -3336,8 +3336,8 @@ AI_INTEREST_OPTIONS = [
 ]
 
 SURVEY_CONFIGS = [
-    {'title': 'AI그린탄소중립캠프(12일)', 'slug': 'camp-12'},
-    {'title': 'AI그린탄소중립캠프(13일)', 'slug': 'camp-13'},
+    {'title': 'AI그린탄소중립캠프(12일)', 'slug': 'camp-12', 'total_students': 21},
+    {'title': 'AI그린탄소중립캠프(13일)', 'slug': 'camp-13', 'total_students': 22},
 ]
 
 
@@ -3356,6 +3356,8 @@ def survey_detail(request, slug):
     if request.user.is_staff:
         responses = list(survey.responses.all().order_by('created_at'))
         total = len(responses)
+        cfg = next((c for c in SURVEY_CONFIGS if c['slug'] == survey.slug), {})
+        total_students = cfg.get('total_students', 0)
         avg_overall = round(sum(r.overall_score for r in responses) / total, 1) if total else 0
         session_avgs = {}
         for s in CAMP_SESSIONS:
@@ -3392,6 +3394,7 @@ def survey_detail(request, slug):
         ai_interest_counts_json = _json.dumps(ai_interest_counts)
         return render(request, 'arcade/survey_results.html', {
             'survey': survey, 'responses': responses, 'total': total,
+            'total_students': total_students,
             'avg_overall': avg_overall, 'session_avgs': session_avgs,
             'attend_counts': attend_counts, 'recommend_counts': recommend_counts,
             'fav_counts': fav_counts, 'hard_counts': hard_counts,

@@ -259,7 +259,7 @@
       {% for r in responses %}
       <div class="sr-response-item">
         <div class="sr-resp-header">
-          <div class="sr-resp-name">{{ r.respondent_name }}{% if r.respondent_grade %} <span style="font-size:12px;font-weight:700;color:#7a7498;background:#f0fff6;padding:2px 8px;border-radius:8px;margin-left:4px;">{{ r.respondent_grade }}</span>{% endif %}</div>
+          <div class="sr-resp-name">{{ r.respondent_name }}{% if r.respondent_school %} <span style="font-size:12px;font-weight:700;color:#3FA9F5;background:#e8f4ff;padding:2px 8px;border-radius:8px;margin-left:4px;">{{ r.respondent_school }}</span>{% endif %}{% if r.respondent_grade %} <span style="font-size:12px;font-weight:700;color:#7a7498;background:#f0fff6;padding:2px 8px;border-radius:8px;margin-left:2px;">{{ r.respondent_grade }}</span>{% endif %}</div>
           <div class="sr-resp-stars">{% for i in "12345" %}{% if forloop.counter <= r.overall_score %}⭐{% else %}☆{% endif %}{% endfor %}</div>
           <div class="sr-resp-date">{{ r.created_at|date:"m/d H:i" }}</div>
         </div>

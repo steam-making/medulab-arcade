@@ -37,7 +37,7 @@
     outline:none; transition:border-color .2s;
   }
   .sf-name-input:focus { border-color:var(--green); }
-  .sf-name-row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
+  .sf-name-row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; margin-top:10px; }
   .sf-grade-select {
     padding:14px 16px; border:1.5px solid #d4f5e2; border-radius:12px;
     font-size:17px; font-family:inherit; outline:none; background:#fff;
@@ -162,11 +162,12 @@
 
   <div id="sfForm">
 
-    <!-- 이름 + 학년 -->
+    <!-- 이름 + 학교 + 학년 -->
     <div class="sf-card">
-      <div class="sf-section-title">👤 이름과 학년을 입력해주세요</div>
+      <div class="sf-section-title">👤 이름·학교·학년을 입력해주세요</div>
+      <input class="sf-name-input" id="sfName" type="text" placeholder="이름 입력" maxlength="20" />
       <div class="sf-name-row">
-        <input class="sf-name-input" id="sfName" type="text" placeholder="이름 입력" maxlength="20" />
+        <input class="sf-name-input" id="sfSchool" type="text" placeholder="학교 입력 (예: 메듀초등학교)" maxlength="30" />
         <select class="sf-grade-select" id="sfGrade">
           <option value="">학년 선택</option>
           <option value="1학년">1학년</option>
@@ -336,8 +337,10 @@ async function sfSubmit() {
   const errEl = document.getElementById('sfError');
   errEl.textContent = '';
 
+  const school = document.getElementById('sfSchool').value.trim();
   const grade = document.getElementById('sfGrade').value;
   if (!name) { errEl.textContent = '이름을 입력해주세요.'; return; }
+  if (!school) { errEl.textContent = '학교를 입력해주세요.'; return; }
   if (!grade) { errEl.textContent = '학년을 선택해주세요.'; return; }
   if (!sfOverallScore) { errEl.textContent = '전체 만족도를 선택해주세요.'; return; }
 
@@ -348,7 +351,7 @@ async function sfSubmit() {
   const recommendEl = document.querySelector('#sfRecommendRadios .sf-radio-label.checked input');
 
   const payload = {
-    name, grade, overall_score: sfOverallScore,
+    name, school, grade, overall_score: sfOverallScore,
     favorite_sessions: favSessions, hardest_sessions: hardSessions,
     attend_again: attendEl ? attendEl.value : '',
     recommend: recommendEl ? recommendEl.value : '',

@@ -174,6 +174,22 @@
     {% endfor %}
   </div>
 
+  <!-- 참여 동기 -->
+  <div class="sr-card">
+    <div class="sr-card-title">💡 캠프 참여 동기</div>
+    <div class="sr-dist">
+      {% for opt in motivation_options %}
+      <div class="sr-dist-row">
+        <div class="sr-dist-label">{{ opt }}</div>
+        <div class="sr-dist-bar-wrap">
+          <div class="sr-dist-bar" id="motivBar{{ forloop.counter }}" style="width:0%"></div>
+        </div>
+        <div class="sr-dist-cnt" id="motivCnt{{ forloop.counter }}">0</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
   <!-- 재미있었던 / 어려웠던 -->
   <div class="sr-card">
     <div class="sr-card-title">😄 가장 재미있었던 활동</div>
@@ -268,6 +284,7 @@
           <div class="sr-resp-field"><strong>추천 의향</strong>{{ r.recommend|default:"—" }}</div>
           {% if r.favorite_sessions %}<div class="sr-resp-field"><strong>재미있었던 차시</strong>{{ r.favorite_sessions|join:", " }}차시</div>{% endif %}
           {% if r.hardest_sessions %}<div class="sr-resp-field"><strong>어려웠던 차시</strong>{{ r.hardest_sessions|join:", " }}차시</div>{% endif %}
+          {% if r.motivations %}<div class="sr-resp-field" style="grid-column:1/-1"><strong>참여 동기</strong>{{ r.motivations|join:" · " }}</div>{% endif %}
           {% if r.ai_interests %}<div class="sr-resp-field" style="grid-column:1/-1"><strong>배우고 싶은 AI 분야</strong>{{ r.ai_interests|join:" · " }}</div>{% endif %}
         </div>
         {% if r.good_points %}<div class="sr-resp-comment"><div class="sr-resp-comment-label">💚 좋았던 점</div>{{ r.good_points }}</div>{% endif %}
@@ -288,6 +305,8 @@ const favDist = {{ fav_counts_json|safe }};
 const hardDist = {{ hard_counts_json|safe }};
 const aiInterestOptions = {{ ai_interest_options_json|safe }};
 const aiInterestCounts = {{ ai_interest_counts_json|safe }};
+const motivationOptions = {{ motivation_options_json|safe }};
+const motivationCounts = {{ motivation_counts_json|safe }};
 
 // 전체 만족도 분포
 const overallDist = {1:0,2:0,3:0,4:0,5:0};
@@ -316,6 +335,15 @@ sessionNums.forEach(s => {
   const hBar = document.getElementById('hardBar'+s);
   if(fBar){ fBar.style.width=(total>0?Math.round(fCnt/total*100):0)+'%'; document.getElementById('favCnt'+s).textContent=fCnt+'명'; }
   if(hBar){ hBar.style.width=(total>0?Math.round(hCnt/total*100):0)+'%'; document.getElementById('hardCnt'+s).textContent=hCnt+'명'; }
+});
+
+// 참여 동기 분포
+motivationOptions.forEach((opt, i) => {
+  const cnt = motivationCounts[opt]||0;
+  const bar = document.getElementById('motivBar'+(i+1));
+  const cntEl = document.getElementById('motivCnt'+(i+1));
+  if(bar) bar.style.width=(total>0?Math.round(cnt/total*100):0)+'%';
+  if(cntEl) cntEl.textContent=cnt+'명';
 });
 
 // AI 관심 분야 분포

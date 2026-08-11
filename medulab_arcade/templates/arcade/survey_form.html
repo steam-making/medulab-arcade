@@ -180,6 +180,19 @@
       </div>
     </div>
 
+    <!-- 참여 동기 -->
+    <div class="sf-card">
+      <div class="sf-section-title">💡 이 캠프에 참여하게 된 이유는? <span style="font-weight:500;color:#9a96b4;font-size:13px;">(여러 개 가능)</span></div>
+      <div class="sf-checks" id="sfMotivChecks">
+        {% for opt in motivation_options %}
+        <label class="sf-check-label" onclick="sfToggleCheck(this,'motiv')">
+          <input type="checkbox" value="{{ opt }}" />
+          {{ opt }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
     <!-- 전체 만족도 -->
     <div class="sf-card">
       <div class="sf-section-title">⭐ 전체 만족도</div>
@@ -346,12 +359,13 @@ async function sfSubmit() {
 
   const favSessions = [...document.querySelectorAll('#sfFavChecks input:checked')].map(c => parseInt(c.value));
   const hardSessions = [...document.querySelectorAll('#sfHardChecks input:checked')].map(c => parseInt(c.value));
+  const motivations = [...document.querySelectorAll('#sfMotivChecks input:checked')].map(c => c.value);
   const aiInterests = [...document.querySelectorAll('#sfAiChecks input:checked')].map(c => c.value);
   const attendEl = document.querySelector('#sfAttendRadios .sf-radio-label.checked input');
   const recommendEl = document.querySelector('#sfRecommendRadios .sf-radio-label.checked input');
 
   const payload = {
-    name, school, grade, overall_score: sfOverallScore,
+    name, school, grade, motivations, overall_score: sfOverallScore,
     favorite_sessions: favSessions, hardest_sessions: hardSessions,
     attend_again: attendEl ? attendEl.value : '',
     recommend: recommendEl ? recommendEl.value : '',

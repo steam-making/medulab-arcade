@@ -3312,3 +3312,132 @@ def api_gallery_vote(request):
             'ok': True, 'vote_count': agg['count'] or 0,
             'avg_score': round(agg['avg'] or 0, 1),
         })
+
+
+# ═══════════════════════════════════════════════════════════
+# 만족도 조사
+# ═══════════════════════════════════════════════════════════
+
+CAMP_SESSIONS = [
+    {'num': 1, 'title': '탄소중립 이해하기'},
+    {'num': 2, 'title': 'AI코디니 기초 익히기'},
+    {'num': 3, 'title': '지니야, 불 켜줘! 만들기'},
+    {'num': 4, 'title': '생성형 AI로 발명품 설계 및 캔바 편집'},
+    {'num': 5, 'title': '탄소중립발명품 구현하기'},
+    {'num': 6, 'title': '발명품 설계 포스터 발표'},
+]
+
+SURVEY_CONFIGS = [
+    {'title': 'AI그린탄소중립캠프(12일)', 'slug': 'camp-12'},
+    {'title': 'AI그린탄소중립캠프(13일)', 'slug': 'camp-13'},
+]
+
+
+def survey_home(request):
+    from .models import SatisfactionSurvey
+    for cfg in SURVEY_CONFIGS:
+        SatisfactionSurvey.objects.get_or_create(slug=cfg['slug'], defaults={'title': cfg['title']})
+    surveys = SatisfactionSurvey.objects.filter(is_active=True).order_by('id')
+    return render(request, 'arcade/survey_home.html', {'surveys': surveys})
+
+
+def survey_detail(request, slug):
+    from .models import SatisfactionSurvey, SatisfactionResponse
+    survey = get_object_or_404(SatisfactionSurvey, slug=slug)
+
+    if request.user.is_staff:
+        responses = list(survey.responses.all().order_by('created_at'))
+        total = len(responses)
+        avg_overall = round(sum(r.overall_score for r in responses) / total, 1) if total else 0
+        session_avgs = {}
+        for s in CAMP_SESSIONS:
+            scores = [r.session_scores.get(str(s['num'])) for r in responses if r.session_scores.get(str(s['num']))]
+            session_avgs[s['num']] = round(sum(scores) / len(scores), 1) if scores else 0
+        attend_counts = {}
+        for r in responses:
+            k = r.attend_again
+            attend_counts[k] = attend_counts.get(k, 0) + 1
+        recommend_counts = {}
+        for r in responses:
+            k = r.recommend
+            recommend_counts[k] = recommend_counts.get(k, 0) + 1
+        fav_counts = {}
+        hard_counts = {}
+        for r in responses:
+            for n in (r.favorite_sessions or []):
+                fav_counts[int(n)] = fav_counts.get(int(n), 0) + 1
+            for n in (r.hardest_sessions or []):
+                hard_counts[int(n)] = hard_counts.get(int(n), 0) + 1
+        import json as _json
+        responses_json = _json.dumps([
+            {'overall_score': r.overall_score, 'session_scores': r.session_scores,
+             'favorite_sessions': r.favorite_sessions, 'hardest_sessions': r.hardest_sessions}
+            for r in responses
+        ])
+        sessions_js = _json.dumps([s['num'] for s in CAMP_SESSIONS])
+        session_avgs_json = _json.dumps(session_avgs)
+        fav_counts_json = _json.dumps(fav_counts)
+        hard_counts_json = _json.dumps(hard_counts)
+        return render(request, 'arcade/survey_results.html', {
+            'survey': survey, 'responses': responses, 'total': total,
+            'avg_overall': avg_overall, 'session_avgs': session_avgs,
+            'attend_counts': attend_counts, 'recommend_counts': recommend_counts,
+            'fav_counts': fav_counts, 'hard_counts': hard_counts,
+            'sessions': CAMP_SESSIONS,
+            'responses_json': responses_json, 'sessions_js': sessions_js,
+            'session_avgs_json': session_avgs_json,
+            'fav_counts_json': fav_counts_json,
+            'hard_counts_json': hard_counts_json,
+        })
+
+    if not request.session.session_key:
+        request.session.create()
+    session_key = request.session.session_key
+    already = SatisfactionResponse.objects.filter(survey=survey, session_key=session_key).exists()
+    attend_options = [
+        {'value': '꼭 참여하고 싶어요', 'label': '🙋 꼭 참여하고 싶어요!'},
+        {'value': '기회가 되면 참여하고 싶어요', 'label': '😊 기회가 되면 참여하고 싶어요'},
+        {'value': '잘 모르겠어요', 'label': '🤔 잘 모르겠어요'},
+        {'value': '참여하고 싶지 않아요', 'label': '😞 참여하고 싶지 않아요'},
+    ]
+    recommend_options = [
+        {'value': '매우 추천해요', 'label': '🌟 매우 추천해요!'},
+        {'value': '추천해요', 'label': '👍 추천해요'},
+        {'value': '잘 모르겠어요', 'label': '🤔 잘 모르겠어요'},
+        {'value': '추천하지 않아요', 'label': '👎 추천하지 않아요'},
+    ]
+    return render(request, 'arcade/survey_form.html', {
+        'survey': survey, 'sessions': CAMP_SESSIONS, 'already_submitted': already,
+        'attend_options': attend_options, 'recommend_options': recommend_options,
+    })
+
+
+@require_POST
+def api_survey_submit(request, slug):
+    from .models import SatisfactionSurvey, SatisfactionResponse
+    survey = get_object_or_404(SatisfactionSurvey, slug=slug)
+    if not request.session.session_key:
+        request.session.create()
+    session_key = request.session.session_key
+    if SatisfactionResponse.objects.filter(survey=survey, session_key=session_key).exists():
+        return JsonResponse({'ok': False, 'error': '이미 참여하셨습니다.'})
+    data = json.loads(request.body)
+    name = str(data.get('name', '')).strip()
+    if not name:
+        return JsonResponse({'ok': False, 'error': '이름을 입력해주세요.'})
+    overall_score = int(data.get('overall_score', 0))
+    if not (1 <= overall_score <= 5):
+        return JsonResponse({'ok': False, 'error': '전체 만족도를 선택해주세요.'})
+    session_scores = {str(s['num']): int(data.get(f'session_{s["num"]}', 0))
+                      for s in CAMP_SESSIONS if data.get(f'session_{s["num"]}')}
+    SatisfactionResponse.objects.create(
+        survey=survey, respondent_name=name, session_key=session_key,
+        overall_score=overall_score, session_scores=session_scores,
+        favorite_sessions=data.get('favorite_sessions', []),
+        hardest_sessions=data.get('hardest_sessions', []),
+        attend_again=str(data.get('attend_again', '')),
+        recommend=str(data.get('recommend', '')),
+        good_points=str(data.get('good_points', '')),
+        bad_points=str(data.get('bad_points', '')),
+    )
+    return JsonResponse({'ok': True})

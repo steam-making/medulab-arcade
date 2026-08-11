@@ -890,3 +890,42 @@ def _delete_gallery_room_files(sender, instance, **kwargs):
     folder = os.path.join(settings.MEDIA_ROOT, 'gallery', str(instance.id))
     if os.path.exists(folder):
         shutil.rmtree(folder)
+
+
+class SatisfactionSurvey(models.Model):
+    title = models.CharField('제목', max_length=200)
+    slug = models.SlugField('슬러그', max_length=100, unique=True)
+    is_active = models.BooleanField('활성', default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'satisfaction_survey'
+        verbose_name = '만족도 조사'
+        verbose_name_plural = '만족도 조사'
+
+    def __str__(self):
+        return self.title
+
+
+class SatisfactionResponse(models.Model):
+    survey = models.ForeignKey(SatisfactionSurvey, on_delete=models.CASCADE, related_name='responses')
+    respondent_name = models.CharField('이름', max_length=30)
+    session_key = models.CharField('세션키', max_length=100)
+    overall_score = models.IntegerField('전체 만족도')
+    session_scores = models.JSONField('차시별 만족도', default=dict)
+    favorite_sessions = models.JSONField('재미있었던 차시', default=list)
+    hardest_sessions = models.JSONField('어려웠던 차시', default=list)
+    attend_again = models.CharField('재참여 의향', max_length=60, blank=True)
+    recommend = models.CharField('추천 의향', max_length=60, blank=True)
+    good_points = models.TextField('좋았던 점', blank=True)
+    bad_points = models.TextField('아쉬웠던 점', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'satisfaction_response'
+        verbose_name = '만족도 응답'
+        verbose_name_plural = '만족도 응답'
+        unique_together = [('survey', 'session_key')]
+
+    def __str__(self):
+        return f"{self.survey.title} - {self.respondent_name}"

@@ -74,6 +74,7 @@
   .icon-script  { background: linear-gradient(135deg, #FFF8E1, #FFECB3); }
   .icon-gallery { background: linear-gradient(135deg, #FFF0F6, #FFD6E8); }
   .icon-carbon  { background: linear-gradient(135deg, #E8FFF0, #C3F5D8); }
+  .icon-survey  { background: linear-gradient(135deg, #E8FFF5, #B3F0D8); }
 
   @media (max-width: 600px) {
     .ap-hero h1 { font-size: 24px; }
@@ -131,6 +132,13 @@
       <div class="ap-card-icon icon-carbon">🌿</div>
       <h2>탄소중립 발명품</h2>
       <p>발명 분야·아이디어·스케치까지 입력하면 이미지 프롬프트와 포스터 프롬프트가 완성돼요.</p>
+      <span class="ap-tag active">이용 가능</span>
+    </a>
+
+    <a href="{% url 'survey_home' %}" class="ap-card">
+      <div class="ap-card-icon icon-survey">📋</div>
+      <h2>만족도 조사</h2>
+      <p>캠프 활동에 대한 만족도를 별점으로 평가하고 의견을 남겨주세요! 관리자는 결과를 확인할 수 있어요.</p>
       <span class="ap-tag active">이용 가능</span>
     </a>
 

@@ -1,0 +1,74 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}만족도 조사 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root { --teal:#2ecc71; --ink:#2E2A4A; }
+  body {
+    background: linear-gradient(150deg,#f0fff6 0%,#e8f8ff 50%,#f5f0ff 100%) !important;
+    color: var(--ink);
+  }
+  .sv-wrap { max-width:860px; margin:0 auto; padding:40px 20px 80px; }
+  .sv-hero { text-align:center; padding:0 0 36px; }
+  .sv-hero .badge {
+    display:inline-block; background:linear-gradient(120deg,#2ecc71,#3FA9F5);
+    color:#fff; font-size:13px; font-weight:bold; letter-spacing:1px;
+    padding:5px 16px; border-radius:999px; margin-bottom:16px;
+  }
+  .sv-hero h1 { font-size:30px; font-weight:900; margin:0 0 10px; color:var(--ink); }
+  .sv-hero p { font-size:14px; color:#7a7498; margin:0; }
+  .sv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; }
+  .sv-card {
+    background:#fff; border-radius:24px; padding:28px 24px;
+    box-shadow:0 6px 24px rgba(46,204,113,.12);
+    border:2px solid rgba(46,204,113,.15);
+    text-decoration:none; color:var(--ink);
+    display:block; transition:transform .2s, box-shadow .2s;
+  }
+  .sv-card:hover { transform:translateY(-5px); box-shadow:0 14px 36px rgba(46,204,113,.22); }
+  .sv-card-icon {
+    width:56px; height:56px; border-radius:18px; font-size:28px;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#d4f5e2,#a8edca); margin-bottom:16px;
+  }
+  .sv-card h2 { font-size:18px; font-weight:800; margin:0 0 8px; }
+  .sv-card p { font-size:13px; color:#7a7498; margin:0 0 16px; line-height:1.6; }
+  .sv-btn {
+    display:inline-block; padding:9px 20px; border-radius:12px; font-size:13px; font-weight:800;
+    border:none; cursor:pointer;
+  }
+  .sv-btn-student { background:linear-gradient(120deg,#2ecc71,#27ae60); color:#fff; }
+  .sv-btn-admin { background:linear-gradient(120deg,#8C6BFA,#3FA9F5); color:#fff; }
+  .sv-back { margin-bottom:24px; }
+  .sv-back a { color:#8C6BFA; font-size:14px; font-weight:700; text-decoration:none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sv-wrap">
+  <div class="sv-back"><a href="{% url 'ai_prompts' %}">← AI 프롬프트 생성기로 돌아가기</a></div>
+  <div class="sv-hero">
+    <div class="badge">📋 SATISFACTION SURVEY</div>
+    <h1>만족도 조사</h1>
+    <p>참여한 캠프를 선택해서 만족도 조사에 응해주세요!</p>
+  </div>
+  <div class="sv-grid">
+    {% for survey in surveys %}
+    <a href="{% url 'survey_detail' survey.slug %}" class="sv-card">
+      <div class="sv-card-icon">📝</div>
+      <h2>{{ survey.title }}</h2>
+      <p>6가지 활동에 대한 만족도를 별점으로 평가하고 의견을 남겨주세요!</p>
+      {% if user.is_staff %}
+        <span class="sv-btn sv-btn-admin">📊 결과 보기</span>
+      {% else %}
+        <span class="sv-btn sv-btn-student">✏️ 참여하기</span>
+      {% endif %}
+    </a>
+    {% empty %}
+    <p style="text-align:center;color:#9a96b4;">등록된 만족도 조사가 없어요.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

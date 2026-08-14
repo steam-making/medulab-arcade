@@ -196,6 +196,43 @@
   .gac-result-back { text-align:center; margin-top:28px; }
   .gac-result-back button { padding:12px 32px; border:1.5px solid #d8d2f0; border-radius:12px;
     background:#fff; font-size:14px; font-weight:700; color:#8C6BFA; cursor:pointer; }
+  .gac-result-item { cursor:pointer; transition:transform .15s, box-shadow .15s; }
+  .gac-result-item:hover { transform:translateY(-2px); box-shadow:0 12px 36px rgba(140,107,250,.18); }
+
+  /* 접속자 목록 버튼 */
+  .ga-member-list-btn { padding:2px 8px; border:1px solid #c4bde8; border-radius:6px;
+    background:#F8F7FF; color:#8C6BFA; font-size:11px; font-weight:700; cursor:pointer; margin-left:4px; }
+  .ga-member-list-btn:hover { background:#F1EEFF; }
+  .gac-stat-box.clickable { cursor:pointer; }
+  .gac-stat-box.clickable:hover { background:#E8FFF5; }
+
+  /* 모달 공통 */
+  .ga-modal-overlay { display:none; position:fixed; inset:0; background:rgba(30,26,62,.6);
+    backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; }
+  .ga-modal-overlay.open { display:flex; }
+  .ga-modal { background:#fff; border-radius:20px; padding:28px; max-width:480px;
+    width:calc(100% - 40px); max-height:85vh; overflow-y:auto;
+    box-shadow:0 16px 60px rgba(0,0,0,.3); position:relative; }
+  .ga-modal-title { font-size:16px; font-weight:900; color:var(--ink); margin:0 0 16px; }
+  .ga-modal-close { position:absolute; top:14px; right:16px; background:none; border:none;
+    font-size:22px; cursor:pointer; color:#aaa; line-height:1; }
+  .ga-modal-close:hover { color:var(--ink); }
+  .ga-member-item { display:flex; align-items:center; gap:10px; padding:10px 12px;
+    border-radius:10px; font-size:14px; font-weight:700; color:var(--ink);
+    background:#F8F7FF; margin-bottom:8px; }
+  .ga-member-num { font-size:12px; font-weight:800; color:#9a96b4; min-width:24px; }
+  .ga-export-btn { width:100%; padding:11px; border:1.5px solid #3DDC97; border-radius:10px;
+    background:#fff; color:#22c77c; font-size:13px; font-weight:800; cursor:pointer; margin-top:12px; }
+  .ga-export-btn:hover { background:#E8FFF5; }
+
+  /* 결과 상세 모달 */
+  .ga-detail-modal { max-width:560px; }
+  .ga-detail-rank { font-size:44px; text-align:center; margin-bottom:10px; }
+  .ga-detail-img { width:100%; max-height:420px; object-fit:contain; border-radius:14px; margin-bottom:16px; background:#f8f8f8; }
+  .ga-detail-title { font-size:20px; font-weight:900; color:var(--ink); margin-bottom:8px; }
+  .ga-detail-stars { font-size:28px; letter-spacing:3px; margin-bottom:6px; }
+  .ga-detail-score { font-size:18px; font-weight:800; color:#FF9142; margin-bottom:6px; }
+  .ga-detail-count { font-size:13px; color:#9a96b4; }
 
   @media (max-width:700px) {
     .gac-main { grid-template-columns:1fr; }
@@ -278,6 +315,7 @@
             포스터 {{ room.posters.count }}장 · {{ room.created_at|date:"m/d H:i" }}
             {% if room.status != 'done' %}
             &nbsp;·&nbsp; 👥 <span id="gaMemberCount{{ room.id }}">-</span>명 접속중
+            <button class="ga-member-list-btn" onclick="gaShowMemberList({{ room.id }})">📋 목록</button>
             {% endif %}
           </div>
           <div class="ga-poster-strip">
@@ -291,7 +329,7 @@
           </div>
           <div class="ga-room-actions">
             {% if room.status == 'waiting' %}
-            <button class="ga-btn start" onclick="gaStartVoting({{ room.id }}, '{{ room.name|escapejs }}')">▶ 투표 시작</button>
+            <button class="ga-btn start" onclick="gaStartVoting({{ room.id }}, '{{ room.name|escapejs }}')">▶ 평가 시작</button>
             {% endif %}
             {% if room.status == 'voting' %}
             <button class="ga-btn ctrl" onclick="gaOpenControl({{ room.id }}, '{{ room.name|escapejs }}')">📺 컨트롤 열기</button>
@@ -341,9 +379,9 @@
 
       <!-- 접속자 / 평가완료 -->
       <div class="gac-stats-grid">
-        <div class="gac-stat-box">
+        <div class="gac-stat-box clickable" onclick="gaShowMemberList(gaCurrRoomId)" title="클릭하여 접속자 목록 보기">
           <div class="gac-stat-val" id="gacMemberCount">0</div>
-          <div class="gac-stat-lbl">👥 접속자</div>
+          <div class="gac-stat-lbl">👥 접속자 (목록 ▸)</div>
         </div>
         <div class="gac-stat-box">
           <div class="gac-stat-val" id="gacVoteCount">0</div>
@@ -353,7 +391,7 @@
       <div class="gac-divider"></div>
 
       <button class="gac-btn-next" id="gacNextBtn" onclick="gaCtrlNext()">⏭ 다음 포스터</button>
-      <button class="gac-btn-end" onclick="gaCtrlEnd()">🏁 투표 종료</button>
+      <button class="gac-btn-end" onclick="gaCtrlEnd()">🏁 평가 종료</button>
     </div>
   </div>
 </div>
@@ -369,6 +407,24 @@
     <div class="gac-result-back">
       <button onclick="gaGoList()">← 방 목록으로</button>
     </div>
+  </div>
+</div>
+
+<!-- 접속자 목록 모달 -->
+<div class="ga-modal-overlay" id="gaMemberModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="ga-modal">
+    <button class="ga-modal-close" onclick="document.getElementById('gaMemberModal').classList.remove('open')">✕</button>
+    <div class="ga-modal-title">👥 접속자 목록</div>
+    <div id="gaMemberListBody"></div>
+    <button class="ga-export-btn" onclick="gaExportMembers()">⬇️ CSV 내보내기</button>
+  </div>
+</div>
+
+<!-- 결과 상세 모달 -->
+<div class="ga-modal-overlay" id="gaDetailModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="ga-modal ga-detail-modal">
+    <button class="ga-modal-close" onclick="document.getElementById('gaDetailModal').classList.remove('open')">✕</button>
+    <div id="gaDetailBody"></div>
   </div>
 </div>
 
@@ -671,8 +727,9 @@ function gaShowResultsData(results) {
       scoreHtml = `<div class="gac-result-stars-row">${starsStr}</div>
         <div class="gac-result-score">평균 ⭐ ${avg}점</div>`;
     }
+    const dataStr = encodeURIComponent(JSON.stringify(r));
     return `
-      <div class="gac-result-item ${i<3?'rank'+(i+1):''}">
+      <div class="gac-result-item ${i<3?'rank'+(i+1):''}" onclick="gaOpenDetail(${dataStr}, ${i})">
         <div class="gac-rank-num">${RANK_EMOJI[i]||(i+1)}</div>
         <img class="gac-result-img" src="${r.image_url}" alt="${r.title}">
         <div class="gac-result-info">
@@ -682,6 +739,64 @@ function gaShowResultsData(results) {
         </div>
       </div>`;
   }).join('');
+}
+
+// ── 접속자 목록 ──
+let gaMembersCache = [];
+async function gaShowMemberList(roomId) {
+  if (!roomId) return;
+  const body = document.getElementById('gaMemberListBody');
+  body.innerHTML = '<p style="color:#9a96b4;text-align:center;padding:16px 0;">불러오는 중...</p>';
+  document.getElementById('gaMemberModal').classList.add('open');
+  try {
+    const res = await fetch(`/api/gallery/room/${roomId}/stats/`);
+    const d = await res.json();
+    if (!d.ok) { body.innerHTML = '<p style="color:#FF6FA5;text-align:center;">오류가 발생했어요.</p>'; return; }
+    gaMembersCache = d.members || [];
+    if (!gaMembersCache.length) {
+      body.innerHTML = '<p style="color:#9a96b4;text-align:center;padding:16px 0;">아직 접속자가 없어요.</p>';
+      return;
+    }
+    body.innerHTML = gaMembersCache.map((m, i) => `
+      <div class="ga-member-item">
+        <span class="ga-member-num">${i+1}</span>
+        <span>${m.name}</span>
+      </div>`).join('');
+  } catch(e) { body.innerHTML = '<p style="color:#FF6FA5;text-align:center;">네트워크 오류</p>'; }
+}
+function gaExportMembers() {
+  if (!gaMembersCache.length) { gaToast('내보낼 데이터가 없어요.'); return; }
+  const rows = [['번호','이름'], ...gaMembersCache.map((m,i) => [i+1, m.name])];
+  const csv = '﻿' + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = '접속자_목록.csv';
+  a.click();
+}
+
+// ── 결과 상세 보기 ──
+function gaOpenDetail(r, rank) {
+  const modal = document.getElementById('gaDetailModal');
+  const body = document.getElementById('gaDetailBody');
+  const maxScore = gaMaxTotalScore || 5;
+  const avg = r.avg_score || 0;
+  let scoreHtml;
+  if (gaHasCriteria) {
+    const starCount = Math.max(0, Math.min(5, Math.round((avg / maxScore) * 5)));
+    scoreHtml = `<div class="ga-detail-stars">${'⭐'.repeat(starCount)}${'☆'.repeat(5-starCount)}</div>
+      <div class="ga-detail-score">${avg} / ${maxScore}점</div>`;
+  } else {
+    const s = Math.max(0, Math.min(5, Math.round(avg)));
+    scoreHtml = `<div class="ga-detail-stars">${s>0?'⭐'.repeat(s)+'☆'.repeat(5-s):'—'}</div>
+      <div class="ga-detail-score">평균 ⭐ ${avg}점</div>`;
+  }
+  body.innerHTML = `
+    <div class="ga-detail-rank">${RANK_EMOJI[rank]||(rank+1)+'위'}</div>
+    <img class="ga-detail-img" src="${r.image_url}" alt="${r.title}">
+    <div class="ga-detail-title">${r.title||'작품 '+(r.order+1)}</div>
+    ${scoreHtml}
+    <div class="ga-detail-count">${r.vote_count}명 참여</div>`;
+  modal.classList.add('open');
 }
 
 // ── 방 삭제 ──

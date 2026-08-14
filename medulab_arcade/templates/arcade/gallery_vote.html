@@ -147,7 +147,8 @@
   .gv-result-list { display:flex; flex-direction:column; gap:16px; }
   .gv-result-item { background:#fff; border-radius:20px; overflow:hidden;
     box-shadow:0 6px 24px rgba(140,107,250,.1); border:2px solid #e8e3fa;
-    display:flex; align-items:center; gap:0; }
+    display:flex; align-items:center; gap:0; cursor:pointer; transition:transform .15s, box-shadow .15s; }
+  .gv-result-item:hover { transform:translateY(-2px); box-shadow:0 12px 36px rgba(140,107,250,.2); }
   .gv-result-item.rank1 { border-color:#FFD700; box-shadow:0 8px 32px rgba(255,215,0,.25); }
   .gv-result-item.rank2 { border-color:#C0C0C0; }
   .gv-result-item.rank3 { border-color:#CD7F32; }
@@ -166,6 +167,23 @@
     border-radius:999px; box-shadow:0 6px 24px rgba(0,0,0,.2); z-index:9999;
     opacity:0; transition:opacity .3s; pointer-events:none; }
   .gv-toast.show { opacity:1; }
+
+  /* 결과 상세 모달 */
+  .gv-modal-overlay { display:none; position:fixed; inset:0; background:rgba(30,26,62,.65);
+    backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; }
+  .gv-modal-overlay.open { display:flex; }
+  .gv-modal { background:#fff; border-radius:20px; padding:28px; max-width:520px;
+    width:calc(100% - 32px); max-height:88vh; overflow-y:auto;
+    box-shadow:0 16px 60px rgba(0,0,0,.3); position:relative; }
+  .gv-modal-close { position:absolute; top:14px; right:16px; background:none; border:none;
+    font-size:22px; cursor:pointer; color:#aaa; line-height:1; }
+  .gv-modal-close:hover { color:var(--ink); }
+  .gv-detail-rank { font-size:44px; text-align:center; margin-bottom:10px; }
+  .gv-detail-img { width:100%; max-height:440px; object-fit:contain; border-radius:14px; margin-bottom:16px; background:#f8f8f8; }
+  .gv-detail-title { font-size:20px; font-weight:900; color:var(--ink); margin-bottom:8px; }
+  .gv-detail-stars { font-size:30px; letter-spacing:3px; margin-bottom:6px; }
+  .gv-detail-score { font-size:17px; font-weight:800; color:#FF9142; margin-bottom:6px; }
+  .gv-detail-count { font-size:13px; color:#9a96b4; }
 
   @media (max-width:700px) {
     .gv-vote-main { grid-template-columns:1fr; }
@@ -335,7 +353,7 @@ async function gvLoadRooms() {
               ${r.status==='waiting'?'대기중':'진행중'}
             </span>
           </div>
-          <div class="gv-room-item-sub">탭하여 입장</div>
+          <div class="gv-room-item-sub">${r.status==='voting'?'⚡ 평가 진행중 · 재입장 가능':'탭하여 입장'}</div>
         </div>
         <div class="gv-room-arrow">›</div>
       </div>
@@ -584,8 +602,9 @@ function gvShowResults(results) {
       scoreHtml = `<div class="gv-result-stars-row">${starsStr}</div>
         <div class="gv-result-score">평균 ⭐ ${avg}점</div>`;
     }
+    const ds = encodeURIComponent(JSON.stringify(r));
     return `
-      <div class="gv-result-item ${i<3?'rank'+(i+1):''}">
+      <div class="gv-result-item ${i<3?'rank'+(i+1):''}" onclick="gvOpenDetail(${ds},${i})">
         <div class="gv-result-rank">${RANK_EMOJI[i]||(i+1)}</div>
         <img class="gv-result-img" src="${r.image_url}" alt="${r.title}">
         <div class="gv-result-info">
@@ -603,6 +622,40 @@ function gvToast(msg) {
   setTimeout(() => el.classList.remove('show'), 2500);
 }
 
+// ── 결과 상세 보기 ──
+function gvOpenDetail(r, rank) {
+  const modal = document.getElementById('gvDetailModal');
+  const body = document.getElementById('gvDetailBody');
+  const maxScore = gvMaxTotalScore || 5;
+  const avg = r.avg_score || 0;
+  let scoreHtml;
+  if (gvHasCriteria) {
+    const starCount = Math.max(0, Math.min(5, Math.round((avg / maxScore) * 5)));
+    scoreHtml = `<div class="gv-detail-stars">${'⭐'.repeat(starCount)}${'☆'.repeat(5-starCount)}</div>
+      <div class="gv-detail-score">${avg} / ${maxScore}점</div>`;
+  } else {
+    const s = Math.max(0, Math.min(5, Math.round(avg)));
+    scoreHtml = `<div class="gv-detail-stars">${s>0?'⭐'.repeat(s)+'☆'.repeat(5-s):'—'}</div>
+      <div class="gv-detail-score">평균 ⭐ ${avg}점</div>`;
+  }
+  body.innerHTML = `
+    <div class="gv-detail-rank">${RANK_EMOJI[rank]||(rank+1)+'위'}</div>
+    <img class="gv-detail-img" src="${r.image_url}" alt="${r.title}">
+    <div class="gv-detail-title">${r.title||'작품 '+(r.order+1)}</div>
+    ${scoreHtml}
+    <div class="gv-detail-count">${r.vote_count}명 참여</div>`;
+  modal.classList.add('open');
+}
+
 gvLoadRooms();
 </script>
+
+<!-- 결과 상세 모달 -->
+<div class="gv-modal-overlay" id="gvDetailModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="gv-modal">
+    <button class="gv-modal-close" onclick="document.getElementById('gvDetailModal').classList.remove('open')">✕</button>
+    <div id="gvDetailBody"></div>
+  </div>
+</div>
+
 {% endblock %}

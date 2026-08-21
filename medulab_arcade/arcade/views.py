@@ -186,6 +186,276 @@ def problem_finder(request):
     return render(request, 'arcade/problem_finder.html')
 
 
+def camp_planner(request):
+    return render(request, 'arcade/camp_planner.html')
+
+def local_problem_finder(request):
+    return render(request, 'arcade/local_problem_finder.html')
+
+
+def _infer_problem_category(text):
+    rules = [
+        ('교통', ['교통','버스','주차','도로','신호','보행','자전거','이동','정류장','횡단보도']),
+        ('환경', ['환경','쓰레기','공기','수질','미세먼지','오염','녹지','소음','악취']),
+        ('안전', ['안전','범죄','사고','위험','화재','재난','침수','가로등','조명']),
+        ('복지', ['복지','노인','어르신','장애','아동','청소년','돌봄','고령','독거']),
+        ('경제', ['경제','일자리','취업','상권','임대','소상공인','창업','매출','폐업']),
+        ('교육', ['교육','학교','학생','학원','방과후','진로','디지털','격차']),
+        ('주거', ['주거','주택','아파트','빈집','층간','소음','노후','침수']),
+        ('의료', ['의료','병원','건강','응급','진료','약국','복약','정신']),
+        ('문화', ['문화','관광','체육','공원','여가','행사','시설','광장']),
+    ]
+    for cat, keywords in rules:
+        if any(kw in text for kw in keywords):
+            return cat
+    return '기타'
+
+
+def _get_curated_problems(city, district):
+    GWANGJU = {
+        '동구': [
+            {'title': '충장로·금남로 상권 공동화로 빈 건물이 늘고 있어요', 'category': '경제'},
+            {'title': '국립아시아문화전당 주변 주차 공간이 부족해요', 'category': '교통'},
+            {'title': '동명동 골목 야간 조명이 부족해서 밤에 무서워요', 'category': '안전'},
+            {'title': '노후 주택이 많아 안전 점검이 필요해요', 'category': '주거'},
+            {'title': '대인시장 활성화를 위한 청년 창업 지원이 부족해요', 'category': '경제'},
+            {'title': '원도심 지역 대중교통 배차 간격이 너무 길어요', 'category': '교통'},
+            {'title': '독거 어르신이 많아 복지 사각지대가 생기고 있어요', 'category': '복지'},
+            {'title': '하천 수질 오염으로 악취가 발생해요', 'category': '환경'},
+        ],
+        '서구': [
+            {'title': '양동시장 주변 주차 공간이 심각하게 부족해요', 'category': '교통'},
+            {'title': '광천동 일대 도로 교통 체증이 매일 발생해요', 'category': '교통'},
+            {'title': '노후 주택가 골목에 가로등이 없어 야간 안전 위협이 있어요', 'category': '안전'},
+            {'title': '소상공인 온라인 판매 전환 교육·지원이 부족해요', 'category': '경제'},
+            {'title': '양동시장 화장실 등 편의시설 환경이 열악해요', 'category': '문화'},
+            {'title': '화정동 일대 쓰레기 불법 투기 문제가 심각해요', 'category': '환경'},
+            {'title': '청소년 방과후 활동을 위한 공간과 프로그램이 부족해요', 'category': '교육'},
+            {'title': '거동이 불편한 어르신의 병원 이동 수단이 없어요', 'category': '복지'},
+        ],
+        '남구': [
+            {'title': '봉선동 교통 체증이 심해 출퇴근이 어려워요', 'category': '교통'},
+            {'title': '주거지 인근 불법 쓰레기 투기 문제가 지속돼요', 'category': '환경'},
+            {'title': '도심 내 자전거 전용도로가 끊겨 연결이 안 돼요', 'category': '교통'},
+            {'title': '노후 주택 밀집 지역 침수 피해 우려가 있어요', 'category': '주거'},
+            {'title': '지역 상권 침체로 빈 상가가 증가하고 있어요', 'category': '경제'},
+            {'title': '청소년 문화·체육 시설이 부족해요', 'category': '교육'},
+            {'title': '독거 어르신 안전 확인 시스템이 부족해요', 'category': '복지'},
+            {'title': '주택가 야간 조명이 부족해 범죄 위험이 있어요', 'category': '안전'},
+        ],
+        '북구': [
+            {'title': '첨단지구 출퇴근 시간 교통 혼잡이 심해요', 'category': '교통'},
+            {'title': '전통시장 인근 대형마트 쏠림으로 소상공인이 침체됐어요', 'category': '경제'},
+            {'title': '재개발 예정 지역 노후 건물 안전 문제가 있어요', 'category': '안전'},
+            {'title': '신규 아파트 단지 주변 주차 공간이 부족해요', 'category': '교통'},
+            {'title': '미세먼지 고농도 시 야외 활동 안내가 부족해요', 'category': '환경'},
+            {'title': '청소년을 위한 방과후 돌봄 시설이 부족해요', 'category': '교육'},
+            {'title': '외국인 근로자·다문화 가정 지원 서비스가 부족해요', 'category': '복지'},
+            {'title': '버스 정류장 시설이 노후해 비·바람을 피할 수 없어요', 'category': '교통'},
+        ],
+        '광산구': [
+            {'title': '수완지구 주차 공간 부족으로 불법 주차가 많아요', 'category': '교통'},
+            {'title': '하남산단 인근 공기 오염과 소음 민원이 많아요', 'category': '환경'},
+            {'title': '외국인 밀집 지역 쓰레기 분리수거 안내가 부족해요', 'category': '환경'},
+            {'title': '도시 외곽 지역 대중교통 배차가 너무 드물어요', 'category': '교통'},
+            {'title': '첨단산단 청년 근로자 주거 지원이 부족해요', 'category': '주거'},
+            {'title': '어등산 인근 야간 등산로 안전 시설이 미흡해요', 'category': '안전'},
+            {'title': '노인 돌봄 시설 수요 대비 공급이 부족해요', 'category': '복지'},
+            {'title': '초등학교 앞 스쿨존 안전 시설 개선이 필요해요', 'category': '안전'},
+        ],
+    }
+    GENERIC_BY_CITY = {
+        '서울특별시': [
+            {'title': '지하철역 주변 불법 주·정차 문제가 심해요', 'category': '교통'},
+            {'title': '골목 보행로가 좁고 위험해 개선이 필요해요', 'category': '안전'},
+            {'title': '전통시장 인근 주차 공간이 부족해요', 'category': '교통'},
+            {'title': '노후 상가 밀집 지역 도로 포장 상태가 나빠요', 'category': '안전'},
+            {'title': '야간 골목길 조명이 부족해 범죄 위험이 있어요', 'category': '안전'},
+            {'title': '독거 노인 복지 서비스 신청 경로가 복잡해요', 'category': '복지'},
+            {'title': '청년 임대주택 공급이 부족해 이사가 어려워요', 'category': '주거'},
+            {'title': '음식물 쓰레기 처리 시설이 부족해요', 'category': '환경'},
+        ],
+        '부산광역시': [
+            {'title': '구도심 지역 빈 건물이 늘어 지역 활력이 떨어지고 있어요', 'category': '경제'},
+            {'title': '해안가 주변 불법 주차 문제가 심각해요', 'category': '교통'},
+            {'title': '노후 주택 밀집지역 개량 지원이 필요해요', 'category': '주거'},
+            {'title': '관광객 급증으로 주민 생활 소음 피해가 커요', 'category': '안전'},
+            {'title': '외국인 관광객을 위한 다국어 안내가 부족해요', 'category': '문화'},
+            {'title': '노인 인구 급증 대비 돌봄 인력이 부족해요', 'category': '복지'},
+            {'title': '고지대 주거지 급경사 도로가 보행 위험 요소에요', 'category': '안전'},
+            {'title': '대기 오염으로 호흡기 질환 민원이 많아요', 'category': '환경'},
+        ],
+    }
+    GENERIC = [
+        {'title': '대중교통 배차 간격이 길어 대기 시간이 길어요', 'category': '교통'},
+        {'title': '야간 골목길 조명 부족으로 안전 우려가 있어요', 'category': '안전'},
+        {'title': '불법 쓰레기 투기 문제로 생활 환경이 악화됐어요', 'category': '환경'},
+        {'title': '노후 주택 주민을 위한 지원 서비스가 부족해요', 'category': '주거'},
+        {'title': '소상공인 지원을 위한 지역 상권 활성화가 필요해요', 'category': '경제'},
+        {'title': '청소년을 위한 방과후 프로그램 공간이 부족해요', 'category': '교육'},
+        {'title': '독거 어르신 안전 확인 및 복지 서비스가 필요해요', 'category': '복지'},
+        {'title': '주차 공간 부족으로 불법 주차 민원이 자주 발생해요', 'category': '교통'},
+        {'title': '쓰레기 분리수거 안내 부족으로 오배출이 많아요', 'category': '환경'},
+        {'title': '지역 의료 시설 접근성이 낮아 병원까지 멀리 가야 해요', 'category': '의료'},
+    ]
+    city_name = city or ''
+    # 광주전남특별자치도 — 구 이름 앞에 "광주 " 접두어 포함
+    if '광주전남' in city_name or '광주' in city_name:
+        # district는 "광주 서구" 형식이므로 뒷부분만 추출
+        district_key = district.replace('광주 ', '').strip() if district else ''
+        # 전남 시/군 큐레이션
+        JEONNAM = {
+            '목포시': [
+                {'title': '구도심 빈 건물 증가로 도시 활력이 떨어지고 있어요', 'category': '경제'},
+                {'title': '항구 주변 주차 공간 부족 문제가 심해요', 'category': '교통'},
+                {'title': '노후 주택 밀집지역 안전 점검이 필요해요', 'category': '주거'},
+                {'title': '해안 관광지 외국어 안내판이 부족해요', 'category': '문화'},
+                {'title': '청년 일자리 부족으로 인구 유출이 심각해요', 'category': '경제'},
+                {'title': '어르신 복지 시설 접근성이 낮아요', 'category': '복지'},
+            ],
+            '여수시': [
+                {'title': '관광 성수기 교통 혼잡으로 주민 불편이 커요', 'category': '교통'},
+                {'title': '해양 쓰레기 문제로 관광지 이미지가 나빠지고 있어요', 'category': '환경'},
+                {'title': '야간 관광 인프라가 부족해 방문객이 일찍 떠나요', 'category': '문화'},
+                {'title': '어촌 고령화로 지역 공동체가 무너지고 있어요', 'category': '복지'},
+                {'title': '석유화학단지 주변 대기 오염 민원이 많아요', 'category': '환경'},
+                {'title': '섬 지역 의료 접근성이 매우 낮아요', 'category': '의료'},
+            ],
+            '순천시': [
+                {'title': '생태공원 주변 불법 쓰레기 투기가 심해요', 'category': '환경'},
+                {'title': '대중교통 연결이 부족해 농촌 주민 이동이 불편해요', 'category': '교통'},
+                {'title': '청년 창업 지원 공간과 프로그램이 부족해요', 'category': '경제'},
+                {'title': '노인 인구 증가 대비 돌봄 서비스가 부족해요', 'category': '복지'},
+                {'title': '주차 공간 부족으로 도심 혼잡이 심해요', 'category': '교통'},
+                {'title': '청소년 문화·여가 시설이 부족해요', 'category': '교육'},
+            ],
+            '나주시': [
+                {'title': '혁신도시 입주 기업 대비 주거·생활 인프라가 부족해요', 'category': '주거'},
+                {'title': '농촌 고령화로 영농 인력이 부족해요', 'category': '경제'},
+                {'title': '대중교통 연계가 부족해 혁신도시 출퇴근이 불편해요', 'category': '교통'},
+                {'title': '청년 유입을 위한 문화·여가 시설이 부족해요', 'category': '문화'},
+                {'title': '전통시장 활성화를 위한 지원이 필요해요', 'category': '경제'},
+                {'title': '빈집 문제로 구도심 경관이 나빠지고 있어요', 'category': '주거'},
+            ],
+        }
+        problems = GWANGJU.get(district_key, []) or JEONNAM.get(district, [])
+        if not problems:
+            # 전남 지역이면 전남 공통 + 광주 샘플
+            if district and district not in ['동구','서구','남구','북구','광산구',
+                                              '광주 동구','광주 서구','광주 남구','광주 북구','광주 광산구']:
+                return [
+                    {'title': f'{district} 대중교통 배차 간격이 너무 길어요', 'category': '교통'},
+                    {'title': f'{district} 고령화로 빈집·빈 상가가 늘어나고 있어요', 'category': '경제'},
+                    {'title': f'{district} 청소년·청년을 위한 문화 시설이 부족해요', 'category': '교육'},
+                    {'title': f'{district} 노인 돌봄 및 복지 서비스가 부족해요', 'category': '복지'},
+                    {'title': f'{district} 주민 생활 불편 민원 처리가 늦어요', 'category': '기타'},
+                    {'title': f'{district} 쓰레기 불법 투기 문제가 지속돼요', 'category': '환경'},
+                    {'title': f'{district} 지역 경제 활성화를 위한 지원이 필요해요', 'category': '경제'},
+                    {'title': f'{district} 응급의료 접근성이 낮아요', 'category': '의료'},
+                ]
+            # 광주 전체 샘플
+            combined = []
+            for probs in GWANGJU.values():
+                combined.extend(probs[:2])
+            return combined[:10]
+        return problems
+    if city_name in GENERIC_BY_CITY:
+        return GENERIC_BY_CITY[city_name]
+    return GENERIC
+
+
+def api_local_problems(request):
+    import urllib.request as urllib_req
+    import xml.etree.ElementTree as ET
+    from urllib.parse import quote as uq
+    from datetime import datetime, timedelta
+    from email.utils import parsedate
+
+    city = request.GET.get('city', '').strip()
+    district = request.GET.get('district', '').strip()
+    if not city:
+        return JsonResponse({'ok': False, 'error': '지역을 선택해주세요.'})
+
+    try:
+        days = int(request.GET.get('days', 90))
+        if days not in (7, 30, 90, 180, 365):
+            days = 90
+    except (ValueError, TypeError):
+        days = 90
+
+    cutoff = datetime.now() - timedelta(days=days)
+    after_str = cutoff.strftime('%Y-%m-%d')
+
+    location = f"{city} {district}".strip() if district else city
+    problems = []
+
+    try:
+        for suffix in ['지역문제 불편', '민원 개선 요구']:
+            query = f"{location} {suffix} after:{after_str}"
+            url = f"https://news.google.com/rss/search?q={uq(query)}&hl=ko&gl=KR&ceid=KR:ko"
+            req = urllib_req.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib_req.urlopen(req, timeout=6) as resp:
+                content = resp.read()
+            root = ET.fromstring(content)
+            channel = root.find('channel')
+            if channel is None:
+                continue
+            for item in channel.findall('item')[:8]:
+                title = item.findtext('title', '').strip()
+                link = item.findtext('link', '').strip()
+                source_el = item.find('source')
+                source_name = source_el.text.strip() if source_el is not None and source_el.text else ''
+                pub_date = item.findtext('pubDate', '').strip()
+                # pubDate: "Thu, 15 Aug 2024 12:00:00 GMT" → "2024-08-15"
+                date_str = ''
+                try:
+                    pd = parsedate(pub_date)
+                    if pd:
+                        article_date = datetime(pd[0], pd[1], pd[2])
+                        if article_date < cutoff:
+                            continue  # 기간 외 기사 제외
+                        date_str = f"{pd[0]}-{pd[1]:02d}-{pd[2]:02d}"
+                except Exception:
+                    pass
+                if ' - ' in title:
+                    title = title.rsplit(' - ', 1)[0].strip()
+                if not title or len(title) < 8:
+                    continue
+                if not any(kw in title for kw in [
+                    city[:2], district[:2] if len(district) >= 2 else '',
+                    '지역', '주민', '시민', '불편', '문제', '개선', '민원', '부족', '위험'
+                ]):
+                    continue
+                problems.append({
+                    'title': title,
+                    'category': _infer_problem_category(title),
+                    'source': source_name,
+                    'link': link,
+                    'date': date_str,
+                })
+            if len(problems) >= 8:
+                break
+        # Deduplicate
+        seen, unique = set(), []
+        for p in problems:
+            key = p['title'][:20]
+            if key not in seen:
+                seen.add(key)
+                unique.append(p)
+        problems = unique[:12]
+    except Exception:
+        pass
+
+    if len(problems) < 4:
+        curated = _get_curated_problems(city, district)
+        existing_titles = {p['title'][:15] for p in problems}
+        for p in curated:
+            if p['title'][:15] not in existing_titles and len(problems) < 12:
+                problems.append(p)
+
+    return JsonResponse({'ok': True, 'problems': problems, 'location': location})
+
+
 PROMPTS_FILE = os.path.join(os.path.dirname(__file__), 'data', 'presentation_prompts.json')
 
 def _load_presentation_prompts():

@@ -76,6 +76,10 @@
                     버튼을 누르면 학생이름·대회년도·대회종류·부문·상격·수여기관·수상일자가 자동으로 채워집니다.<br>
                     <span style="color: rgba(255,255,255,0.55);">자동 입력 후 내용을 확인하고 수정해 주세요.</span>
                 </div>
+                {% elif field.name == 'grade' and is_cert_form %}
+                <div id="grade-field-wrap">
+                    {{ field }}
+                </div>
                 {% elif field.name == 'cert_info' or field.name == 'competition_type' %}
                 <div id="{{ field.name }}-autocomplete" style="position: relative;">
                     <input
@@ -259,6 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
             searchInput.value = itemData.name;
             updateHint(itemData);
             hideDropdown();
+            if (config.onSelect) config.onSelect(itemData);
         };
 
         const updateActiveItem = () => {
@@ -377,6 +382,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function updateGradeField(gradeInfo) {
+        const wrap = document.getElementById('grade-field-wrap');
+        if (!wrap) return;
+        const currentVal = (wrap.querySelector('input,select') || {}).value || '';
+        if (gradeInfo && gradeInfo.length > 0) {
+            const select = document.createElement('select');
+            select.name = 'grade';
+            select.id = 'id_grade';
+            select.className = wrap.querySelector('input,select') ? (wrap.querySelector('input,select').className || '') : '';
+            select.style.cssText = 'width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1);';
+            const blankOpt = document.createElement('option');
+            blankOpt.value = '';
+            blankOpt.textContent = '급수를 선택하세요';
+            select.appendChild(blankOpt);
+            gradeInfo.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.grade;
+                opt.textContent = g.grade + (g.target ? ' — ' + g.target : '');
+                if (g.grade === currentVal) opt.selected = true;
+                select.appendChild(opt);
+            });
+            wrap.innerHTML = '';
+            wrap.appendChild(select);
+        } else {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = 'grade';
+            input.id = 'id_grade';
+            input.placeholder = '급수를 입력하세요 (예: 3급)';
+            input.value = currentVal;
+            input.style.cssText = 'width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1);';
+            wrap.innerHTML = '';
+            wrap.appendChild(input);
+        }
+    }
+
     setupSelectAutocomplete({
         containerId: 'cert_info-autocomplete',
         searchInputId: 'cert_info-search',
@@ -387,7 +428,8 @@ document.addEventListener('DOMContentLoaded', function() {
         responseKey: 'certinfos',
         icon: '🎖️',
         emptyHint: '자격종류를 검색한 뒤 목록에서 선택하세요.',
-        metaText: (item) => item.issuer ? `발급기관 ${item.issuer}` : ''
+        metaText: (item) => item.issuer ? `발급기관 ${item.issuer}` : '',
+        onSelect: (item) => updateGradeField(item.grade_info || [])
     });
 
     setupSelectAutocomplete({

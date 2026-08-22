@@ -1792,7 +1792,7 @@ def search_certinfos(request):
         return JsonResponse({'certinfos': []})
     
     certs = CertInfo.objects.filter(name__icontains=q)[:10]
-    results = [{'id': c.id, 'name': c.name, 'issuer': c.issuer} for c in certs]
+    results = [{'id': c.id, 'name': c.name, 'issuer': c.issuer, 'grade_info': c.grade_info or []} for c in certs]
     return JsonResponse({'certinfos': results})
 
 @login_required
@@ -2682,7 +2682,7 @@ def board_cert_create(request):
             return redirect('board_cert')
     else:
         form = CertificationForm()
-    return render(request, 'arcade/board_form.html', {'form': form, 'title': '자격취득 글쓰기'})
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '자격취득 글쓰기', 'is_cert_form': True})
 
 
 @user_passes_test(lambda u: u.is_staff)
@@ -2740,7 +2740,7 @@ def board_cert_update(request, pk):
             return redirect('board_cert_detail', pk=cert.pk)
     else:
         form = CertificationForm(instance=cert)
-    return render(request, 'arcade/board_form.html', {'form': form, 'title': '자격취득 수정'})
+    return render(request, 'arcade/board_form.html', {'form': form, 'title': '자격취득 수정', 'is_cert_form': True})
 
 @user_passes_test(lambda u: u.is_staff)
 def board_cert_delete(request, pk):

@@ -50,15 +50,20 @@
                         </div>
                         {% endif %}
                     </div>
-                    <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                        <div>
-                            <div style="display: inline-flex; align-items: center; gap: 6px; color: #bfdbfe; font-size: 12px; font-weight: 700; margin-bottom: 10px; background: rgba(59, 130, 246, 0.14); border: 1px solid rgba(59, 130, 246, 0.24); padding: 4px 10px; border-radius: 999px;">{{ cert.cert_info.name|default:cert.cert_name }}</div>
+                    <div style="padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+                            <div style="display: inline-flex; align-items: center; gap: 6px; color: #bfdbfe; font-size: 12px; font-weight: 700; background: rgba(59, 130, 246, 0.14); border: 1px solid rgba(59, 130, 246, 0.24); padding: 4px 10px; border-radius: 999px;">{{ cert.cert_info.name|default:cert.cert_name }}</div>
+                            {% if cert.grade %}
+                            <div style="display: inline-flex; align-items: center; gap: 4px; color: #6ee7b7; font-size: 12px; font-weight: 700; background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.28); padding: 4px 10px; border-radius: 999px;">🏅 {{ cert.grade }}</div>
+                            {% endif %}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                             <div style="color: #fff; font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
                                 <span style="font-size: 20px;">🧑‍🎓</span> {{ cert.masked_name }}
                             </div>
-                        </div>
-                        <div style="color: var(--text-muted); font-size: 16px; white-space: nowrap;">
-                            {{ cert.date_acquired|date:"Y.m.d" }}
+                            <div style="color: var(--text-muted); font-size: 14px; white-space: nowrap;">
+                                {{ cert.date_acquired|date:"Y.m.d" }}
+                            </div>
                         </div>
                     </div>
                 </a>

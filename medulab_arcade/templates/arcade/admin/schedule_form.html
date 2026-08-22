@@ -123,7 +123,11 @@
 
             <div class="form-group">
                 <label>일정명 *</label>
-                {{ form.title }}
+                <div style="position:relative;" id="titleWrap">
+                    {{ form.title }}
+                    <div id="titleDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:12px; z-index:200; max-height:240px; overflow-y:auto; box-shadow:0 10px 24px rgba(0,0,0,0.5); margin-top:4px;"></div>
+                </div>
+                <div id="titleHint" style="font-size:12px; color:var(--text-muted); margin-top:6px;"></div>
                 {% if form.title.errors %}<div class="form-errors">{{ form.title.errors.0 }}</div>{% endif %}
             </div>
 
@@ -270,6 +274,88 @@
         });
         
         toggleFields(); // Initial run
+
+        // ── 일정명 자동완성 (대회/자격시험 유형일 때) ──────────────────────
+        const titleInput = document.getElementById('id_title');
+        const titleDropdown = document.getElementById('titleDropdown');
+        const titleHint = document.getElementById('titleHint');
+        let titleTimer = null;
+
+        function getSelectedEventType() {
+            let val = 'academic';
+            typeRadios.forEach(r => { if (r.checked) val = r.value; });
+            return val;
+        }
+
+        function getApiUrl(eventType) {
+            if (eventType === 'competition') return '/api/search-competition-types/';
+            if (eventType === 'certification') return '/api/search-certinfos/';
+            return null;
+        }
+
+        function getItemsKey(eventType) {
+            if (eventType === 'competition') return 'competition_types';
+            if (eventType === 'certification') return 'certinfos';
+            return null;
+        }
+
+        function updateTitleHint() {
+            const t = getSelectedEventType();
+            if (t === 'competition') {
+                titleHint.textContent = '대회종류 목록에서 선택하거나 새 이름을 직접 입력하세요. 없는 대회명은 자동 등록됩니다.';
+            } else if (t === 'certification') {
+                titleHint.textContent = '자격시험 목록에서 선택하거나 새 이름을 직접 입력하세요.';
+            } else {
+                titleHint.textContent = '';
+            }
+        }
+
+        function renderTitleDropdown(items, labelKey) {
+            if (!items.length) { titleDropdown.style.display = 'none'; return; }
+            titleDropdown.innerHTML = items.slice(0, 15).map(item =>
+                `<div data-name="${item.name.replace(/"/g,'&quot;')}" style="padding:11px 16px; cursor:pointer; color:#fff; border-bottom:1px solid rgba(255,255,255,0.05); font-size:14px;">
+                    <strong>${item.name}</strong>
+                    ${item.organization ? `<span style="font-size:12px;color:rgba(255,255,255,0.45);margin-left:8px;">${item.organization}</span>` : ''}
+                    ${item.issuer ? `<span style="font-size:12px;color:rgba(255,255,255,0.45);margin-left:8px;">${item.issuer}</span>` : ''}
+                </div>`
+            ).join('');
+            titleDropdown.querySelectorAll('[data-name]').forEach(el => {
+                el.addEventListener('mouseenter', () => el.style.background = 'rgba(59,130,246,0.22)');
+                el.addEventListener('mouseleave', () => el.style.background = '');
+                el.addEventListener('click', () => {
+                    titleInput.value = el.dataset.name;
+                    titleDropdown.style.display = 'none';
+                });
+            });
+            titleDropdown.style.display = 'block';
+        }
+
+        function fetchTitleSuggestions() {
+            const t = getSelectedEventType();
+            const apiUrl = getApiUrl(t);
+            const key = getItemsKey(t);
+            if (!apiUrl) { titleDropdown.style.display = 'none'; return; }
+            const q = titleInput.value.trim();
+            clearTimeout(titleTimer);
+            titleTimer = setTimeout(() => {
+                fetch(`${apiUrl}?q=${encodeURIComponent(q || ' ')}`)
+                    .then(r => r.json())
+                    .then(data => renderTitleDropdown(data[key] || [], key))
+                    .catch(() => titleDropdown.style.display = 'none');
+            }, 150);
+        }
+
+        titleInput.addEventListener('input', fetchTitleSuggestions);
+        titleInput.addEventListener('focus', fetchTitleSuggestions);
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#titleWrap')) titleDropdown.style.display = 'none';
+        });
+
+        typeRadios.forEach(r => r.addEventListener('change', () => {
+            updateTitleHint();
+            if (titleInput.value) fetchTitleSuggestions();
+        }));
+        updateTitleHint();
 
         // Dynamic "add more" for attachments
         const addBtn = document.getElementById('add-attachment-btn');

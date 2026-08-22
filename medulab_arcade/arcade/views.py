@@ -1791,21 +1791,18 @@ def search_certinfos(request):
     if not q:
         return JsonResponse({'certinfos': []})
     
-    certs = CertInfo.objects.filter(name__icontains=q)[:10]
-    results = [{'id': c.id, 'name': c.name, 'issuer': c.issuer, 'grade_info': c.grade_info or []} for c in certs]
+    qs = CertInfo.objects.filter(name__icontains=q)[:10] if q and q != ' ' else CertInfo.objects.all().order_by('name')[:30]
+    results = [{'id': c.id, 'name': c.name, 'issuer': c.issuer, 'grade_info': c.grade_info or []} for c in qs]
     return JsonResponse({'certinfos': results})
 
 @login_required
 def search_competition_types(request):
     """대회종류 자동완성을 위한 API"""
     q = request.GET.get('q', '').strip()
-    if not q:
-        return JsonResponse({'competition_types': []})
-
-    competition_types = CompetitionType.objects.filter(name__icontains=q)[:10]
+    qs = CompetitionType.objects.filter(name__icontains=q).order_by('order', 'name')[:20] if q and q != ' ' else CompetitionType.objects.all().order_by('order', 'name')[:30]
     results = [
         {'id': c.id, 'name': c.name, 'organization': c.organization}
-        for c in competition_types
+        for c in qs
     ]
     return JsonResponse({'competition_types': results})
 
@@ -2197,6 +2194,16 @@ def _handle_attachment_uploads(request, event):
             ScheduleAttachment.objects.create(event=event, file=f)
 
 
+def _auto_create_competition_type(event):
+    """대회 유형 일정 저장 시 CompetitionType에 없는 대회명이면 자동 추가"""
+    if event.event_type != ScheduleEvent.EVENT_TYPE_COMPETITION:
+        return
+    name = (event.title or '').strip()
+    if not name:
+        return
+    CompetitionType.objects.get_or_create(name=name)
+
+
 def schedule_admin_create(request):
     """신규 일정 등록"""
     if request.method == 'POST':
@@ -2204,6 +2211,7 @@ def schedule_admin_create(request):
         if form.is_valid():
             event = form.save()
             _handle_attachment_uploads(request, event)
+            _auto_create_competition_type(event)
             messages.success(request, f'일정 "{event.title}"이 등록되었습니다.')
             return redirect('schedule_admin_list')
     else:
@@ -2227,6 +2235,7 @@ def schedule_admin_edit(request, event_id):
         if form.is_valid():
             event = form.save()
             _handle_attachment_uploads(request, event)
+            _auto_create_competition_type(event)
             messages.success(request, f'일정 "{event.title}"이 수정되었습니다.')
             return redirect('schedule_admin_list')
     else:

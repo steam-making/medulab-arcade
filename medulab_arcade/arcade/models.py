@@ -533,6 +533,7 @@ class Certification(models.Model):
         verbose_name='자격종류'
     )
     cert_name = models.CharField('자격증명', max_length=100)
+    grade = models.CharField('급수', max_length=50, blank=True, default='')
     issuer = models.CharField('발급기관', max_length=100, blank=True, null=True)
     date_acquired = models.DateField('취득일자')
     thumbnail = models.ImageField('자격증/배지 이미지', upload_to='certs/', blank=True, null=True)

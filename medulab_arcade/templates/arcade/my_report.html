@@ -651,6 +651,29 @@
             </div>
         </div>
 
+        <!-- 1-1. 대회/자격 접수 이력 -->
+        {% if my_exam_registrations %}
+        <div class="section-card">
+            <h3>📋 대회/자격 접수 이력</h3>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+            {% for r in my_exam_registrations %}
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px 18px; gap:12px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <span style="font-size:11px; font-weight:800; padding:3px 10px; border-radius:999px; {% if r.event_type == 'cert' %}background:rgba(99,102,241,0.15); color:#a5b4fc; border:1px solid rgba(99,102,241,0.25);{% else %}background:rgba(245,158,11,0.13); color:#fcd34d; border:1px solid rgba(245,158,11,0.25);{% endif %}">
+                        {% if r.event_type == 'cert' %}자격시험{% else %}대회{% endif %}
+                    </span>
+                    <span style="font-weight:700; font-size:14px; color:#e0e0e0;">{{ r.event_name }}</span>
+                    {% if r.note %}<span style="font-size:12px; color:rgba(255,255,255,0.4);">· {{ r.note }}</span>{% endif %}
+                </div>
+                <div style="font-size:13px; font-weight:700; color:#a78bfa; white-space:nowrap;">
+                    {{ r.exam_date|date:"Y.m.d" }}{% if r.exam_time %} {{ r.exam_time|time:"H:i" }}{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- 2. 오늘의 코딩 학습 내역 -->
         <div class="section-card">
             <h3>💻 오늘의 코딩 학습 내역</h3>

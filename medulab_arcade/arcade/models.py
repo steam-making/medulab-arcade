@@ -937,3 +937,49 @@ class SatisfactionResponse(models.Model):
 
     def __str__(self):
         return f"{self.survey.title} - {self.respondent_name}"
+
+
+class ExamRegistration(models.Model):
+    EVENT_TYPE_CHOICES = [
+        ('cert', '자격시험'),
+        ('contest', '대회'),
+    ]
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='exam_registrations',
+        verbose_name='회원',
+    )
+    event_type = models.CharField('종류', max_length=10, choices=EVENT_TYPE_CHOICES, default='cert')
+    event_name = models.CharField('대회/자격시험명', max_length=200)
+    competition_type = models.ForeignKey(
+        'CompetitionType',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='대회종류 (연결)',
+    )
+    cert_info = models.ForeignKey(
+        'CertInfo',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='자격종류 (연결)',
+    )
+    exam_date = models.DateField('시험/대회 날짜')
+    exam_time = models.TimeField('시간', null=True, blank=True)
+    note = models.TextField('메모', blank=True)
+    registered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='registered_exams',
+        verbose_name='등록 관리자',
+    )
+    created_at = models.DateTimeField('등록일시', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '대회/자격 접수 이력'
+        verbose_name_plural = '대회/자격 접수 이력'
+        ordering = ['exam_date', 'exam_time', '-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.event_name} ({self.exam_date})"

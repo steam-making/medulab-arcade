@@ -3075,13 +3075,18 @@ def my_report(request):
     badge_count = get_user_badge_count(user)
 
     # 7. 자격취득 / 수상이력 (학생 이름 매칭)
-    from .models import Certification, Award
+    from .models import Certification, Award, ExamRegistration
     my_certs = []
     my_awards = []
     real_name = profile.real_name if profile.real_name else None
     if real_name:
         my_certs = list(Certification.objects.filter(student_name=real_name).select_related('cert_info').order_by('-date_acquired'))
         my_awards = list(Award.objects.filter(student_name=real_name).select_related('competition_type').order_by('-date_awarded'))
+
+    # 7-1. 대회/자격 접수 이력
+    my_exam_registrations = list(
+        ExamRegistration.objects.filter(user=user).order_by('-exam_date', '-created_at')[:30]
+    )
 
     # 나이 계산
     profile_age = None
@@ -3200,6 +3205,7 @@ def my_report(request):
         'award_count': len(my_awards),
         'recommended_certs': recommended_certs,
         'student_grade_key': student_grade_key,
+        'my_exam_registrations': my_exam_registrations,
     }
     return render(request, 'arcade/my_report.html', context)
 
@@ -3936,3 +3942,117 @@ def api_survey_create(request):
         sessions_data=CAMP_SESSIONS,
     )
     return JsonResponse({'ok': True, 'slug': survey.slug, 'title': survey.title})
+
+
+# ─── 대회/자격 접수 이력 관리 ─────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def exam_registration_admin(request):
+    from .models import ExamRegistration, CompetitionType, CertInfo
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    if request.method == 'POST':
+        data = request.POST
+        user_ids = data.getlist('user_ids')
+        event_type = data.get('event_type', 'cert')
+        event_name = data.get('event_name', '').strip()
+        exam_date = data.get('exam_date', '').strip()
+        exam_time = data.get('exam_time', '').strip() or None
+        note = data.get('note', '').strip()
+        competition_type_id = data.get('competition_type_id') or None
+        cert_info_id = data.get('cert_info_id') or None
+
+        errors = []
+        if not user_ids:
+            errors.append('회원을 1명 이상 선택해주세요.')
+        if not event_name:
+            errors.append('대회/자격시험명을 입력해주세요.')
+        if not exam_date:
+            errors.append('날짜를 입력해주세요.')
+
+        if not errors:
+            for uid in user_ids:
+                try:
+                    u = User.objects.get(pk=uid)
+                    ExamRegistration.objects.create(
+                        user=u,
+                        event_type=event_type,
+                        event_name=event_name,
+                        exam_date=exam_date,
+                        exam_time=exam_time if exam_time else None,
+                        note=note,
+                        competition_type_id=competition_type_id,
+                        cert_info_id=cert_info_id,
+                        registered_by=request.user,
+                    )
+                except User.DoesNotExist:
+                    pass
+            messages.success(request, f'{len(user_ids)}명 접수 이력이 등록됐습니다.')
+            return redirect('exam_registration_admin')
+        for e in errors:
+            messages.error(request, e)
+
+    # 목록
+    qs = ExamRegistration.objects.select_related('user', 'competition_type', 'cert_info', 'registered_by').order_by('-exam_date', '-created_at')
+
+    # 필터
+    f_type = request.GET.get('type', '')
+    f_user = request.GET.get('user', '').strip()
+    f_name = request.GET.get('name', '').strip()
+    if f_type:
+        qs = qs.filter(event_type=f_type)
+    if f_user:
+        qs = qs.filter(user__profile__real_name__icontains=f_user) | qs.filter(user__username__icontains=f_user)
+    if f_name:
+        qs = qs.filter(event_name__icontains=f_name)
+
+    competition_types = CompetitionType.objects.all().order_by('order', 'name')
+    cert_infos = CertInfo.objects.all().order_by('name')
+
+    return render(request, 'arcade/exam_registration_admin.html', {
+        'registrations': qs[:200],
+        'competition_types': competition_types,
+        'cert_infos': cert_infos,
+        'f_type': f_type,
+        'f_user': f_user,
+        'f_name': f_name,
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def exam_registration_delete(request, pk):
+    from .models import ExamRegistration
+    reg = get_object_or_404(ExamRegistration, pk=pk)
+    if request.method == 'POST':
+        reg.delete()
+        messages.success(request, '삭제됐습니다.')
+    return redirect('exam_registration_admin')
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def api_search_members(request):
+    """회원 검색 API (접수 이력 등록용)"""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({'members': []})
+    users = User.objects.filter(
+        profile__real_name__icontains=q
+    ).select_related('profile')[:20]
+    if not users.exists():
+        users = User.objects.filter(username__icontains=q).select_related('profile')[:20]
+    results = [
+        {
+            'id': u.pk,
+            'username': u.username,
+            'real_name': getattr(u.profile, 'real_name', '') or '',
+            'display': (getattr(u.profile, 'real_name', '') or u.username),
+        }
+        for u in users
+    ]
+    return JsonResponse({'members': results})

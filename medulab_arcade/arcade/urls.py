@@ -125,4 +125,9 @@ urlpatterns = [
     path('admin-services/badges/add/', views.badge_create, name='badge_create'),
     path('admin-services/badges/<int:badge_id>/edit/', views.badge_edit, name='badge_edit'),
     path('admin-services/badges/<int:badge_id>/delete/', views.badge_delete, name='badge_delete'),
+
+    # 대회/자격 접수 이력 관리
+    path('admin-services/exam-registrations/', views.exam_registration_admin, name='exam_registration_admin'),
+    path('admin-services/exam-registrations/<int:pk>/delete/', views.exam_registration_delete, name='exam_registration_delete'),
+    path('api/search-members/', views.api_search_members, name='api_search_members'),
 ]

@@ -78,7 +78,7 @@ label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weigh
 
         <form method="post" enctype="multipart/form-data" id="certinfoForm">
             {% csrf_token %}
-            {% for h in form.hidden_fields %}{{ h }}{% endfor %}
+            {% for h in form.hidden_fields %}{% if h.name != 'grade_info' %}{{ h }}{% endif %}{% endfor %}
 
             <!-- 자격증명 -->
             <div class="fgroup">

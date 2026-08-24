@@ -784,7 +784,7 @@
                     '{{ cert.cert_name|escapejs }}',
                     '{{ cert.grade|escapejs }}',
                     '{{ cert.issuer|default:''|escapejs }}',
-                    '{{ cert.date_acquired|date:\"Y.m.d\" }}',
+                    '{{ cert.date_acquired|date:'Y.m.d' }}',
                     '{{ cert.content|escapejs|truncatechars:200 }}'
                 )" style="border:1px solid rgba(16,185,129,0.35); border-radius:16px; padding:16px; background:rgba(16,185,129,0.05); display:flex; flex-direction:column; gap:8px; transition:all .25s; cursor:pointer;"
                 onmouseover="this.style.borderColor='rgba(16,185,129,0.6)';this.style.background='rgba(16,185,129,0.1)';this.style.transform='translateY(-2px)'"

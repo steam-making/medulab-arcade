@@ -764,9 +764,31 @@
 
             <!-- ① 취득한 자격증 -->
             {% if my_certs %}
+            <!-- 자격증 모달 -->
+            <div id="certModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); align-items:center; justify-content:center;" onclick="if(event.target===this)closeCertModal()">
+                <div style="background:#1a1a2e; border:1px solid rgba(16,185,129,0.4); border-radius:24px; padding:32px; max-width:420px; width:90%; position:relative; animation:fadeSlideIn .25s ease;">
+                    <button onclick="closeCertModal()" style="position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.08); border:none; color:#fff; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center;">×</button>
+                    <div id="certModalImg" style="width:100%; max-height:260px; display:flex; align-items:center; justify-content:center; margin-bottom:20px; border-radius:14px; background:rgba(255,255,255,0.03); padding:12px;"></div>
+                    <div id="certModalName" style="font-size:20px; font-weight:900; color:#fff; margin-bottom:8px;"></div>
+                    <div id="certModalGrade" style="display:none; font-size:14px; color:#6ee7b7; font-weight:700; margin-bottom:6px;"></div>
+                    <div id="certModalIssuer" style="display:none; font-size:13px; color:rgba(255,255,255,0.55); margin-bottom:6px;"></div>
+                    <div id="certModalDate" style="font-size:14px; color:#10b981; font-weight:700; margin-bottom:10px;"></div>
+                    <div id="certModalContent" style="display:none; font-size:13px; color:rgba(255,255,255,0.6); line-height:1.7; border-top:1px solid rgba(255,255,255,0.08); padding-top:12px; margin-top:4px;"></div>
+                </div>
+            </div>
+
             <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; margin-bottom:28px;">
                 {% for cert in my_certs %}
-                <div style="border:1px solid rgba(16,185,129,0.35); border-radius:16px; padding:16px; background:rgba(16,185,129,0.05); display:flex; flex-direction:column; gap:8px; transition:all .25s;" onmouseover="this.style.borderColor='rgba(16,185,129,0.6)';this.style.background='rgba(16,185,129,0.1)'" onmouseout="this.style.borderColor='rgba(16,185,129,0.35)';this.style.background='rgba(16,185,129,0.05)'">
+                <div onclick="openCertModal(
+                    '{% if cert.thumbnail %}{{ cert.thumbnail.url }}{% elif cert.cert_info and cert.cert_info.thumbnail %}{{ cert.cert_info.thumbnail.url }}{% endif %}',
+                    '{{ cert.cert_name|escapejs }}',
+                    '{{ cert.grade|escapejs }}',
+                    '{{ cert.issuer|default:''|escapejs }}',
+                    '{{ cert.date_acquired|date:\"Y.m.d\" }}',
+                    '{{ cert.content|escapejs|truncatechars:200 }}'
+                )" style="border:1px solid rgba(16,185,129,0.35); border-radius:16px; padding:16px; background:rgba(16,185,129,0.05); display:flex; flex-direction:column; gap:8px; transition:all .25s; cursor:pointer;"
+                onmouseover="this.style.borderColor='rgba(16,185,129,0.6)';this.style.background='rgba(16,185,129,0.1)';this.style.transform='translateY(-2px)'"
+                onmouseout="this.style.borderColor='rgba(16,185,129,0.35)';this.style.background='rgba(16,185,129,0.05)';this.style.transform=''">
                     {% if cert.thumbnail %}
                     <img src="{{ cert.thumbnail.url }}" alt="{{ cert.cert_name }}" style="width:100%; height:120px; object-fit:contain; border-radius:10px; background:rgba(255,255,255,0.04); padding:6px;">
                     {% elif cert.cert_info and cert.cert_info.thumbnail %}
@@ -775,6 +797,7 @@
                     <div style="width:100%; height:120px; border-radius:10px; background:rgba(16,185,129,0.1); display:flex; align-items:center; justify-content:center; font-size:48px;">🎓</div>
                     {% endif %}
                     <div style="font-weight:800; font-size:14px; color:#e0e0e0; line-height:1.3;">{{ cert.cert_name }}</div>
+                    {% if cert.grade %}<div style="font-size:11px; color:#6ee7b7; font-weight:700;">🏅 {{ cert.grade }}</div>{% endif %}
                     {% if cert.issuer %}<div style="font-size:12px; color:var(--text-muted);">{{ cert.issuer }}</div>{% endif %}
                     <div style="font-size:12px; color:#10b981; font-weight:700;">✅ {{ cert.date_acquired|date:"Y.m.d" }} 취득</div>
                 </div>
@@ -1149,6 +1172,37 @@ document.addEventListener('DOMContentLoaded', function() {
     updateInfoBar();
     refreshChart();
 
+
+    // 자격증 모달
+    function openCertModal(imgUrl, name, grade, issuer, date, content) {
+        const modal = document.getElementById('certModal');
+        document.getElementById('certModalName').textContent = name;
+        const gradeEl = document.getElementById('certModalGrade');
+        const issuerEl = document.getElementById('certModalIssuer');
+        const contentEl = document.getElementById('certModalContent');
+        const imgEl = document.getElementById('certModalImg');
+
+        if (grade) { gradeEl.textContent = '🏅 ' + grade; gradeEl.style.display = 'block'; }
+        else gradeEl.style.display = 'none';
+        if (issuer) { issuerEl.textContent = '🏢 ' + issuer; issuerEl.style.display = 'block'; }
+        else issuerEl.style.display = 'none';
+        document.getElementById('certModalDate').textContent = '✅ ' + date + ' 취득';
+        if (content) { contentEl.textContent = content; contentEl.style.display = 'block'; }
+        else contentEl.style.display = 'none';
+
+        if (imgUrl) {
+            imgEl.innerHTML = `<img src="${imgUrl}" style="max-width:100%; max-height:240px; object-fit:contain; border-radius:10px;">`;
+        } else {
+            imgEl.innerHTML = '<div style="font-size:72px;">🎓</div>';
+        }
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    function closeCertModal() {
+        document.getElementById('certModal').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCertModal(); });
 
     // 1. 출석체크 연동
     const btnAttend = document.getElementById('btnAttend');

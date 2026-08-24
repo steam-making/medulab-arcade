@@ -395,10 +395,11 @@
                                 {% endif %}
                             </label>
                             {% if field.name == 'address' %}
-                                <div style="display:flex; gap:8px;">
+                                <div style="display:flex; gap:8px; margin-bottom:8px;">
                                     <div style="flex:1;">{{ field }}</div>
                                     <button type="button" id="addressSearchBtn" style="flex:0 0 auto; padding:0 18px; border-radius:14px; background:rgba(255,255,255,0.08); border:1px solid var(--auth-border); color:#fff; font-weight:700; font-size:13px; cursor:pointer; white-space:nowrap;">🔍 주소 검색</button>
                                 </div>
+                                <input type="text" id="id_address_detail" class="form-input fi" placeholder="상세주소 (동/호수 등)">
                             {% else %}
                                 {{ field }}
                             {% endif %}
@@ -569,15 +570,29 @@
 
         // ── 주소 검색 (다음 우편번호 서비스) ──
         const addressSearchBtn = document.getElementById('addressSearchBtn');
+        const addressDetailInput = document.getElementById('id_address_detail');
         if (addressSearchBtn) {
             addressSearchBtn.addEventListener('click', function() {
                 new daum.Postcode({
                     oncomplete: function(data) {
                         document.getElementById('id_address').value = data.roadAddress || data.jibunAddress || data.address;
+                        if (addressDetailInput) addressDetailInput.focus();
                     }
                 }).open();
             });
         }
+
+        function combineAddressDetail() {
+            if (!addressDetailInput) return;
+            const detail = addressDetailInput.value.trim();
+            const addrInput = document.getElementById('id_address');
+            if (!addrInput || !detail) return;
+            const base = addrInput.value.trim();
+            if (base && !base.endsWith(detail)) {
+                addrInput.value = base + ' ' + detail;
+            }
+        }
+        document.querySelector('form').addEventListener('submit', combineAddressDetail);
 
         // ── 일반 가입 폼 펼치기/접기 ──
         const regularToggle = document.getElementById('regularSignupToggle');

@@ -65,10 +65,11 @@ label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weigh
 
             <div class="fgroup">
                 <label class="fl">주소</label>
-                <div style="display:flex; gap:8px;">
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
                     <input type="text" name="address" id="id_address" class="fi" value="{{ form.address.value|default:'' }}" style="flex:1;">
                     <button type="button" id="addressSearchBtn" style="flex:0 0 auto; padding:0 18px; border-radius:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.1); color:#fff; font-weight:700; font-size:13px; cursor:pointer; white-space:nowrap;">🔍 주소 검색</button>
                 </div>
+                <input type="text" id="id_address_detail" class="fi" placeholder="상세주소 (동/호수 등)">
             </div>
 
             <div class="fgroup">
@@ -147,15 +148,29 @@ document.getElementById('childAddBtn').addEventListener('click', () => {
 });
 
 const addressSearchBtn = document.getElementById('addressSearchBtn');
+const addressDetailInput = document.getElementById('id_address_detail');
 if (addressSearchBtn) {
     addressSearchBtn.addEventListener('click', function() {
         new daum.Postcode({
             oncomplete: function(data) {
                 document.getElementById('id_address').value = data.roadAddress || data.jibunAddress || data.address;
+                if (addressDetailInput) addressDetailInput.focus();
             }
         }).open();
     });
 }
+
+function combineAddressDetail() {
+    if (!addressDetailInput) return;
+    const detail = addressDetailInput.value.trim();
+    const addrInput = document.getElementById('id_address');
+    if (!addrInput || !detail) return;
+    const base = addrInput.value.trim();
+    if (base && !base.endsWith(detail)) {
+        addrInput.value = base + ' ' + detail;
+    }
+}
+document.getElementById('onboardForm').addEventListener('submit', combineAddressDetail);
 
 function toggleParentFields() {
     const checked = document.querySelector('input[name="user_type"]:checked');

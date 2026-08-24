@@ -264,6 +264,7 @@
 {% endblock %}
 
 {% block content %}
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
@@ -393,7 +394,14 @@
                                     <span class="field-badge optional">선택</span>
                                 {% endif %}
                             </label>
-                            {{ field }}
+                            {% if field.name == 'address' %}
+                                <div style="display:flex; gap:8px;">
+                                    <div style="flex:1;">{{ field }}</div>
+                                    <button type="button" id="addressSearchBtn" style="flex:0 0 auto; padding:0 18px; border-radius:14px; background:rgba(255,255,255,0.08); border:1px solid var(--auth-border); color:#fff; font-weight:700; font-size:13px; cursor:pointer; white-space:nowrap;">🔍 주소 검색</button>
+                                </div>
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
 
                             {% if field.name == 'username' %}
                                 <div id="username-check-msg" class="help-text" style="font-weight: 700;"></div>
@@ -558,6 +566,18 @@
 
         radios.forEach(radio => radio.addEventListener('change', toggleNote));
         toggleNote();
+
+        // ── 주소 검색 (다음 우편번호 서비스) ──
+        const addressSearchBtn = document.getElementById('addressSearchBtn');
+        if (addressSearchBtn) {
+            addressSearchBtn.addEventListener('click', function() {
+                new daum.Postcode({
+                    oncomplete: function(data) {
+                        document.getElementById('id_address').value = data.roadAddress || data.jibunAddress || data.address;
+                    }
+                }).open();
+            });
+        }
 
         // ── 일반 가입 폼 펼치기/접기 ──
         const regularToggle = document.getElementById('regularSignupToggle');

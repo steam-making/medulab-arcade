@@ -405,15 +405,14 @@
             <button type="submit" class="submit-btn">계정 만들기</button>
         </form>
 
-        {% load socialaccount %}
         <div style="display:flex; align-items:center; gap:12px; margin:26px 0 18px; color:var(--text-muted); font-size:12px;">
             <div style="flex:1; height:1px; background:var(--auth-border);"></div>
             <span>또는 간편 가입</span>
             <div style="flex:1; height:1px; background:var(--auth-border);"></div>
         </div>
         <div style="display:flex; flex-direction:column; gap:10px;">
-            <a href="{% provider_login_url 'google' %}" style="display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-radius:14px; background:#fff; color:#111; font-weight:700; font-size:14px; text-decoration:none;">🔵 Google로 계속하기</a>
-            <a href="{% provider_login_url 'kakao' %}" style="display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-radius:14px; background:#FEE500; color:#191919; font-weight:700; font-size:14px; text-decoration:none;">💬 카카오로 계속하기</a>
+            <a href="{% url 'social_signup_redirect' provider='google' %}" id="googleSignupBtn" style="display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-radius:14px; background:#fff; color:#111; font-weight:700; font-size:14px; text-decoration:none;">🔵 Google로 계속하기</a>
+            <a href="{% url 'social_signup_redirect' provider='kakao' %}" id="kakaoSignupBtn" style="display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-radius:14px; background:#FEE500; color:#191919; font-weight:700; font-size:14px; text-decoration:none;">💬 카카오로 계속하기</a>
         </div>
 
         <div class="auth-footer">
@@ -486,6 +485,17 @@
             } else {
                 parentFields.style.display = 'none';
             }
+
+            updateSocialButtonLinks();
+        }
+
+        function updateSocialButtonLinks() {
+            const checked = document.querySelector('input[name="user_type"]:checked');
+            const type = checked ? checked.value : 'general';
+            const googleBtn = document.getElementById('googleSignupBtn');
+            const kakaoBtn = document.getElementById('kakaoSignupBtn');
+            if (googleBtn) googleBtn.href = googleBtn.href.split('?')[0] + '?user_type=' + encodeURIComponent(type);
+            if (kakaoBtn) kakaoBtn.href = kakaoBtn.href.split('?')[0] + '?user_type=' + encodeURIComponent(type);
         }
 
         function updateGeneratedID() {

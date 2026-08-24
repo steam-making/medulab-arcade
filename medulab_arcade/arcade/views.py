@@ -2580,6 +2580,17 @@ def request_medulab_parent_upgrade(request):
     return render(request, 'arcade/medulab_parent_upgrade.html', {'form': form})
 
 
+def social_signup_redirect(request, provider):
+    """가입 화면 타일에서 고른 회원 유형을 세션에 담아 소셜 로그인으로 넘긴다.
+    (구글/카카오는 회원유형을 모르므로, 로그인 후 온보딩 화면에서 이 값을 초기 선택값으로 사용)"""
+    user_type = request.GET.get('user_type', '')
+    if user_type in dict(UserProfile.PUBLIC_TYPE_CHOICES):
+        request.session['pending_signup_user_type'] = user_type
+    if provider not in ('google', 'kakao'):
+        return redirect('signup')
+    return redirect(f'{provider}_login')
+
+
 @login_required
 def social_onboarding(request):
     """소셜 로그인 최초 가입자의 추가정보 입력 완료 화면"""
@@ -2603,7 +2614,11 @@ def social_onboarding(request):
             messages.success(request, '추가정보 입력이 완료되었습니다.')
             return redirect('home')
     else:
-        form = SocialOnboardingForm(initial={'real_name': profile.real_name})
+        pending_user_type = request.session.pop('pending_signup_user_type', None)
+        initial = {'real_name': profile.real_name}
+        if pending_user_type:
+            initial['user_type'] = pending_user_type
+        form = SocialOnboardingForm(initial=initial)
     return render(request, 'arcade/social_onboarding.html', {'form': form})
 
 

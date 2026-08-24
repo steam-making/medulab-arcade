@@ -601,7 +601,7 @@
                     <!-- 클릭하여 접기/펴기 가능한 월 타이틀 -->
                     <div class="calendar-month-btn" id="btnToggleCalendar">
                         <span>{{ month_name }}</span>
-                        <span id="toggleArrow" style="font-size: 11px; transition: transform 0.2s;">▼</span>
+                        <span id="toggleArrow" style="font-size: 11px; transition: transform 0.2s; transform: rotate(180deg);">▼</span>
                     </div>
                     
                     <!-- 이번 달 출석 횟수 -->
@@ -620,8 +620,8 @@
                 </div>
             </div>
 
-            <!-- 기본적으로 접혀있는 달력 그리드 영역 -->
-            <div class="calendar-collapsible" id="calendarCollapsible">
+            <!-- 기본적으로 펼쳐있는 달력 그리드 영역 -->
+            <div class="calendar-collapsible show" id="calendarCollapsible">
                 <div class="calendar-grid">
                     <!-- 요일 헤더 -->
                     <div class="calendar-day-header sun">일</div>

@@ -154,13 +154,7 @@ class ProjectUploadForm(forms.ModelForm):
 
 
 class SignUpForm(UserCreationForm):
-    USER_TYPE_CHOICES = [
-        ('student', '학생회원'),
-        ('general', '일반회원'),
-        ('medulab_member', '메듀랩 회원'),
-        ('medulab_teacher', '메듀랩 강사'),
-        ('medulab_staff', '메듀랩 스탭'),
-    ]
+    USER_TYPE_CHOICES = UserProfile.PUBLIC_TYPE_CHOICES
 
     real_name = forms.CharField(
         label='이름',
@@ -193,6 +187,16 @@ class SignUpForm(UserCreationForm):
         choices=USER_TYPE_CHOICES,
         widget=forms.RadioSelect(attrs={'class': 'user-type-radio'}),
         initial='general',
+    )
+    address = forms.CharField(
+        label='주소',
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': '주소를 입력해 주세요.', 'class': 'form-input'}),
+    )
+    children_info = forms.CharField(
+        label='자녀 정보 (JSON)',
+        required=False,
+        widget=forms.HiddenInput(),
     )
 
     class Meta:
@@ -260,6 +264,25 @@ class SignUpForm(UserCreationForm):
             raise forms.ValidationError('전화번호는 숫자 기준 9자리에서 11자리로 입력해 주세요.')
         return digits
 
+    def clean(self):
+        cleaned_data = super().clean()
+        user_type = cleaned_data.get('user_type')
+        if user_type == 'medulab_parent':
+            import json
+
+            if not (cleaned_data.get('address') or '').strip():
+                self.add_error('address', '메듀랩 학부모는 주소를 입력해 주세요.')
+
+            raw = cleaned_data.get('children_info') or '[]'
+            try:
+                children = json.loads(raw)
+            except (ValueError, TypeError):
+                children = []
+            if not children:
+                self.add_error(None, '자녀 정보를 1명 이상 입력해 주세요.')
+            cleaned_data['children_info'] = children
+        return cleaned_data
+
     def save(self, commit=True):
         user = super().save(commit=commit)
         if commit:
@@ -269,6 +292,8 @@ class SignUpForm(UserCreationForm):
             profile.real_name = self.cleaned_data.get('real_name')
             profile.birth_date = self.cleaned_data.get('birth_date')
             profile.phone_number = self.cleaned_data.get('phone_number', '')
+            profile.address = self.cleaned_data.get('address', '')
+            profile.children_info = self.cleaned_data.get('children_info') or None
             profile.is_approved = user_type in UserProfile.AUTO_APPROVE_TYPES
             profile.save()
         return user
@@ -376,7 +401,8 @@ class EmailOrUsernameAuthenticationForm(AuthenticationForm):
 
 
 class UserProfileUpdateForm(forms.ModelForm):
-    USER_TYPE_CHOICES = SignUpForm.USER_TYPE_CHOICES
+    # 메듀랩 학부모는 주소/자녀정보가 필요해 별도의 '전환 신청' 화면에서만 선택 가능
+    USER_TYPE_CHOICES = [c for c in SignUpForm.USER_TYPE_CHOICES if c[0] != 'medulab_parent']
 
     username = forms.CharField(
         label='아이디',
@@ -423,10 +449,23 @@ class UserProfileUpdateForm(forms.ModelForm):
         ),
         help_text='닉네임이 없으면 이름을 먼저 쓰고, 이름도 없으면 아이디를 사용합니다.',
     )
+    address = forms.CharField(
+        label='주소',
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-input'}),
+    )
+    children_info = forms.CharField(
+        label='자녀 정보 (JSON)',
+        required=False,
+        widget=forms.HiddenInput(),
+    )
 
     class Meta:
         model = UserProfile
-        fields = ('real_name', 'birth_date', 'phone_number', 'user_type', 'nickname')
+        fields = (
+            'real_name', 'birth_date', 'phone_number', 'user_type', 'nickname',
+            'address', 'notify_attendance', 'notify_news',
+        )
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
@@ -441,6 +480,9 @@ class UserProfileUpdateForm(forms.ModelForm):
         )
         self.fields['phone_number'].initial = self.instance.phone_number
         self.fields['user_type'].initial = self.instance.user_type
+        self.fields['address'].initial = self.instance.address
+        import json as _json
+        self.fields['children_info'].initial = _json.dumps(self.instance.children_info or [])
 
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip()
@@ -475,6 +517,8 @@ class UserProfileUpdateForm(forms.ModelForm):
         return digits
 
     def save(self, commit=True):
+        import json
+
         profile = super().save(commit=False)
         previous_user_type = self.instance.user_type
         new_user_type = self.cleaned_data['user_type']
@@ -486,6 +530,12 @@ class UserProfileUpdateForm(forms.ModelForm):
         profile.phone_number = self.cleaned_data['phone_number']
         profile.user_type = new_user_type
         profile.nickname = self.cleaned_data['nickname']
+        profile.address = self.cleaned_data.get('address', '')
+
+        try:
+            profile.children_info = json.loads(self.cleaned_data.get('children_info') or '[]') or None
+        except (ValueError, TypeError):
+            profile.children_info = None
 
         if new_user_type in UserProfile.AUTO_APPROVE_TYPES:
             profile.is_approved = True
@@ -494,23 +544,110 @@ class UserProfileUpdateForm(forms.ModelForm):
             profile.approved_at = None
 
         if commit:
-            user.email = self.cleaned_data['email']
-            profile.real_name = self.cleaned_data['real_name']
-            profile.birth_date = self.cleaned_data['birth_date']
-            profile.phone_number = self.cleaned_data['phone_number']
-            profile.user_type = new_user_type
-            profile.nickname = self.cleaned_data['nickname']
+            user.save(update_fields=['email'])
+            profile.save()
+        return profile
 
-            if new_user_type in UserProfile.AUTO_APPROVE_TYPES:
-                profile.is_approved = True
-            elif previous_user_type != new_user_type:
-                profile.is_approved = False
-                profile.approved_at = None
 
-            if commit:
-                user.save(update_fields=['email'])
-                profile.save()
-            return profile
+class MedulabParentUpgradeForm(forms.Form):
+    """'학부모회원' -> '메듀랩 학부모' 전환 신청 폼 (주소 + 자녀정보 수집)"""
+
+    address = forms.CharField(
+        label='주소',
+        widget=forms.TextInput(attrs={'placeholder': '주소를 입력해 주세요.', 'class': 'form-input'}),
+    )
+    children_info = forms.CharField(
+        label='자녀 정보 (JSON)',
+        widget=forms.HiddenInput(),
+    )
+
+    def clean(self):
+        import json
+
+        cleaned_data = super().clean()
+        raw = cleaned_data.get('children_info') or '[]'
+        try:
+            children = json.loads(raw)
+        except (ValueError, TypeError):
+            children = []
+        if not children:
+            self.add_error(None, '자녀 정보를 1명 이상 입력해 주세요.')
+        cleaned_data['children_info'] = children
+        return cleaned_data
+
+
+class SocialOnboardingForm(forms.Form):
+    """소셜 로그인 최초 가입자의 추가정보(이름/생년월일/전화번호/회원유형) 입력 폼"""
+
+    USER_TYPE_CHOICES = UserProfile.PUBLIC_TYPE_CHOICES
+
+    real_name = forms.CharField(
+        label='이름',
+        widget=forms.TextInput(attrs={'placeholder': '실명을 입력해 주세요.', 'class': 'form-input'}),
+    )
+    birth_date = forms.CharField(
+        label='생년월일',
+        widget=forms.TextInput(attrs={'placeholder': '예: 1989.01.16', 'class': 'form-input'}),
+    )
+    phone_number = forms.CharField(
+        label='전화번호',
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-input', 'inputmode': 'numeric'}),
+    )
+    user_type = forms.ChoiceField(
+        label='회원 유형',
+        choices=USER_TYPE_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'user-type-radio'}),
+        initial='general',
+    )
+    address = forms.CharField(
+        label='주소',
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': '주소를 입력해 주세요.', 'class': 'form-input'}),
+    )
+    children_info = forms.CharField(
+        label='자녀 정보 (JSON)',
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+
+    def clean_birth_date(self):
+        birth_date = self.cleaned_data.get('birth_date', '').strip()
+        import datetime
+
+        for fmt in ('%Y.%m.%d', '%Y-%m-%d', '%Y%m%d'):
+            try:
+                return datetime.datetime.strptime(birth_date, fmt).date()
+            except ValueError:
+                continue
+        raise forms.ValidationError('날짜 형식이 올바르지 않습니다. (예: 1989.01.16)')
+
+    def clean_phone_number(self):
+        phone_number = self.cleaned_data.get('phone_number', '')
+        digits = ''.join(ch for ch in phone_number if ch.isdigit())
+        if not digits:
+            return ''
+        if len(digits) < 9 or len(digits) > 11:
+            raise forms.ValidationError('전화번호는 숫자 기준 9자리에서 11자리로 입력해 주세요.')
+        return digits
+
+    def clean(self):
+        import json
+
+        cleaned_data = super().clean()
+        user_type = cleaned_data.get('user_type')
+        if user_type == 'medulab_parent':
+            if not (cleaned_data.get('address') or '').strip():
+                self.add_error('address', '메듀랩 학부모는 주소를 입력해 주세요.')
+            raw = cleaned_data.get('children_info') or '[]'
+            try:
+                children = json.loads(raw)
+            except (ValueError, TypeError):
+                children = []
+            if not children:
+                self.add_error(None, '자녀 정보를 1명 이상 입력해 주세요.')
+            cleaned_data['children_info'] = children
+        return cleaned_data
 
 
 class ScheduleEventForm(forms.ModelForm):

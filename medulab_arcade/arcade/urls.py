@@ -93,6 +93,8 @@ urlpatterns = [
     path('project/<int:project_id>/approve/', views.approve_project, name='approve_project'),
     path('signup/', views.signup, name='signup'),
     path('signup/confirm/<str:token>/', views.confirm_signup_email, name='confirm_signup_email'),
+    path('onboarding/', views.social_onboarding, name='social_onboarding'),
+    path('member/upgrade-to-medulab-parent/', views.request_medulab_parent_upgrade, name='request_medulab_parent_upgrade'),
     path('profile/', views.profile_view, name='profile'),
     path('profile/email-confirm/<str:token>/', views.confirm_email_change, name='confirm_email_change'),
 

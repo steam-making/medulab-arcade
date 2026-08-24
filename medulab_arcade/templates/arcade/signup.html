@@ -286,6 +286,15 @@
                 </label>
 
                 <label class="type-item">
+                    <input type="radio" name="user_type" value="parent" {% if form.user_type.value == 'parent' %}checked{% endif %}>
+                    <div class="type-card">
+                        <span class="type-icon">👪</span>
+                        <span class="type-name">학부모회원</span>
+                    </div>
+                    <span class="type-badge badge-auto">AUTO</span>
+                </label>
+
+                <label class="type-item">
                     <input type="radio" name="user_type" value="general" {% if form.user_type.value == 'general' %}checked{% endif %}>
                     <div class="type-card">
                         <span class="type-icon">🙂</span>
@@ -295,19 +304,28 @@
                 </label>
 
                 <label class="type-item">
+                    <input type="radio" name="user_type" value="teacher" {% if form.user_type.value == 'teacher' %}checked{% endif %}>
+                    <div class="type-card">
+                        <span class="type-icon">👨‍🏫</span>
+                        <span class="type-name">강사회원</span>
+                    </div>
+                    <span class="type-badge badge-auto">AUTO</span>
+                </label>
+
+                <label class="type-item">
                     <input type="radio" name="user_type" value="medulab_member" {% if form.user_type.value == 'medulab_member' %}checked{% endif %}>
                     <div class="type-card">
                         <span class="type-icon">🧪</span>
-                        <span class="type-name">메듀랩 회원</span>
+                        <span class="type-name">메듀랩 학생</span>
                     </div>
                     <span class="type-badge badge-review">REVIEW</span>
                 </label>
 
                 <label class="type-item">
-                    <input type="radio" name="user_type" value="medulab_teacher" {% if form.user_type.value == 'medulab_teacher' %}checked{% endif %}>
+                    <input type="radio" name="user_type" value="medulab_parent" {% if form.user_type.value == 'medulab_parent' %}checked{% endif %}>
                     <div class="type-card">
-                        <span class="type-icon">👨‍🏫</span>
-                        <span class="type-name">메듀랩 강사</span>
+                        <span class="type-icon">🧑‍🍼</span>
+                        <span class="type-name">메듀랩 학부모</span>
                     </div>
                     <span class="type-badge badge-review">REVIEW</span>
                 </label>
@@ -316,7 +334,7 @@
                     <input type="radio" name="user_type" value="medulab_staff" {% if form.user_type.value == 'medulab_staff' %}checked{% endif %}>
                     <div class="type-card" style="flex-direction: row; justify-content: center; gap: 12px;">
                         <span class="type-icon">🛠️</span>
-                        <span class="type-name">메듀랩 스탭</span>
+                        <span class="type-name">메듀랩스텝</span>
                     </div>
                     <span class="type-badge badge-review">REVIEW</span>
                 </label>
@@ -330,10 +348,32 @@
                 메듀랩 계열 계정은 관리자 확인 후 승인됩니다. 승인 전까지 일부 서비스 이용이 제한될 수 있습니다.
             </div>
 
+            <div id="medulabParentFields" style="display:none; margin-bottom:22px;">
+                <div class="form-group full">
+                    <label class="field-label"><span>주소</span><span class="field-badge required">필수</span></label>
+                    <input type="text" name="address" id="id_address" class="form-input fi" value="{{ form.address.value|default:'' }}">
+                </div>
+                <div class="form-group full">
+                    <label class="field-label"><span>👶 자녀 정보</span><span class="field-badge required">필수</span></label>
+                    <input type="hidden" name="children_info" id="id_children_info" value="{{ form.children_info.value|default:'[]' }}">
+                    <div style="border:1px solid var(--auth-border); border-radius:12px; overflow:hidden;">
+                        <div style="display:grid; grid-template-columns:1fr 130px 1fr 90px 36px; background:rgba(255,255,255,0.05); border-bottom:1px solid var(--auth-border);">
+                            <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">이름</span>
+                            <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">생년월일</span>
+                            <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">학교</span>
+                            <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">학년</span>
+                            <span></span>
+                        </div>
+                        <div id="childRows"></div>
+                    </div>
+                    <button type="button" id="childAddBtn" style="width:100%; padding:9px; background:rgba(255,255,255,0.03); border:none; border-top:1px solid var(--auth-border); color:rgba(255,255,255,0.4); font-size:13px; cursor:pointer;">＋ 자녀 추가</button>
+                </div>
+            </div>
+
             <label class="section-label">BASIC INFO</label>
             <div class="field-grid">
                 {% for field in form %}
-                    {% if field.name != 'user_type' %}
+                    {% if field.name != 'user_type' and field.name != 'address' and field.name != 'children_info' %}
                         <div class="form-group {% if field.name == 'username' or field.name == 'email' or field.name == 'password1' or field.name == 'password2' %}full{% endif %}" id="group_{{ field.name }}">
                             <label class="field-label" for="{{ field.id_for_label }}">
                                 <span>{{ field.label }}</span>
@@ -365,6 +405,17 @@
             <button type="submit" class="submit-btn">계정 만들기</button>
         </form>
 
+        {% load socialaccount %}
+        <div style="display:flex; align-items:center; gap:12px; margin:26px 0 18px; color:var(--text-muted); font-size:12px;">
+            <div style="flex:1; height:1px; background:var(--auth-border);"></div>
+            <span>또는 간편 가입</span>
+            <div style="flex:1; height:1px; background:var(--auth-border);"></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <a href="{% provider_login_url 'google' %}" style="display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-radius:14px; background:#fff; color:#111; font-weight:700; font-size:14px; text-decoration:none;">🔵 Google로 계속하기</a>
+            <a href="{% provider_login_url 'kakao' %}" style="display:flex; align-items:center; justify-content:center; gap:10px; padding:13px; border-radius:14px; background:#FEE500; color:#191919; font-weight:700; font-size:14px; text-decoration:none;">💬 카카오로 계속하기</a>
+        </div>
+
         <div class="auth-footer">
             이미 계정이 있나요? <a href="{% url 'login' %}">로그인하기</a>
         </div>
@@ -375,7 +426,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const radios = document.querySelectorAll('input[name="user_type"]');
         const note = document.getElementById('reviewNote');
-        const reviewTypes = ['medulab_member', 'medulab_teacher', 'medulab_staff'];
+        const reviewTypes = ['medulab_member', 'medulab_parent', 'medulab_staff'];
 
         const nameInput = document.querySelector('input[name="real_name"]');
         const birthInput = document.querySelector('input[name="birth_date"]');
@@ -427,6 +478,13 @@
             } else {
                 note.classList.remove('active');
                 usernameInput.placeholder = '사용할 아이디를 입력해 주세요.';
+            }
+
+            const parentFields = document.getElementById('medulabParentFields');
+            if (checked && checked.value === 'medulab_parent') {
+                parentFields.style.display = 'block';
+            } else {
+                parentFields.style.display = 'none';
             }
         }
 
@@ -489,6 +547,59 @@
 
         radios.forEach(radio => radio.addEventListener('change', toggleNote));
         toggleNote();
+
+        // ── 자녀 정보 에디터 ──
+        const childInput = document.getElementById('id_children_info');
+        const childRows = document.getElementById('childRows');
+        const childAddBtn = document.getElementById('childAddBtn');
+
+        function escChild(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+        function buildChildRow(name='', birth_date='', school='', grade='') {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:grid; grid-template-columns:1fr 130px 1fr 90px 36px; border-bottom:1px solid var(--auth-border);';
+            row.innerHTML = `
+                <input type="text" placeholder="이름" value="${escChild(name)}" data-col="name" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--auth-border); font-size:13px; outline:none;">
+                <input type="text" placeholder="생년월일" value="${escChild(birth_date)}" data-col="birth_date" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--auth-border); font-size:13px; outline:none;">
+                <input type="text" placeholder="학교" value="${escChild(school)}" data-col="school" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--auth-border); font-size:13px; outline:none;">
+                <input type="text" placeholder="학년" value="${escChild(grade)}" data-col="grade" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--auth-border); font-size:13px; outline:none;">
+                <button type="button" class="child-row-del" style="display:flex; align-items:center; justify-content:center; background:transparent; border:none; color:rgba(255,80,80,0.5); cursor:pointer; font-size:16px;">✕</button>
+            `;
+            row.querySelector('.child-row-del').addEventListener('click', () => { row.remove(); syncChildJSON(); });
+            row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', syncChildJSON));
+            return row;
+        }
+
+        function syncChildJSON() {
+            if (!childRows) return;
+            const data = [...childRows.querySelectorAll(':scope > div')].map(row => ({
+                name: (row.querySelector('[data-col="name"]').value || '').trim(),
+                birth_date: (row.querySelector('[data-col="birth_date"]').value || '').trim(),
+                school: (row.querySelector('[data-col="school"]').value || '').trim(),
+                grade: (row.querySelector('[data-col="grade"]').value || '').trim(),
+            })).filter(r => r.name || r.birth_date || r.school || r.grade);
+            childInput.value = JSON.stringify(data);
+        }
+
+        function loadChildJSON() {
+            if (!childRows) return;
+            let data = [];
+            try {
+                const parsed = JSON.parse(childInput.value || '[]');
+                data = Array.isArray(parsed) ? parsed : [];
+            } catch(e) { data = []; }
+            childRows.innerHTML = '';
+            data.forEach(r => childRows.appendChild(buildChildRow(r.name || '', r.birth_date || '', r.school || '', r.grade || '')));
+            if (!data.length) childRows.appendChild(buildChildRow());
+        }
+
+        if (childAddBtn) {
+            childAddBtn.addEventListener('click', () => childRows.appendChild(buildChildRow()));
+        }
+        if (childInput) {
+            document.querySelector('form').addEventListener('submit', syncChildJSON);
+            loadChildJSON();
+        }
     });
 </script>
 {% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}추가정보 입력 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+.fi { width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1); font-size:14px; }
+.fi:focus { outline:none; border-color:rgba(59,130,246,0.5); }
+label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weight:700; font-size:13px; }
+.fgroup { margin-bottom:22px; }
+
+.type-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.type-item { position:relative; cursor:pointer; }
+.type-item input { display:none; }
+.type-card {
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.12);
+    border-radius:12px; padding:12px; text-align:center; font-size:13px; font-weight:700;
+    color:rgba(255,255,255,0.7); transition:all .15s;
+}
+.type-item input:checked + .type-card { border-color:#00ffb4; background:rgba(0,255,180,0.08); color:#fff; }
+
+.child-editor { border:1px solid rgba(255,255,255,0.1); border-radius:12px; overflow:hidden; margin-top:6px; }
+.child-editor-head { display:grid; grid-template-columns:1fr 130px 1fr 90px 36px; background:rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.08); }
+.child-editor-head span { padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted); }
+.child-row { display:grid; grid-template-columns:1fr 130px 1fr 90px 36px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.child-row:last-child { border-bottom:none; }
+.child-row input { width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid rgba(255,255,255,0.05); font-size:13px; outline:none; }
+.child-row-del { display:flex; align-items:center; justify-content:center; background:transparent; border:none; color:rgba(255,80,80,0.5); cursor:pointer; font-size:16px; }
+.child-add-btn { width:100%; padding:9px; background:rgba(255,255,255,0.03); border:none; border-top:1px solid rgba(255,255,255,0.07); color:rgba(255,255,255,0.4); font-size:13px; cursor:pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:640px; margin:40px auto; padding:0 20px;">
+    <h2 style="color:#fff; font-size:26px; font-weight:900; margin-bottom:8px;">🙌 추가정보 입력</h2>
+    <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">
+        소셜 계정으로 가입해 주셔서 감사합니다. 서비스 이용을 위해 몇 가지 정보만 더 입력해 주세요.
+    </p>
+
+    <div style="background:rgba(255,255,255,0.04); padding:36px; border-radius:18px; border:1px solid rgba(255,255,255,0.07);">
+        {% if form.errors %}
+        <div style="margin-bottom:20px; padding:14px 18px; border-radius:10px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; font-size:14px;">
+            입력 내용을 확인해 주세요.
+            {% for field in form %}{% for e in field.errors %}<div>· {{ field.label }}: {{ e }}</div>{% endfor %}{% endfor %}
+            {% for e in form.non_field_errors %}<div>· {{ e }}</div>{% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" id="onboardForm">
+            {% csrf_token %}
+
+            <div class="fgroup">
+                <label class="fl">이름 <span style="color:#ef4444;">*</span></label>
+                <input type="text" name="real_name" class="fi" value="{{ form.real_name.value|default:'' }}">
+            </div>
+            <div class="fgroup">
+                <label class="fl">생년월일 <span style="color:#ef4444;">*</span></label>
+                <input type="text" name="birth_date" class="fi" placeholder="예: 1989.01.16" value="{{ form.birth_date.value|default:'' }}">
+            </div>
+            <div class="fgroup">
+                <label class="fl">전화번호</label>
+                <input type="text" name="phone_number" class="fi" value="{{ form.phone_number.value|default:'' }}">
+            </div>
+
+            <div class="fgroup">
+                <label class="fl">회원 유형 <span style="color:#ef4444;">*</span></label>
+                <div class="type-grid">
+                    {% for value, label in form.fields.user_type.choices %}
+                    <label class="type-item">
+                        <input type="radio" name="user_type" value="{{ value }}" {% if form.user_type.value|default:'general' == value %}checked{% endif %}>
+                        <div class="type-card">{{ label }}</div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="fgroup" id="parentExtraFields" style="display:none;">
+                <label class="fl">주소 <span style="color:#ef4444;">*</span></label>
+                <input type="text" name="address" id="id_address" class="fi" value="{{ form.address.value|default:'' }}" style="margin-bottom:16px;">
+
+                <label class="fl">👶 자녀 정보 <span style="color:#ef4444;">*</span></label>
+                <input type="hidden" name="children_info" id="id_children_info" value="{{ form.children_info.value|default:'[]' }}">
+                <div class="child-editor" id="childEditor">
+                    <div class="child-editor-head"><span>이름</span><span>생년월일</span><span>학교</span><span>학년</span><span></span></div>
+                    <div id="childRows"></div>
+                </div>
+                <button type="button" class="child-add-btn" id="childAddBtn">＋ 자녀 추가</button>
+            </div>
+
+            <button type="submit" onclick="syncChildJSON()" style="width:100%; margin-top:18px; border:none; border-radius:14px; padding:14px; background:linear-gradient(135deg,#00ffb4,#3b82f6); color:#03140e; font-weight:900; font-size:15px; cursor:pointer;">완료</button>
+        </form>
+    </div>
+</div>
+
+<script>
+const childInput = document.getElementById('id_children_info');
+const childRows = document.getElementById('childRows');
+const parentExtraFields = document.getElementById('parentExtraFields');
+
+function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function buildChildRow(name='', birth_date='', school='', grade='') {
+    const row = document.createElement('div');
+    row.className = 'child-row';
+    row.innerHTML = `
+        <input type="text" placeholder="이름" value="${esc(name)}" data-col="name">
+        <input type="text" placeholder="생년월일" value="${esc(birth_date)}" data-col="birth_date">
+        <input type="text" placeholder="학교" value="${esc(school)}" data-col="school">
+        <input type="text" placeholder="학년" value="${esc(grade)}" data-col="grade">
+        <button type="button" class="child-row-del" title="삭제">✕</button>
+    `;
+    row.querySelector('.child-row-del').addEventListener('click', () => { row.remove(); syncChildJSON(); });
+    row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', syncChildJSON));
+    return row;
+}
+
+function syncChildJSON() {
+    if (!childRows) return;
+    const data = [...childRows.querySelectorAll('.child-row')].map(row => ({
+        name: (row.querySelector('[data-col="name"]').value || '').trim(),
+        birth_date: (row.querySelector('[data-col="birth_date"]').value || '').trim(),
+        school: (row.querySelector('[data-col="school"]').value || '').trim(),
+        grade: (row.querySelector('[data-col="grade"]').value || '').trim(),
+    })).filter(r => r.name || r.birth_date || r.school || r.grade);
+    childInput.value = JSON.stringify(data);
+}
+
+function loadChildJSON() {
+    let data = [];
+    try {
+        const parsed = JSON.parse(childInput.value || '[]');
+        data = Array.isArray(parsed) ? parsed : [];
+    } catch(e) { data = []; }
+    childRows.innerHTML = '';
+    data.forEach(r => childRows.appendChild(buildChildRow(r.name || '', r.birth_date || '', r.school || '', r.grade || '')));
+    if (!data.length) childRows.appendChild(buildChildRow());
+}
+
+document.getElementById('childAddBtn').addEventListener('click', () => {
+    childRows.appendChild(buildChildRow());
+});
+
+function toggleParentFields() {
+    const checked = document.querySelector('input[name="user_type"]:checked');
+    if (checked && checked.value === 'medulab_parent') {
+        parentExtraFields.style.display = 'block';
+    } else {
+        parentExtraFields.style.display = 'none';
+    }
+}
+
+document.querySelectorAll('input[name="user_type"]').forEach(r => r.addEventListener('change', toggleParentFields));
+document.getElementById('onboardForm').addEventListener('submit', syncChildJSON);
+
+loadChildJSON();
+toggleParentFields();
+</script>
+{% endblock %}

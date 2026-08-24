@@ -18,14 +18,22 @@ from django.utils.text import slugify
 class UserProfile(models.Model):
     USER_TYPE_CHOICES = [
         ('student', '학생회원'),
+        ('parent', '학부모회원'),
         ('general', '일반회원'),
-        ('medulab_member', '메듀랩 회원'),
-        ('medulab_teacher', '메듀랩 강사'),
-        ('medulab_staff', '메듀랩 스탭'),
+        ('teacher', '강사회원'),
+        ('medulab_member', '메듀랩 학생'),
+        ('medulab_parent', '메듀랩 학부모'),
+        ('medulab_staff', '메듀랩스텝'),
+        ('medulab_teacher', '메듀랩 강사'),  # 레거시: 신규 가입 화면에는 노출하지 않음
     ]
 
-    AUTO_APPROVE_TYPES = ('student', 'general')
-    FULL_ACCESS_TYPES = ('medulab_member', 'medulab_teacher', 'medulab_staff')
+    # 공개 회원가입/소셜가입/온보딩 화면에 노출할 유형 (레거시 medulab_teacher 제외)
+    PUBLIC_TYPE_CHOICES = [
+        c for c in USER_TYPE_CHOICES if c[0] != 'medulab_teacher'
+    ]
+
+    AUTO_APPROVE_TYPES = ('student', 'parent', 'general', 'teacher')
+    FULL_ACCESS_TYPES = ('medulab_member', 'medulab_parent', 'medulab_teacher', 'medulab_staff')
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     real_name = models.CharField('이름', max_length=20, blank=True)
@@ -46,6 +54,17 @@ class UserProfile(models.Model):
     is_approved = models.BooleanField('승인 여부', default=False)
     approved_at = models.DateTimeField('승인일시', null=True, blank=True)
     created_at = models.DateTimeField('가입일', auto_now_add=True)
+
+    # 메듀랩 학부모 전용 추가 정보
+    address = models.CharField('주소', max_length=255, blank=True)
+    children_info = models.JSONField('자녀 정보 (JSON)', blank=True, null=True)
+
+    # 메듀랩 학부모 알림 수신 설정 (실제 발송 기능은 추후 구현 예정, 우선 동의값만 저장)
+    notify_attendance = models.BooleanField('출석 알림 수신', default=True)
+    notify_news = models.BooleanField('소식 알림 수신', default=True)
+
+    # 소셜 로그인 최초 가입 시 이름/생년월일/회원유형 등을 아직 입력받지 않은 상태
+    onboarding_complete = models.BooleanField('추가정보 입력 완료', default=True)
 
     class Meta:
         verbose_name = '사용자 프로필'

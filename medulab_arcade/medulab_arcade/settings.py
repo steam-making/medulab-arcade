@@ -52,6 +52,11 @@ INSTALLED_APPS = [
     'typing_practice',
     'django.contrib.sitemaps',
     'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.kakao',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +67,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+    'arcade.middleware.SocialOnboardingMiddleware',
 ]
 
 ROOT_URLCONF = 'medulab_arcade.urls'
@@ -146,7 +153,32 @@ SITE_ID = 1
 AUTHENTICATION_BACKENDS = [
     'arcade.backends.EmailOrUsernameModelBackend',
     'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 # 브라우저 종료 시 자동 로그아웃 (세션 쿠키 만료)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# ── 소셜 로그인 (django-allauth: 구글 / 카카오) ──
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_LOGIN_METHODS = {'username', 'email'}
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.environ.get('GOOGLE_OAUTH_CLIENT_ID', ''),
+            'secret': os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET', ''),
+            'key': '',
+        },
+        'SCOPE': ['profile', 'email'],
+    },
+    'kakao': {
+        'APP': {
+            'client_id': os.environ.get('KAKAO_CLIENT_ID', ''),
+            'secret': os.environ.get('KAKAO_CLIENT_SECRET', ''),
+            'key': '',
+        },
+    },
+}

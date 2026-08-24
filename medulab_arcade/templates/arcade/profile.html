@@ -1,5 +1,6 @@
 {% extends 'arcade/base.html' %}
 {% load static %}
+{% load socialaccount %}
 
 {% block title %}마이페이지 - {{ user.username }}{% endblock %}
 
@@ -547,11 +548,63 @@
                                     <div class="form-group">
                                         <label class="form-label">회원 유형</label>
                                         {{ form.user_type }}
-                                        <div class="help-text">메듀랩 회원, 강사, 스탭으로 바꾸면 관리자 승인 전까지 승인 대기 상태가 됩니다.</div>
+                                        <div class="help-text">메듀랩 학생, 스탭으로 바꾸면 관리자 승인 전까지 승인 대기 상태가 됩니다.</div>
                                         {% if form.user_type.errors %}
                                             <div class="help-text" style="color: #ff8585;">{{ form.user_type.errors.0 }}</div>
                                         {% endif %}
                                     </div>
+
+                                    {% if profile.user_type == 'parent' %}
+                                    <div class="form-group">
+                                        <a href="{% url 'request_medulab_parent_upgrade' %}" class="nav-link" style="display:inline-block; padding:10px 18px; background:rgba(0,255,180,0.1); border:1px solid rgba(0,255,180,0.3); border-radius:10px; color:#6ee7b7; font-weight:700; text-decoration:none; font-size:13px;">🧑‍🍼 메듀랩 학부모로 전환 신청</a>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if profile.user_type == 'medulab_parent' %}
+                                    <div class="form-group">
+                                        <label class="form-label">주소</label>
+                                        {{ form.address }}
+                                        {% if form.address.errors %}
+                                            <div class="help-text" style="color: #ff8585;">{{ form.address.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">👶 자녀 정보</label>
+                                        {{ form.children_info }}
+                                        <div style="border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-top:6px;">
+                                            <div style="display:grid; grid-template-columns:1fr 130px 1fr 90px 36px; background:rgba(255,255,255,0.05); border-bottom:1px solid var(--border);">
+                                                <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">이름</span>
+                                                <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">생년월일</span>
+                                                <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">학교</span>
+                                                <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">학년</span>
+                                                <span></span>
+                                            </div>
+                                            <div id="profileChildRows"></div>
+                                        </div>
+                                        <button type="button" id="profileChildAddBtn" style="width:100%; padding:9px; background:rgba(255,255,255,0.03); border:none; border-top:1px solid var(--border); color:rgba(255,255,255,0.4); font-size:13px; cursor:pointer;">＋ 자녀 추가</button>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">알림 수신 설정</label>
+                                        <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:13px; color: var(--text-secondary);">
+                                            {{ form.notify_attendance }} 출석 알림 수신
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:8px; font-size:13px; color: var(--text-secondary);">
+                                            {{ form.notify_news }} 소식 알림 수신
+                                        </label>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">카카오톡 연동</label>
+                                        {% if kakao_linked %}
+                                        <div style="padding:10px 14px; background:rgba(254,229,0,0.1); border:1px solid rgba(254,229,0,0.3); border-radius:10px; color:#FEE500; font-weight:700; font-size:13px; display:inline-block;">💬 카카오 계정 연동됨</div>
+                                        {% else %}
+                                        <a href="{% provider_login_url 'kakao' process='connect' %}" style="display:inline-block; padding:10px 18px; background:#FEE500; color:#191919; border-radius:10px; font-weight:700; text-decoration:none; font-size:13px;">💬 카카오 계정 연동하기</a>
+                                        {% endif %}
+                                        <div class="help-text">카카오 연동 시 향후 출석/소식 알림을 카카오톡 메시지로 받을 수 있습니다.</div>
+                                    </div>
+                                    {% endif %}
                                 </div>
 
                                 <div style="margin-top: 32px; display: flex; gap: 12px;">
@@ -570,6 +623,57 @@
 
 {% block extra_js %}
 <script>
+    // ── 메듀랩 학부모 자녀정보 에디터 ──
+    (function() {
+        const childInput = document.getElementById('id_children_info');
+        const childRows = document.getElementById('profileChildRows');
+        const childAddBtn = document.getElementById('profileChildAddBtn');
+        if (!childInput || !childRows) return;
+
+        function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+        function buildRow(name='', birth_date='', school='', grade='') {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:grid; grid-template-columns:1fr 130px 1fr 90px 36px; border-bottom:1px solid var(--border);';
+            row.innerHTML = `
+                <input type="text" placeholder="이름" value="${esc(name)}" data-col="name" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--border); font-size:13px; outline:none;">
+                <input type="text" placeholder="생년월일" value="${esc(birth_date)}" data-col="birth_date" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--border); font-size:13px; outline:none;">
+                <input type="text" placeholder="학교" value="${esc(school)}" data-col="school" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--border); font-size:13px; outline:none;">
+                <input type="text" placeholder="학년" value="${esc(grade)}" data-col="grade" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--border); font-size:13px; outline:none;">
+                <button type="button" class="child-row-del" style="display:flex; align-items:center; justify-content:center; background:transparent; border:none; color:rgba(255,80,80,0.5); cursor:pointer; font-size:16px;">✕</button>
+            `;
+            row.querySelector('.child-row-del').addEventListener('click', () => { row.remove(); syncJSON(); });
+            row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', syncJSON));
+            return row;
+        }
+
+        function syncJSON() {
+            const data = [...childRows.querySelectorAll(':scope > div')].map(row => ({
+                name: (row.querySelector('[data-col="name"]').value || '').trim(),
+                birth_date: (row.querySelector('[data-col="birth_date"]').value || '').trim(),
+                school: (row.querySelector('[data-col="school"]').value || '').trim(),
+                grade: (row.querySelector('[data-col="grade"]').value || '').trim(),
+            })).filter(r => r.name || r.birth_date || r.school || r.grade);
+            childInput.value = JSON.stringify(data);
+        }
+
+        function loadJSON() {
+            let data = [];
+            try {
+                const parsed = JSON.parse(childInput.value || '[]');
+                data = Array.isArray(parsed) ? parsed : [];
+            } catch(e) { data = []; }
+            childRows.innerHTML = '';
+            data.forEach(r => childRows.appendChild(buildRow(r.name || '', r.birth_date || '', r.school || '', r.grade || '')));
+            if (!data.length) childRows.appendChild(buildRow());
+        }
+
+        if (childAddBtn) childAddBtn.addEventListener('click', () => childRows.appendChild(buildRow()));
+        const parentForm = childInput.closest('form');
+        if (parentForm) parentForm.addEventListener('submit', syncJSON);
+        loadJSON();
+    })();
+
     function openTab(evt, tabName) {
         const tabcontent = document.getElementsByClassName('tab-content');
         const tablinks = document.getElementsByClassName('tab-btn');

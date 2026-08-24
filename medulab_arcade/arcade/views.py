@@ -26,7 +26,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
 from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest
-from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm
+from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm
 from .holiday_utils import ensure_holidays
 
 
@@ -2553,6 +2553,61 @@ def signup(request):
 
 
 @login_required
+def request_medulab_parent_upgrade(request):
+    """'학부모회원' -> '메듀랩 학부모' 전환 신청 (관리자 승인 대기 상태로 전환)"""
+    profile = request.user.profile
+    if profile.user_type != 'parent':
+        messages.error(request, '학부모회원만 메듀랩 학부모로 전환 신청할 수 있습니다.')
+        return redirect('profile')
+
+    if request.method == 'POST':
+        form = MedulabParentUpgradeForm(request.POST)
+        if form.is_valid():
+            profile.address = form.cleaned_data['address']
+            profile.children_info = form.cleaned_data['children_info']
+            profile.user_type = 'medulab_parent'
+            profile.is_approved = False
+            profile.approved_at = None
+            profile.save()
+            messages.success(request, '메듀랩 학부모 전환 신청이 접수되었습니다. 관리자 승인 후 적용됩니다.')
+            return redirect('profile')
+    else:
+        import json
+        form = MedulabParentUpgradeForm(initial={
+            'address': profile.address,
+            'children_info': json.dumps(profile.children_info or []),
+        })
+    return render(request, 'arcade/medulab_parent_upgrade.html', {'form': form})
+
+
+@login_required
+def social_onboarding(request):
+    """소셜 로그인 최초 가입자의 추가정보 입력 완료 화면"""
+    profile = request.user.profile
+    if profile.onboarding_complete:
+        return redirect('home')
+
+    if request.method == 'POST':
+        form = SocialOnboardingForm(request.POST)
+        if form.is_valid():
+            user_type = form.cleaned_data['user_type']
+            profile.real_name = form.cleaned_data['real_name']
+            profile.birth_date = form.cleaned_data['birth_date']
+            profile.phone_number = form.cleaned_data['phone_number']
+            profile.user_type = user_type
+            profile.address = form.cleaned_data.get('address', '')
+            profile.children_info = form.cleaned_data.get('children_info') or None
+            profile.is_approved = user_type in UserProfile.AUTO_APPROVE_TYPES
+            profile.onboarding_complete = True
+            profile.save()
+            messages.success(request, '추가정보 입력이 완료되었습니다.')
+            return redirect('home')
+    else:
+        form = SocialOnboardingForm(initial={'real_name': profile.real_name})
+    return render(request, 'arcade/social_onboarding.html', {'form': form})
+
+
+@login_required
 def profile_view(request):
     """마이페이지 - 대시보드 및 정보 수정"""
     user = request.user
@@ -2576,6 +2631,9 @@ def profile_view(request):
     recent_badges = get_recent_user_badges(user, limit=8)
     badge_catalog = get_active_badges_with_user_state(user)
 
+    from allauth.socialaccount.models import SocialAccount
+    kakao_linked = SocialAccount.objects.filter(user=user, provider='kakao').exists()
+
     context = {
         'profile': profile,
         'form': form,
@@ -2587,6 +2645,7 @@ def profile_view(request):
         'badge_count': get_user_badge_count(user),
         'recent_badges': recent_badges,
         'badge_catalog': badge_catalog,
+        'kakao_linked': kakao_linked,
     }
     return render(request, 'arcade/profile.html', context)
 

@@ -30,3 +30,6 @@ pypinyin>=0.50.0
 
 # Schedule / Holiday
 holidays>=0.96
+
+# Social login (Google / Kakao)
+django-allauth>=65.0

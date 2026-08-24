@@ -180,8 +180,7 @@ SOCIALACCOUNT_PROVIDERS = {
             'secret': os.environ.get('KAKAO_CLIENT_SECRET', ''),
             'key': '',
         },
-        # 카카오 개발자 콘솔의 '동의항목'에 등록/활성화된 항목만 요청해야 KOE006 오류가 나지 않음.
-        # 이메일은 비즈 인증이 필요해 기본적으로 요청하지 않음(앱은 이메일 없이도 가입 가능하도록 되어 있음).
-        'SCOPE': ['profile_nickname'],
+        # 카카오 개발자 콘솔의 '동의항목'에서 승인된 항목만 요청해야 KOE006 오류가 나지 않음.
+        'SCOPE': ['profile_nickname', 'account_email', 'name', 'birthday', 'birthyear', 'phone_number'],
     },
 }

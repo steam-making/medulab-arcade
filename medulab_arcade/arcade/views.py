@@ -2615,7 +2615,12 @@ def social_onboarding(request):
             return redirect('home')
     else:
         pending_user_type = request.session.pop('pending_signup_user_type', None)
-        initial = {'real_name': profile.real_name}
+        initial = {
+            'real_name': profile.real_name,
+            'phone_number': profile.phone_number,
+        }
+        if profile.birth_date:
+            initial['birth_date'] = profile.birth_date.strftime('%Y.%m.%d')
         if pending_user_type:
             initial['user_type'] = pending_user_type
         form = SocialOnboardingForm(initial=initial)

@@ -391,15 +391,17 @@ document.addEventListener('DOMContentLoaded', function() {
             select.name = 'grade';
             select.id = 'id_grade';
             select.className = wrap.querySelector('input,select') ? (wrap.querySelector('input,select').className || '') : '';
-            select.style.cssText = 'width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1);';
+            select.style.cssText = 'width:100%; padding:10px; border-radius:8px; background:#1e293b; color:#fff; border:1px solid rgba(255,255,255,0.15); color-scheme:dark;';
             const blankOpt = document.createElement('option');
             blankOpt.value = '';
             blankOpt.textContent = '급수를 선택하세요';
+            blankOpt.style.cssText = 'background:#1e293b; color:#fff;';
             select.appendChild(blankOpt);
             gradeInfo.forEach(g => {
                 const opt = document.createElement('option');
                 opt.value = g.grade;
                 opt.textContent = g.grade + (g.target ? ' — ' + g.target : '');
+                opt.style.cssText = 'background:#1e293b; color:#fff;';
                 if (g.grade === currentVal) opt.selected = true;
                 select.appendChild(opt);
             });

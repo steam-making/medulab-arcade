@@ -181,6 +181,6 @@ SOCIALACCOUNT_PROVIDERS = {
             'key': '',
         },
         # 카카오 개발자 콘솔의 '동의항목'에서 승인된 항목만 요청해야 KOE006 오류가 나지 않음.
-        'SCOPE': ['profile_nickname', 'account_email', 'name', 'birthday', 'birthyear', 'phone_number'],
+        'SCOPE': ['profile_nickname', 'account_email', 'name', 'birthday', 'birthyear', 'phone_number', 'shipping_address'],
     },
 }

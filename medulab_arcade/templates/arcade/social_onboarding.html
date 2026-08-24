@@ -63,6 +63,11 @@ label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weigh
             </div>
 
             <div class="fgroup">
+                <label class="fl">주소</label>
+                <input type="text" name="address" id="id_address" class="fi" value="{{ form.address.value|default:'' }}">
+            </div>
+
+            <div class="fgroup">
                 <label class="fl">회원 유형 <span style="color:#ef4444;">*</span></label>
                 <div class="type-grid">
                     {% for value, label in form.fields.user_type.choices %}
@@ -75,9 +80,6 @@ label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weigh
             </div>
 
             <div class="fgroup" id="parentExtraFields" style="display:none;">
-                <label class="fl">주소 <span style="color:#ef4444;">*</span></label>
-                <input type="text" name="address" id="id_address" class="fi" value="{{ form.address.value|default:'' }}" style="margin-bottom:16px;">
-
                 <label class="fl">👶 자녀 정보 <span style="color:#ef4444;">*</span></label>
                 <input type="hidden" name="children_info" id="id_children_info" value="{{ form.children_info.value|default:'[]' }}">
                 <div class="child-editor" id="childEditor">

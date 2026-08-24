@@ -2618,6 +2618,7 @@ def social_onboarding(request):
         initial = {
             'real_name': profile.real_name,
             'phone_number': profile.phone_number,
+            'address': profile.address,
         }
         if profile.birth_date:
             initial['birth_date'] = profile.birth_date.strftime('%Y.%m.%d')

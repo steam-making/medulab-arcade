@@ -43,5 +43,14 @@ def handle_social_signup(request, user, **kwargs):
                 digits = '0' + digits[2:]
             profile.phone_number = digits
 
+        shipping_addresses = kakao_account.get('shipping_addresses') or []
+        if shipping_addresses and not profile.address:
+            default_addr = next((a for a in shipping_addresses if a.get('is_default')), shipping_addresses[0])
+            base = (default_addr.get('base_address') or '').strip()
+            detail = (default_addr.get('detail_address') or '').strip()
+            address = ' '.join(p for p in (base, detail) if p)
+            if address:
+                profile.address = address
+
     profile.onboarding_complete = False
     profile.save()

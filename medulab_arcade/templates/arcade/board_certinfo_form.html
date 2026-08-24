@@ -165,7 +165,7 @@ label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weigh
 
             <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:32px;">
                 <button type="button" onclick="history.back()" style="padding:12px 24px; background:rgba(255,255,255,0.08); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700;">취소</button>
-                <button type="submit" style="padding:12px 28px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700;">저장하기</button>
+                <button type="submit" onclick="syncJSON()" style="padding:12px 28px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700;">저장하기</button>
             </div>
         </form>
     </div>
@@ -193,13 +193,15 @@ function buildRow(grade='', content='', target='') {
     const row = document.createElement('div');
     row.className = 'grade-row';
     row.innerHTML = `
-        <input type="text" placeholder="등급" value="${esc(grade)}" data-col="grade">
-        <input type="text" placeholder="평가 내용" value="${esc(content)}" data-col="content">
-        <input type="text" placeholder="추천 대상" value="${esc(target)}" data-col="target">
+        <input type="text" placeholder="등급" value="${esc(grade)}" data-col="grade" style="flex:0 0 90px;">
+        <textarea placeholder="평가 내용" data-col="content" rows="2" style="flex:1; resize:vertical; background:rgba(255,255,255,0.07); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:6px 8px; font-size:13px;">${esc(content)}</textarea>
+        <input type="text" placeholder="추천 대상" value="${esc(target)}" data-col="target" style="flex:0 0 110px;">
         <button type="button" class="grade-row-del" title="삭제">✕</button>
     `;
     row.querySelector('.grade-row-del').addEventListener('click', () => { row.remove(); syncJSON(); });
-    row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', syncJSON));
+    row.querySelector('input[data-col="grade"]').addEventListener('input', syncJSON);
+    row.querySelector('textarea[data-col="content"]').addEventListener('input', syncJSON);
+    row.querySelector('input[data-col="target"]').addEventListener('input', syncJSON);
     return row;
 }
 
@@ -207,18 +209,21 @@ function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
 function syncJSON() {
     const data = [...gradeRows.querySelectorAll('.grade-row')].map(row => ({
-        grade:   row.querySelector('[data-col="grade"]').value.trim(),
-        content: row.querySelector('[data-col="content"]').value.trim(),
-        target:  row.querySelector('[data-col="target"]').value.trim(),
+        grade:   (row.querySelector('[data-col="grade"]').value || '').trim(),
+        content: (row.querySelector('[data-col="content"]').value || '').trim(),
+        target:  (row.querySelector('[data-col="target"]').value || '').trim(),
     })).filter(r => r.grade || r.content || r.target);
     gradeInput.value = JSON.stringify(data);
 }
 
 function loadJSON() {
     let data = [];
-    try { data = JSON.parse(gradeInput.value || '[]'); } catch(e) {}
+    try {
+        const parsed = JSON.parse(gradeInput.value || '[]');
+        data = Array.isArray(parsed) ? parsed : [];
+    } catch(e) { data = []; }
     gradeRows.innerHTML = '';
-    data.forEach(r => gradeRows.appendChild(buildRow(r.grade, r.content, r.target)));
+    data.forEach(r => gradeRows.appendChild(buildRow(r.grade || '', r.content || '', r.target || '')));
     if (!data.length) gradeRows.appendChild(buildRow());
 }
 

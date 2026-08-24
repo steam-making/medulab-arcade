@@ -2876,7 +2876,7 @@ def board_certinfo_update(request, pk):
             return redirect('board_certinfo_detail', pk=certinfo.pk)
     else:
         form = CertInfoForm(instance=certinfo)
-    return render(request, 'arcade/board_certinfo_form.html', {'form': form, 'title': '자격종류 수정'})
+    return render(request, 'arcade/board_certinfo_form.html', {'form': form, 'title': '자격종류 수정', 'certinfo': certinfo})
 
 @user_passes_test(lambda u: u.is_staff)
 def board_certinfo_delete(request, pk):

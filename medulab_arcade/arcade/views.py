@@ -2195,13 +2195,17 @@ def _handle_attachment_uploads(request, event):
 
 
 def _auto_create_competition_type(event):
-    """대회 유형 일정 저장 시 CompetitionType에 없는 대회명이면 자동 추가"""
+    """대회 유형 일정 저장 시 competition_base_name 또는 title로 CompetitionType 자동 추가"""
     if event.event_type != ScheduleEvent.EVENT_TYPE_COMPETITION:
         return
-    name = (event.title or '').strip()
-    if not name:
+    import re
+    base = (event.competition_base_name or '').strip()
+    if not base:
+        # title에서 "제N회 " 패턴 제거하여 기본명 추출
+        base = re.sub(r'^제\d+회\s*', '', (event.title or '')).strip()
+    if not base:
         return
-    CompetitionType.objects.get_or_create(name=name)
+    CompetitionType.objects.get_or_create(name=base)
 
 
 def schedule_admin_create(request):

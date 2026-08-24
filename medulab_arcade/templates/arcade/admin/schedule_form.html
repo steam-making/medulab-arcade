@@ -123,6 +123,22 @@
 
             <div class="form-group">
                 <label>일정명 *</label>
+                <!-- 대회 유형일 때: 기본명 + 회차 분리 입력 -->
+                <div id="competitionNameWrap" style="display:none; margin-bottom:10px;">
+                    <div style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:200px; position:relative;" id="baseNameWrap">
+                            <input type="text" id="competitionBaseName" name="competition_base_name" class="form-input" placeholder="대회 기본명 검색 또는 입력 (예: 전국 학생 코딩 경진 대회)" autocomplete="off">
+                            <div id="baseNameDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:12px; z-index:200; max-height:240px; overflow-y:auto; box-shadow:0 10px 24px rgba(0,0,0,0.5); margin-top:4px;"></div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
+                            <span style="color:var(--text-muted); font-size:13px;">제</span>
+                            <input type="number" id="competitionEdition" name="competition_edition" class="form-input" placeholder="회차" min="1" style="width:80px; text-align:center;">
+                            <span style="color:var(--text-muted); font-size:13px;">회</span>
+                        </div>
+                    </div>
+                    <div style="font-size:12px; color:#a78bfa; margin-top:8px;" id="editionPreview"></div>
+                </div>
+                <!-- 공통 일정명 (대회 시 자동 채워짐) -->
                 <div style="position:relative;" id="titleWrap">
                     {{ form.title }}
                     <div id="titleDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:12px; z-index:200; max-height:240px; overflow-y:auto; box-shadow:0 10px 24px rgba(0,0,0,0.5); margin-top:4px;"></div>
@@ -275,10 +291,15 @@
         
         toggleFields(); // Initial run
 
-        // ── 일정명 자동완성 (대회/자격시험 유형일 때) ──────────────────────
+        // ── 일정명 자동완성 ────────────────────────────────────────────────
         const titleInput = document.getElementById('id_title');
         const titleDropdown = document.getElementById('titleDropdown');
         const titleHint = document.getElementById('titleHint');
+        const competitionNameWrap = document.getElementById('competitionNameWrap');
+        const baseNameInput = document.getElementById('competitionBaseName');
+        const baseNameDropdown = document.getElementById('baseNameDropdown');
+        const editionInput = document.getElementById('competitionEdition');
+        const editionPreview = document.getElementById('editionPreview');
         let titleTimer = null;
 
         function getSelectedEventType() {
@@ -287,75 +308,118 @@
             return val;
         }
 
-        function getApiUrl(eventType) {
-            if (eventType === 'competition') return '/api/search-competition-types/';
-            if (eventType === 'certification') return '/api/search-certinfos/';
-            return null;
-        }
-
-        function getItemsKey(eventType) {
-            if (eventType === 'competition') return 'competition_types';
-            if (eventType === 'certification') return 'certinfos';
-            return null;
-        }
-
-        function updateTitleHint() {
-            const t = getSelectedEventType();
-            if (t === 'competition') {
-                titleHint.textContent = '대회종류 목록에서 선택하거나 새 이름을 직접 입력하세요. 없는 대회명은 자동 등록됩니다.';
-            } else if (t === 'certification') {
-                titleHint.textContent = '자격시험 목록에서 선택하거나 새 이름을 직접 입력하세요.';
+        function updateEditionPreview() {
+            const base = (baseNameInput.value || '').trim();
+            const ed = editionInput.value;
+            if (base) {
+                const full = ed ? `제${ed}회 ${base}` : base;
+                editionPreview.textContent = `→ 일정명: ${full}`;
+                titleInput.value = full;
             } else {
-                titleHint.textContent = '';
+                editionPreview.textContent = '';
             }
         }
 
-        function renderTitleDropdown(items, labelKey) {
-            if (!items.length) { titleDropdown.style.display = 'none'; return; }
-            titleDropdown.innerHTML = items.slice(0, 15).map(item =>
-                `<div data-name="${item.name.replace(/"/g,'&quot;')}" style="padding:11px 16px; cursor:pointer; color:#fff; border-bottom:1px solid rgba(255,255,255,0.05); font-size:14px;">
-                    <strong>${item.name}</strong>
-                    ${item.organization ? `<span style="font-size:12px;color:rgba(255,255,255,0.45);margin-left:8px;">${item.organization}</span>` : ''}
-                    ${item.issuer ? `<span style="font-size:12px;color:rgba(255,255,255,0.45);margin-left:8px;">${item.issuer}</span>` : ''}
-                </div>`
-            ).join('');
-            titleDropdown.querySelectorAll('[data-name]').forEach(el => {
-                el.addEventListener('mouseenter', () => el.style.background = 'rgba(59,130,246,0.22)');
-                el.addEventListener('mouseleave', () => el.style.background = '');
-                el.addEventListener('click', () => {
-                    titleInput.value = el.dataset.name;
-                    titleDropdown.style.display = 'none';
-                });
-            });
-            titleDropdown.style.display = 'block';
+        function updateCompetitionUI() {
+            const t = getSelectedEventType();
+            if (t === 'competition') {
+                competitionNameWrap.style.display = 'block';
+                titleHint.textContent = '기본명 + 회차를 입력하면 일정명이 자동 완성됩니다. 새 대회명은 대회종류에 자동 추가됩니다.';
+                titleDropdown.style.display = 'none';
+                updateEditionPreview();
+            } else if (t === 'certification') {
+                competitionNameWrap.style.display = 'none';
+                titleHint.textContent = '자격시험 목록에서 선택하거나 직접 입력하세요.';
+                fetchTitleCertSuggestions();
+            } else {
+                competitionNameWrap.style.display = 'none';
+                titleHint.textContent = '';
+                titleDropdown.style.display = 'none';
+            }
         }
 
-        function fetchTitleSuggestions() {
-            const t = getSelectedEventType();
-            const apiUrl = getApiUrl(t);
-            const key = getItemsKey(t);
-            if (!apiUrl) { titleDropdown.style.display = 'none'; return; }
-            const q = titleInput.value.trim();
-            clearTimeout(titleTimer);
-            titleTimer = setTimeout(() => {
-                fetch(`${apiUrl}?q=${encodeURIComponent(q || ' ')}`)
+        // 대회 기본명 자동완성
+        let baseTimer = null;
+        function fetchBaseSuggestions() {
+            const q = (baseNameInput.value || '').trim();
+            clearTimeout(baseTimer);
+            baseTimer = setTimeout(() => {
+                fetch(`/api/search-competition-types/?q=${encodeURIComponent(q || ' ')}`)
                     .then(r => r.json())
-                    .then(data => renderTitleDropdown(data[key] || [], key))
-                    .catch(() => titleDropdown.style.display = 'none');
+                    .then(data => {
+                        const items = data.competition_types || [];
+                        if (!items.length) { baseNameDropdown.style.display = 'none'; return; }
+                        baseNameDropdown.innerHTML = items.slice(0, 15).map(item =>
+                            `<div data-name="${item.name.replace(/"/g,'&quot;')}" style="padding:11px 16px;cursor:pointer;color:#fff;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px;">
+                                <strong>${item.name}</strong>
+                                ${item.organization ? `<span style="font-size:12px;color:rgba(255,255,255,0.45);margin-left:8px;">${item.organization}</span>` : ''}
+                            </div>`
+                        ).join('');
+                        baseNameDropdown.querySelectorAll('[data-name]').forEach(el => {
+                            el.addEventListener('mouseenter', () => el.style.background = 'rgba(59,130,246,0.22)');
+                            el.addEventListener('mouseleave', () => el.style.background = '');
+                            el.addEventListener('click', () => {
+                                baseNameInput.value = el.dataset.name;
+                                baseNameDropdown.style.display = 'none';
+                                updateEditionPreview();
+                            });
+                        });
+                        baseNameDropdown.style.display = 'block';
+                    });
             }, 150);
         }
 
-        titleInput.addEventListener('input', fetchTitleSuggestions);
-        titleInput.addEventListener('focus', fetchTitleSuggestions);
+        if (baseNameInput) {
+            baseNameInput.addEventListener('input', () => { fetchBaseSuggestions(); updateEditionPreview(); });
+            baseNameInput.addEventListener('focus', fetchBaseSuggestions);
+        }
+        if (editionInput) editionInput.addEventListener('input', updateEditionPreview);
+
+        // 자격시험 자동완성 (일정명 직접)
+        function fetchTitleCertSuggestions() {
+            const q = (titleInput.value || '').trim();
+            clearTimeout(titleTimer);
+            titleTimer = setTimeout(() => {
+                fetch(`/api/search-certinfos/?q=${encodeURIComponent(q || ' ')}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        const items = data.certinfos || [];
+                        if (!items.length) { titleDropdown.style.display = 'none'; return; }
+                        titleDropdown.innerHTML = items.slice(0, 15).map(item =>
+                            `<div data-name="${item.name.replace(/"/g,'&quot;')}" style="padding:11px 16px;cursor:pointer;color:#fff;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px;">
+                                <strong>${item.name}</strong>
+                                ${item.issuer ? `<span style="font-size:12px;color:rgba(255,255,255,0.45);margin-left:8px;">${item.issuer}</span>` : ''}
+                            </div>`
+                        ).join('');
+                        titleDropdown.querySelectorAll('[data-name]').forEach(el => {
+                            el.addEventListener('mouseenter', () => el.style.background = 'rgba(59,130,246,0.22)');
+                            el.addEventListener('mouseleave', () => el.style.background = '');
+                            el.addEventListener('click', () => { titleInput.value = el.dataset.name; titleDropdown.style.display = 'none'; });
+                        });
+                        titleDropdown.style.display = 'block';
+                    });
+            }, 150);
+        }
+
+        titleInput.addEventListener('input', () => { if (getSelectedEventType() === 'certification') fetchTitleCertSuggestions(); });
+        titleInput.addEventListener('focus', () => { if (getSelectedEventType() === 'certification') fetchTitleCertSuggestions(); });
+
         document.addEventListener('click', e => {
+            if (!e.target.closest('#baseNameWrap')) baseNameDropdown.style.display = 'none';
             if (!e.target.closest('#titleWrap')) titleDropdown.style.display = 'none';
         });
 
-        typeRadios.forEach(r => r.addEventListener('change', () => {
-            updateTitleHint();
-            if (titleInput.value) fetchTitleSuggestions();
-        }));
-        updateTitleHint();
+        typeRadios.forEach(r => r.addEventListener('change', updateCompetitionUI));
+
+        // 수정 폼: 기존 값 복원
+        {% if event and event.competition_base_name %}
+        if (baseNameInput) baseNameInput.value = '{{ event.competition_base_name|escapejs }}';
+        {% endif %}
+        {% if event and event.competition_edition %}
+        if (editionInput) editionInput.value = '{{ event.competition_edition }}';
+        {% endif %}
+
+        updateCompetitionUI();
 
         // Dynamic "add more" for attachments
         const addBtn = document.getElementById('add-attachment-btn');

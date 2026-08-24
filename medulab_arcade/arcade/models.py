@@ -400,6 +400,8 @@ class ScheduleEvent(models.Model):
     end_time = models.TimeField('종료 시간', null=True, blank=True)
 
     event_type = models.CharField('일정 유형', max_length=20, choices=EVENT_TYPE_CHOICES, default=EVENT_TYPE_ACADEMIC)
+    competition_base_name = models.CharField('대회 기본명 (회차 제외)', max_length=120, blank=True, help_text='예: 전국 학생 코딩 경진 대회')
+    competition_edition = models.PositiveSmallIntegerField('회차', null=True, blank=True, help_text='예: 4 → 제4회')
     external_url = models.URLField('링크 URL', max_length=500, blank=True, help_text='대회페이지나 관련 자료 링크')
     image = models.ImageField('이미지 (포스터)', upload_to='schedule/posters/', blank=True, null=True)
     is_active = models.BooleanField('노출 여부', default=True)

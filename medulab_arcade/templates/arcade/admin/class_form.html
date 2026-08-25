@@ -85,6 +85,9 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
 
             <div class="fgroup">
                 <label class="fl">{{ form.name.label }} <span class="required-mark">*</span></label>
+                <div class="preset-btn-row">
+                    <button type="button" class="preset-btn" data-name="AI로봇코딩">AI로봇코딩</button>
+                </div>
                 {{ form.name }}
             </div>
 
@@ -231,6 +234,14 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
     startInput.addEventListener('input', updateEndTimePreview);
     durationInput.addEventListener('input', updateEndTimePreview);
     updateEndTimePreview();
+
+    const nameInput = document.getElementById('id_name');
+    document.querySelectorAll('.preset-btn[data-name]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            nameInput.value = this.dataset.name;
+            nameInput.focus();
+        });
+    });
 
     function syncDurationActive() {
         document.querySelectorAll('.preset-btn[data-duration]').forEach(btn => {

@@ -25,8 +25,8 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest
-from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment
+from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
 
@@ -2184,8 +2184,6 @@ def schedule_admin_list(request):
     return render(request, 'arcade/admin/schedule_list.html', context)
 
 
-@login_required
-@user_passes_test(staff_check)
 def _handle_attachment_uploads(request, event):
     """첨부 파일 업로드 처리"""
     files = request.FILES.getlist('attachments')
@@ -2208,6 +2206,8 @@ def _auto_create_competition_type(event):
     CompetitionType.objects.get_or_create(name=base)
 
 
+@login_required
+@user_passes_test(staff_check)
 def schedule_admin_create(request):
     """신규 일정 등록"""
     if request.method == 'POST':
@@ -2266,6 +2266,116 @@ def schedule_admin_delete(request, event_id):
     except DatabaseError:
         messages.error(request, f'일정 "{title}"을 삭제할 수 없습니다.')
     return redirect('schedule_admin_list')
+
+
+# ────────────────────────────────────────────────
+# 수업 관리 (관리자 전용 CRUD + 학생 배정)
+# ────────────────────────────────────────────────
+
+@login_required
+@user_passes_test(staff_check)
+def class_admin_list(request):
+    """수업 관리 목록"""
+    classes = SchoolClass.objects.select_related('teacher__profile').prefetch_related('enrollments').order_by('name')
+    search = request.GET.get('q', '').strip()
+    if search:
+        classes = classes.filter(name__icontains=search)
+    context = {
+        'classes': classes,
+        'search_query': search,
+        'title': '수업 관리',
+    }
+    return render(request, 'arcade/admin/class_list.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def class_admin_create(request):
+    """신규 수업 등록"""
+    if request.method == 'POST':
+        form = SchoolClassForm(request.POST)
+        if form.is_valid():
+            school_class = form.save()
+            messages.success(request, f'수업 "{school_class.name}"이 등록되었습니다.')
+            return redirect('class_admin_edit', class_id=school_class.pk)
+    else:
+        form = SchoolClassForm()
+    context = {'form': form, 'title': '신규 수업 등록'}
+    return render(request, 'arcade/admin/class_form.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def class_admin_edit(request, class_id):
+    """수업 수정 + 학생 배정 관리"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    if request.method == 'POST':
+        form = SchoolClassForm(request.POST, instance=school_class)
+        if form.is_valid():
+            school_class = form.save()
+            messages.success(request, f'수업 "{school_class.name}"이 수정되었습니다.')
+            return redirect('class_admin_edit', class_id=school_class.pk)
+    else:
+        form = SchoolClassForm(instance=school_class)
+
+    enrollments = school_class.enrollments.select_related('student__profile').order_by('-enrolled_at')
+    context = {
+        'form': form,
+        'school_class': school_class,
+        'enrollments': enrollments,
+        'title': '수업 수정',
+    }
+    return render(request, 'arcade/admin/class_form.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def class_admin_delete(request, class_id):
+    """수업 삭제"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    name = school_class.name
+    try:
+        school_class.delete()
+        messages.success(request, f'수업 "{name}"이 삭제되었습니다.')
+    except DatabaseError:
+        messages.error(request, f'수업 "{name}"을 삭제할 수 없습니다.')
+    return redirect('class_admin_list')
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def class_enroll_student(request, class_id):
+    """수업에 학생 배정 (다중 선택)"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    student_ids = request.POST.getlist('student_ids')
+    added = 0
+    for sid in student_ids:
+        try:
+            student = User.objects.get(pk=sid)
+        except (User.DoesNotExist, ValueError):
+            continue
+        _, created = ClassEnrollment.objects.get_or_create(school_class=school_class, student=student)
+        if created:
+            added += 1
+    if added:
+        messages.success(request, f'{added}명을 "{school_class.name}" 수업에 배정했습니다.')
+    else:
+        messages.info(request, '새로 배정된 학생이 없습니다.')
+    return redirect('class_admin_edit', class_id=school_class.pk)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def class_unenroll_student(request, class_id, enrollment_id):
+    """수업 배정 해제"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    enrollment = get_object_or_404(ClassEnrollment, pk=enrollment_id, school_class=school_class)
+    enrollment.delete()
+    messages.success(request, '수업 배정을 해제했습니다.')
+    return redirect('class_admin_edit', class_id=school_class.pk)
 
 
 # ────────────────────────────────────────────────

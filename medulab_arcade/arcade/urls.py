@@ -123,6 +123,14 @@ urlpatterns = [
     path('admin-services/schedules/<int:event_id>/edit/', views.schedule_admin_edit, name='schedule_admin_edit'),
     path('admin-services/schedules/<int:event_id>/delete/', views.schedule_admin_delete, name='schedule_admin_delete'),
 
+    # 수업 관리 (관리자 전용)
+    path('admin-services/classes/', views.class_admin_list, name='class_admin_list'),
+    path('admin-services/classes/add/', views.class_admin_create, name='class_admin_create'),
+    path('admin-services/classes/<int:class_id>/edit/', views.class_admin_edit, name='class_admin_edit'),
+    path('admin-services/classes/<int:class_id>/delete/', views.class_admin_delete, name='class_admin_delete'),
+    path('admin-services/classes/<int:class_id>/enroll/', views.class_enroll_student, name='class_enroll_student'),
+    path('admin-services/classes/<int:class_id>/unenroll/<int:enrollment_id>/', views.class_unenroll_student, name='class_unenroll_student'),
+
     # 배지 관리 (관리자 전용)
     path('admin-services/badges/', views.badge_list, name='badge_list'),
     path('admin-services/badges/add/', views.badge_create, name='badge_create'),

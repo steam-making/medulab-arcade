@@ -452,6 +452,59 @@ class ScheduleAttachment(models.Model):
         return self.file.name.split('/')[-1]
 
 
+class SchoolClass(models.Model):
+    name = models.CharField('수업명', max_length=120)
+    teacher = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='teaching_classes', verbose_name='담당 강사',
+    )
+    days_of_week = models.CharField('수업 요일', max_length=50, blank=True, help_text='0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토 (콤마로 구분)')
+    start_time = models.TimeField('시작 시간', null=True, blank=True)
+    end_time = models.TimeField('종료 시간', null=True, blank=True)
+    tuition_fee = models.PositiveIntegerField('수업비 (월, 원)', default=0)
+    description = models.TextField('설명', blank=True)
+    is_active = models.BooleanField('운영 중', default=True)
+    created_at = models.DateTimeField('등록일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '수업'
+        verbose_name_plural = '수업'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def student_count(self):
+        return self.enrollments.filter(is_active=True).count()
+
+    DAY_LABELS = {'0': '일', '1': '월', '2': '화', '3': '수', '4': '목', '5': '금', '6': '토'}
+
+    @property
+    def days_display(self):
+        if not self.days_of_week:
+            return ''
+        order = ['1', '2', '3', '4', '5', '6', '0']
+        codes = set(self.days_of_week.split(','))
+        return '/'.join(self.DAY_LABELS[c] for c in order if c in codes)
+
+
+class ClassEnrollment(models.Model):
+    school_class = models.ForeignKey(SchoolClass, on_delete=models.CASCADE, related_name='enrollments', verbose_name='수업')
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='class_enrollments', verbose_name='학생')
+    enrolled_at = models.DateField('배정일', auto_now_add=True)
+    is_active = models.BooleanField('수강 중', default=True)
+
+    class Meta:
+        verbose_name = '수업 배정'
+        verbose_name_plural = '수업 배정'
+        unique_together = ('school_class', 'student')
+        ordering = ['-enrolled_at']
+
+    def __str__(self):
+        return f'{self.student.username} - {self.school_class.name}'
+
+
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='likes')

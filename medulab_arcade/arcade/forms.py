@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from .models import Badge, Project, ScheduleEvent, Tag, UserProfile, Notice, Award, Certification, CertInfo, CompetitionType, Contest
+from .models import Badge, Project, ScheduleEvent, Tag, UserProfile, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass
 
 
 BADGE_CRITERIA_HELP = (
@@ -775,6 +775,56 @@ class TimetableForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class SchoolClassForm(forms.ModelForm):
+    days_of_week = forms.MultipleChoiceField(
+        choices=[
+            ('1', '월'), ('2', '화'), ('3', '수'), ('4', '목'), ('5', '금'), ('6', '토'), ('0', '일')
+        ],
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'days-checkbox'}),
+        label='수업 요일',
+        required=False,
+    )
+
+    class Meta:
+        model = SchoolClass
+        fields = ['name', 'teacher', 'days_of_week', 'start_time', 'end_time', 'tuition_fee', 'description', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-input'}),
+            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-input'}, format='%H:%M'),
+            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-input'}, format='%H:%M'),
+            'tuition_fee': forms.NumberInput(attrs={'min': 0, 'step': 1000, 'class': 'form-input'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-input'}),
+        }
+        labels = {
+            'name': '수업명',
+            'teacher': '담당 강사',
+            'tuition_fee': '수업비 (월, 원)',
+            'description': '설명',
+            'is_active': '운영 중',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['teacher'].queryset = User.objects.filter(
+            profile__user_type__in=['medulab_staff', 'medulab_teacher']
+        ).order_by('username')
+        self.fields['teacher'].required = False
+        self.fields['teacher'].empty_label = '(미지정)'
+        self.fields['teacher'].widget.attrs.update({'class': 'form-input'})
+        if self.instance and self.instance.days_of_week:
+            self.initial['days_of_week'] = self.instance.days_of_week.split(',')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        days = cleaned_data.get('days_of_week') or []
+        cleaned_data['days_of_week'] = ','.join(days)
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        if start_time and end_time and start_time >= end_time:
+            raise forms.ValidationError('종료 시간은 시작 시간보다 늦어야 합니다.')
+        return cleaned_data
 
 
 class NoticeForm(forms.ModelForm):

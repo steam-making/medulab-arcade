@@ -3501,8 +3501,9 @@ def my_report(request):
     user = request.user
     profile = user.profile
 
-    # 학부모회원(일반, 미승인)은 아직 자녀 연결 대상이 아니므로 프로그램 안내 + 상담문의 랜딩을 보여줌
-    if profile.user_type == 'parent':
+    # 메듀랩 계열이 아닌 회원(학생/학부모/일반/강사회원)은 아직 정식 학습 데이터가 없으므로
+    # 프로그램 안내 + 상담문의 랜딩을 보여줌
+    if profile.user_type in ('student', 'parent', 'general', 'teacher'):
         return render(request, 'arcade/parent_landing.html', {
             'academy_phone': getattr(settings, 'ACADEMY_PHONE', ''),
             'academy_kakao_channel_url': getattr(settings, 'ACADEMY_KAKAO_CHANNEL_URL', ''),

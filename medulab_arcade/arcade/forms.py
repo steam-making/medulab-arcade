@@ -789,17 +789,18 @@ class SchoolClassForm(forms.ModelForm):
 
     class Meta:
         model = SchoolClass
-        fields = ['name', 'teacher', 'days_of_week', 'start_time', 'end_time', 'tuition_fee', 'description', 'is_active']
+        fields = ['name', 'teacher', 'days_of_week', 'duration_minutes', 'start_time', 'tuition_fee', 'description', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'fi'}),
-            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'fi'}, format='%H:%M'),
-            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'fi'}, format='%H:%M'),
+            'duration_minutes': forms.NumberInput(attrs={'min': 5, 'step': 5, 'class': 'fi', 'id': 'id_duration_minutes'}),
+            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'fi', 'id': 'id_start_time'}, format='%H:%M'),
             'tuition_fee': forms.NumberInput(attrs={'min': 0, 'step': 1000, 'class': 'fi'}),
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'fi'}),
         }
         labels = {
             'name': '수업명',
             'teacher': '담당 강사',
+            'duration_minutes': '수업 시간(분)',
             'tuition_fee': '수업비 (월, 원)',
             'description': '설명',
             'is_active': '운영 중',
@@ -817,14 +818,25 @@ class SchoolClassForm(forms.ModelForm):
             self.initial['days_of_week'] = self.instance.days_of_week.split(',')
 
     def clean(self):
+        import datetime
+
         cleaned_data = super().clean()
         days = cleaned_data.get('days_of_week') or []
         cleaned_data['days_of_week'] = ','.join(days)
+
         start_time = cleaned_data.get('start_time')
-        end_time = cleaned_data.get('end_time')
-        if start_time and end_time and start_time >= end_time:
-            raise forms.ValidationError('종료 시간은 시작 시간보다 늦어야 합니다.')
+        duration_minutes = cleaned_data.get('duration_minutes')
+        if start_time and duration_minutes:
+            end_dt = datetime.datetime.combine(datetime.date.today(), start_time) + datetime.timedelta(minutes=duration_minutes)
+            cleaned_data['end_time'] = end_dt.time()
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.end_time = self.cleaned_data.get('end_time')
+        if commit:
+            instance.save()
+        return instance
 
 
 class NoticeForm(forms.ModelForm):

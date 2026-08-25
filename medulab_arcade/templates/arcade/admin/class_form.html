@@ -95,14 +95,19 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
                 {{ form.days_of_week }}
             </div>
 
+            <div class="fgroup">
+                <label class="fl">⏱️ {{ form.duration_minutes.label }} <span class="required-mark">*</span></label>
+                {{ form.duration_minutes }}
+            </div>
+
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;" class="fgroup">
                 <div>
                     <label class="fl">🕐 {{ form.start_time.label }}</label>
                     {{ form.start_time }}
                 </div>
                 <div>
-                    <label class="fl">🕐 {{ form.end_time.label }}</label>
-                    {{ form.end_time }}
+                    <label class="fl">🕐 종료 시간 (자동 계산)</label>
+                    <input type="text" id="endTimePreview" class="fi" readonly style="opacity:0.7; cursor:not-allowed;">
                 </div>
             </div>
 
@@ -177,6 +182,28 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
     </div>
     {% endif %}
 </div>
+
+<script>
+(function() {
+    const startInput = document.getElementById('id_start_time');
+    const durationInput = document.getElementById('id_duration_minutes');
+    const preview = document.getElementById('endTimePreview');
+
+    function updateEndTimePreview() {
+        if (!startInput.value || !durationInput.value) { preview.value = ''; return; }
+        const [h, m] = startInput.value.split(':').map(Number);
+        const duration = parseInt(durationInput.value, 10) || 0;
+        const totalMinutes = h * 60 + m + duration;
+        const endH = Math.floor((totalMinutes % 1440) / 60);
+        const endM = totalMinutes % 60;
+        preview.value = String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0');
+    }
+
+    startInput.addEventListener('input', updateEndTimePreview);
+    durationInput.addEventListener('input', updateEndTimePreview);
+    updateEndTimePreview();
+})();
+</script>
 
 {% if school_class %}
 <script>

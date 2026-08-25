@@ -6,7 +6,18 @@
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
 <style>
     .schedule-holiday-cell { background: rgba(255, 93, 108, 0.14) !important; }
-    .schedule-shell { max-width: 1400px; margin: 0 auto; padding: 72px 24px 110px; position: relative; overflow: hidden; }
+    .fc .fc-scrollgrid thead {
+        position: sticky;
+        top: 68px;
+        z-index: 10;
+    }
+    .fc .fc-scrollgrid thead th,
+    .fc .fc-scrollgrid thead .fc-scroller-harness,
+    .fc .fc-scrollgrid thead .fc-scroller,
+    .fc .fc-col-header {
+        background: var(--bg-primary, #08080f);
+    }
+    .schedule-shell { max-width: 1400px; margin: 0 auto; padding: 72px 24px 110px; position: relative; }
     .schedule-shell::before, .schedule-shell::after { content: ""; position: absolute; border-radius: 999px; filter: blur(70px); opacity: 0.25; pointer-events: none; }
     .schedule-shell::before { width: 360px; height: 360px; top: 70px; left: -120px; background: #00ffb4; }
     .schedule-shell::after { width: 420px; height: 420px; right: -160px; bottom: 120px; background: #3b82f6; }

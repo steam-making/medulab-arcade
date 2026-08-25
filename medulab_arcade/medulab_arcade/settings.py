@@ -16,6 +16,7 @@ ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
 # 상담 문의 연락처 (.env에서 재정의)
 ACADEMY_PHONE = os.environ.get('ACADEMY_PHONE', '')
+ACADEMY_PHONE_MOBILE = os.environ.get('ACADEMY_PHONE_MOBILE', '')
 ACADEMY_KAKAO_CHANNEL_URL = os.environ.get('ACADEMY_KAKAO_CHANNEL_URL', '')
 
 # 로그인 도우미 잠금 해제 비밀번호 (.env의 LOGIN_HELPER_PASSWORD 로 재정의 가능)

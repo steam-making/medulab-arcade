@@ -28,8 +28,15 @@ label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weigh
         {% if academy_phone %}
         <a href="tel:{{ academy_phone }}" class="contact-card">
             <div class="icon">📞</div>
-            <div class="label">전화 상담</div>
+            <div class="label">전화 상담 (학원)</div>
             <div class="value">{{ academy_phone }}</div>
+        </a>
+        {% endif %}
+        {% if academy_phone_mobile %}
+        <a href="tel:{{ academy_phone_mobile }}" class="contact-card">
+            <div class="icon">📱</div>
+            <div class="label">휴대폰 상담</div>
+            <div class="value">{{ academy_phone_mobile }}</div>
         </a>
         {% endif %}
         {% if academy_kakao_channel_url %}

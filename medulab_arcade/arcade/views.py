@@ -2714,6 +2714,7 @@ def consult_inquiry(request):
     context = {
         'form': form,
         'academy_phone': getattr(settings, 'ACADEMY_PHONE', ''),
+        'academy_phone_mobile': getattr(settings, 'ACADEMY_PHONE_MOBILE', ''),
         'academy_kakao_channel_url': getattr(settings, 'ACADEMY_KAKAO_CHANNEL_URL', ''),
     }
     return render(request, 'arcade/consult_inquiry.html', context)

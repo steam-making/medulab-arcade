@@ -459,10 +459,11 @@ class SchoolClass(models.Model):
         related_name='teaching_classes', verbose_name='담당 강사',
     )
     days_of_week = models.CharField('수업 요일', max_length=50, blank=True, help_text='0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토 (콤마로 구분)')
-    duration_minutes = models.PositiveIntegerField('수업 시간(분)', default=60)
+    duration_minutes = models.PositiveIntegerField('수업 시간(분)', default=90)
     start_time = models.TimeField('시작 시간', null=True, blank=True)
     end_time = models.TimeField('종료 시간', null=True, blank=True, help_text='시작 시간 + 수업 시간(분)으로 자동 계산됩니다.')
-    tuition_fee = models.PositiveIntegerField('수업비 (월, 원)', default=0)
+    regular_fee = models.PositiveIntegerField('정가 (월, 원)', default=0)
+    tuition_fee = models.PositiveIntegerField('할인가 (월, 원)', default=0)
     description = models.TextField('설명', blank=True)
     is_active = models.BooleanField('운영 중', default=True)
     created_at = models.DateTimeField('등록일', auto_now_add=True)

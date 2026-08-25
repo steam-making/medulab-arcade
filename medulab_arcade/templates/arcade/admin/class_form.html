@@ -27,6 +27,11 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
 .days-checkbox input:checked + label,
 .days-checkbox label:has(input:checked) { background:linear-gradient(135deg, var(--accent-green), var(--accent-blue)); border-color:transparent; color:#03140e; box-shadow:0 4px 14px rgba(0,255,180,0.2); }
 
+.preset-btn-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.preset-btn { padding:7px 14px; border-radius:999px; border:1px solid var(--border); background:rgba(255,255,255,0.04); color:var(--text-secondary); font-size:12px; font-weight:700; cursor:pointer; transition: all .15s; }
+.preset-btn:hover { background:rgba(255,255,255,0.08); color:#fff; }
+.preset-btn.active { background:linear-gradient(135deg, var(--accent-green), var(--accent-blue)); border-color:transparent; color:#03140e; }
+
 .tuition-input-wrap { position:relative; }
 .tuition-input-wrap .fi { padding-right:44px; }
 .tuition-suffix { position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px; font-weight:700; pointer-events:none; }
@@ -97,6 +102,12 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
 
             <div class="fgroup">
                 <label class="fl">⏱️ {{ form.duration_minutes.label }} <span class="required-mark">*</span></label>
+                <div class="preset-btn-row">
+                    <button type="button" class="preset-btn" data-duration="60">60분</button>
+                    <button type="button" class="preset-btn" data-duration="90">90분</button>
+                    <button type="button" class="preset-btn" data-duration="120">120분</button>
+                    <button type="button" class="preset-btn" data-duration="180">180분</button>
+                </div>
                 {{ form.duration_minutes }}
             </div>
 
@@ -114,10 +125,28 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
             <div class="class-card-head" style="margin-top:32px;"><span class="icon">💰</span><h3>수업비 및 설명</h3></div>
 
             <div class="fgroup">
-                <label class="fl">{{ form.tuition_fee.label }} <span class="required-mark">*</span></label>
-                <div class="tuition-input-wrap">
-                    {{ form.tuition_fee }}
-                    <span class="tuition-suffix">원</span>
+                <label class="fl">수업비 프리셋</label>
+                <div class="preset-btn-row">
+                    <button type="button" class="preset-btn" data-regular="150000" data-tuition="140000">15만원 → 14만원</button>
+                    <button type="button" class="preset-btn" data-regular="300000" data-tuition="200000">30만원 → 20만원</button>
+                    <button type="button" class="preset-btn" data-regular="300000" data-tuition="210000">30만원 → 21만원</button>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;" class="fgroup">
+                <div>
+                    <label class="fl">{{ form.regular_fee.label }}</label>
+                    <div class="tuition-input-wrap">
+                        {{ form.regular_fee }}
+                        <span class="tuition-suffix">원</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="fl">{{ form.tuition_fee.label }} <span class="required-mark">*</span></label>
+                    <div class="tuition-input-wrap">
+                        {{ form.tuition_fee }}
+                        <span class="tuition-suffix">원</span>
+                    </div>
                 </div>
             </div>
 
@@ -202,6 +231,39 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
     startInput.addEventListener('input', updateEndTimePreview);
     durationInput.addEventListener('input', updateEndTimePreview);
     updateEndTimePreview();
+
+    function syncDurationActive() {
+        document.querySelectorAll('.preset-btn[data-duration]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.duration === durationInput.value);
+        });
+    }
+
+    document.querySelectorAll('.preset-btn[data-duration]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            durationInput.value = this.dataset.duration;
+            durationInput.dispatchEvent(new Event('input', {bubbles:true}));
+            syncDurationActive();
+        });
+    });
+    syncDurationActive();
+
+    const regularFeeInput = document.getElementById('id_regular_fee');
+    const tuitionFeeInput = document.getElementById('id_tuition_fee');
+
+    function syncFeeActive() {
+        document.querySelectorAll('.preset-btn[data-regular]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.regular === regularFeeInput.value && btn.dataset.tuition === tuitionFeeInput.value);
+        });
+    }
+
+    document.querySelectorAll('.preset-btn[data-regular]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            regularFeeInput.value = this.dataset.regular;
+            tuitionFeeInput.value = this.dataset.tuition;
+            syncFeeActive();
+        });
+    });
+    syncFeeActive();
 })();
 </script>
 

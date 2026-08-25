@@ -789,19 +789,21 @@ class SchoolClassForm(forms.ModelForm):
 
     class Meta:
         model = SchoolClass
-        fields = ['name', 'teacher', 'days_of_week', 'duration_minutes', 'start_time', 'tuition_fee', 'description', 'is_active']
+        fields = ['name', 'teacher', 'days_of_week', 'duration_minutes', 'start_time', 'regular_fee', 'tuition_fee', 'description', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'fi'}),
             'duration_minutes': forms.NumberInput(attrs={'min': 5, 'step': 5, 'class': 'fi', 'id': 'id_duration_minutes'}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'fi', 'id': 'id_start_time'}, format='%H:%M'),
-            'tuition_fee': forms.NumberInput(attrs={'min': 0, 'step': 1000, 'class': 'fi'}),
+            'regular_fee': forms.NumberInput(attrs={'min': 0, 'step': 1000, 'class': 'fi', 'id': 'id_regular_fee'}),
+            'tuition_fee': forms.NumberInput(attrs={'min': 0, 'step': 1000, 'class': 'fi', 'id': 'id_tuition_fee'}),
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'fi'}),
         }
         labels = {
             'name': '수업명',
             'teacher': '담당 강사',
             'duration_minutes': '수업 시간(분)',
-            'tuition_fee': '수업비 (월, 원)',
+            'regular_fee': '정가 (월, 원)',
+            'tuition_fee': '할인가 (월, 원)',
             'description': '설명',
             'is_active': '운영 중',
         }

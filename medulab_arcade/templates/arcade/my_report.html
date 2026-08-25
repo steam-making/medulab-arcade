@@ -390,7 +390,11 @@
     
     {% if viewing_as_parent %}
     <div style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        {% if viewing_as_admin %}
+        <a href="{% url 'my_report' %}" style="color:var(--text-muted); font-size:13px; text-decoration:none;">← 학생 목록으로 돌아가기</a>
+        {% else %}
         <a href="{% url 'profile' %}" style="color:var(--text-muted); font-size:13px; text-decoration:none;">← 내 프로필로 돌아가기</a>
+        {% endif %}
         {% if sibling_links|length > 1 %}
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
             {% for link in sibling_links %}
@@ -407,7 +411,10 @@
 
     <!-- 타이틀 헤더 -->
     <div class="report-header">
-        {% if viewing_as_parent %}
+        {% if viewing_as_admin %}
+        <h2>📊 {{ profile.display_name }}님의 마이 리포트</h2>
+        <p>관리자 열람 모드입니다. (정보 수정/출석체크는 본인만 가능)</p>
+        {% elif viewing_as_parent %}
         <h2>📊 {{ profile.display_name }}님의 마이 리포트</h2>
         <p>자녀로 연결된 학생의 학습·출석 현황을 확인하는 중입니다. (정보 수정/출석체크는 본인만 가능)</p>
         {% else %}

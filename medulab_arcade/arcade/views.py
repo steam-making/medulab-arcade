@@ -3510,12 +3510,79 @@ def _build_report_context(user):
     return context
 
 
+def _render_staff_student_dashboard(request):
+    """관리자(직원)용 메듀랩 학생회원 현황 대시보드 (요약 통계 + 학생 목록)"""
+    from django.utils import timezone
+    from .models import Attendance, Certification, Award, ExamRegistration
+
+    today = timezone.localdate()
+    current_year, current_month = today.year, today.month
+
+    students = list(
+        User.objects.filter(profile__user_type='medulab_member')
+        .select_related('profile')
+        .order_by('profile__real_name', 'username')
+    )
+    student_ids = [s.id for s in students]
+
+    today_attended_ids = set(
+        Attendance.objects.filter(user_id__in=student_ids, date=today).values_list('user_id', flat=True)
+    )
+    month_attendance_counts = {}
+    for row in (
+        Attendance.objects.filter(user_id__in=student_ids, date__year=current_year, date__month=current_month)
+        .values('user_id')
+        .annotate(cnt=Count('id'))
+    ):
+        month_attendance_counts[row['user_id']] = row['cnt']
+
+    for s in students:
+        s.attended_today = s.id in today_attended_ids
+        s.month_attendance_count = month_attendance_counts.get(s.id, 0)
+
+    total_students = len(students)
+    today_attended_count = len(today_attended_ids)
+    pending_approval_count = UserProfile.objects.filter(
+        user_type__in=UserProfile.FULL_ACCESS_TYPES, is_approved=False
+    ).count()
+    cert_count_total = Certification.objects.count()
+    award_count_total = Award.objects.count()
+    upcoming_exam_count = ExamRegistration.objects.filter(exam_date__gte=today).count()
+
+    context = {
+        'total_students': total_students,
+        'today_attended_count': today_attended_count,
+        'pending_approval_count': pending_approval_count,
+        'cert_count_total': cert_count_total,
+        'award_count_total': award_count_total,
+        'upcoming_exam_count': upcoming_exam_count,
+        'students': students,
+        'current_month': current_month,
+    }
+    return render(request, 'arcade/admin/staff_student_dashboard.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def admin_student_report(request, student_id):
+    """관리자가 특정 메듀랩 학생회원의 마이 리포트를 열람"""
+    student = get_object_or_404(User, pk=student_id)
+    context = _build_report_context(student)
+    context['viewing_as_parent'] = True
+    context['viewing_as_admin'] = True
+    return render(request, 'arcade/my_report.html', context)
+
+
 @login_required
 def my_report(request):
     from .models import ParentChildLink
 
     user = request.user
     profile = user.profile
+
+    # 관리자(직원) 계정은 본인 통계 대신 메듀랩 학생회원 전체 현황 대시보드를 보여줌
+    if user.is_staff:
+        return _render_staff_student_dashboard(request)
 
     # 메듀랩 계열이 아닌 회원(학생/학부모/일반/강사회원)은 아직 정식 학습 데이터가 없으므로
     # 프로그램 안내 + 상담문의 랜딩을 보여줌

@@ -74,6 +74,7 @@ urlpatterns = [
     path('api/survey/create/', views.api_survey_create, name='api_survey_create'),
     path('my-report/', views.my_report, name='my_report'),
     path('my-report/child/<int:child_id>/', views.child_report, name='child_report'),
+    path('my-report/student/<int:student_id>/', views.admin_student_report, name='admin_student_report'),
     path('api/attendance/submit/', views.api_submit_attendance, name='api_submit_attendance'),
     path('api/session/refresh/', views.api_refresh_session, name='api_refresh_session'),
     path('board/cert/', views.board_cert, name='board_cert'),

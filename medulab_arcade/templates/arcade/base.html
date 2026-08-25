@@ -918,7 +918,8 @@
                     <a href="{% url 'my_report' %}" class="nav-link"
                         style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); white-space: nowrap;">
                         {% with utype=user.profile.user_type %}
-                        {% if utype == 'medulab_parent' %}📊 자녀 리포트
+                        {% if user.is_staff %}🎓 학생 현황
+                        {% elif utype == 'medulab_parent' %}📊 자녀 리포트
                         {% elif utype == 'student' or utype == 'parent' or utype == 'general' or utype == 'teacher' %}💬 상담안내
                         {% else %}📊 마이 리포트
                         {% endif %}

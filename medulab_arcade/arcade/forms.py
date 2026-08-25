@@ -791,11 +791,11 @@ class SchoolClassForm(forms.ModelForm):
         model = SchoolClass
         fields = ['name', 'teacher', 'days_of_week', 'start_time', 'end_time', 'tuition_fee', 'description', 'is_active']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-input'}),
-            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-input'}, format='%H:%M'),
-            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-input'}, format='%H:%M'),
-            'tuition_fee': forms.NumberInput(attrs={'min': 0, 'step': 1000, 'class': 'form-input'}),
-            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-input'}),
+            'name': forms.TextInput(attrs={'class': 'fi'}),
+            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'fi'}, format='%H:%M'),
+            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'fi'}, format='%H:%M'),
+            'tuition_fee': forms.NumberInput(attrs={'min': 0, 'step': 1000, 'class': 'fi'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'fi'}),
         }
         labels = {
             'name': '수업명',
@@ -812,7 +812,7 @@ class SchoolClassForm(forms.ModelForm):
         ).order_by('username')
         self.fields['teacher'].required = False
         self.fields['teacher'].empty_label = '(미지정)'
-        self.fields['teacher'].widget.attrs.update({'class': 'form-input'})
+        self.fields['teacher'].widget.attrs.update({'class': 'fi'})
         if self.instance and self.instance.days_of_week:
             self.initial['days_of_week'] = self.instance.days_of_week.split(',')
 

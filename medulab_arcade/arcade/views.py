@@ -3445,10 +3445,22 @@ def _build_report_context(user):
     return context
 
 
+PARENT_USER_TYPES = ('parent', 'medulab_parent')
+
+
 @login_required
 def my_report(request):
+    from .models import ParentChildLink
+
     user = request.user
     profile = user.profile
+
+    # 학부모 계정은 자기 자신의 학습 통계가 의미 없으므로 연결된 자녀 리포트로 안내
+    if profile.user_type in PARENT_USER_TYPES:
+        child_links = list(ParentChildLink.objects.filter(parent=user).select_related('child__profile'))
+        if len(child_links) == 1:
+            return redirect('child_report', child_id=child_links[0].child_id)
+        return render(request, 'arcade/parent_report_gate.html', {'child_links': child_links})
 
     # 정보 수정 POST 처리
     if request.method == 'POST':

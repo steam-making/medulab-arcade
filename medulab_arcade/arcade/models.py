@@ -466,6 +466,11 @@ class SchoolClass(models.Model):
     tuition_fee = models.PositiveIntegerField('할인가 (월, 원)', default=0)
     description = models.TextField('설명', blank=True)
     is_active = models.BooleanField('운영 중', default=True)
+    show_on_schedule = models.BooleanField('정규수업 일정에 표시', default=False, help_text='체크하면 학원 일정(정규수업) 페이지에 자동으로 표시됩니다.')
+    schedule_event = models.OneToOneField(
+        'ScheduleEvent', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='school_class', verbose_name='연결된 일정',
+    )
     created_at = models.DateTimeField('등록일', auto_now_add=True)
 
     class Meta:

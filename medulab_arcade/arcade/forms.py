@@ -789,7 +789,7 @@ class SchoolClassForm(forms.ModelForm):
 
     class Meta:
         model = SchoolClass
-        fields = ['name', 'teacher', 'days_of_week', 'duration_minutes', 'start_time', 'regular_fee', 'tuition_fee', 'description', 'is_active']
+        fields = ['name', 'teacher', 'days_of_week', 'duration_minutes', 'start_time', 'regular_fee', 'tuition_fee', 'description', 'is_active', 'show_on_schedule']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'fi'}),
             'duration_minutes': forms.NumberInput(attrs={'min': 5, 'step': 5, 'class': 'fi', 'id': 'id_duration_minutes'}),
@@ -838,7 +838,30 @@ class SchoolClassForm(forms.ModelForm):
         instance.end_time = self.cleaned_data.get('end_time')
         if commit:
             instance.save()
+            self._sync_schedule_event(instance)
         return instance
+
+    def _sync_schedule_event(self, instance):
+        """'정규수업 일정에 표시' 체크 여부에 따라 ScheduleEvent(정규수업)를 생성/갱신/해제"""
+        if instance.show_on_schedule and instance.days_of_week and instance.start_time:
+            event = instance.schedule_event
+            if event is None:
+                event = ScheduleEvent(event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC)
+            event.title = instance.name
+            event.event_type = ScheduleEvent.EVENT_TYPE_ACADEMIC
+            event.days_of_week = instance.days_of_week
+            event.start_time = instance.start_time
+            event.end_time = instance.end_time
+            event.is_active = instance.is_active
+            event.save()
+            if instance.schedule_event_id != event.id:
+                instance.schedule_event = event
+                instance.save(update_fields=['schedule_event'])
+        elif instance.schedule_event_id:
+            event = instance.schedule_event
+            instance.schedule_event = None
+            instance.save(update_fields=['schedule_event'])
+            event.delete()
 
 
 class ConsultInquiryForm(forms.ModelForm):

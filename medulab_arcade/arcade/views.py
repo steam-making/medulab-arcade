@@ -2377,8 +2377,11 @@ def class_admin_delete(request, class_id):
     """수업 삭제"""
     school_class = get_object_or_404(SchoolClass, pk=class_id)
     name = school_class.name
+    linked_event = school_class.schedule_event
     try:
         school_class.delete()
+        if linked_event:
+            linked_event.delete()
         messages.success(request, f'수업 "{name}"이 삭제되었습니다.')
     except DatabaseError:
         messages.error(request, f'수업 "{name}"을 삭제할 수 없습니다.')

@@ -5,6 +5,7 @@
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
 <style>
+    .schedule-holiday-cell { background: rgba(255, 93, 108, 0.14) !important; }
     .schedule-shell { max-width: 1400px; margin: 0 auto; padding: 72px 24px 110px; position: relative; overflow: hidden; }
     .schedule-shell::before, .schedule-shell::after { content: ""; position: absolute; border-radius: 999px; filter: blur(70px); opacity: 0.25; pointer-events: none; }
     .schedule-shell::before { width: 360px; height: 360px; top: 70px; left: -120px; background: #00ffb4; }
@@ -164,6 +165,7 @@
 </div>
 
 {{ calendar_events_json|json_script:"schedule-events-data" }}
+{{ holiday_dates_json|json_script:"schedule-holiday-dates" }}
 {% endblock %}
 
 {% block extra_js %}
@@ -173,7 +175,17 @@
     document.addEventListener('DOMContentLoaded', function () {
         const calendarEl = document.getElementById('schedule-calendar');
         const eventsEl = document.getElementById('schedule-events-data');
+        const holidayEl = document.getElementById('schedule-holiday-dates');
         if (!calendarEl || !eventsEl || !window.FullCalendar) return;
+        const holidayDates = new Set(holidayEl ? JSON.parse(holidayEl.textContent) : []);
+
+        function toDateStr(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
         const calendar = new FullCalendar.Calendar(calendarEl, {
             locale: 'ko', initialView: 'dayGridMonth', height: 'auto', fixedWeekCount: false, dayMaxEventRows: true,
             moreLinkText: function(n) { return `+${n}개 더보기`; },
@@ -182,6 +194,9 @@
             eventTimeFormat: { hour: 'numeric', minute: '2-digit', meridiem: 'short' },
             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
             buttonText: { today: '오늘', month: '월간', list: '목록' },
+            dayCellClassNames: function(arg) {
+                return holidayDates.has(toDateStr(arg.date)) ? ['schedule-holiday-cell'] : [];
+            },
             eventContent: function(arg) {
                 var props = arg.event.extendedProps;
                 var dotColor = arg.event.backgroundColor;
@@ -218,6 +233,13 @@
             },
             eventDidMount: function (info) {
                 const props = info.event.extendedProps;
+
+                // 정규수업(반복 일정)은 휴원/공휴일 날짜에는 표시하지 않음
+                if (props.eventType === 'academic' && info.event.start && holidayDates.has(toDateStr(info.event.start))) {
+                    info.el.style.display = 'none';
+                    return;
+                }
+
                 const label = props.eventTypeLabel;
                 const startDate = props.startDate;
                 const endDate = props.endDate;

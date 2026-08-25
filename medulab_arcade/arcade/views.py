@@ -776,9 +776,22 @@ def schedule_view(request):
             days = [int(d) for d in event.days_of_week.split(',')]
             days_str = ', '.join([day_names[d] for d in days])
             event.parsed_days_str = days_str
-        
+
+    # 휴원/공휴일 날짜 목록 (정규수업 숨김 + 달력 셀 빨간 배경 처리용)
+    holiday_dates = set()
+    for event in events.filter(event_type=ScheduleEvent.EVENT_TYPE_HOLIDAY):
+        if not event.start_date:
+            continue
+        start_d = timezone.localtime(event.start_date).date()
+        end_d = timezone.localtime(event.end_date).date() if event.end_date else start_d
+        cur = start_d
+        while cur <= end_d:
+            holiday_dates.add(cur.isoformat())
+            cur += timedelta(days=1)
+
     context = {
         'calendar_events_json': calendar_events,
+        'holiday_dates_json': sorted(holiday_dates),
         'upcoming_competitions': upcoming_events.filter(event_type=ScheduleEvent.EVENT_TYPE_COMPETITION)[:4],
         'upcoming_certifications': upcoming_events.filter(event_type=ScheduleEvent.EVENT_TYPE_CERTIFICATION)[:4],
         'academic_events': academic_events[:6],

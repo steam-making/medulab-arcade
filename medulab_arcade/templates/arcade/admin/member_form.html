@@ -34,6 +34,15 @@
     .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,255,180,0.3); }
     .btn-cancel { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
     .btn-cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+    .era-member-chips { display: flex; flex-wrap: wrap; gap: 7px; min-height: 20px; margin-top: 10px; }
+    .era-chip { display: inline-flex; align-items: center; gap: 8px; background: rgba(124,58,237,0.18); border: 1px solid rgba(167,139,250,0.3); border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: #c4b5fd; }
+    .era-chip form { display:inline; }
+    .era-chip button { background: none; border: none; color: #a78bfa; cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
+    .era-search-wrap { position: relative; }
+    .era-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #1e1b4b; border: 1px solid var(--border); border-radius: 10px; z-index: 100; max-height: 220px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.5); margin-top: 6px; }
+    .era-dropdown-item { padding: 10px 14px; cursor: pointer; font-size: 13px; color: #e0e0e0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .era-dropdown-item:hover { background: rgba(124,58,237,0.25); }
 </style>
 {% endblock %}
 
@@ -111,5 +120,70 @@
             </div>
         </form>
     </div>
+
+    {% if target_user %}
+    <div class="form-card" style="margin-top:24px;">
+        <div class="form-section-title" style="margin-top:0;">👪 자녀 연결 (학부모용)</div>
+        <p class="form-help" style="margin-bottom:16px;">이 계정이 학부모 계정일 경우, 연결된 자녀(학생) 계정만 자녀의 마이 리포트를 열람할 수 있습니다.</p>
+
+        <div class="era-member-chips">
+            {% for link in child_links %}
+            <span class="era-chip">
+                {{ link.child.profile.real_name|default:link.child.username }} <span style="opacity:0.6; font-weight:600;">@{{ link.child.username }}</span>
+                <form method="post" action="{% url 'member_unlink_child' target_user.id link.id %}" onsubmit="return confirm('연결을 해제할까요?')">
+                    {% csrf_token %}
+                    <button type="submit">×</button>
+                </form>
+            </span>
+            {% empty %}
+            <span class="form-help">연결된 자녀가 없습니다.</span>
+            {% endfor %}
+        </div>
+
+        <form method="post" action="{% url 'member_link_child' target_user.id %}" id="linkChildForm" style="margin-top:16px;">
+            {% csrf_token %}
+            <div class="era-search-wrap">
+                <input type="text" id="childSearch" class="form-input" placeholder="자녀(학생) 이름 또는 아이디 검색..." autocomplete="off">
+                <div class="era-dropdown" id="childDropdown"></div>
+            </div>
+            <input type="hidden" name="child_id" id="childIdInput">
+        </form>
+    </div>
+    <script>
+    (function() {
+        const search = document.getElementById('childSearch');
+        const dropdown = document.getElementById('childDropdown');
+        let timer = null;
+        search.addEventListener('input', function() {
+            clearTimeout(timer);
+            const q = this.value.trim();
+            if (!q) { dropdown.style.display = 'none'; return; }
+            timer = setTimeout(() => {
+                fetch(`/api/search-members/?q=${encodeURIComponent(q)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        const items = data.members || [];
+                        if (!items.length) { dropdown.style.display = 'none'; return; }
+                        dropdown.innerHTML = items.map(m =>
+                            `<div class="era-dropdown-item" onclick='selectChild(${JSON.stringify(m)})'>
+                                <strong>${m.real_name || m.username}</strong>
+                                <span style="color:rgba(255,255,255,0.4); font-size:11px; margin-left:6px;">@${m.username}</span>
+                            </div>`
+                        ).join('');
+                        dropdown.style.display = 'block';
+                    });
+            }, 180);
+        });
+        window.selectChild = function(m) {
+            document.getElementById('childIdInput').value = m.id;
+            document.getElementById('linkChildForm').submit();
+        };
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#childSearch') && !e.target.closest('#childDropdown'))
+                dropdown.style.display = 'none';
+        });
+    })();
+    </script>
+    {% endif %}
 </div>
 {% endblock %}

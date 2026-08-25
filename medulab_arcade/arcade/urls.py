@@ -73,6 +73,7 @@ urlpatterns = [
     path('api/survey/<slug:slug>/reset/', views.api_survey_reset, name='api_survey_reset'),
     path('api/survey/create/', views.api_survey_create, name='api_survey_create'),
     path('my-report/', views.my_report, name='my_report'),
+    path('my-report/child/<int:child_id>/', views.child_report, name='child_report'),
     path('api/attendance/submit/', views.api_submit_attendance, name='api_submit_attendance'),
     path('api/session/refresh/', views.api_refresh_session, name='api_refresh_session'),
     path('board/cert/', views.board_cert, name='board_cert'),
@@ -115,6 +116,8 @@ urlpatterns = [
     path('admin-services/members/<int:user_id>/approve/', views.member_approve, name='member_approve'),
     path('admin-services/members/<int:user_id>/edit/', views.member_edit, name='member_edit'),
     path('admin-services/members/<int:user_id>/delete/', views.member_delete, name='member_delete'),
+    path('admin-services/members/<int:user_id>/link-child/', views.member_link_child, name='member_link_child'),
+    path('admin-services/members/<int:user_id>/unlink-child/<int:link_id>/', views.member_unlink_child, name='member_unlink_child'),
 
     # 일정 관리 (관리자 전용)
     path('admin-services/schedules/', views.schedule_admin_list, name='schedule_admin_list'),

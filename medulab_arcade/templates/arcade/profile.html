@@ -560,6 +560,20 @@
                                     </div>
                                     {% endif %}
 
+                                    {% if child_links %}
+                                    <div class="form-group">
+                                        <label class="form-label">👪 연결된 자녀</label>
+                                        <div style="display:flex; flex-direction:column; gap:8px;">
+                                            {% for link in child_links %}
+                                            <a href="{% url 'child_report' link.child.id %}" style="display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:10px; color:#e0e0e0; text-decoration:none; font-size:13px;">
+                                                <span>{{ link.child.profile.real_name|default:link.child.username }}</span>
+                                                <span style="color:#93c5fd; font-weight:700;">📊 마이 리포트 보기 →</span>
+                                            </a>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
                                     {% if profile.user_type == 'medulab_parent' %}
                                     <div class="form-group">
                                         <label class="form-label">주소</label>

@@ -388,10 +388,21 @@
 {% block content %}
 <div class="report-container">
     
+    {% if viewing_as_parent %}
+    <div style="margin-bottom:16px;">
+        <a href="{% url 'profile' %}" style="color:var(--text-muted); font-size:13px; text-decoration:none;">← 내 프로필로 돌아가기</a>
+    </div>
+    {% endif %}
+
     <!-- 타이틀 헤더 -->
     <div class="report-header">
+        {% if viewing_as_parent %}
+        <h2>📊 {{ profile.display_name }}님의 마이 리포트</h2>
+        <p>자녀로 연결된 학생의 학습·출석 현황을 확인하는 중입니다. (정보 수정/출석체크는 본인만 가능)</p>
+        {% else %}
         <h2>📊 마이 리포트</h2>
         <p>오늘의 코딩 학습 과정과 타자 연습 진척도, 그리고 누적 성장 통계를 한눈에 확인하세요.</p>
+        {% endif %}
     </div>
 
     <!-- 0. 내 정보 (summary-grid 위) -->
@@ -446,11 +457,11 @@
                         </div>
                         <div class="info-field">
                             <span class="info-label-sm">아이디</span>
-                            <span class="info-val">{{ user.username }}</span>
+                            <span class="info-val">{{ profile.user.username }}</span>
                         </div>
                         <div class="info-field">
                             <span class="info-label-sm">이메일</span>
-                            <span class="info-val">{{ user.email|default:"미등록" }}</span>
+                            <span class="info-val">{{ profile.user.email|default:"미등록" }}</span>
                         </div>
                         <div class="info-field">
                             <span class="info-label-sm">전화번호</span>
@@ -472,15 +483,18 @@
                         </div>
                         <div class="info-field">
                             <span class="info-label-sm">가입일</span>
-                            <span class="info-val">{{ user.date_joined|date:"Y년 m월 d일" }}</span>
+                            <span class="info-val">{{ profile.user.date_joined|date:"Y년 m월 d일" }}</span>
                         </div>
                     </div>
+                    {% if not viewing_as_parent %}
                     <button id="btnEdit" onclick="enterEditMode()"
                         style="padding:8px 18px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:#ccc; cursor:pointer; font-size:13px;">
                         ✏️ 정보 수정
                     </button>
+                    {% endif %}
                 </div>
 
+                {% if not viewing_as_parent %}
                 <!-- 수정 모드 -->
                 <div id="editMode" style="display:none;">
                     <form method="POST" id="profileForm">
@@ -508,6 +522,7 @@
                         </div>
                     </form>
                 </div>
+                {% endif %}
 
             </div>
         </div>
@@ -609,7 +624,8 @@
                         이번 달 출석 횟수: <span style="color:#10b981; font-weight:800; font-family:'Outfit';">{{ attendance_dates|length }}</span>회
                     </div>
                     
-                    <!-- 오늘 출석체크 버튼 -->
+                    <!-- 오늘 출석체크 버튼 (본인만) -->
+                    {% if not viewing_as_parent %}
                     <div>
                         {% if has_attended_today %}
                         <button class="btn-attend" disabled>✅ 오늘 출석 완료</button>
@@ -617,6 +633,7 @@
                         <button class="btn-attend" id="btnAttend">✨ 오늘 출석체크</button>
                         {% endif %}
                     </div>
+                    {% endif %}
                 </div>
             </div>
 

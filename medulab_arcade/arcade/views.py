@@ -25,7 +25,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -2112,13 +2112,55 @@ def member_edit(request, user_id):
         user_form = AdminUserForm(instance=target_user)
         profile_form = AdminUserProfileForm(instance=profile)
         
+    child_links = ParentChildLink.objects.filter(parent=target_user).select_related('child__profile')
+
     context = {
         'user_form': user_form,
         'profile_form': profile_form,
         'target_user': target_user,
         'title': '회원 정보 수정',
+        'child_links': child_links,
     }
     return render(request, 'arcade/admin/member_form.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def member_link_child(request, user_id):
+    """학부모 계정에 자녀(학생) 계정 연결"""
+    parent_user = get_object_or_404(User, pk=user_id)
+    child_id = request.POST.get('child_id')
+    try:
+        child_user = User.objects.get(pk=child_id)
+    except (User.DoesNotExist, ValueError, TypeError):
+        messages.error(request, '연결할 학생 계정을 찾을 수 없습니다.')
+        return redirect('member_edit', user_id=parent_user.id)
+
+    if child_user.id == parent_user.id:
+        messages.error(request, '같은 계정을 연결할 수 없습니다.')
+        return redirect('member_edit', user_id=parent_user.id)
+
+    _, created = ParentChildLink.objects.get_or_create(
+        parent=parent_user, child=child_user, defaults={'linked_by': request.user}
+    )
+    if created:
+        messages.success(request, f'"{child_user.profile.real_name or child_user.username}" 계정을 자녀로 연결했습니다.')
+    else:
+        messages.info(request, '이미 연결된 계정입니다.')
+    return redirect('member_edit', user_id=parent_user.id)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def member_unlink_child(request, user_id, link_id):
+    """학부모-자녀 연결 해제"""
+    parent_user = get_object_or_404(User, pk=user_id)
+    link = get_object_or_404(ParentChildLink, pk=link_id, parent=parent_user)
+    link.delete()
+    messages.success(request, '자녀 연결을 해제했습니다.')
+    return redirect('member_edit', user_id=parent_user.id)
 
 
 @login_required
@@ -2765,6 +2807,8 @@ def profile_view(request):
     from allauth.socialaccount.models import SocialAccount
     kakao_linked = SocialAccount.objects.filter(user=user, provider='kakao').exists()
 
+    child_links = ParentChildLink.objects.filter(parent=user).select_related('child__profile')
+
     context = {
         'profile': profile,
         'form': form,
@@ -2777,6 +2821,7 @@ def profile_view(request):
         'recent_badges': recent_badges,
         'badge_catalog': badge_catalog,
         'kakao_linked': kakao_linked,
+        'child_links': child_links,
     }
     return render(request, 'arcade/profile.html', context)
 
@@ -3149,8 +3194,8 @@ def api_crawl_thinkcontest(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
-@login_required
-def my_report(request):
+def _build_report_context(user):
+    """마이 리포트 통계 집계. 본인 조회(my_report)와 학부모의 자녀 조회(child_report)가 공유."""
     from django.utils import timezone
     from datetime import timedelta
     from typing_practice.models import TypingScore
@@ -3159,23 +3204,11 @@ def my_report(request):
     from django.db.models import Max, Avg
     from django.db.models.functions import TruncDate
 
-    user = request.user
     profile = user.profile
-
-    # 정보 수정 POST 처리
-    if request.method == 'POST':
-        form = UserProfileUpdateForm(request.POST, instance=profile, user=user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, '회원 정보가 성공적으로 수정되었습니다.')
-            return redirect('my_report')
-    else:
-        form = UserProfileUpdateForm(instance=profile, user=user)
-
     today = timezone.localdate()
 
     # 1. 오늘의 타자 성과 집계
-    today_scores = TypingScore.objects.filter(user=request.user, created_at__date=today)
+    today_scores = TypingScore.objects.filter(user=user, created_at__date=today)
     typing_count = today_scores.count()
     max_speed = today_scores.aggregate(Max('speed'))['speed__max'] or 0
     avg_accuracy = today_scores.aggregate(Avg('accuracy'))['accuracy__avg'] or 0.0
@@ -3183,16 +3216,16 @@ def my_report(request):
 
     # 2. 오늘의 코딩 학습 성과 집계
     today_progress_qs = UserProgress.objects.filter(
-        user=request.user, completed=True, updated_at__date=today
+        user=user, completed=True, updated_at__date=today
     ).select_related('item__chapter__program')
     coding_count = today_progress_qs.count()
 
     # 3. 출석 체크 집계 (이번 달)
     current_year = today.year
     current_month = today.month
-    attendances = Attendance.objects.filter(user=request.user, date__year=current_year, date__month=current_month)
+    attendances = Attendance.objects.filter(user=user, date__year=current_year, date__month=current_month)
     attendance_dates = [att.date.day for att in attendances]
-    has_attended_today = Attendance.objects.filter(user=request.user, date=today).exists()
+    has_attended_today = Attendance.objects.filter(user=user, date=today).exists()
 
     # 달력 생성을 위한 이번 달 날짜 정보
     import calendar
@@ -3210,7 +3243,7 @@ def my_report(request):
         chart_data_by_type_lang[ptype] = {}
         for lang in CHART_LANGS:
             daily = (
-                TypingScore.objects.filter(user=request.user, practice_type=ptype, language=lang)
+                TypingScore.objects.filter(user=user, practice_type=ptype, language=lang)
                 .annotate(date=TruncDate('created_at'))
                 .values('date')
                 .annotate(max_speed=Max('speed'), avg_speed=Avg('speed'))
@@ -3224,7 +3257,7 @@ def my_report(request):
     chart_data = chart_data_by_type_lang.get('word', {}).get('ko', [])  # 기존 호환
 
     # 마지막 연습 유형·언어
-    last_score = TypingScore.objects.filter(user=request.user).order_by('-created_at').first()
+    last_score = TypingScore.objects.filter(user=user).order_by('-created_at').first()
     last_practice_type = last_score.practice_type if last_score else 'word'
     last_language = last_score.language if last_score else 'ko'
     if last_practice_type not in ('word', 'short', 'long'):
@@ -3395,7 +3428,6 @@ def my_report(request):
         'en_avg_speed': en_avg_speed,
         # 프로필 통합
         'profile': profile,
-        'form': form,
         'my_projects_count': my_projects.count(),
         'total_likes': total_likes_received,
         'total_bookmarks': total_bookmarks_received,
@@ -3410,6 +3442,37 @@ def my_report(request):
         'student_grade_key': student_grade_key,
         'my_exam_registrations': my_exam_registrations,
     }
+    return context
+
+
+@login_required
+def my_report(request):
+    user = request.user
+    profile = user.profile
+
+    # 정보 수정 POST 처리
+    if request.method == 'POST':
+        form = UserProfileUpdateForm(request.POST, instance=profile, user=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '회원 정보가 성공적으로 수정되었습니다.')
+            return redirect('my_report')
+    else:
+        form = UserProfileUpdateForm(instance=profile, user=user)
+
+    context = _build_report_context(user)
+    context['form'] = form
+    context['viewing_as_parent'] = False
+    return render(request, 'arcade/my_report.html', context)
+
+
+@login_required
+def child_report(request, child_id):
+    """학부모가 연결된 자녀의 마이 리포트를 열람"""
+    from .models import ParentChildLink
+    link = get_object_or_404(ParentChildLink, parent=request.user, child_id=child_id)
+    context = _build_report_context(link.child)
+    context['viewing_as_parent'] = True
     return render(request, 'arcade/my_report.html', context)
 
 

@@ -507,6 +507,22 @@ class ClassEnrollment(models.Model):
         return f'{self.student.username} - {self.school_class.name}'
 
 
+class ParentChildLink(models.Model):
+    parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='child_links', verbose_name='학부모')
+    child = models.ForeignKey(User, on_delete=models.CASCADE, related_name='parent_links', verbose_name='자녀(학생)')
+    linked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', verbose_name='연결한 관리자')
+    created_at = models.DateTimeField('연결일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '학부모-자녀 연결'
+        verbose_name_plural = '학부모-자녀 연결'
+        unique_together = ('parent', 'child')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.parent.username} → {self.child.username}'
+
+
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='likes')

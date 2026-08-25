@@ -133,6 +133,13 @@
                     </td>
                     <td>
                         <div class="action-btns">
+                            {% if u.profile.user_type == 'medulab_member' %}
+                            <form action="{% url 'member_convert_to_inactive' u.id %}" method="POST" onsubmit="return confirm('\'{{ u.profile.real_name|default:u.username }}\' 님을 메듀랩 미수강생으로 전환할까요?');" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn-icon" title="미수강생 전환" style="color: #ffc107;">🚫</button>
+                            </form>
+                            {% endif %}
                             <a href="{% url 'member_edit' u.id %}" class="btn-icon btn-edit" title="수정">✏️</a>
                             {% if u != user %}
                             <form action="{% url 'member_delete' u.id %}" method="POST" onsubmit="return confirm('정말로 이 회원을 삭제할까요? 모든 데이터가 삭제됩니다.');" style="display:inline;">

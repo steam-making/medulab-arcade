@@ -139,6 +139,12 @@
                                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                 <button type="submit" class="btn-icon" title="미수강생 전환" style="color: #ffc107;">🚫</button>
                             </form>
+                            {% elif u.profile.user_type == 'medulab_inactive' %}
+                            <form action="{% url 'member_convert_to_active' u.id %}" method="POST" onsubmit="return confirm('\'{{ u.profile.real_name|default:u.username }}\' 님을 메듀랩 학생(수강생)으로 전환할까요?');" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn-icon" title="수강생 전환" style="color: var(--accent-green);">✅</button>
+                            </form>
                             {% endif %}
                             <a href="{% url 'member_edit' u.id %}" class="btn-icon btn-edit" title="수정">✏️</a>
                             {% if u != user %}

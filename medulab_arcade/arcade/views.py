@@ -2206,6 +2206,24 @@ def member_convert_to_inactive(request, user_id):
     redirect_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('member_list')
     return redirect(redirect_url)
 
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def member_convert_to_active(request, user_id):
+    """메듀랩 미수강생 -> 메듀랩 학생 원클릭 전환(수강생 재전환)"""
+    target_user = get_object_or_404(User, pk=user_id)
+    profile, _ = UserProfile.objects.get_or_create(user=target_user)
+    if profile.user_type != 'medulab_inactive':
+        messages.error(request, '메듀랩 미수강생만 수강생으로 전환할 수 있습니다.')
+    else:
+        profile.user_type = 'medulab_member'
+        profile.save(update_fields=['user_type'])
+        messages.success(request, f'회원 "{target_user.username}" 을 메듀랩 학생으로 전환했습니다.')
+    redirect_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('member_list')
+    return redirect(redirect_url)
+
+
 @login_required
 @user_passes_test(staff_check)
 @require_POST

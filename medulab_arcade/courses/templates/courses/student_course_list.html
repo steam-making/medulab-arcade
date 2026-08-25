@@ -341,15 +341,32 @@
         {% endif %}
 
         <h1 class="fade-in">LEARNING CENTER</h1>
+        {% if viewing_child %}
+        <p class="fade-in">👤 {{ viewing_child.profile.real_name|default:viewing_child.username }}님이 수강 중인 교육프로그램을 확인하는 중입니다.</p>
+        {% else %}
         <p class="fade-in">나의 잠재력을 깨우는 최고의 코딩 교육 커리큘럼을 경험해보세요.</p>
-        
+        {% endif %}
     </div>
+
+    {% if sibling_links %}
+    <section class="filter-section">
+        <div class="filter-title">👪 자녀 선택</div>
+        <div class="filter-buttons">
+            {% for link in sibling_links %}
+            <a href="?child_id={{ link.child.id }}{% if selected_program_type %}&program_type={{ selected_program_type }}{% endif %}"
+               class="filter-button {% if viewing_child and viewing_child.id == link.child.id %}active{% endif %}">
+                👤 {{ link.child.profile.real_name|default:link.child.username }}
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 
     {% if program_filters %}
     <section class="filter-section">
         <div class="filter-title">교육프로그램 필터</div>
         <div class="filter-buttons" id="program-filter-buttons">
-            <a href="{% url 'student_course_list' %}" class="filter-button {% if not selected_program_type %}active{% endif %}">전체</a>
+            <a href="{% url 'student_course_list' %}{% if viewing_child %}?child_id={{ viewing_child.id }}{% endif %}" class="filter-button {% if not selected_program_type %}active{% endif %}">전체</a>
             {% for filter_group in program_filters %}
                 <div
                     class="filter-group {% if user.is_staff %}is-draggable{% endif %}"
@@ -359,11 +376,11 @@
                         <span class="drag-handle" draggable="true" title="드래그해서 필터 순서 변경">↕</span>
                     {% endif %}
                     {% for button in filter_group.buttons %}
-                        <a href="{% url 'student_course_list' %}?program_type={{ button.value }}" class="filter-button {% if button.active %}active{% endif %}">{{ button.label }}</a>
+                        <a href="{% url 'student_course_list' %}?program_type={{ button.value }}{% if viewing_child %}&child_id={{ viewing_child.id }}{% endif %}" class="filter-button {% if button.active %}active{% endif %}">{{ button.label }}</a>
                     {% endfor %}
                 </div>
             {% endfor %}
-            <a href="{% url 'student_course_list' %}?program_type=completed" class="filter-button {% if selected_program_type == 'completed' %}active{% endif %}">이수과정</a>
+            <a href="{% url 'student_course_list' %}?program_type=completed{% if viewing_child %}&child_id={{ viewing_child.id }}{% endif %}" class="filter-button {% if selected_program_type == 'completed' %}active{% endif %}">이수과정</a>
         </div>
         {% if user.is_staff %}
         <div class="admin-sort-note">관리자는 필터 묶음을 드래그해서 순서를 저장할 수 있습니다. `전체`는 맨 앞, `이수과정`은 맨 뒤에 고정됩니다.</div>

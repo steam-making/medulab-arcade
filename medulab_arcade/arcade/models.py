@@ -523,6 +523,23 @@ class ParentChildLink(models.Model):
         return f'{self.parent.username} → {self.child.username}'
 
 
+class ConsultInquiry(models.Model):
+    name = models.CharField('이름', max_length=50)
+    phone_number = models.CharField('연락처', max_length=20)
+    message = models.TextField('문의 내용', blank=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='consult_inquiries', verbose_name='작성 회원')
+    is_handled = models.BooleanField('처리 완료', default=False)
+    created_at = models.DateTimeField('접수일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '상담 문의'
+        verbose_name_plural = '상담 문의'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.name} ({self.phone_number})'
+
+
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='likes')

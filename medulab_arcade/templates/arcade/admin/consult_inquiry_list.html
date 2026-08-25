@@ -1,0 +1,54 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}상담 문의 관리 - 메듀랩 관리 서비스{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-wrap { max-width: 1000px; margin: 40px auto; padding: 0 24px; animation: fadeSlideIn 0.4s ease; }
+    .page-title { font: 900 28px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:28px; }
+    .table-wrap { background: var(--bg-card); border-radius: 18px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 700px; }
+    th { padding: 16px 20px; background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    td { padding: 16px 20px; border-top: 1px solid var(--border); font-size: 14px; vertical-align:top; }
+    .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .status-handled { background: rgba(0,255,180,0.15); color: var(--accent-green); }
+    .status-pending { background: rgba(255,193,7,0.15); color: #ffc107; }
+    .toggle-btn { padding:6px 14px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:#fff; font-size:12px; cursor:pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+    <h1 class="page-title">💬 상담 문의 관리</h1>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>이름</th><th>연락처</th><th>문의 내용</th><th>회원</th><th>접수일</th><th>상태</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for i in inquiries %}
+                <tr>
+                    <td style="font-weight:700;">{{ i.name }}</td>
+                    <td>{{ i.phone_number }}</td>
+                    <td style="color:var(--text-secondary); max-width:280px;">{{ i.message|default:"-"|truncatechars:80 }}</td>
+                    <td>{% if i.user %}{{ i.user.profile.real_name|default:i.user.username }}{% else %}-{% endif %}</td>
+                    <td style="color:var(--text-muted); font-size:12px;">{{ i.created_at|date:"Y.m.d H:i" }}</td>
+                    <td>
+                        {% if i.is_handled %}<span class="status-badge status-handled">처리완료</span>
+                        {% else %}<span class="status-badge status-pending">대기중</span>{% endif %}
+                    </td>
+                    <td>
+                        <form method="post" action="{% url 'consult_inquiry_toggle_handled' i.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="toggle-btn">{% if i.is_handled %}대기로 변경{% else %}처리완료로{% endif %}</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center; padding:60px; color:var(--text-muted);">접수된 상담 문의가 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1276,16 +1276,34 @@ def student_course_list(request):
     elif selected_program_type.isdigit():
         all_programs = all_programs.filter(program_type_id=int(selected_program_type))
 
+    # 학부모가 자녀의 교육프로그램 현황을 보는 경우 처리
+    viewing_child = None
+    sibling_links = []
+    if request.user.is_authenticated:
+        from arcade.models import ParentChildLink
+        sibling_links = list(
+            ParentChildLink.objects.filter(parent=request.user).select_related('child__profile')
+        )
+        child_id = request.GET.get('child_id', '').strip()
+        if child_id.isdigit():
+            match = next((l for l in sibling_links if str(l.child_id) == child_id), None)
+            if match:
+                viewing_child = match.child
+        elif sibling_links and request.user.profile.user_type == 'medulab_parent':
+            viewing_child = sibling_links[0].child
+
+    viewing_user = viewing_child or request.user
+
     if request.user.is_authenticated:
         enrolled_map = {
             enrollment.program_id: enrollment.enrolled_at
-            for enrollment in LearningEnrollment.objects.filter(user=request.user)
+            for enrollment in LearningEnrollment.objects.filter(user=viewing_user)
         }
         enrolled_ids = set(enrolled_map.keys())
         progress_stats = {
             row["item__chapter__program_id"]: row
             for row in UserProgress.objects.filter(
-                user=request.user,
+                user=viewing_user,
                 item__chapter__program__is_active=True,
             ).values("item__chapter__program_id").annotate(
                 completed_items=Count("id", filter=Q(completed=True)),
@@ -1307,7 +1325,7 @@ def student_course_list(request):
             if total_items > 0 and completed_items >= total_items:
                 completed_program_ids.add(program_id)
             recent_learning_map[program_id] = stats.get("recent_learning_at") or enrolled_at
-        profile = getattr(request.user, 'profile', None)
+        profile = getattr(viewing_user, 'profile', None)
         can_apply = bool(profile and profile.is_full_member)
     else:
         enrolled_ids = set()
@@ -1400,6 +1418,8 @@ def student_course_list(request):
         "show_python_coding_filter": python_coding_filter,
         "show_robot_coding_filter": robot_coding_filter,
         "can_apply": can_apply,
+        "viewing_child": viewing_child,
+        "sibling_links": sibling_links,
     })
 
 def program_roadmap(request):

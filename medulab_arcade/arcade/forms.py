@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from .models import Badge, Project, ScheduleEvent, Tag, UserProfile, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass
+from .models import Badge, Project, ScheduleEvent, Tag, UserProfile, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ConsultInquiry
 
 
 BADGE_CRITERIA_HELP = (
@@ -839,6 +839,25 @@ class SchoolClassForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class ConsultInquiryForm(forms.ModelForm):
+    class Meta:
+        model = ConsultInquiry
+        fields = ['name', 'phone_number', 'message']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'fi', 'placeholder': '이름'}),
+            'phone_number': forms.TextInput(attrs={'class': 'fi', 'placeholder': '연락처 (예: 010-1234-5678)', 'inputmode': 'numeric'}),
+            'message': forms.Textarea(attrs={'class': 'fi', 'rows': 4, 'placeholder': '궁금하신 내용을 남겨주시면 확인 후 연락드리겠습니다. (선택)'}),
+        }
+        labels = {'name': '이름', 'phone_number': '연락처', 'message': '문의 내용'}
+
+    def clean_phone_number(self):
+        phone_number = self.cleaned_data.get('phone_number', '')
+        digits = ''.join(ch for ch in phone_number if ch.isdigit())
+        if len(digits) < 9 or len(digits) > 11:
+            raise forms.ValidationError('연락처는 숫자 기준 9자리에서 11자리로 입력해 주세요.')
+        return digits
 
 
 class NoticeForm(forms.ModelForm):

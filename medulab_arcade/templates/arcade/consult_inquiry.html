@@ -1,0 +1,71 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}상담 문의 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+.fi { width:100%; padding:12px 14px; border-radius:10px; background:rgba(255,255,255,0.05); color:#fff; border:1px solid var(--border); font-size:14px; color-scheme:dark; }
+.fi:focus { outline:none; border-color:var(--accent-blue); }
+.consult-wrap { max-width:640px; margin:50px auto; padding:0 20px; }
+.consult-title { font: 900 28px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:10px; }
+.contact-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:32px; }
+.contact-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:22px; text-align:center; text-decoration:none; transition: all .2s; }
+.contact-card:hover { transform:translateY(-3px); }
+.contact-card .icon { font-size:28px; margin-bottom:8px; }
+.contact-card .label { color:#fff; font-weight:800; font-size:14px; margin-bottom:4px; }
+.contact-card .value { color:var(--text-muted); font-size:12px; }
+.fgroup { margin-bottom:18px; }
+label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weight:700; font-size:13px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="consult-wrap">
+    <h1 class="consult-title">💬 상담 문의</h1>
+    <p style="color:var(--text-muted); font-size:14px; margin-bottom:28px;">전화·카카오톡으로 바로 문의하시거나, 아래 양식으로 남겨주시면 확인 후 연락드리겠습니다.</p>
+
+    <div class="contact-grid">
+        {% if academy_phone %}
+        <a href="tel:{{ academy_phone }}" class="contact-card">
+            <div class="icon">📞</div>
+            <div class="label">전화 상담</div>
+            <div class="value">{{ academy_phone }}</div>
+        </a>
+        {% endif %}
+        {% if academy_kakao_channel_url %}
+        <a href="{{ academy_kakao_channel_url }}" target="_blank" rel="noopener noreferrer" class="contact-card" style="background:rgba(254,229,0,0.1); border-color:rgba(254,229,0,0.3);">
+            <div class="icon">💬</div>
+            <div class="label" style="color:#FEE500;">카카오톡 채팅 상담</div>
+            <div class="value">바로 채팅하기</div>
+        </a>
+        {% endif %}
+    </div>
+
+    <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:32px;">
+        <h3 style="color:#fff; font-size:15px; font-weight:800; margin:0 0 20px 0;">📝 온라인 상담 신청</h3>
+
+        {% if form.errors %}
+        <div style="margin-bottom:20px; padding:14px 18px; border-radius:10px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; font-size:14px;">
+            {% for field in form %}{% for e in field.errors %}<div>· {{ field.label }}: {{ e }}</div>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="fgroup">
+                <label class="fl">{{ form.name.label }} <span style="color:#ef4444;">*</span></label>
+                {{ form.name }}
+            </div>
+            <div class="fgroup">
+                <label class="fl">{{ form.phone_number.label }} <span style="color:#ef4444;">*</span></label>
+                {{ form.phone_number }}
+            </div>
+            <div class="fgroup">
+                <label class="fl">{{ form.message.label }}</label>
+                {{ form.message }}
+            </div>
+            <button type="submit" style="width:100%; padding:14px; border:none; border-radius:12px; background:linear-gradient(135deg,var(--accent-green),var(--accent-blue)); color:#03140e; font-weight:900; font-size:15px; cursor:pointer;">상담 신청하기</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

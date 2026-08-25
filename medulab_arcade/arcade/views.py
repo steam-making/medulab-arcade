@@ -2691,6 +2691,54 @@ def badge_delete(request, badge_id):
     return redirect('badge_list')
 
 
+def consult_inquiry(request):
+    """상담 문의 접수 페이지"""
+    from .forms import ConsultInquiryForm
+
+    if request.method == 'POST':
+        form = ConsultInquiryForm(request.POST)
+        if form.is_valid():
+            inquiry = form.save(commit=False)
+            if request.user.is_authenticated:
+                inquiry.user = request.user
+            inquiry.save()
+            messages.success(request, '상담 문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.')
+            return redirect('consult_inquiry')
+    else:
+        initial = {}
+        if request.user.is_authenticated:
+            initial['name'] = request.user.profile.real_name
+            initial['phone_number'] = request.user.profile.phone_number
+        form = ConsultInquiryForm(initial=initial)
+
+    context = {
+        'form': form,
+        'academy_phone': getattr(settings, 'ACADEMY_PHONE', ''),
+        'academy_kakao_channel_url': getattr(settings, 'ACADEMY_KAKAO_CHANNEL_URL', ''),
+    }
+    return render(request, 'arcade/consult_inquiry.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def consult_inquiry_admin_list(request):
+    """상담 문의 관리자 목록"""
+    from .models import ConsultInquiry
+    inquiries = ConsultInquiry.objects.select_related('user').order_by('-created_at')
+    return render(request, 'arcade/admin/consult_inquiry_list.html', {'inquiries': inquiries})
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def consult_inquiry_toggle_handled(request, pk):
+    from .models import ConsultInquiry
+    inquiry = get_object_or_404(ConsultInquiry, pk=pk)
+    inquiry.is_handled = not inquiry.is_handled
+    inquiry.save(update_fields=['is_handled'])
+    return redirect('consult_inquiry_admin_list')
+
+
 def signup(request):
     """회원가입"""
     if request.method == 'POST':
@@ -3445,9 +3493,6 @@ def _build_report_context(user):
     return context
 
 
-PARENT_USER_TYPES = ('parent', 'medulab_parent')
-
-
 @login_required
 def my_report(request):
     from .models import ParentChildLink
@@ -3455,8 +3500,15 @@ def my_report(request):
     user = request.user
     profile = user.profile
 
-    # 학부모 계정은 자기 자신의 학습 통계가 의미 없으므로 연결된 자녀 리포트로 안내
-    if profile.user_type in PARENT_USER_TYPES:
+    # 학부모회원(일반, 미승인)은 아직 자녀 연결 대상이 아니므로 프로그램 안내 + 상담문의 랜딩을 보여줌
+    if profile.user_type == 'parent':
+        return render(request, 'arcade/parent_landing.html', {
+            'academy_phone': getattr(settings, 'ACADEMY_PHONE', ''),
+            'academy_kakao_channel_url': getattr(settings, 'ACADEMY_KAKAO_CHANNEL_URL', ''),
+        })
+
+    # 메듀랩 학부모는 자기 자신의 학습 통계가 의미 없으므로 연결된 자녀 리포트로 안내
+    if profile.user_type == 'medulab_parent':
         child_links = list(ParentChildLink.objects.filter(parent=user).select_related('child__profile'))
         if len(child_links) == 1:
             return redirect('child_report', child_id=child_links[0].child_id)
@@ -3483,8 +3535,11 @@ def child_report(request, child_id):
     """학부모가 연결된 자녀의 마이 리포트를 열람"""
     from .models import ParentChildLink
     link = get_object_or_404(ParentChildLink, parent=request.user, child_id=child_id)
+    all_links = ParentChildLink.objects.filter(parent=request.user).select_related('child__profile')
     context = _build_report_context(link.child)
     context['viewing_as_parent'] = True
+    context['viewed_child_id'] = link.child_id
+    context['sibling_links'] = all_links
     return render(request, 'arcade/my_report.html', context)
 
 

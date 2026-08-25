@@ -389,8 +389,19 @@
 <div class="report-container">
     
     {% if viewing_as_parent %}
-    <div style="margin-bottom:16px;">
+    <div style="margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
         <a href="{% url 'profile' %}" style="color:var(--text-muted); font-size:13px; text-decoration:none;">← 내 프로필로 돌아가기</a>
+        {% if sibling_links|length > 1 %}
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            {% for link in sibling_links %}
+            <a href="{% url 'child_report' link.child.id %}"
+               style="padding:7px 16px; border-radius:999px; font-size:13px; font-weight:700; text-decoration:none; transition:all .15s;
+               {% if link.child.id == viewed_child_id %}background:linear-gradient(135deg,var(--accent-green),var(--accent-blue)); color:#03140e;{% else %}background:rgba(255,255,255,0.06); color:var(--text-secondary); border:1px solid var(--border);{% endif %}">
+                👤 {{ link.child.profile.real_name|default:link.child.username }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 

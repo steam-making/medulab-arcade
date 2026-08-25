@@ -24,12 +24,13 @@ class UserProfile(models.Model):
         ('medulab_member', '메듀랩 학생'),
         ('medulab_parent', '메듀랩 학부모'),
         ('medulab_staff', '메듀랩스텝'),
+        ('medulab_inactive', '메듀랩 미수강생'),  # 더 이상 수강하지 않는 메듀랩 학생 (관리자 지정 전용)
         ('medulab_teacher', '메듀랩 강사'),  # 레거시: 신규 가입 화면에는 노출하지 않음
     ]
 
-    # 공개 회원가입/소셜가입/온보딩 화면에 노출할 유형 (레거시 medulab_teacher 제외)
+    # 공개 회원가입/소셜가입/온보딩 화면에 노출할 유형 (관리자 전용 유형 제외)
     PUBLIC_TYPE_CHOICES = [
-        c for c in USER_TYPE_CHOICES if c[0] != 'medulab_teacher'
+        c for c in USER_TYPE_CHOICES if c[0] not in ('medulab_teacher', 'medulab_inactive')
     ]
 
     AUTO_APPROVE_TYPES = ('student', 'parent', 'general', 'teacher')

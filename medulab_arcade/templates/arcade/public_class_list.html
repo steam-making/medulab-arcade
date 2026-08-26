@@ -1,4 +1,5 @@
 {% extends 'arcade/base.html' %}
+{% load humanize %}
 
 {% block title %}수업 안내 - 메듀랩{% endblock %}
 
@@ -34,9 +35,9 @@
             <div class="desc">{{ c.description|default:"자세한 커리큘럼은 상담 문의를 통해 안내해 드립니다." }}</div>
             <div class="price-row">
                 {% if c.regular_fee and c.regular_fee != c.tuition_fee %}
-                <span class="regular-price">{{ c.regular_fee|floatformat:0 }}원</span>
+                <span class="regular-price">{{ c.regular_fee|intcomma }}원</span>
                 {% endif %}
-                <span class="final-price">{{ c.tuition_fee|floatformat:0 }}원</span>
+                <span class="final-price">{{ c.tuition_fee|intcomma }}원</span>
                 <span class="price-unit">/ 월</span>
             </div>
         </div>

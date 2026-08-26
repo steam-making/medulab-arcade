@@ -1,4 +1,5 @@
 {% extends 'arcade/base.html' %}
+{% load humanize %}
 
 {% block title %}수업 관리 - 메듀랩 관리 서비스{% endblock %}
 
@@ -15,14 +16,25 @@
     .search-input-group span { position: absolute; left: 14px; top: 12px; font-size: 14px; color: var(--text-muted); }
 
     .table-wrap { background: var(--bg-card); border-radius: 18px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 900px; }
-    th { padding: 18px 24px; background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-    td { padding: 18px 24px; border-top: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 960px; table-layout: fixed; }
+    th { padding: 18px 20px; background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+    td { padding: 18px 20px; border-top: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
     tr:hover td { background: rgba(255,255,255,0.02); }
 
-    .class-name { font-weight: 700; color: #fff; display: block; }
-    .class-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-    .schedule-text { font-size: 12px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
+    th:nth-child(1), td:nth-child(1) { width: 26%; }
+    th:nth-child(2), td:nth-child(2) { width: 12%; }
+    th:nth-child(3), td:nth-child(3) { width: 16%; }
+    th:nth-child(4), td:nth-child(4) { width: 14%; }
+    th:nth-child(5), td:nth-child(5) { width: 10%; }
+    th:nth-child(6), td:nth-child(6) { width: 10%; }
+    th:nth-child(7), td:nth-child(7) { width: 12%; }
+
+    .class-name { font-weight: 700; color: #fff; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .class-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .schedule-text { font-size: 12px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+    .fee-cell { display: flex; flex-direction: column; gap: 2px; white-space: nowrap; }
+    .fee-regular { text-decoration: line-through; color: var(--text-muted); font-size: 11px; }
+    .fee-final { font-weight: 700; color: #fff; }
 
     .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
     .status-active { background: rgba(0, 255, 180, 0.15); color: var(--accent-green); }
@@ -89,10 +101,12 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if c.regular_fee and c.regular_fee != c.tuition_fee %}
-                        <span style="text-decoration:line-through; color:var(--text-muted); font-size:11px; margin-right:6px;">{{ c.regular_fee|floatformat:0 }}원</span>
-                        {% endif %}
-                        {{ c.tuition_fee|floatformat:0 }}원
+                        <div class="fee-cell">
+                            {% if c.regular_fee and c.regular_fee != c.tuition_fee %}
+                            <span class="fee-regular">{{ c.regular_fee|intcomma }}원</span>
+                            {% endif %}
+                            <span class="fee-final">{{ c.tuition_fee|intcomma }}원</span>
+                        </div>
                     </td>
                     <td><span class="student-count">👥 {{ c.student_count }}명</span></td>
                     <td>

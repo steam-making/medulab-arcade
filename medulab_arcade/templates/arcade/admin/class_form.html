@@ -1,4 +1,5 @@
 {% extends 'arcade/base.html' %}
+{% load humanize %}
 
 {% block title %}{{ title }} - 메듀랩 관리 서비스{% endblock %}
 
@@ -218,6 +219,45 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
                 </tr>
                 {% empty %}
                 <tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:32px;">배정된 학생이 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="class-card">
+        <div class="class-card-head" style="justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:10px;"><span class="icon">💳</span><h3>학원비 청구서</h3></div>
+            <form method="post" action="{% url 'class_admin_generate_invoices' school_class.id %}" onsubmit="return confirm('배정된 학생 전원에게 이번 달 수업비({{ school_class.tuition_fee|intcomma }}원) 청구서를 생성할까요?');">
+                {% csrf_token %}
+                <button type="submit" class="enroll-btn" style="margin-top:0;">📄 이번 달 청구서 일괄 생성</button>
+            </form>
+        </div>
+
+        <table class="enroll-table">
+            <thead>
+                <tr><th>학생</th><th>금액</th><th>납부 기한</th><th>상태</th></tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td>
+                        <span class="student-avatar">{{ inv.student.profile.real_name|default:inv.student.username|slice:":1" }}</span>
+                        {{ inv.student.profile.real_name|default:inv.student.username }}
+                    </td>
+                    <td>{{ inv.amount|intcomma }}원</td>
+                    <td>{{ inv.due_date|date:"Y.m.d" }}</td>
+                    <td>
+                        {% if inv.status == 'paid' %}
+                        <span style="color:#34d399; font-weight:700; font-size:12px;">✅ 완납</span>
+                        {% elif inv.status == 'canceled' %}
+                        <span style="color:var(--text-muted); font-weight:700; font-size:12px;">취소</span>
+                        {% else %}
+                        <span style="color:#fbbf24; font-weight:700; font-size:12px;">미납</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:32px;">생성된 청구서가 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

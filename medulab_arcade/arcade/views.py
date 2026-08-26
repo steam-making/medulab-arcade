@@ -10,7 +10,8 @@ from datetime import timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
+from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
@@ -25,7 +26,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -2475,10 +2476,12 @@ def class_admin_edit(request, class_id):
         form = SchoolClassForm(instance=school_class)
 
     enrollments = school_class.enrollments.select_related('student__profile').order_by('-enrolled_at')
+    invoices = school_class.invoices.select_related('student__profile').order_by('-due_date', '-created_at')[:20]
     context = {
         'form': form,
         'school_class': school_class,
         'enrollments': enrollments,
+        'invoices': invoices,
         'title': '수업 수정',
     }
     return render(request, 'arcade/admin/class_form.html', context)
@@ -2558,6 +2561,194 @@ def class_unenroll_student(request, class_id, enrollment_id):
     enrollment.delete()
     messages.success(request, '수업 배정을 해제했습니다.')
     return redirect('class_admin_edit', class_id=school_class.pk)
+
+
+def _month_due_date(today=None):
+    """당월 마지막 날을 납부 기한으로 사용"""
+    import calendar
+    from django.utils import timezone
+    today = today or timezone.localdate()
+    last_day = calendar.monthrange(today.year, today.month)[1]
+    return today.replace(day=last_day)
+
+
+def generate_invoices_for_class(school_class, due_date=None):
+    """해당 수업의 활성 배정 학생 전원에게 당월 청구서 생성 (이미 있으면 건너뜀)"""
+    from django.utils import timezone
+    due_date = due_date or _month_due_date()
+    period_start = due_date.replace(day=1)
+    created = 0
+    for enrollment in school_class.enrollments.filter(is_active=True).select_related('student'):
+        exists = TuitionInvoice.objects.filter(
+            student=enrollment.student, school_class=school_class,
+            due_date__year=period_start.year, due_date__month=period_start.month,
+        ).exists()
+        if exists:
+            continue
+        TuitionInvoice.objects.create(
+            student=enrollment.student, school_class=school_class,
+            amount=school_class.tuition_fee, due_date=due_date,
+        )
+        created += 1
+    return created
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def class_admin_generate_invoices(request, class_id):
+    """이번 달 청구서 일괄 생성"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    created = generate_invoices_for_class(school_class)
+    if created:
+        messages.success(request, f'"{school_class.name}" 수업에 청구서 {created}건을 생성했습니다.')
+    else:
+        messages.info(request, '이미 이번 달 청구서가 모두 생성되어 있습니다.')
+    return redirect('class_admin_edit', class_id=school_class.pk)
+
+
+# ────────────────────────────────────────────────
+# 학원비 결제 (포트원 V2)
+# ────────────────────────────────────────────────
+
+def _tuition_invoice_access_or_404(request, invoice_id):
+    """본인 청구서이거나, 연결된 학부모인 경우에만 접근 허용"""
+    invoice = get_object_or_404(TuitionInvoice.objects.select_related('school_class', 'student'), pk=invoice_id)
+    if invoice.student_id == request.user.id:
+        return invoice
+    if ParentChildLink.objects.filter(parent=request.user, child_id=invoice.student_id).exists():
+        return invoice
+    raise Http404('청구서를 찾을 수 없습니다.')
+
+
+@login_required
+def tuition_checkout(request, invoice_id):
+    """학원비 결제 화면 (포트원 결제창 호출)"""
+    invoice = _tuition_invoice_access_or_404(request, invoice_id)
+    if invoice.status == TuitionInvoice.STATUS_PAID:
+        messages.info(request, '이미 완납된 청구서입니다.')
+        return redirect('my_report')
+
+    context = {
+        'invoice': invoice,
+        'portone_store_id': settings.PORTONE_STORE_ID,
+        'portone_channel_key_card': settings.PORTONE_CHANNEL_KEY_CARD,
+        'portone_channel_key_kakaopay': settings.PORTONE_CHANNEL_KEY_KAKAOPAY,
+    }
+    return render(request, 'arcade/tuition_checkout.html', context)
+
+
+@login_required
+@require_POST
+def tuition_verify_payment(request, invoice_id):
+    """결제창 완료 콜백 후 서버가 포트원 API로 실제 결제 상태를 재검증"""
+    import requests
+    invoice = _tuition_invoice_access_or_404(request, invoice_id)
+
+    if invoice.status == TuitionInvoice.STATUS_PAID:
+        return JsonResponse({'ok': True, 'already_paid': True})
+
+    if not settings.PORTONE_API_SECRET:
+        return JsonResponse({'ok': False, 'error': '결제 연동이 아직 설정되지 않았습니다.'}, status=503)
+
+    try:
+        resp = requests.get(
+            f'https://api.portone.io/payments/{invoice.portone_payment_id}',
+            headers={'Authorization': f'PortOne {settings.PORTONE_API_SECRET}'},
+            timeout=10,
+        )
+    except requests.RequestException:
+        return JsonResponse({'ok': False, 'error': '결제 확인 중 오류가 발생했습니다.'}, status=502)
+
+    if resp.status_code != 200:
+        return JsonResponse({'ok': False, 'error': '결제 정보를 확인할 수 없습니다.'}, status=502)
+
+    data = resp.json()
+    if data.get('status') != 'PAID':
+        return JsonResponse({'ok': False, 'error': '결제가 완료되지 않았습니다.'}, status=400)
+
+    paid_amount = (data.get('amount') or {}).get('total')
+    if paid_amount != invoice.amount:
+        return JsonResponse({'ok': False, 'error': '결제 금액이 청구 금액과 일치하지 않습니다.'}, status=400)
+
+    invoice.status = TuitionInvoice.STATUS_PAID
+    invoice.paid_at = timezone.now()
+    invoice.portone_pay_method = (data.get('method') or {}).get('type', '')
+    invoice.save(update_fields=['status', 'paid_at', 'portone_pay_method'])
+    return JsonResponse({'ok': True})
+
+
+def _verify_portone_webhook_signature(request):
+    """포트원 웹훅은 Svix 표준 서명 방식을 사용 (id.timestamp.body 를 HMAC-SHA256)"""
+    import base64
+    import hashlib
+    import hmac as hmac_lib
+
+    secret = settings.PORTONE_WEBHOOK_SECRET
+    webhook_id = request.headers.get('webhook-id', '')
+    timestamp = request.headers.get('webhook-timestamp', '')
+    signature_header = request.headers.get('webhook-signature', '')
+    if not (webhook_id and timestamp and signature_header):
+        return False
+
+    secret_bytes = secret[len('whsec_'):] if secret.startswith('whsec_') else secret
+    secret_bytes = base64.b64decode(secret_bytes)
+    signed_content = f'{webhook_id}.{timestamp}.{request.body.decode("utf-8")}'
+    expected = base64.b64encode(
+        hmac_lib.new(secret_bytes, signed_content.encode('utf-8'), hashlib.sha256).digest()
+    ).decode('utf-8')
+
+    for part in signature_header.split(' '):
+        candidate = part.split(',', 1)[-1]
+        if hmac_lib.compare_digest(candidate, expected):
+            return True
+    return False
+
+
+@csrf_exempt
+@require_POST
+def tuition_webhook(request):
+    """포트원 웹훅 수신 (브라우저 콜백 유실 대비 이중 확인)"""
+    import requests
+
+    if settings.PORTONE_WEBHOOK_SECRET:
+        if not _verify_portone_webhook_signature(request):
+            return JsonResponse({'ok': False, 'error': 'invalid signature'}, status=400)
+
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False}, status=400)
+
+    payment_id = payload.get('data', {}).get('paymentId')
+    if not payment_id:
+        return JsonResponse({'ok': True})
+
+    try:
+        invoice = TuitionInvoice.objects.get(portone_payment_id=payment_id)
+    except TuitionInvoice.DoesNotExist:
+        return JsonResponse({'ok': True})
+
+    if invoice.status == TuitionInvoice.STATUS_PAID or not settings.PORTONE_API_SECRET:
+        return JsonResponse({'ok': True})
+
+    try:
+        resp = requests.get(
+            f'https://api.portone.io/payments/{payment_id}',
+            headers={'Authorization': f'PortOne {settings.PORTONE_API_SECRET}'},
+            timeout=10,
+        )
+        data = resp.json()
+    except requests.RequestException:
+        return JsonResponse({'ok': False}, status=502)
+
+    if data.get('status') == 'PAID' and (data.get('amount') or {}).get('total') == invoice.amount:
+        invoice.status = TuitionInvoice.STATUS_PAID
+        invoice.paid_at = timezone.now()
+        invoice.portone_pay_method = (data.get('method') or {}).get('type', '')
+        invoice.save(update_fields=['status', 'paid_at', 'portone_pay_method'])
+
+    return JsonResponse({'ok': True})
 
 
 # ────────────────────────────────────────────────
@@ -3611,8 +3802,13 @@ def _build_report_context(user):
                 'certinfo': ci,
             })
 
+    unpaid_invoices = TuitionInvoice.objects.filter(
+        student=user, status=TuitionInvoice.STATUS_UNPAID
+    ).select_related('school_class').order_by('due_date')
+
     context = {
         'today': today,
+        'unpaid_invoices': unpaid_invoices,
         'typing_count': typing_count,
         'max_speed': max_speed,
         'avg_accuracy': avg_accuracy,

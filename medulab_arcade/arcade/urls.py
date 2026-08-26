@@ -145,6 +145,12 @@ urlpatterns = [
     path('admin-services/classes/<int:class_id>/delete/', views.class_admin_delete, name='class_admin_delete'),
     path('admin-services/classes/<int:class_id>/enroll/', views.class_enroll_student, name='class_enroll_student'),
     path('admin-services/classes/<int:class_id>/unenroll/<int:enrollment_id>/', views.class_unenroll_student, name='class_unenroll_student'),
+    path('admin-services/classes/<int:class_id>/generate-invoices/', views.class_admin_generate_invoices, name='class_admin_generate_invoices'),
+
+    # 학원비 결제 (포트원)
+    path('tuition/<int:invoice_id>/checkout/', views.tuition_checkout, name='tuition_checkout'),
+    path('tuition/<int:invoice_id>/verify/', views.tuition_verify_payment, name='tuition_verify_payment'),
+    path('tuition/webhook/', views.tuition_webhook, name='tuition_webhook'),
 
     # 배지 관리 (관리자 전용)
     path('admin-services/badges/', views.badge_list, name='badge_list'),

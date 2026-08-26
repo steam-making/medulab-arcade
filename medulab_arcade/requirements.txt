@@ -34,3 +34,6 @@ holidays>=0.96
 # Social login (Google / Kakao)
 django-allauth>=65.0
 PyJWT>=2.0.0
+
+# 결제 연동 (포트원 API 호출)
+requests>=2.31.0

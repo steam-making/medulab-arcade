@@ -514,6 +514,40 @@ class ClassEnrollment(models.Model):
         return f'{self.student.username} - {self.school_class.name}'
 
 
+class TuitionInvoice(models.Model):
+    STATUS_UNPAID = 'unpaid'
+    STATUS_PAID = 'paid'
+    STATUS_CANCELED = 'canceled'
+    STATUS_CHOICES = [
+        (STATUS_UNPAID, '미납'),
+        (STATUS_PAID, '완납'),
+        (STATUS_CANCELED, '취소'),
+    ]
+
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tuition_invoices', verbose_name='학생')
+    school_class = models.ForeignKey(SchoolClass, on_delete=models.CASCADE, related_name='invoices', verbose_name='수업')
+    amount = models.PositiveIntegerField('청구 금액(원)')
+    due_date = models.DateField('납부 기한')
+    status = models.CharField('상태', max_length=10, choices=STATUS_CHOICES, default=STATUS_UNPAID)
+    paid_at = models.DateTimeField('결제 완료 일시', null=True, blank=True)
+    portone_payment_id = models.CharField('포트원 결제건 ID', max_length=100, unique=True, blank=True)
+    portone_pay_method = models.CharField('결제 수단', max_length=30, blank=True)
+    created_at = models.DateTimeField('생성일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '학원비 청구서'
+        verbose_name_plural = '학원비 청구서'
+        ordering = ['-due_date', '-created_at']
+
+    def __str__(self):
+        return f'{self.student.username} - {self.school_class.name} ({self.due_date})'
+
+    def save(self, *args, **kwargs):
+        if not self.portone_payment_id:
+            self.portone_payment_id = f'tuition-{uuid.uuid4().hex}'
+        super().save(*args, **kwargs)
+
+
 class ParentChildLink(models.Model):
     parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='child_links', verbose_name='학부모')
     child = models.ForeignKey(User, on_delete=models.CASCADE, related_name='parent_links', verbose_name='자녀(학생)')

@@ -22,6 +22,13 @@ ACADEMY_CEO_NAME = os.environ.get('ACADEMY_CEO_NAME', '')
 ACADEMY_BIZ_NUMBER = os.environ.get('ACADEMY_BIZ_NUMBER', '')
 ACADEMY_ADDRESS = os.environ.get('ACADEMY_ADDRESS', '')
 
+# 포트원(PortOne) V2 결제 연동
+PORTONE_STORE_ID = os.environ.get('PORTONE_STORE_ID', '')
+PORTONE_CHANNEL_KEY_CARD = os.environ.get('PORTONE_CHANNEL_KEY_CARD', '')  # KG이니시스: 카드/실시간계좌이체/가상계좌
+PORTONE_CHANNEL_KEY_KAKAOPAY = os.environ.get('PORTONE_CHANNEL_KEY_KAKAOPAY', '')
+PORTONE_API_SECRET = os.environ.get('PORTONE_API_SECRET', '')
+PORTONE_WEBHOOK_SECRET = os.environ.get('PORTONE_WEBHOOK_SECRET', '')
+
 # 로그인 도우미 잠금 해제 비밀번호 (.env의 LOGIN_HELPER_PASSWORD 로 재정의 가능)
 LOGIN_HELPER_PASSWORD = os.environ.get('LOGIN_HELPER_PASSWORD', 'medu2025!')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')

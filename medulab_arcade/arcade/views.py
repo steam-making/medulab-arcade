@@ -2742,6 +2742,24 @@ def badge_delete(request, badge_id):
     return redirect('badge_list')
 
 
+def public_class_list(request):
+    """공개 수업 소개 페이지 (전자결제 심사용 상품 등록 요건 포함)"""
+    classes = SchoolClass.objects.filter(is_active=True).order_by('name')
+    return render(request, 'arcade/public_class_list.html', {'classes': classes})
+
+
+def terms_of_service(request):
+    return render(request, 'arcade/terms_of_service.html')
+
+
+def privacy_policy(request):
+    return render(request, 'arcade/privacy_policy.html')
+
+
+def refund_policy(request):
+    return render(request, 'arcade/refund_policy.html')
+
+
 def consult_inquiry(request):
     """상담 문의 접수 페이지"""
     from .forms import ConsultInquiryForm

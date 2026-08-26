@@ -740,6 +740,28 @@
             font-size: 12px;
         }
 
+        .footer-biz-info {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+
+        .footer-links {
+            margin-bottom: 14px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .footer-links a:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
         /* 애니메이션 */
         @keyframes fadeSlideIn {
             from {
@@ -997,6 +1019,19 @@
 
     <!-- 푸터 -->
     <footer class="footer">
+        <div class="footer-biz-info">
+            메듀랩 AI로봇코딩 융합학원 · 대표자 {{ ACADEMY_CEO_NAME|default:"-" }} ·
+            사업자등록번호 {{ ACADEMY_BIZ_NUMBER|default:"-" }}<br>
+            {{ ACADEMY_ADDRESS|default:"" }}
+            {% if ACADEMY_PHONE %} · 대표전화 {{ ACADEMY_PHONE }}{% endif %}
+        </div>
+        <div class="footer-links">
+            <a href="{% url 'public_class_list' %}">수업 안내</a>
+            <a href="{% url 'terms_of_service' %}">이용약관</a>
+            <a href="{% url 'privacy_policy' %}">개인정보처리방침</a>
+            <a href="{% url 'refund_policy' %}">취소/환불 정책</a>
+            <a href="{% url 'consult_inquiry' %}">상담 문의</a>
+        </div>
         <p>© 2026 메듀랩 AI로봇코딩 융합학원 — Medulab</p>
     </footer>
 

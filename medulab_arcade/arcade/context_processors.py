@@ -1,4 +1,15 @@
+from django.conf import settings
 from django.core.cache import cache
+
+
+def academy_info(request):
+    return {
+        'ACADEMY_CEO_NAME': getattr(settings, 'ACADEMY_CEO_NAME', ''),
+        'ACADEMY_BIZ_NUMBER': getattr(settings, 'ACADEMY_BIZ_NUMBER', ''),
+        'ACADEMY_ADDRESS': getattr(settings, 'ACADEMY_ADDRESS', ''),
+        'ACADEMY_PHONE': getattr(settings, 'ACADEMY_PHONE', ''),
+        'ACADEMY_PHONE_MOBILE': getattr(settings, 'ACADEMY_PHONE_MOBILE', ''),
+    }
 
 
 def nav_items(request):

@@ -14,10 +14,13 @@ SECRET_KEY = 'django-insecure-change-this-in-production-medulab-2026'
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
-# 상담 문의 연락처 (.env에서 재정의)
+# 상담 문의 / 사업자 정보 (.env에서 재정의)
 ACADEMY_PHONE = os.environ.get('ACADEMY_PHONE', '')
 ACADEMY_PHONE_MOBILE = os.environ.get('ACADEMY_PHONE_MOBILE', '')
 ACADEMY_KAKAO_CHANNEL_URL = os.environ.get('ACADEMY_KAKAO_CHANNEL_URL', '')
+ACADEMY_CEO_NAME = os.environ.get('ACADEMY_CEO_NAME', '')
+ACADEMY_BIZ_NUMBER = os.environ.get('ACADEMY_BIZ_NUMBER', '')
+ACADEMY_ADDRESS = os.environ.get('ACADEMY_ADDRESS', '')
 
 # 로그인 도우미 잠금 해제 비밀번호 (.env의 LOGIN_HELPER_PASSWORD 로 재정의 가능)
 LOGIN_HELPER_PASSWORD = os.environ.get('LOGIN_HELPER_PASSWORD', 'medu2025!')
@@ -90,6 +93,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'arcade.context_processors.nav_items',
+                'arcade.context_processors.academy_info',
             ],
         },
     },

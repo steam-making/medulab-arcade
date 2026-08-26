@@ -1,0 +1,48 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}수업 안내 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+.classes-wrap { max-width:1100px; margin:50px auto; padding:0 20px; }
+.classes-title { font: 900 28px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:10px; }
+.classes-sub { color:var(--text-muted); font-size:14px; margin-bottom:32px; }
+.class-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:18px; }
+.class-card { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:24px; }
+.class-card h3 { color:#fff; font-size:17px; font-weight:800; margin-bottom:8px; }
+.class-card .schedule { color:var(--text-muted); font-size:13px; margin-bottom:10px; }
+.class-card .desc { color:var(--text-secondary); font-size:13px; line-height:1.6; margin-bottom:16px; min-height:40px; }
+.class-card .price-row { display:flex; align-items:baseline; gap:8px; border-top:1px solid var(--border); padding-top:14px; }
+.class-card .regular-price { color:var(--text-muted); font-size:13px; text-decoration:line-through; }
+.class-card .final-price { color:var(--accent-green); font-size:20px; font-weight:900; font-family:'Outfit', sans-serif; }
+.class-card .price-unit { color:var(--text-muted); font-size:12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="classes-wrap">
+    <h1 class="classes-title">🏫 수업 안내</h1>
+    <p class="classes-sub">메듀랩에서 운영 중인 수업과 수업료를 확인하세요. 수강 문의는 <a href="{% url 'consult_inquiry' %}" style="color:#93c5fd;">상담 문의</a>를 이용해 주세요.</p>
+
+    <div class="class-grid">
+        {% for c in classes %}
+        <div class="class-card">
+            <h3>{{ c.name }}</h3>
+            {% if c.days_display and c.start_time %}
+            <div class="schedule">🗓️ {{ c.days_display }} {{ c.start_time|time:"H:i" }}~{{ c.end_time|time:"H:i" }} ({{ c.duration_minutes }}분)</div>
+            {% endif %}
+            <div class="desc">{{ c.description|default:"자세한 커리큘럼은 상담 문의를 통해 안내해 드립니다." }}</div>
+            <div class="price-row">
+                {% if c.regular_fee and c.regular_fee != c.tuition_fee %}
+                <span class="regular-price">{{ c.regular_fee|floatformat:0 }}원</span>
+                {% endif %}
+                <span class="final-price">{{ c.tuition_fee|floatformat:0 }}원</span>
+                <span class="price-unit">/ 월</span>
+            </div>
+        </div>
+        {% empty %}
+        <p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding:60px 0;">현재 안내 중인 수업이 없습니다. 상담 문의를 통해 문의해 주세요.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -2366,16 +2366,39 @@ def schedule_admin_delete(request, event_id):
 @user_passes_test(staff_check)
 def class_admin_list(request):
     """수업 관리 목록"""
-    classes = SchoolClass.objects.select_related('teacher__profile').prefetch_related('enrollments').order_by('name')
+    classes = SchoolClass.objects.select_related('teacher__profile').prefetch_related('enrollments')
     search = request.GET.get('q', '').strip()
     if search:
         classes = classes.filter(name__icontains=search)
     context = {
         'classes': classes,
         'search_query': search,
+        'reorder_enabled': not search,
         'title': '수업 관리',
     }
     return render(request, 'arcade/admin/class_list.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def class_admin_reorder(request):
+    """수업 목록 드래그 앤 드롭 순서 저장"""
+    try:
+        ordered_ids = json.loads(request.body).get('order', [])
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'ok': False, 'error': 'invalid payload'}, status=400)
+
+    classes_by_id = {c.id: c for c in SchoolClass.objects.filter(pk__in=ordered_ids)}
+    updated = []
+    for index, class_id in enumerate(ordered_ids):
+        school_class = classes_by_id.get(int(class_id))
+        if school_class and school_class.display_order != index:
+            school_class.display_order = index
+            updated.append(school_class)
+    if updated:
+        SchoolClass.objects.bulk_update(updated, ['display_order'])
+    return JsonResponse({'ok': True})
 
 
 @login_required
@@ -2767,7 +2790,7 @@ def badge_delete(request, badge_id):
 
 def public_class_list(request):
     """공개 수업 소개 페이지 (전자결제 심사용 상품 등록 요건 포함)"""
-    classes = SchoolClass.objects.filter(is_active=True).order_by('name')
+    classes = SchoolClass.objects.filter(is_active=True)
     return render(request, 'arcade/public_class_list.html', {'classes': classes})
 
 

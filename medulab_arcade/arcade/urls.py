@@ -138,6 +138,7 @@ urlpatterns = [
 
     # 수업 관리 (관리자 전용)
     path('admin-services/classes/', views.class_admin_list, name='class_admin_list'),
+    path('admin-services/classes/reorder/', views.class_admin_reorder, name='class_admin_reorder'),
     path('admin-services/classes/add/', views.class_admin_create, name='class_admin_create'),
     path('admin-services/classes/<int:class_id>/edit/', views.class_admin_edit, name='class_admin_edit'),
     path('admin-services/classes/<int:class_id>/copy/', views.class_admin_copy, name='class_admin_copy'),

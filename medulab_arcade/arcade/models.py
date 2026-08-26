@@ -473,11 +473,12 @@ class SchoolClass(models.Model):
         related_name='school_class', verbose_name='연결된 일정',
     )
     created_at = models.DateTimeField('등록일', auto_now_add=True)
+    display_order = models.IntegerField('표시 순서', default=0)
 
     class Meta:
         verbose_name = '수업'
         verbose_name_plural = '수업'
-        ordering = ['name']
+        ordering = ['display_order', 'name']
 
     def __str__(self):
         return self.name

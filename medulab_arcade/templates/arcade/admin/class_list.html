@@ -9,25 +9,36 @@
     .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
     .page-title { font: 900 28px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
-    .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
     .search-input-group { position: relative; width: 260px; flex-shrink: 0; }
     .search-input-group input { width: 100%; padding: 10px 16px 10px 38px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; color: #fff; outline: none; transition: all 0.2s; font-size: 13px; }
     .search-input-group input:focus { border-color: var(--accent-green); box-shadow: 0 0 10px rgba(0,255,180,0.1); }
     .search-input-group span { position: absolute; left: 14px; top: 12px; font-size: 14px; color: var(--text-muted); }
 
+    .filter-preset-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-preset-btn { padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: var(--text-secondary); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .filter-preset-btn:hover { background: rgba(0,255,180,0.1); color: var(--accent-green); border-color: var(--accent-green); }
+    .filter-preset-btn.active { background: var(--accent-green); color: var(--bg-primary); border-color: var(--accent-green); }
+
     .table-wrap { background: var(--bg-card); border-radius: 18px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 960px; table-layout: fixed; }
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1000px; table-layout: fixed; }
     th { padding: 18px 20px; background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
     td { padding: 18px 20px; border-top: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
     tr:hover td { background: rgba(255,255,255,0.02); }
 
-    th:nth-child(1), td:nth-child(1) { width: 26%; }
-    th:nth-child(2), td:nth-child(2) { width: 12%; }
-    th:nth-child(3), td:nth-child(3) { width: 16%; }
-    th:nth-child(4), td:nth-child(4) { width: 14%; }
-    th:nth-child(5), td:nth-child(5) { width: 10%; }
-    th:nth-child(6), td:nth-child(6) { width: 10%; }
-    th:nth-child(7), td:nth-child(7) { width: 12%; }
+    th:nth-child(1), td:nth-child(1) { width: 40px; }
+    th:nth-child(2), td:nth-child(2) { width: 24%; }
+    th:nth-child(3), td:nth-child(3) { width: 11%; }
+    th:nth-child(4), td:nth-child(4) { width: 15%; }
+    th:nth-child(5), td:nth-child(5) { width: 13%; }
+    th:nth-child(6), td:nth-child(6) { width: 9%; }
+    th:nth-child(7), td:nth-child(7) { width: 9%; }
+    th:nth-child(8), td:nth-child(8) { width: 12%; }
+
+    .drag-handle { cursor: grab; color: var(--text-muted); font-size: 16px; user-select: none; text-align: center; display: block; }
+    .drag-handle.disabled { cursor: not-allowed; opacity: 0.3; }
+    tr.class-row.dragging { opacity: 0.4; }
+    tr.class-row[draggable="true"] { cursor: default; }
 
     .class-name { font-weight: 700; color: #fff; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .class-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -61,17 +72,29 @@
         <a href="{% url 'class_admin_create' %}" class="add-btn">+ 신규 수업 등록</a>
     </div>
 
-    <form class="filter-bar" method="GET">
+    <form class="filter-bar" method="GET" id="class-filter-form">
         <div class="search-input-group">
             <span>🔍</span>
-            <input type="text" name="q" placeholder="수업명 검색..." value="{{ search_query }}" onkeypress="if(event.key === 'Enter') this.form.submit();">
+            <input type="text" name="q" id="class-search-input" placeholder="수업명 검색..." value="{{ search_query }}" onkeypress="if(event.key === 'Enter') this.form.submit();">
+        </div>
+        <div class="filter-preset-row">
+            <button type="button" class="filter-preset-btn{% if search_query == 'AI로봇코딩 맞춤성장' %} active{% endif %}" data-query="AI로봇코딩 맞춤성장">AI로봇코딩 맞춤성장</button>
+            <button type="button" class="filter-preset-btn{% if search_query == 'AI로봇코딩 집중성장' %} active{% endif %}" data-query="AI로봇코딩 집중성장">AI로봇코딩 집중성장</button>
+            <button type="button" class="filter-preset-btn{% if search_query == 'AI로봇코딩 융합성장' %} active{% endif %}" data-query="AI로봇코딩 융합성장">AI로봇코딩 융합성장</button>
+            {% if search_query %}
+            <button type="button" class="filter-preset-btn" data-query="">전체보기</button>
+            {% endif %}
         </div>
     </form>
+    {% if not reorder_enabled %}
+    <p style="color: var(--text-muted); font-size: 12px; margin: -14px 0 18px;">🔒 검색/필터 중에는 순서를 변경할 수 없습니다. 순서를 바꾸려면 전체보기 상태에서 진행해 주세요.</p>
+    {% endif %}
 
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
+                    <th></th>
                     <th>수업명</th>
                     <th>담당 강사</th>
                     <th>요일/시간</th>
@@ -81,9 +104,12 @@
                     <th>관리</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="class-table-body">
                 {% for c in classes %}
-                <tr>
+                <tr class="class-row" data-id="{{ c.id }}" {% if reorder_enabled %}draggable="true"{% endif %}>
+                    <td>
+                        <span class="drag-handle{% if not reorder_enabled %} disabled{% endif %}" title="{% if reorder_enabled %}드래그해서 순서 변경{% else %}전체보기 상태에서만 순서 변경 가능{% endif %}">≡</span>
+                    </td>
                     <td>
                         <span class="class-name">{{ c.name }}</span>
                         {% if c.description %}
@@ -132,7 +158,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" style="text-align:center; padding: 60px; color: var(--text-muted);">
+                    <td colspan="8" style="text-align:center; padding: 60px; color: var(--text-muted);">
                         등록된 수업이 없습니다.
                     </td>
                 </tr>
@@ -141,4 +167,53 @@
         </table>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var searchInput = document.getElementById('class-search-input');
+    document.querySelectorAll('.filter-preset-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            searchInput.value = btn.dataset.query;
+            document.getElementById('class-filter-form').submit();
+        });
+    });
+
+    var tbody = document.getElementById('class-table-body');
+    if (!tbody) return;
+    var draggingRow = null;
+
+    tbody.querySelectorAll('tr.class-row[draggable="true"]').forEach(function (row) {
+        row.addEventListener('dragstart', function () {
+            draggingRow = row;
+            row.classList.add('dragging');
+        });
+        row.addEventListener('dragend', function () {
+            row.classList.remove('dragging');
+            draggingRow = null;
+            saveOrder();
+        });
+        row.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            if (!draggingRow || draggingRow === row) return;
+            var rect = row.getBoundingClientRect();
+            var after = (e.clientY - rect.top) > (rect.height / 2);
+            tbody.insertBefore(draggingRow, after ? row.nextSibling : row);
+        });
+    });
+
+    function saveOrder() {
+        var ids = Array.from(tbody.querySelectorAll('tr.class-row')).map(function (row) {
+            return row.dataset.id;
+        });
+        fetch('{% url "class_admin_reorder" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({ order: ids }),
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -34,6 +34,14 @@
     .class-row[data-preset="집중성장"] { box-shadow: inset 3px 0 0 #f59e0b; }
     .class-row[data-preset="융합성장"] { box-shadow: inset 3px 0 0 #a855f7; }
 
+    .group-header td { padding: 12px 20px; border-top: none; background: rgba(255,255,255,0.02); }
+    .group-header-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; color: var(--text-secondary); }
+    .group-header-dot { width: 9px; height: 9px; border-radius: 50%; }
+    .group-header-label.preset-blue .group-header-dot { background: #3b82f6; }
+    .group-header-label.preset-amber .group-header-dot { background: #f59e0b; }
+    .group-header-label.preset-purple .group-header-dot { background: #a855f7; }
+    .group-header-label:not(.preset-blue):not(.preset-amber):not(.preset-purple) .group-header-dot { background: var(--text-muted); }
+
     .table-wrap { background: var(--bg-card); border-radius: 18px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
     table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1000px; table-layout: fixed; }
     th { padding: 18px 20px; background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
@@ -118,8 +126,18 @@
                     <th>관리</th>
                 </tr>
             </thead>
-            <tbody id="class-table-body">
-                {% for c in classes %}
+            {% for group in groups %}
+            {% if group.label %}
+            <tbody>
+                <tr class="group-header">
+                    <td colspan="8">
+                        <span class="group-header-label {{ group.css_class }}"><span class="group-header-dot"></span>{{ group.label }}</span>
+                    </td>
+                </tr>
+            </tbody>
+            {% endif %}
+            <tbody class="class-table-body" data-group-rank="{{ group.rank }}">
+                {% for c in group.classes %}
                 <tr class="class-row" data-id="{{ c.id }}" {% if '맞춤성장' in c.name %}data-preset="맞춤성장"{% elif '집중성장' in c.name %}data-preset="집중성장"{% elif '융합성장' in c.name %}data-preset="융합성장"{% endif %} {% if reorder_enabled %}draggable="true"{% endif %}>
                     <td>
                         <span class="drag-handle{% if not reorder_enabled %} disabled{% endif %}" title="{% if reorder_enabled %}드래그해서 순서 변경{% else %}전체보기 상태에서만 순서 변경 가능{% endif %}">≡</span>
@@ -170,14 +188,17 @@
                         </div>
                     </td>
                 </tr>
-                {% empty %}
+                {% endfor %}
+            </tbody>
+            {% empty %}
+            <tbody>
                 <tr>
                     <td colspan="8" style="text-align:center; padding: 60px; color: var(--text-muted);">
                         등록된 수업이 없습니다.
                     </td>
                 </tr>
-                {% endfor %}
             </tbody>
+            {% endfor %}
         </table>
     </div>
 </div>
@@ -192,30 +213,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    var tbody = document.getElementById('class-table-body');
-    if (!tbody) return;
-    var draggingRow = null;
+    document.querySelectorAll('tbody.class-table-body').forEach(function (tbody) {
+        var draggingRow = null;
 
-    tbody.querySelectorAll('tr.class-row[draggable="true"]').forEach(function (row) {
-        row.addEventListener('dragstart', function () {
-            draggingRow = row;
-            row.classList.add('dragging');
-        });
-        row.addEventListener('dragend', function () {
-            row.classList.remove('dragging');
-            draggingRow = null;
-            saveOrder();
-        });
-        row.addEventListener('dragover', function (e) {
-            e.preventDefault();
-            if (!draggingRow || draggingRow === row) return;
-            var rect = row.getBoundingClientRect();
-            var after = (e.clientY - rect.top) > (rect.height / 2);
-            tbody.insertBefore(draggingRow, after ? row.nextSibling : row);
+        tbody.querySelectorAll('tr.class-row[draggable="true"]').forEach(function (row) {
+            row.addEventListener('dragstart', function () {
+                draggingRow = row;
+                row.classList.add('dragging');
+            });
+            row.addEventListener('dragend', function () {
+                row.classList.remove('dragging');
+                draggingRow = null;
+                saveOrder(tbody);
+            });
+            row.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                if (!draggingRow || draggingRow === row || draggingRow.parentNode !== tbody) return;
+                var rect = row.getBoundingClientRect();
+                var after = (e.clientY - rect.top) > (rect.height / 2);
+                tbody.insertBefore(draggingRow, after ? row.nextSibling : row);
+            });
         });
     });
 
-    function saveOrder() {
+    function saveOrder(tbody) {
         var ids = Array.from(tbody.querySelectorAll('tr.class-row')).map(function (row) {
             return row.dataset.id;
         });
@@ -225,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token }}',
             },
-            body: JSON.stringify({ order: ids }),
+            body: JSON.stringify({ order: ids, group_rank: tbody.dataset.groupRank || 0 }),
         });
     }
 });

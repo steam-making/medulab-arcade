@@ -2362,18 +2362,57 @@ def schedule_admin_delete(request, event_id):
 # 수업 관리 (관리자 전용 CRUD + 학생 배정)
 # ────────────────────────────────────────────────
 
+# (short_label, filter_query, css_class, group_rank) — group_rank도 display_order 오프셋으로 사용되어
+# 공개 수업안내 페이지의 정렬(순수 display_order 기준)이 관리자 화면의 그룹 순서와 일치하도록 함
+CLASS_PRESET_GROUPS = [
+    ('맞춤성장', 'AI로봇코딩 맞춤성장', 'preset-blue', 0),
+    ('집중성장', 'AI로봇코딩 집중성장', 'preset-amber', 1),
+    ('융합성장', 'AI로봇코딩 융합성장', 'preset-purple', 2),
+]
+CLASS_OTHER_GROUP_RANK = 3
+CLASS_GROUP_ORDER_STEP = 1000
+
+
 @login_required
 @user_passes_test(staff_check)
 def class_admin_list(request):
-    """수업 관리 목록"""
+    """수업 관리 목록 (프리셋별 그룹핑 + 그룹 내 드래그 순서 변경)"""
     classes = SchoolClass.objects.select_related('teacher__profile').prefetch_related('enrollments')
     search = request.GET.get('q', '').strip()
     if search:
         classes = classes.filter(name__icontains=search)
+    classes_list = list(classes)
+
+    preset_queries = {full_query for _, full_query, _, _ in CLASS_PRESET_GROUPS}
+    is_grouped_view = (not search) or (search in preset_queries)
+
+    groups = []
+    if is_grouped_view:
+        used_ids = set()
+        for short_label, full_query, css_class, rank in CLASS_PRESET_GROUPS:
+            if search and search != full_query:
+                continue
+            group_classes = [c for c in classes_list if short_label in c.name]
+            if group_classes:
+                groups.append({
+                    'label': full_query, 'css_class': css_class, 'rank': rank, 'classes': group_classes,
+                })
+                used_ids.update(c.id for c in group_classes)
+        if not search:
+            others = [c for c in classes_list if c.id not in used_ids]
+            if others:
+                groups.append({
+                    'label': '기타', 'css_class': '', 'rank': CLASS_OTHER_GROUP_RANK, 'classes': others,
+                })
+    elif classes_list:
+        groups = [{'label': None, 'css_class': '', 'rank': None, 'classes': classes_list}]
+    else:
+        groups = []
+
     context = {
-        'classes': classes,
+        'groups': groups,
         'search_query': search,
-        'reorder_enabled': not search,
+        'reorder_enabled': is_grouped_view,
         'title': '수업 관리',
     }
     return render(request, 'arcade/admin/class_list.html', context)
@@ -2383,18 +2422,22 @@ def class_admin_list(request):
 @user_passes_test(staff_check)
 @require_POST
 def class_admin_reorder(request):
-    """수업 목록 드래그 앤 드롭 순서 저장"""
+    """수업 목록 드래그 앤 드롭 순서 저장 (그룹 내에서만 순서 변경)"""
     try:
-        ordered_ids = json.loads(request.body).get('order', [])
-    except (json.JSONDecodeError, AttributeError):
+        payload = json.loads(request.body)
+        ordered_ids = payload.get('order', [])
+        group_rank = int(payload.get('group_rank', 0))
+    except (json.JSONDecodeError, AttributeError, TypeError, ValueError):
         return JsonResponse({'ok': False, 'error': 'invalid payload'}, status=400)
 
+    base = group_rank * CLASS_GROUP_ORDER_STEP
     classes_by_id = {c.id: c for c in SchoolClass.objects.filter(pk__in=ordered_ids)}
     updated = []
     for index, class_id in enumerate(ordered_ids):
         school_class = classes_by_id.get(int(class_id))
-        if school_class and school_class.display_order != index:
-            school_class.display_order = index
+        new_order = base + index
+        if school_class and school_class.display_order != new_order:
+            school_class.display_order = new_order
             updated.append(school_class)
     if updated:
         SchoolClass.objects.bulk_update(updated, ['display_order'])

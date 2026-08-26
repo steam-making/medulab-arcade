@@ -140,6 +140,7 @@ urlpatterns = [
     path('admin-services/classes/', views.class_admin_list, name='class_admin_list'),
     path('admin-services/classes/add/', views.class_admin_create, name='class_admin_create'),
     path('admin-services/classes/<int:class_id>/edit/', views.class_admin_edit, name='class_admin_edit'),
+    path('admin-services/classes/<int:class_id>/copy/', views.class_admin_copy, name='class_admin_copy'),
     path('admin-services/classes/<int:class_id>/delete/', views.class_admin_delete, name='class_admin_delete'),
     path('admin-services/classes/<int:class_id>/enroll/', views.class_enroll_student, name='class_enroll_student'),
     path('admin-services/classes/<int:class_id>/unenroll/<int:enrollment_id>/', views.class_unenroll_student, name='class_unenroll_student'),

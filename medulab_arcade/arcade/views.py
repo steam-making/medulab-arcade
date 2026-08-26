@@ -2421,6 +2421,29 @@ def class_admin_edit(request, class_id):
 @login_required
 @user_passes_test(staff_check)
 @require_POST
+def class_admin_copy(request, class_id):
+    """수업 복사 등록 (학생 배정/연결 일정은 복사하지 않음)"""
+    source = get_object_or_404(SchoolClass, pk=class_id)
+    copy = SchoolClass.objects.create(
+        name=f'{source.name} 사본',
+        teacher=source.teacher,
+        days_of_week=source.days_of_week,
+        duration_minutes=source.duration_minutes,
+        start_time=source.start_time,
+        end_time=source.end_time,
+        regular_fee=source.regular_fee,
+        tuition_fee=source.tuition_fee,
+        description=source.description,
+        is_active=source.is_active,
+        show_on_schedule=False,
+    )
+    messages.success(request, f'수업 "{source.name}"을 복사하여 "{copy.name}"을 등록했습니다.')
+    return redirect('class_admin_edit', class_id=copy.pk)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
 def class_admin_delete(request, class_id):
     """수업 삭제"""
     school_class = get_object_or_404(SchoolClass, pk=class_id)

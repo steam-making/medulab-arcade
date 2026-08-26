@@ -34,6 +34,7 @@
     .btn-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.2s; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; padding: 0; }
     .btn-icon:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
     .btn-edit:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
+    .btn-copy:hover { color: var(--accent-green); border-color: var(--accent-green); }
     .btn-delete:hover { color: #ff6b6b; border-color: #ff6b6b; }
 
     .add-btn { padding: 12px 24px; border-radius: 12px; background: var(--accent-green); color: var(--bg-primary); font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,255,180,0.2); font-size: 14px; }
@@ -103,6 +104,10 @@
                     </td>
                     <td>
                         <div class="action-btns">
+                            <form action="{% url 'class_admin_copy' c.id %}" method="POST" onsubmit="return confirm('\'{{ c.name }}\' 수업 내용을 복사하여 새 수업으로 등록할까요?');" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-icon btn-copy" title="수업 복사">📋</button>
+                            </form>
                             <a href="{% url 'class_admin_edit' c.id %}" class="btn-icon btn-edit" title="수정/학생배정">✏️</a>
                             <form action="{% url 'class_admin_delete' c.id %}" method="POST" onsubmit="return confirm('정말로 이 수업을 삭제할까요? 배정된 학생 정보도 함께 삭제됩니다.');" style="display:inline;">
                                 {% csrf_token %}

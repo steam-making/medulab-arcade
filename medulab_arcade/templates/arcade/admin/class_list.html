@@ -20,6 +20,20 @@
     .filter-preset-btn:hover { background: rgba(0,255,180,0.1); color: var(--accent-green); border-color: var(--accent-green); }
     .filter-preset-btn.active { background: var(--accent-green); color: var(--bg-primary); border-color: var(--accent-green); }
 
+    .filter-preset-btn.preset-blue { --preset-color: #3b82f6; }
+    .filter-preset-btn.preset-amber { --preset-color: #f59e0b; }
+    .filter-preset-btn.preset-purple { --preset-color: #a855f7; }
+    .filter-preset-btn.preset-blue:hover, .filter-preset-btn.preset-amber:hover, .filter-preset-btn.preset-purple:hover {
+        background: color-mix(in srgb, var(--preset-color) 16%, transparent); color: var(--preset-color); border-color: var(--preset-color);
+    }
+    .filter-preset-btn.preset-blue.active, .filter-preset-btn.preset-amber.active, .filter-preset-btn.preset-purple.active {
+        background: var(--preset-color); color: #fff; border-color: var(--preset-color);
+    }
+
+    .class-row[data-preset="맞춤성장"] { box-shadow: inset 3px 0 0 #3b82f6; }
+    .class-row[data-preset="집중성장"] { box-shadow: inset 3px 0 0 #f59e0b; }
+    .class-row[data-preset="융합성장"] { box-shadow: inset 3px 0 0 #a855f7; }
+
     .table-wrap { background: var(--bg-card); border-radius: 18px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
     table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1000px; table-layout: fixed; }
     th { padding: 18px 20px; background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
@@ -78,9 +92,9 @@
             <input type="text" name="q" id="class-search-input" placeholder="수업명 검색..." value="{{ search_query }}" onkeypress="if(event.key === 'Enter') this.form.submit();">
         </div>
         <div class="filter-preset-row">
-            <button type="button" class="filter-preset-btn{% if search_query == 'AI로봇코딩 맞춤성장' %} active{% endif %}" data-query="AI로봇코딩 맞춤성장">AI로봇코딩 맞춤성장</button>
-            <button type="button" class="filter-preset-btn{% if search_query == 'AI로봇코딩 집중성장' %} active{% endif %}" data-query="AI로봇코딩 집중성장">AI로봇코딩 집중성장</button>
-            <button type="button" class="filter-preset-btn{% if search_query == 'AI로봇코딩 융합성장' %} active{% endif %}" data-query="AI로봇코딩 융합성장">AI로봇코딩 융합성장</button>
+            <button type="button" class="filter-preset-btn preset-blue{% if search_query == 'AI로봇코딩 맞춤성장' %} active{% endif %}" data-query="AI로봇코딩 맞춤성장">AI로봇코딩 맞춤성장</button>
+            <button type="button" class="filter-preset-btn preset-amber{% if search_query == 'AI로봇코딩 집중성장' %} active{% endif %}" data-query="AI로봇코딩 집중성장">AI로봇코딩 집중성장</button>
+            <button type="button" class="filter-preset-btn preset-purple{% if search_query == 'AI로봇코딩 융합성장' %} active{% endif %}" data-query="AI로봇코딩 융합성장">AI로봇코딩 융합성장</button>
             {% if search_query %}
             <button type="button" class="filter-preset-btn" data-query="">전체보기</button>
             {% endif %}
@@ -106,7 +120,7 @@
             </thead>
             <tbody id="class-table-body">
                 {% for c in classes %}
-                <tr class="class-row" data-id="{{ c.id }}" {% if reorder_enabled %}draggable="true"{% endif %}>
+                <tr class="class-row" data-id="{{ c.id }}" {% if '맞춤성장' in c.name %}data-preset="맞춤성장"{% elif '집중성장' in c.name %}data-preset="집중성장"{% elif '융합성장' in c.name %}data-preset="융합성장"{% endif %} {% if reorder_enabled %}draggable="true"{% endif %}>
                     <td>
                         <span class="drag-handle{% if not reorder_enabled %} disabled{% endif %}" title="{% if reorder_enabled %}드래그해서 순서 변경{% else %}전체보기 상태에서만 순서 변경 가능{% endif %}">≡</span>
                     </td>

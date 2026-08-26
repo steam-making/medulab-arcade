@@ -39,7 +39,7 @@
     .schedule-layout { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
     .calendar-panel { padding: clamp(18px, 3vw, 30px); min-width: 0; animation: fadeSlideIn 0.55s ease 0.1s both; }
     #schedule-calendar { color: #fff; }
-    .fc { --fc-page-bg-color: transparent; --fc-neutral-bg-color: rgba(255,255,255,0.035); --fc-border-color: rgba(255,255,255,0.08); --fc-today-bg-color: rgba(0,255,180,0.08); --fc-list-event-hover-bg-color: rgba(255,255,255,0.06); font-family: 'Noto Sans KR', sans-serif; }
+    .fc { --fc-page-bg-color: transparent; --fc-neutral-bg-color: rgba(255,255,255,0.035); --fc-border-color: rgba(255,255,255,0.22); --fc-today-bg-color: rgba(0,255,180,0.08); --fc-list-event-hover-bg-color: rgba(255,255,255,0.06); font-family: 'Noto Sans KR', sans-serif; }
     .fc .fc-toolbar-title { font: 900 clamp(22px, 3vw, 34px) 'Orbitron', 'Noto Sans KR', sans-serif; letter-spacing: -0.03em; }
     .fc .fc-button-primary { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; color: #fff; font-weight: 800; box-shadow: none; transition: all 0.2s ease; }
     .fc .fc-button-primary:hover, .fc .fc-button-primary:focus { background: rgba(0,255,180,0.15); border-color: rgba(0,255,180,0.38); color: #00ffb4; box-shadow: 0 0 0 3px rgba(0,255,180,0.08); }
@@ -48,6 +48,8 @@
     .fc-daygrid-event { white-space: normal !important; margin-bottom: 4px; }
     .custom-event { display: flex; flex-direction: column; gap: 4px; padding: 4px 6px; border-radius: 8px; transition: background 0.2s; }
     .custom-event:hover { background: rgba(255,255,255,0.05); }
+    .custom-event-academic { background: rgba(59,130,246,0.22); border: 1px solid rgba(59,130,246,0.4); }
+    .custom-event-academic:hover { background: rgba(59,130,246,0.3); }
     .custom-event-top { display: flex; align-items: center; gap: 6px; }
     .custom-event-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
     .custom-event-time { font-size: 11px; font-weight: 800; color: #fff; }
@@ -227,8 +229,9 @@
                     timeText = timeText.replace('AM', '오전').replace('PM', '오후');
                 }
 
+                var eventTypeClass = props.eventType === 'academic' ? 'custom-event-academic' : '';
                 var html = `
-                    <div class="custom-event">
+                    <div class="custom-event ${eventTypeClass}">
                         <div class="custom-event-top">
                             <div class="custom-event-dot" style="color: ${dotColor}; background-color: ${dotColor};"></div>
                             ${timeText ? `<div class="custom-event-time">${timeText}</div>` : ''}

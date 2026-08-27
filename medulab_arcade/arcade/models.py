@@ -474,6 +474,10 @@ class SchoolClass(models.Model):
     )
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     display_order = models.IntegerField('표시 순서', default=0)
+    monthly_sessions = models.PositiveIntegerField(
+        '월 기본 출석 횟수', default=8,
+        help_text='수업비를 이 횟수로 나눠 회당 단가를 계산합니다 (결석 차감에 사용).',
+    )
 
     class Meta:
         verbose_name = '수업'
@@ -497,6 +501,12 @@ class SchoolClass(models.Model):
         codes = set(self.days_of_week.split(','))
         return '/'.join(self.DAY_LABELS[c] for c in order if c in codes)
 
+    @property
+    def per_session_fee(self):
+        if not self.monthly_sessions:
+            return 0
+        return self.tuition_fee // self.monthly_sessions
+
 
 class ClassEnrollment(models.Model):
     school_class = models.ForeignKey(SchoolClass, on_delete=models.CASCADE, related_name='enrollments', verbose_name='수업')
@@ -514,6 +524,24 @@ class ClassEnrollment(models.Model):
         return f'{self.student.username} - {self.school_class.name}'
 
 
+class ClassAttendance(models.Model):
+    enrollment = models.ForeignKey(ClassEnrollment, on_delete=models.CASCADE, related_name='attendance_records', verbose_name='수업 배정')
+    date = models.DateField('수업일')
+    is_present = models.BooleanField('출석', default=True)
+    note = models.CharField('비고', max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '수업 출석'
+        verbose_name_plural = '수업 출석'
+        unique_together = ('enrollment', 'date')
+        ordering = ['-date']
+
+    def __str__(self):
+        return f'{self.enrollment.student.username} - {self.date} ({"출석" if self.is_present else "결석"})'
+
+
 class TuitionInvoice(models.Model):
     STATUS_UNPAID = 'unpaid'
     STATUS_PAID = 'paid'
@@ -527,6 +555,9 @@ class TuitionInvoice(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tuition_invoices', verbose_name='학생')
     school_class = models.ForeignKey(SchoolClass, on_delete=models.CASCADE, related_name='invoices', verbose_name='수업')
     amount = models.PositiveIntegerField('청구 금액(원)')
+    base_amount = models.PositiveIntegerField('정상 수업비(원)', default=0, help_text='결석 차감 전 기본 수업비')
+    absence_count = models.PositiveIntegerField('전월 결석 횟수', default=0)
+    absence_deduction = models.PositiveIntegerField('결석 차감액(원)', default=0)
     due_date = models.DateField('납부 기한')
     status = models.CharField('상태', max_length=10, choices=STATUS_CHOICES, default=STATUS_UNPAID)
     paid_at = models.DateTimeField('결제 완료 일시', null=True, blank=True)

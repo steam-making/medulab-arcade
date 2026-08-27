@@ -19,14 +19,14 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.db import DatabaseError
-from django.db.models import Count, Q, Case, When, Value, IntegerField
+from django.db.models import Count, Q, Case, When, Value, IntegerField, Sum
 from django.contrib.auth import login
 from django.contrib import messages
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -2573,10 +2573,14 @@ def _month_due_date(today=None):
 
 
 def generate_invoices_for_class(school_class, due_date=None):
-    """해당 수업의 활성 배정 학생 전원에게 당월 청구서 생성 (이미 있으면 건너뜀)"""
-    from django.utils import timezone
+    """해당 수업의 활성 배정 학생 전원에게 당월 청구서 생성 (이미 있으면 건너뜀)
+    전월 결석 횟수만큼 회당 단가를 차감해 청구 금액을 계산한다."""
     due_date = due_date or _month_due_date()
     period_start = due_date.replace(day=1)
+    prev_month_last_day = period_start - timedelta(days=1)
+    prev_month_start = prev_month_last_day.replace(day=1)
+    per_session = school_class.per_session_fee
+
     created = 0
     for enrollment in school_class.enrollments.filter(is_active=True).select_related('student'):
         exists = TuitionInvoice.objects.filter(
@@ -2585,9 +2589,19 @@ def generate_invoices_for_class(school_class, due_date=None):
         ).exists()
         if exists:
             continue
+
+        absence_count = ClassAttendance.objects.filter(
+            enrollment=enrollment, is_present=False,
+            date__gte=prev_month_start, date__lte=prev_month_last_day,
+        ).count()
+        deduction = min(per_session * absence_count, school_class.tuition_fee)
+        amount = school_class.tuition_fee - deduction
+
         TuitionInvoice.objects.create(
             student=enrollment.student, school_class=school_class,
-            amount=school_class.tuition_fee, due_date=due_date,
+            amount=amount, base_amount=school_class.tuition_fee,
+            absence_count=absence_count, absence_deduction=deduction,
+            due_date=due_date,
         )
         created += 1
     return created
@@ -2605,6 +2619,145 @@ def class_admin_generate_invoices(request, class_id):
     else:
         messages.info(request, '이미 이번 달 청구서가 모두 생성되어 있습니다.')
     return redirect('class_admin_edit', class_id=school_class.pk)
+
+
+def _class_session_dates(school_class, year, month):
+    """수업의 요일 설정에 따라 해당 월의 실제 수업일 목록을 계산"""
+    import calendar
+    from datetime import date
+    if not school_class.days_of_week:
+        return []
+    code_to_py_weekday = {'0': 6, '1': 0, '2': 1, '3': 2, '4': 3, '5': 4, '6': 5}
+    codes = set(school_class.days_of_week.split(','))
+    py_days = {code_to_py_weekday[c] for c in codes if c in code_to_py_weekday}
+    num_days = calendar.monthrange(year, month)[1]
+    return [date(year, month, day) for day in range(1, num_days + 1) if date(year, month, day).weekday() in py_days]
+
+
+def _prev_next_month(year, month):
+    prev_month = month - 1 or 12
+    prev_year = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year = year if month < 12 else year + 1
+    return prev_year, prev_month, next_year, next_month
+
+
+@login_required
+@user_passes_test(staff_check)
+def class_admin_attendance(request, class_id):
+    """수업별 출석부 - 결석 체크 시 다음 달 청구서에서 자동 차감됨"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+    except ValueError:
+        year, month = today.year, today.month
+
+    session_dates = _class_session_dates(school_class, year, month)
+    enrollments = list(
+        school_class.enrollments.filter(is_active=True).select_related('student__profile')
+        .order_by('student__profile__real_name', 'student__username')
+    )
+
+    if request.method == 'POST':
+        for enrollment in enrollments:
+            for d in session_dates:
+                field_name = f'att_{enrollment.id}_{d.isoformat()}'
+                is_present = field_name in request.POST
+                ClassAttendance.objects.update_or_create(
+                    enrollment=enrollment, date=d,
+                    defaults={'is_present': is_present},
+                )
+        messages.success(request, '출석 정보를 저장했습니다.')
+        return redirect(f"{reverse('class_admin_attendance', args=[school_class.id])}?year={year}&month={month}")
+
+    existing = {
+        (r.enrollment_id, r.date): r.is_present
+        for r in ClassAttendance.objects.filter(enrollment__school_class=school_class, date__in=session_dates)
+    }
+    rows = [
+        {
+            'enrollment': enrollment,
+            'cells': [{'date': d, 'is_present': existing.get((enrollment.id, d), True)} for d in session_dates],
+        }
+        for enrollment in enrollments
+    ]
+
+    prev_year, prev_month, next_year, next_month = _prev_next_month(year, month)
+    context = {
+        'school_class': school_class,
+        'session_dates': session_dates,
+        'rows': rows,
+        'year': year, 'month': month,
+        'prev_year': prev_year, 'prev_month': prev_month,
+        'next_year': next_year, 'next_month': next_month,
+        'title': f'{school_class.name} 출석부',
+    }
+    return render(request, 'arcade/admin/class_attendance.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def tuition_admin_dashboard(request):
+    """납부 관리 - 월별 수납/미납 현황 + 학생별 청구 내역"""
+    today = timezone.localdate()
+    student_id = request.GET.get('student_id')
+
+    if student_id:
+        student = get_object_or_404(User, pk=student_id)
+        invoices = TuitionInvoice.objects.filter(student=student).select_related('school_class').order_by('-due_date')
+        context = {
+            'mode': 'student',
+            'student': student,
+            'invoices': invoices,
+            'title': '납부 관리',
+        }
+        return render(request, 'arcade/admin/tuition_dashboard.html', context)
+
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+    except ValueError:
+        year, month = today.year, today.month
+
+    status_filter = request.GET.get('status', '')
+    search = request.GET.get('q', '').strip()
+
+    invoices = TuitionInvoice.objects.filter(
+        due_date__year=year, due_date__month=month,
+    ).select_related('student__profile', 'school_class').order_by('school_class__name', 'student__profile__real_name')
+    if status_filter:
+        invoices = invoices.filter(status=status_filter)
+    if search:
+        invoices = invoices.filter(
+            Q(student__profile__real_name__icontains=search) | Q(student__username__icontains=search)
+        )
+
+    all_month_invoices = TuitionInvoice.objects.filter(due_date__year=year, due_date__month=month)
+    total_amount = all_month_invoices.aggregate(Sum('amount'))['amount__sum'] or 0
+    paid_amount = all_month_invoices.filter(status=TuitionInvoice.STATUS_PAID).aggregate(Sum('amount'))['amount__sum'] or 0
+    unpaid_amount = all_month_invoices.filter(status=TuitionInvoice.STATUS_UNPAID).aggregate(Sum('amount'))['amount__sum'] or 0
+    paid_count = all_month_invoices.filter(status=TuitionInvoice.STATUS_PAID).count()
+    unpaid_count = all_month_invoices.filter(status=TuitionInvoice.STATUS_UNPAID).count()
+
+    prev_year, prev_month, next_year, next_month = _prev_next_month(year, month)
+    context = {
+        'mode': 'month',
+        'invoices': invoices,
+        'year': year, 'month': month,
+        'prev_year': prev_year, 'prev_month': prev_month,
+        'next_year': next_year, 'next_month': next_month,
+        'status_filter': status_filter,
+        'search_query': search,
+        'total_amount': total_amount,
+        'paid_amount': paid_amount,
+        'unpaid_amount': unpaid_amount,
+        'paid_count': paid_count,
+        'unpaid_count': unpaid_count,
+        'title': '납부 관리',
+    }
+    return render(request, 'arcade/admin/tuition_dashboard.html', context)
 
 
 # ────────────────────────────────────────────────

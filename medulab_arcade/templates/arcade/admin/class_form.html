@@ -157,6 +157,16 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
             </div>
 
             <div class="fgroup">
+                <label class="fl">📅 {{ form.monthly_sessions.label }} <span class="required-mark">*</span></label>
+                <div class="preset-btn-row">
+                    <button type="button" class="preset-btn" data-sessions="4">월 4회 (주 1회 수업)</button>
+                    <button type="button" class="preset-btn" data-sessions="8">월 8회 (주 2회 수업)</button>
+                </div>
+                {{ form.monthly_sessions }}
+                <span style="font-size:12px; color:var(--text-muted); display:block; margin-top:6px;">수업비 ÷ 이 횟수 = 결석 1회당 차감액으로 계산됩니다.</span>
+            </div>
+
+            <div class="fgroup">
                 <label class="fl">{{ form.description.label }}</label>
                 {{ form.description }}
             </div>
@@ -227,10 +237,13 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
     <div class="class-card">
         <div class="class-card-head" style="justify-content:space-between;">
             <div style="display:flex; align-items:center; gap:10px;"><span class="icon">💳</span><h3>학원비 청구서</h3></div>
-            <form method="post" action="{% url 'class_admin_generate_invoices' school_class.id %}" onsubmit="return confirm('배정된 학생 전원에게 이번 달 수업비({{ school_class.tuition_fee|intcomma }}원) 청구서를 생성할까요?');">
-                {% csrf_token %}
-                <button type="submit" class="enroll-btn" style="margin-top:0;">📄 이번 달 청구서 일괄 생성</button>
-            </form>
+            <div style="display:flex; gap:8px;">
+                <a href="{% url 'class_admin_attendance' school_class.id %}" class="btn-cancel" style="padding:11px 20px; font-size:13px;">📋 출석부</a>
+                <form method="post" action="{% url 'class_admin_generate_invoices' school_class.id %}" onsubmit="return confirm('배정된 학생 전원에게 이번 달 수업비({{ school_class.tuition_fee|intcomma }}원) 청구서를 생성할까요? (전월 결석은 자동 차감됩니다)');">
+                    {% csrf_token %}
+                    <button type="submit" class="enroll-btn" style="margin-top:0;">📄 이번 달 청구서 일괄 생성</button>
+                </form>
+            </div>
         </div>
 
         <table class="enroll-table">
@@ -244,7 +257,12 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
                         <span class="student-avatar">{{ inv.student.profile.real_name|default:inv.student.username|slice:":1" }}</span>
                         {{ inv.student.profile.real_name|default:inv.student.username }}
                     </td>
-                    <td>{{ inv.amount|intcomma }}원</td>
+                    <td>
+                        {{ inv.amount|intcomma }}원
+                        {% if inv.absence_count %}
+                        <div style="font-size:11px; color:#fbbf24; margin-top:2px;">결석 {{ inv.absence_count }}회 -{{ inv.absence_deduction|intcomma }}원</div>
+                        {% endif %}
+                    </td>
                     <td>{{ inv.due_date|date:"Y.m.d" }}</td>
                     <td>
                         {% if inv.status == 'paid' %}
@@ -325,6 +343,20 @@ label.fl { display:flex; align-items:center; gap:6px; color:var(--text-muted); m
         });
     });
     syncFeeActive();
+
+    const sessionsInput = document.getElementById('id_monthly_sessions');
+    function syncSessionsActive() {
+        document.querySelectorAll('.preset-btn[data-sessions]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.sessions === sessionsInput.value);
+        });
+    }
+    document.querySelectorAll('.preset-btn[data-sessions]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            sessionsInput.value = this.dataset.sessions;
+            syncSessionsActive();
+        });
+    });
+    syncSessionsActive();
 })();
 </script>
 

@@ -1,0 +1,71 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}{{ title }} - 메듀랩 관리 서비스{% endblock %}
+
+{% block extra_css %}
+<style>
+.att-wrap { max-width:1100px; margin:40px auto; padding:0 20px; animation: fadeSlideIn 0.4s ease; }
+.att-title { font: 900 26px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:20px; }
+.att-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.att-nav a { padding:8px 16px; border-radius:10px; background:rgba(255,255,255,0.06); color:#fff; text-decoration:none; font-size:13px; font-weight:700; border:1px solid var(--border); }
+.att-nav a:hover { background:rgba(255,255,255,0.1); }
+.att-month { font-size:18px; font-weight:800; color:#fff; }
+.att-card { background:var(--bg-card); border-radius:20px; border:1px solid var(--border); padding:28px; overflow-x:auto; }
+.att-table { border-collapse:collapse; font-size:13px; white-space:nowrap; }
+.att-table th, .att-table td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); text-align:center; }
+.att-table th { color:var(--text-muted); font-weight:700; font-size:11px; }
+.att-table td:first-child, .att-table th:first-child { text-align:left; position:sticky; left:0; background:var(--bg-card); }
+.att-check { width:20px; height:20px; accent-color: var(--accent-green); cursor:pointer; }
+.att-save-btn { margin-top:20px; padding:12px 32px; background:linear-gradient(135deg, var(--accent-green), var(--accent-blue)); color:#03140e; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:14px; }
+.back-link { color:var(--text-muted); font-size:13px; text-decoration:none; display:inline-block; margin-bottom:16px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="att-wrap">
+    <a href="{% url 'class_admin_edit' school_class.id %}" class="back-link">← 수업 수정으로 돌아가기</a>
+    <h1 class="att-title">📋 {{ school_class.name }} 출석부</h1>
+
+    <div class="att-nav">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}">← 이전 달</a>
+        <span class="att-month">{{ year }}년 {{ month }}월</span>
+        <a href="?year={{ next_year }}&month={{ next_month }}">다음 달 →</a>
+    </div>
+
+    <div class="att-card">
+        {% if not session_dates %}
+        <p style="color:var(--text-muted); text-align:center; padding:40px 0;">이 수업은 요일이 설정되어 있지 않아 출석부를 만들 수 없습니다. 수업 수정에서 요일을 먼저 설정해 주세요.</p>
+        {% else %}
+        <form method="post">
+            {% csrf_token %}
+            <table class="att-table">
+                <thead>
+                    <tr>
+                        <th>학생</th>
+                        {% for d in session_dates %}
+                        <th>{{ d|date:"n/j" }}<br>({{ d|date:"D" }})</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>{{ row.enrollment.student.profile.real_name|default:row.enrollment.student.username }}</td>
+                        {% for cell in row.cells %}
+                        <td>
+                            <input type="checkbox" class="att-check" name="att_{{ row.enrollment.id }}_{{ cell.date|date:'Y-m-d' }}" {% if cell.is_present %}checked{% endif %} title="체크 해제 = 결석">
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="{{ session_dates|length|add:1 }}" style="text-align:center; color:var(--text-muted); padding:32px;">배정된 학생이 없습니다.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="att-save-btn">💾 출석 저장</button>
+            <span style="font-size:12px; color:var(--text-muted); margin-left:12px;">체크 해제된 날짜는 결석으로 기록되어 다음 달 청구서에서 자동 차감됩니다.</span>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends 'arcade/base.html' %}
+{% load humanize %}
+
+{% block title %}납부 관리 - 메듀랩 관리 서비스{% endblock %}
+
+{% block extra_css %}
+<style>
+.pay-wrap { max-width:1200px; margin:40px auto; padding:0 24px; animation: fadeSlideIn 0.4s ease; }
+.pay-title { font: 900 28px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:24px; }
+
+.pay-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+.pay-nav a.nav-arrow { padding:8px 16px; border-radius:10px; background:rgba(255,255,255,0.06); color:#fff; text-decoration:none; font-size:13px; font-weight:700; border:1px solid var(--border); }
+.pay-nav a.nav-arrow:hover { background:rgba(255,255,255,0.1); }
+.pay-month { font-size:18px; font-weight:800; color:#fff; }
+
+.stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+.stat-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:20px; }
+.stat-card .label { font-size:12px; color:var(--text-muted); font-weight:700; margin-bottom:8px; }
+.stat-card .value { font-size:22px; font-weight:900; color:#fff; }
+.stat-card.paid .value { color:var(--accent-green); }
+.stat-card.unpaid .value { color:#fbbf24; }
+@media (max-width:800px) { .stat-grid { grid-template-columns:repeat(2,1fr); } }
+
+.filter-bar { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.filter-bar input, .filter-bar select { padding:10px 14px; border-radius:10px; background:rgba(255,255,255,0.06); border:1px solid var(--border); color:#fff; font-size:13px; color-scheme:dark; }
+
+.table-wrap { background:var(--bg-card); border-radius:18px; border:1px solid var(--border); overflow-x:auto; box-shadow:0 10px 30px rgba(0,0,0,0.2); }
+table { width:100%; border-collapse:collapse; text-align:left; min-width:800px; }
+th { padding:16px 20px; background:rgba(255,255,255,0.03); color:var(--text-muted); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+td { padding:14px 20px; border-top:1px solid var(--border); font-size:14px; }
+tr:hover td { background:rgba(255,255,255,0.02); }
+.student-link { color:#93c5fd; text-decoration:none; font-weight:700; }
+.student-link:hover { text-decoration:underline; }
+.status-badge { padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
+.status-paid { background:rgba(0,255,180,0.15); color:var(--accent-green); }
+.status-unpaid { background:rgba(251,191,36,0.15); color:#fbbf24; }
+.status-canceled { background:rgba(255,255,255,0.1); color:var(--text-secondary); }
+.back-link { color:var(--text-muted); font-size:13px; text-decoration:none; display:inline-block; margin-bottom:16px; }
+.search-btn { padding:10px 20px; border-radius:10px; background:var(--accent-green); color:var(--bg-primary); font-weight:800; border:none; cursor:pointer; font-size:13px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pay-wrap">
+    {% if mode == 'student' %}
+    <a href="{% url 'tuition_admin_dashboard' %}" class="back-link">← 월별 현황으로 돌아가기</a>
+    <h1 class="pay-title">💳 {{ student.profile.real_name|default:student.username }}님의 납부 내역</h1>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>수업명</th><th>금액</th><th>납부 기한</th><th>상태</th><th>결제일</th><th>결제 수단</th></tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td>{{ inv.school_class.name }}</td>
+                    <td>
+                        {{ inv.amount|intcomma }}원
+                        {% if inv.absence_count %}
+                        <div style="font-size:11px; color:#fbbf24; margin-top:2px;">결석 {{ inv.absence_count }}회 -{{ inv.absence_deduction|intcomma }}원</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ inv.due_date|date:"Y.m.d" }}</td>
+                    <td>
+                        {% if inv.status == 'paid' %}<span class="status-badge status-paid">✅ 완납</span>
+                        {% elif inv.status == 'canceled' %}<span class="status-badge status-canceled">취소</span>
+                        {% else %}<span class="status-badge status-unpaid">미납</span>{% endif %}
+                    </td>
+                    <td>{{ inv.paid_at|date:"Y.m.d H:i"|default:"-" }}</td>
+                    <td>{{ inv.portone_pay_method|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:40px;">청구 내역이 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <h1 class="pay-title">💳 납부 관리</h1>
+
+    <div class="pay-nav">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-arrow">← 이전 달</a>
+        <span class="pay-month">{{ year }}년 {{ month }}월</span>
+        <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-arrow">다음 달 →</a>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card"><div class="label">이번 달 총 청구</div><div class="value">{{ total_amount|intcomma }}원</div></div>
+        <div class="stat-card paid"><div class="label">수납 완료 ({{ paid_count }}건)</div><div class="value">{{ paid_amount|intcomma }}원</div></div>
+        <div class="stat-card unpaid"><div class="label">미납 ({{ unpaid_count }}건)</div><div class="value">{{ unpaid_amount|intcomma }}원</div></div>
+        <div class="stat-card"><div class="label">수납률</div><div class="value">{% if total_amount %}{% widthratio paid_amount total_amount 100 %}%{% else %}-{% endif %}</div></div>
+    </div>
+
+    <form class="filter-bar" method="GET">
+        <input type="hidden" name="year" value="{{ year }}">
+        <input type="hidden" name="month" value="{{ month }}">
+        <input type="text" name="q" placeholder="학생 이름/아이디 검색..." value="{{ search_query }}">
+        <select name="status" onchange="this.form.submit()">
+            <option value="" {% if not status_filter %}selected{% endif %}>전체 상태</option>
+            <option value="unpaid" {% if status_filter == 'unpaid' %}selected{% endif %}>미납</option>
+            <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>완납</option>
+            <option value="canceled" {% if status_filter == 'canceled' %}selected{% endif %}>취소</option>
+        </select>
+        <button type="submit" class="search-btn">검색</button>
+    </form>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>학생</th><th>수업명</th><th>금액</th><th>납부 기한</th><th>상태</th><th>결제일</th></tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td><a href="?student_id={{ inv.student.id }}" class="student-link">{{ inv.student.profile.real_name|default:inv.student.username }}</a></td>
+                    <td>{{ inv.school_class.name }}</td>
+                    <td>
+                        {{ inv.amount|intcomma }}원
+                        {% if inv.absence_count %}
+                        <div style="font-size:11px; color:#fbbf24; margin-top:2px;">결석 {{ inv.absence_count }}회 -{{ inv.absence_deduction|intcomma }}원</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ inv.due_date|date:"Y.m.d" }}</td>
+                    <td>
+                        {% if inv.status == 'paid' %}<span class="status-badge status-paid">✅ 완납</span>
+                        {% elif inv.status == 'canceled' %}<span class="status-badge status-canceled">취소</span>
+                        {% else %}<span class="status-badge status-unpaid">미납</span>{% endif %}
+                    </td>
+                    <td>{{ inv.paid_at|date:"Y.m.d H:i"|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:40px;">해당 월의 청구서가 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -38,7 +38,9 @@
         <button type="button" class="pay-btn" data-method="CARD">💳 신용카드</button>
         <button type="button" class="pay-btn" data-method="TRANSFER">🏦 실시간 계좌이체</button>
         <button type="button" class="pay-btn" data-method="VIRTUAL_ACCOUNT">🧾 가상계좌</button>
+        {% if portone_channel_key_kakaopay %}
         <button type="button" class="pay-btn" data-method="EASY_PAY">💛 카카오페이</button>
+        {% endif %}
     </div>
     <div id="payStatus" class="pay-status"></div>
     {% endif %}

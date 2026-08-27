@@ -70,6 +70,11 @@
                 totalAmount: {{ invoice.amount }},
                 currency: 'CURRENCY_KRW',
                 payMethod: method,
+                customer: {
+                    fullName: '{{ portone_customer_name|escapejs }}',
+                    email: '{{ portone_customer_email|escapejs }}',
+                    phoneNumber: '{{ portone_customer_phone|escapejs }}',
+                },
             };
             if (method === 'EASY_PAY') {
                 params.easyPay = { easyPayProvider: 'EASY_PAY_PROVIDER_KAKAOPAY' };

@@ -2634,6 +2634,9 @@ def tuition_checkout(request, invoice_id):
         'portone_store_id': settings.PORTONE_STORE_ID,
         'portone_channel_key_card': settings.PORTONE_CHANNEL_KEY_CARD,
         'portone_channel_key_kakaopay': settings.PORTONE_CHANNEL_KEY_KAKAOPAY,
+        'portone_customer_email': invoice.student.email or f'{invoice.student.username}@medulab.kr',
+        'portone_customer_phone': re.sub(r'\D', '', invoice.student.profile.phone_number or '') or '01000000000',
+        'portone_customer_name': invoice.student.profile.real_name or invoice.student.username,
     }
     return render(request, 'arcade/tuition_checkout.html', context)
 

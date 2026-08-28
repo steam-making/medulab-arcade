@@ -2590,9 +2590,10 @@ def generate_invoices_for_class(school_class, due_date=None):
         if exists:
             continue
 
+        prev_month_scheduled_dates = _class_session_dates(school_class, prev_month_start.year, prev_month_start.month)
         absence_count = ClassAttendance.objects.filter(
             enrollment=enrollment, is_present=False,
-            date__gte=prev_month_start, date__lte=prev_month_last_day,
+            date__in=prev_month_scheduled_dates,
         ).count()
         deduction = min(per_session * absence_count, school_class.tuition_fee)
         amount = school_class.tuition_fee - deduction
@@ -2642,10 +2643,19 @@ def _prev_next_month(year, month):
     return prev_year, prev_month, next_year, next_month
 
 
+def _month_all_dates(year, month):
+    import calendar
+    from datetime import date
+    num_days = calendar.monthrange(year, month)[1]
+    return [date(year, month, day) for day in range(1, num_days + 1)]
+
+
 @login_required
 @user_passes_test(staff_check)
 def class_admin_attendance(request, class_id):
-    """수업별 출석부 - 결석 체크 시 다음 달 청구서에서 자동 차감됨"""
+    """수업별 출석부 - 한 달 전체 날짜를 보여주되 정규 수업일은 색으로 구분.
+    기본 체크 상태는 학생의 자기 출석체크(Attendance) 기록을 따르고, 결석 체크 시 다음 달 청구서에서 자동 차감됨."""
+    from .models import Attendance
     school_class = get_object_or_404(SchoolClass, pk=class_id)
     today = timezone.localdate()
     try:
@@ -2654,7 +2664,8 @@ def class_admin_attendance(request, class_id):
     except ValueError:
         year, month = today.year, today.month
 
-    session_dates = _class_session_dates(school_class, year, month)
+    all_dates = _month_all_dates(year, month)
+    scheduled_dates = set(_class_session_dates(school_class, year, month))
     enrollments = list(
         school_class.enrollments.filter(is_active=True).select_related('student__profile')
         .order_by('student__profile__real_name', 'student__username')
@@ -2662,7 +2673,7 @@ def class_admin_attendance(request, class_id):
 
     if request.method == 'POST':
         for enrollment in enrollments:
-            for d in session_dates:
+            for d in all_dates:
                 field_name = f'att_{enrollment.id}_{d.isoformat()}'
                 is_present = field_name in request.POST
                 ClassAttendance.objects.update_or_create(
@@ -2674,20 +2685,34 @@ def class_admin_attendance(request, class_id):
 
     existing = {
         (r.enrollment_id, r.date): r.is_present
-        for r in ClassAttendance.objects.filter(enrollment__school_class=school_class, date__in=session_dates)
+        for r in ClassAttendance.objects.filter(enrollment__school_class=school_class, date__year=year, date__month=month)
     }
-    rows = [
-        {
-            'enrollment': enrollment,
-            'cells': [{'date': d, 'is_present': existing.get((enrollment.id, d), True)} for d in session_dates],
-        }
-        for enrollment in enrollments
-    ]
+    student_ids = [e.student_id for e in enrollments]
+    self_checkin_dates = set(
+        Attendance.objects.filter(user_id__in=student_ids, date__year=year, date__month=month)
+        .values_list('user_id', 'date')
+    )
+
+    rows = []
+    for enrollment in enrollments:
+        cells = []
+        present_count = 0
+        for d in all_dates:
+            key = (enrollment.id, d)
+            if key in existing:
+                is_present = existing[key]
+            else:
+                is_present = (enrollment.student_id, d) in self_checkin_dates
+            if is_present:
+                present_count += 1
+            cells.append({'date': d, 'is_present': is_present, 'is_scheduled': d in scheduled_dates})
+        rows.append({'enrollment': enrollment, 'cells': cells, 'present_count': present_count})
 
     prev_year, prev_month, next_year, next_month = _prev_next_month(year, month)
     context = {
         'school_class': school_class,
-        'session_dates': session_dates,
+        'all_dates': all_dates,
+        'scheduled_dates': scheduled_dates,
         'rows': rows,
         'year': year, 'month': month,
         'prev_year': prev_year, 'prev_month': prev_month,

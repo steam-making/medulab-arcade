@@ -26,6 +26,7 @@
     <h1 class="checkout-title">💳 학원비 결제</h1>
 
     <div class="invoice-card">
+        <div class="invoice-row"><span>청구 월</span><span>{{ invoice.billing_period_label }}</span></div>
         <div class="invoice-row"><span>수업명</span><span>{{ invoice.school_class.name }}</span></div>
         <div class="invoice-row"><span>납부 기한</span><span>{{ invoice.due_date|date:"Y.m.d" }}</span></div>
         <div class="invoice-row total"><span>결제 금액</span><span>{{ invoice.amount|intcomma }}원</span></div>
@@ -66,7 +67,7 @@
                 storeId: '{{ portone_store_id }}',
                 channelKey: method === 'EASY_PAY' ? '{{ portone_channel_key_kakaopay }}' : '{{ portone_channel_key_card }}',
                 paymentId: '{{ invoice.portone_payment_id }}',
-                orderName: '{{ invoice.school_class.name|escapejs }} 학원비',
+                orderName: '{{ invoice.billing_period_label|escapejs }} {{ invoice.school_class.name|escapejs }} 학원비',
                 totalAmount: {{ invoice.amount }},
                 currency: 'CURRENCY_KRW',
                 payMethod: method,

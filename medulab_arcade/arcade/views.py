@@ -2614,11 +2614,13 @@ def generate_invoices_for_class(school_class, due_date=None):
 def class_admin_generate_invoices(request, class_id):
     """이번 달 청구서 일괄 생성"""
     school_class = get_object_or_404(SchoolClass, pk=class_id)
-    created = generate_invoices_for_class(school_class)
+    due_date = _month_due_date()
+    created = generate_invoices_for_class(school_class, due_date=due_date)
+    period_label = f'{due_date.year}년 {due_date.month}월'
     if created:
-        messages.success(request, f'"{school_class.name}" 수업에 청구서 {created}건을 생성했습니다.')
+        messages.success(request, f'"{school_class.name}" 수업에 {period_label} 청구서 {created}건을 생성했습니다.')
     else:
-        messages.info(request, '이미 이번 달 청구서가 모두 생성되어 있습니다.')
+        messages.info(request, f'이미 {period_label} 청구서가 모두 생성되어 있습니다.')
     return redirect('class_admin_edit', class_id=school_class.pk)
 
 

@@ -12,7 +12,7 @@
 .att-month { font-size:18px; font-weight:800; color:#fff; }
 .att-legend { display:flex; gap:16px; margin-bottom:16px; font-size:12px; color:var(--text-muted); }
 .att-legend span.swatch { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:middle; }
-.att-card { background:var(--bg-card); border-radius:20px; border:1px solid var(--border); padding:28px; overflow-x:auto; margin-bottom:90px; }
+.att-card { background:var(--bg-card); border-radius:20px; border:1px solid var(--border); padding:28px; overflow-x:auto; }
 .att-table { border-collapse:separate; border-spacing:0; font-size:13px; white-space:nowrap; }
 .att-table th, .att-table td { padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.05); text-align:center; }
 .att-table th { color:var(--text-muted); font-weight:700; font-size:11px; }
@@ -28,10 +28,9 @@
 .att-check { width:18px; height:18px; accent-color: var(--accent-green); cursor:pointer; }
 .att-count { color:var(--accent-blue); font-weight:800; font-size:12px; }
 .att-save-bar {
-    position:fixed; left:0; right:0; bottom:0; z-index:50;
-    background:rgba(8,8,15,0.97); backdrop-filter:blur(8px);
+    position:sticky; left:0; margin-top:20px; padding-top:16px;
     border-top:1px solid var(--border);
-    padding:14px 24px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
 }
 .att-save-btn { padding:12px 32px; background:linear-gradient(135deg, var(--accent-green), var(--accent-blue)); color:#03140e; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:14px; }
 .back-link { color:var(--text-muted); font-size:13px; text-decoration:none; display:inline-block; margin-bottom:16px; }

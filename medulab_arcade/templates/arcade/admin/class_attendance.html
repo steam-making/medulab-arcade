@@ -12,16 +12,28 @@
 .att-month { font-size:18px; font-weight:800; color:#fff; }
 .att-legend { display:flex; gap:16px; margin-bottom:16px; font-size:12px; color:var(--text-muted); }
 .att-legend span.swatch { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:middle; }
-.att-card { background:var(--bg-card); border-radius:20px; border:1px solid var(--border); padding:28px; overflow-x:auto; }
-.att-table { border-collapse:collapse; font-size:13px; white-space:nowrap; }
+.att-card { background:var(--bg-card); border-radius:20px; border:1px solid var(--border); padding:28px; overflow-x:auto; margin-bottom:90px; }
+.att-table { border-collapse:separate; border-spacing:0; font-size:13px; white-space:nowrap; }
 .att-table th, .att-table td { padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.05); text-align:center; }
 .att-table th { color:var(--text-muted); font-weight:700; font-size:11px; }
 .att-table th.scheduled-day { background:rgba(0,255,180,0.1); color:var(--accent-green); }
 .att-table td.scheduled-day { background:rgba(0,255,180,0.05); }
-.att-table td:first-child, .att-table th:first-child { text-align:left; position:sticky; left:0; background:var(--bg-card); z-index:1; }
+.att-table td:first-child, .att-table th:first-child {
+    text-align:left; position:sticky; left:0; z-index:2;
+    width:120px; min-width:120px; max-width:120px;
+    background:var(--bg-card); border-right:1px solid var(--border);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.att-name { display:flex; align-items:baseline; gap:4px; }
 .att-check { width:18px; height:18px; accent-color: var(--accent-green); cursor:pointer; }
-.att-count { color:var(--accent-blue); font-weight:800; font-size:12px; margin-left:6px; }
-.att-save-btn { margin-top:20px; padding:12px 32px; background:linear-gradient(135deg, var(--accent-green), var(--accent-blue)); color:#03140e; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:14px; }
+.att-count { color:var(--accent-blue); font-weight:800; font-size:12px; }
+.att-save-bar {
+    position:fixed; left:0; right:0; bottom:0; z-index:50;
+    background:rgba(8,8,15,0.97); backdrop-filter:blur(8px);
+    border-top:1px solid var(--border);
+    padding:14px 24px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+}
+.att-save-btn { padding:12px 32px; background:linear-gradient(135deg, var(--accent-green), var(--accent-blue)); color:#03140e; border:none; border-radius:10px; cursor:pointer; font-weight:800; font-size:14px; }
 .back-link { color:var(--text-muted); font-size:13px; text-decoration:none; display:inline-block; margin-bottom:16px; }
 </style>
 {% endblock %}
@@ -57,8 +69,10 @@
                     {% for row in rows %}
                     <tr>
                         <td>
-                            {{ row.enrollment.student.profile.real_name|default:row.enrollment.student.username }}
-                            <span class="att-count">{{ row.present_count }}일</span>
+                            <div class="att-name">
+                                <span>{{ row.enrollment.student.profile.real_name|default:row.enrollment.student.username }}</span>
+                                <span class="att-count">{{ row.present_count }}일</span>
+                            </div>
                         </td>
                         {% for cell in row.cells %}
                         <td class="{% if cell.is_scheduled %}scheduled-day{% endif %}">
@@ -71,8 +85,10 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <button type="submit" class="att-save-btn">💾 출석 저장</button>
-            <span style="font-size:12px; color:var(--text-muted); margin-left:12px;">정규 수업일(초록색)에서 체크 해제하면 결석으로 기록되어 다음 달 청구서에서 자동 차감됩니다. 기본 체크 상태는 학생의 자체 출석체크 기록을 따릅니다.</span>
+            <div class="att-save-bar">
+                <button type="submit" class="att-save-btn">💾 출석 저장</button>
+                <span style="font-size:12px; color:var(--text-muted);">정규 수업일(초록색)에서 체크 해제하면 결석으로 기록되어 다음 달 청구서에서 자동 차감됩니다. 기본 체크 상태는 학생의 자체 출석체크 기록을 따릅니다.</span>
+            </div>
         </form>
     </div>
 </div>

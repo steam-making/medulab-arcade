@@ -99,6 +99,7 @@
                     <th>사용자 정보</th>
                     <th>유형</th>
                     <th>권한 / 상태</th>
+                    <th>연결</th>
                     <th>가입일</th>
                     <th>관리</th>
                 </tr>
@@ -136,6 +137,15 @@
                         <span style="font-size: 12px; color: var(--text-muted);">○ 미승인</span>
                         {% endif %}
                     </td>
+                    <td style="font-size: 12px;">
+                        {% if u.child_links.all %}
+                        <span style="color: #c4b5fd;">👶 {% for link in u.child_links.all %}{{ link.child.profile.real_name|default:link.child.username }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                        {% elif u.parent_links.all %}
+                        <span style="color: #c4b5fd;">👪 {% for link in u.parent_links.all %}{{ link.parent.profile.real_name|default:link.parent.username }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                        {% else %}
+                        <span style="color: var(--text-muted);">-</span>
+                        {% endif %}
+                    </td>
                     <td style="color: var(--text-muted); font-size: 13px;">
                         {{ u.date_joined|date:"Y.m.d" }}
                     </td>
@@ -166,7 +176,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" style="text-align:center; padding: 60px; color: var(--text-muted);">
+                    <td colspan="6" style="text-align:center; padding: 60px; color: var(--text-muted);">
                         조건에 맞는 회원이 없습니다.
                     </td>
                 </tr>

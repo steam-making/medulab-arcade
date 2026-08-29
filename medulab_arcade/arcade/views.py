@@ -2135,7 +2135,9 @@ def member_list(request):
     search = request.GET.get('q', '')
     user_type = request.GET.get('type', '')
     
-    users = User.objects.all().select_related('profile').order_by('-date_joined')
+    users = User.objects.all().select_related('profile').prefetch_related(
+        'child_links__child__profile', 'parent_links__parent__profile',
+    ).order_by('-date_joined')
     
     if search:
         users = users.filter(

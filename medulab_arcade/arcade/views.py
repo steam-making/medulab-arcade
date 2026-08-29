@@ -4440,18 +4440,33 @@ def _render_staff_student_dashboard(request):
     code_for_py_weekday = {0: '1', 1: '2', 2: '3', 3: '4', 4: '5', 5: '6', 6: '0'}
     today_code = code_for_py_weekday[today.weekday()]
     today_scheduled_ids = set()
+    today_class_info = {}  # student_id -> (start_time, class_name) — 여러 수업이면 가장 이른 시간
     for enrollment in (
         ClassEnrollment.objects.filter(student_id__in=student_ids, is_active=True)
         .select_related('school_class')
     ):
         codes = enrollment.school_class.days_of_week.split(',') if enrollment.school_class.days_of_week else []
         if today_code in codes:
+            sc = enrollment.school_class
             today_scheduled_ids.add(enrollment.student_id)
+            existing = today_class_info.get(enrollment.student_id)
+            if existing is None or (sc.start_time and sc.start_time < existing[0]):
+                today_class_info[enrollment.student_id] = (sc.start_time, sc.name)
 
     for s in students:
         s.attended_today = s.id in today_attended_ids
         s.month_attendance_count = month_attendance_counts.get(s.id, 0)
         s.scheduled_today = s.id in today_scheduled_ids
+        info = today_class_info.get(s.id)
+        s.today_class_name = info[1] if info else ''
+        s.today_class_time = info[0] if info else None
+
+    # 수업시간 오름차순(수업 없는 학생은 뒤로) → 이름 오름차순
+    students.sort(key=lambda s: (
+        s.today_class_time is None,
+        s.today_class_time,
+        s.profile.real_name or s.username,
+    ))
 
     total_students = len(students)
     today_attended_count = len(today_attended_ids)

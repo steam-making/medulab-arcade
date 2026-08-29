@@ -52,7 +52,7 @@
             </thead>
             <tbody>
                 {% for s in students %}
-                <tr class="clickable" data-scheduled-today="{{ s.scheduled_today|yesno:'1,0' }}" onclick="location.href='{% url 'admin_student_report' s.id %}'">
+                <tr class="clickable" data-scheduled-today="{{ s.scheduled_today|yesno:'1,0' }}" data-attended-today="{{ s.attended_today|yesno:'1,0' }}" onclick="location.href='{% url 'admin_student_report' s.id %}'">
                     <td style="font-weight:700; color:#fff;">{{ s.profile.real_name|default:s.username }} <span style="color:var(--text-muted); font-size:11px; font-weight:400;">@{{ s.username }}</span></td>
                     <td>
                         {% if s.attended_today %}<span class="attend-badge attend-yes">✅ 출석</span>
@@ -76,7 +76,8 @@ function toggleTodayFilter() {
     const card = document.getElementById('todayAttendStat');
     const active = card.classList.toggle('active');
     document.querySelectorAll('tr[data-scheduled-today]').forEach(function(row) {
-        row.style.display = (active && row.dataset.scheduledToday !== '1') ? 'none' : '';
+        const relevant = row.dataset.scheduledToday === '1' || row.dataset.attendedToday === '1';
+        row.style.display = (active && !relevant) ? 'none' : '';
     });
 }
 </script>

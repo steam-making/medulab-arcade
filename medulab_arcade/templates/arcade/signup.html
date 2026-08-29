@@ -283,11 +283,17 @@
             <div style="flex:1; height:1px; background:var(--auth-border);"></div>
         </div>
 
-        <button type="button" id="regularSignupToggle" style="width:100%; padding:13px; border-radius:14px; background:rgba(255,255,255,0.05); border:1px solid var(--auth-border); color:#fff; font-weight:700; font-size:14px; cursor:pointer;">✏️ 아이디로 일반 가입하기</button>
+        <button type="button" id="regularSignupToggle" style="width:100%; padding:13px; border-radius:14px; background:rgba(255,255,255,0.05); border:1px solid var(--auth-border); color:#fff; font-weight:700; font-size:14px; cursor:pointer;">{% if form.errors %}▲ 접기{% else %}✏️ 아이디로 일반 가입하기{% endif %}</button>
 
-        <div id="regularSignupWrap" style="display:none; margin-top:26px;">
+        <div id="regularSignupWrap" style="{% if form.errors %}display:block;{% else %}display:none;{% endif %} margin-top:26px;">
         <form method="POST">
             {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="error-msg" style="display:block; margin-bottom:16px; padding:12px 14px; border-radius:10px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3);">
+                {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+            </div>
+            {% endif %}
 
             <label class="type-section-label">ACCOUNT TYPE</label>
             <div class="type-grid">
@@ -390,6 +396,8 @@
                                 <span>{{ field.label }}</span>
                                 {% if field.name == 'real_name' or field.name == 'birth_date' or field.name == 'username' or field.name == 'password1' or field.name == 'password2' %}
                                     <span class="field-badge required">필수</span>
+                                {% elif field.name == 'address' %}
+                                    <span class="field-badge optional" id="address-badge">선택</span>
                                 {% else %}
                                     <span class="field-badge optional">선택</span>
                                 {% endif %}
@@ -490,10 +498,21 @@
             }
 
             const parentFields = document.getElementById('medulabParentFields');
+            const addressBadge = document.getElementById('address-badge');
             if (checked && checked.value === 'medulab_parent') {
                 parentFields.style.display = 'block';
+                if (addressBadge) {
+                    addressBadge.textContent = '필수';
+                    addressBadge.classList.remove('optional');
+                    addressBadge.classList.add('required');
+                }
             } else {
                 parentFields.style.display = 'none';
+                if (addressBadge) {
+                    addressBadge.textContent = '선택';
+                    addressBadge.classList.remove('required');
+                    addressBadge.classList.add('optional');
+                }
             }
 
             updateSocialButtonLinks();

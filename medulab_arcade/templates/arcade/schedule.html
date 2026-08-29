@@ -231,7 +231,7 @@
                 }
 
                 var eventTypeClass = props.eventType === 'academic' ? 'custom-event-academic' : '';
-                var groupBadge = (props.isGroup && props.groupedTitles) ? ` <span class="custom-event-group-badge">${props.groupedTitles.length}</span>` : '';
+                var groupBadge = (props.isGroup && props.groupedItems) ? ` <span class="custom-event-group-badge">${props.groupedItems.length}</span>` : '';
                 var html = `
                     <div class="custom-event ${eventTypeClass}">
                         <div class="custom-event-top">
@@ -351,7 +351,10 @@
         document.getElementById('modal-date').textContent = props.startDate;
 
         var listHtml = '<ul style="margin:0; padding-left:18px; line-height:1.9;">' +
-            (props.groupedTitles || []).map(function (t) { return '<li>' + t + '</li>'; }).join('') +
+            (props.groupedItems || []).map(function (item) {
+                var timeText = item.time ? ' <span style="color:var(--text-muted); font-size:12px;">(' + item.time + ')</span>' : '';
+                return '<li>' + item.title + timeText + '</li>';
+            }).join('') +
             '</ul>';
         document.getElementById('modal-desc').innerHTML = listHtml;
 

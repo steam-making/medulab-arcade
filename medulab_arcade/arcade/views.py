@@ -723,7 +723,7 @@ def schedule_view(request):
     academic_events = events.filter(event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC)
     
     calendar_events = []
-    academic_groups = {}  # (days_tuple, start_time, end_time) -> [event, ...]
+    day_names = ['일', '월', '화', '수', '목', '금', '토']
 
     def _common_title_prefix(titles):
         word_lists = [t.split(' ') for t in titles]
@@ -735,11 +735,15 @@ def schedule_view(request):
                 break
         return ' '.join(prefix) if prefix else titles[0]
 
+    def _event_time_label(event):
+        if event.start_time and event.end_time:
+            return f"{event.start_time.strftime('%H:%M')}~{event.end_time.strftime('%H:%M')}"
+        return ''
+
+    academic_events_list = []
     for event in events:
         if event.event_type == ScheduleEvent.EVENT_TYPE_ACADEMIC and event.days_of_week:
-            days_key = tuple(sorted(int(d) for d in event.days_of_week.split(',')))
-            key = (days_key, event.start_time, event.end_time)
-            academic_groups.setdefault(key, []).append(event)
+            academic_events_list.append(event)
             continue
 
         color = SCHEDULE_EVENT_COLORS.get(event.event_type, '#00b4ff')
@@ -769,37 +773,61 @@ def schedule_view(request):
             cal_event['extendedProps']['endDate'] = ""
         calendar_events.append(cal_event)
 
-    # 같은 요일·같은 시간대의 정규수업은 하나로 묶어서 표시 (클릭하면 목록 모달)
+    # 정규수업은 "같은 요일에 실제로 겹치는 시작 시간" 기준으로 묶는다.
+    # 요일마다 어떤 조합의 수업이 같은 시작 시간에 걸리는지가 다를 수 있으므로,
+    # 요일별로 (시작시간, 수업 id 조합) 시그니처를 구하고, 동일한 시그니처를 가진 요일들을 다시 묶어 하나의 캘린더 이벤트로 만든다.
+    weekday_events = {}
+    for event in academic_events_list:
+        for d in (int(x) for x in event.days_of_week.split(',')):
+            weekday_events.setdefault(d, []).append(event)
+
+    combo_days = {}   # (start_time, frozenset(event_id, ...)) -> set(weekday, ...)
+    combo_events = {}  # frozenset(event_id, ...) -> [event, ...]
+    for d, evs in weekday_events.items():
+        by_start = {}
+        for e in evs:
+            by_start.setdefault(e.start_time, []).append(e)
+        for start_time, group in by_start.items():
+            ids = frozenset(e.id for e in group)
+            combo_days.setdefault((start_time, ids), set()).add(d)
+            combo_events[ids] = group
+
     color = SCHEDULE_EVENT_COLORS.get(ScheduleEvent.EVENT_TYPE_ACADEMIC, '#3b82f6')
-    day_names = ['일', '월', '화', '수', '목', '금', '토']
-    for (days_key, start_time, end_time), group_events in academic_groups.items():
-        days_str = ', '.join(day_names[d] for d in days_key)
-        time_str = ''
-        if start_time and end_time:
-            time_str = f" {start_time.strftime('%H:%M')} ~ {end_time.strftime('%H:%M')}"
+    for (start_time, ids), days_set in combo_days.items():
+        group_events = combo_events[ids]
+        days_sorted = sorted(days_set)
+        days_str = ', '.join(day_names[d] for d in days_sorted)
         titles = [e.title for e in group_events]
-        display_title = _common_title_prefix(titles) if len(group_events) > 1 else titles[0]
+        is_group = len(group_events) > 1
+        display_title = _common_title_prefix(titles) if is_group else titles[0]
+        end_time = max((e.end_time for e in group_events if e.end_time), default=None)
+        time_str = f" {start_time.strftime('%H:%M')}" if start_time else ''
 
         cal_event = {
-            'id': f"academic-group-{'-'.join(str(e.id) for e in group_events)}",
+            'id': f"academic-group-{'-'.join(str(i) for i in sorted(ids))}",
             'title': display_title,
             'backgroundColor': color,
             'borderColor': color,
             'textColor': '#ffffff',
-            'daysOfWeek': list(days_key),
+            'daysOfWeek': days_sorted,
             'extendedProps': {
-                'description': '',
+                'description': '' if is_group else (group_events[0].description or ''),
                 'eventType': ScheduleEvent.EVENT_TYPE_ACADEMIC,
                 'eventTypeLabel': group_events[0].get_event_type_display(),
-                'imageUrl': '',
-                'externalUrl': '',
-                'attachments': [],
+                'imageUrl': '' if is_group else (group_events[0].image.url if group_events[0].image else ''),
+                'externalUrl': '' if is_group else (group_events[0].external_url or ''),
+                'attachments': [] if is_group else [
+                    {'name': a.file.name.split('/')[-1], 'url': a.file.url}
+                    for a in group_events[0].attachments.all()
+                ],
                 'startDate': f"매주 {days_str}요일{time_str}",
                 'endDate': '',
-                'isGroup': len(group_events) > 1,
-                'groupedTitles': titles,
+                'isGroup': is_group,
+                'groupedItems': [{'title': e.title, 'time': _event_time_label(e)} for e in group_events],
             },
         }
+        if not is_group:
+            cal_event['id'] = group_events[0].id
         if start_time:
             cal_event['startTime'] = start_time.strftime('%H:%M:%S')
         if end_time:

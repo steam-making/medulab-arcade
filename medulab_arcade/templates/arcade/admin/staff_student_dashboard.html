@@ -34,7 +34,10 @@
     <h1 class="dash-title">🎓 메듀랩 학생회원 현황</h1>
 
     <div class="stat-grid">
-        <div class="stat-card"><div class="value">{{ total_students }}</div><div class="label">전체 학생 수</div></div>
+        <div class="stat-card clickable-stat" id="totalStudentsStat" onclick="showAllStudents()">
+            <div class="value">{{ total_students }}</div>
+            <div class="label">전체 학생 수</div>
+        </div>
         <div class="stat-card clickable-stat" id="todayAttendStat" onclick="toggleTodayFilter()">
             <div class="value">{{ today_attended_count }}/{{ today_scheduled_count }}</div>
             <div class="label">오늘 출석</div>
@@ -82,6 +85,12 @@ function toggleTodayFilter() {
     document.querySelectorAll('tr[data-scheduled-today]').forEach(function(row) {
         const relevant = row.dataset.scheduledToday === '1' || row.dataset.attendedToday === '1';
         row.style.display = (active && !relevant) ? 'none' : '';
+    });
+}
+function showAllStudents() {
+    document.getElementById('todayAttendStat').classList.remove('active');
+    document.querySelectorAll('tr[data-scheduled-today]').forEach(function(row) {
+        row.style.display = '';
     });
 }
 </script>

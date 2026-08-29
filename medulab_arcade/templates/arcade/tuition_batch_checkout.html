@@ -8,11 +8,19 @@
 .checkout-wrap { max-width:560px; margin:60px auto; padding:0 20px; }
 .checkout-title { font: 900 24px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:24px; }
 .invoice-card { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:24px 28px; margin-bottom:20px; }
-.invoice-item { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.06); gap:12px; }
+.invoice-item { padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
 .invoice-item:last-of-type { border-bottom:none; }
+.invoice-item-top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
 .invoice-item-name { font-weight:700; color:#fff; font-size:14px; }
 .invoice-item-meta { font-size:12px; color:var(--text-muted); margin-top:2px; }
-.invoice-item-amount { font-weight:800; color:#fff; font-size:14px; white-space:nowrap; }
+.invoice-item-amount { font-weight:800; color:#fff; font-size:15px; white-space:nowrap; }
+.invoice-breakdown { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; padding-top:10px; border-top:1px dashed rgba(255,255,255,0.08); }
+.breakdown-item { text-align:center; }
+.breakdown-item .bd-label { font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; }
+.breakdown-item .bd-val { font-size:13px; font-weight:800; color:#e0e0e0; margin-top:3px; }
+.breakdown-item .bd-val.deduction { color:#fbbf24; }
+.breakdown-item .bd-val.final { color:var(--accent-green); }
+@media (max-width:480px) { .invoice-breakdown { grid-template-columns:repeat(2,1fr); row-gap:12px; } }
 .invoice-row.total { display:flex; justify-content:space-between; border-top:1px solid var(--border); margin-top:8px; padding-top:16px; font-size:18px; font-weight:900; color:#fff; }
 .pay-methods { display:flex; flex-direction:column; gap:10px; }
 .pay-btn { padding:16px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:#fff; font-weight:700; font-size:14px; cursor:pointer; transition:all .2s; text-align:left; display:flex; align-items:center; gap:10px; }
@@ -32,11 +40,31 @@
     <div class="invoice-card">
         {% for inv in invoices %}
         <div class="invoice-item">
-            <div>
-                <div class="invoice-item-name">{{ inv.student.profile.real_name|default:inv.student.username }} · {{ inv.school_class.name }}</div>
-                <div class="invoice-item-meta">{{ inv.billing_period_label }} · 납부 기한 {{ inv.due_date|date:"Y.m.d" }}</div>
+            <div class="invoice-item-top">
+                <div>
+                    <div class="invoice-item-name">{{ inv.student.profile.real_name|default:inv.student.username }} · {{ inv.school_class.name }}</div>
+                    <div class="invoice-item-meta">{{ inv.billing_period_label }} · 납부 기한 {{ inv.due_date|date:"Y.m.d" }}</div>
+                </div>
+                <div class="invoice-item-amount">{{ inv.amount|intcomma }}원</div>
             </div>
-            <div class="invoice-item-amount">{{ inv.amount|intcomma }}원</div>
+            <div class="invoice-breakdown">
+                <div class="breakdown-item">
+                    <div class="bd-label">전월 출석</div>
+                    <div class="bd-val">{{ inv.attended_count }}/{{ inv.school_class.monthly_sessions }}</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="bd-label">차감액</div>
+                    <div class="bd-val {% if inv.absence_deduction %}deduction{% endif %}">{% if inv.absence_deduction %}-{{ inv.absence_deduction|intcomma }}원{% else %}-{% endif %}</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="bd-label">수강료</div>
+                    <div class="bd-val">{{ inv.base_amount|intcomma }}원</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="bd-label">결제금액</div>
+                    <div class="bd-val final">{{ inv.amount|intcomma }}원</div>
+                </div>
+            </div>
         </div>
         {% endfor %}
         <div class="invoice-row total"><span>총 결제 금액</span><span>{{ total_amount|intcomma }}원</span></div>

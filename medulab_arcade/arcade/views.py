@@ -4389,9 +4389,10 @@ def my_report(request):
         })
 
     # 메듀랩 학부모는 자기 자신의 학습 통계가 의미 없으므로 연결된 자녀 리포트로 안내
+    # (선택 화면 없이 바로 첫 번째 자녀 리포트로 이동, 자녀가 여럿이면 리포트 내 전환 버튼으로 이동)
     if profile.user_type == 'medulab_parent':
         child_links = list(ParentChildLink.objects.filter(parent=user).select_related('child__profile'))
-        if len(child_links) == 1:
+        if child_links:
             return redirect('child_report', child_id=child_links[0].child_id)
         return render(request, 'arcade/parent_report_gate.html', {'child_links': child_links})
 

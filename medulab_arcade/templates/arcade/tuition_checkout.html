@@ -10,6 +10,13 @@
 .invoice-card { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:28px; margin-bottom:20px; }
 .invoice-row { display:flex; justify-content:space-between; padding:8px 0; font-size:14px; color:var(--text-secondary); }
 .invoice-row.total { border-top:1px solid var(--border); margin-top:8px; padding-top:16px; font-size:18px; font-weight:900; color:#fff; }
+.invoice-breakdown { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:14px; padding-top:14px; border-top:1px dashed rgba(255,255,255,0.08); }
+.breakdown-item { text-align:center; }
+.breakdown-item .bd-label { font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; }
+.breakdown-item .bd-val { font-size:13px; font-weight:800; color:#e0e0e0; margin-top:3px; }
+.breakdown-item .bd-val.deduction { color:#fbbf24; }
+.breakdown-item .bd-val.final { color:var(--accent-green); }
+@media (max-width:420px) { .invoice-breakdown { grid-template-columns:repeat(2,1fr); row-gap:12px; } }
 .pay-methods { display:flex; flex-direction:column; gap:10px; }
 .pay-btn { padding:16px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:#fff; font-weight:700; font-size:14px; cursor:pointer; transition:all .2s; text-align:left; display:flex; align-items:center; gap:10px; }
 .pay-btn:hover { background:rgba(0,255,180,0.1); border-color:var(--accent-green); }
@@ -30,6 +37,24 @@
         <div class="invoice-row"><span>수업명</span><span>{{ invoice.school_class.name }}</span></div>
         <div class="invoice-row"><span>납부 기한</span><span>{{ invoice.due_date|date:"Y.m.d" }}</span></div>
         <div class="invoice-row total"><span>결제 금액</span><span>{{ invoice.amount|intcomma }}원</span></div>
+        <div class="invoice-breakdown">
+            <div class="breakdown-item">
+                <div class="bd-label">전월 출석</div>
+                <div class="bd-val">{{ invoice.attended_count }}/{{ invoice.school_class.monthly_sessions }}</div>
+            </div>
+            <div class="breakdown-item">
+                <div class="bd-label">차감액</div>
+                <div class="bd-val {% if invoice.absence_deduction %}deduction{% endif %}">{% if invoice.absence_deduction %}-{{ invoice.absence_deduction|intcomma }}원{% else %}-{% endif %}</div>
+            </div>
+            <div class="breakdown-item">
+                <div class="bd-label">수강료</div>
+                <div class="bd-val">{{ invoice.base_amount|intcomma }}원</div>
+            </div>
+            <div class="breakdown-item">
+                <div class="bd-label">결제금액</div>
+                <div class="bd-val final">{{ invoice.amount|intcomma }}원</div>
+            </div>
+        </div>
     </div>
 
     {% if not portone_store_id %}

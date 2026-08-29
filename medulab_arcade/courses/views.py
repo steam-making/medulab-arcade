@@ -670,9 +670,21 @@ def apply_answer_zip_preview(program, preview_data):
 
 def is_ppt_exam_item(item):
     key = (item.key or "").lower()
+    if key.startswith("itq_ppt_expected_") or key.startswith("itq_ppt_past_"):
+        return True
+
+    # "모의고사"/"기출문제" 키워드만으로는 COS Pro 파이썬 등 코딩 문제의 "실전 모의고사" 챕터까지
+    # 오탐지되므로, 실제로 PPT(파워포인트) 계열 과정일 때만 이 키워드 휴리스틱을 적용한다.
+    program = item.chapter.program
+    p_name = (program.name or "").lower()
+    p_type_name = (program.program_type.name or "").lower() if program.program_type else ""
+    is_ppt_program = "ppt" in p_name or "파워포인트" in p_name or "ppt" in p_type_name or "파워포인트" in p_type_name
+    if not is_ppt_program:
+        return False
+
     title = item.title or ""
     chapter_title = item.chapter.title or ""
-    return key.startswith("itq_ppt_expected_") or key.startswith("itq_ppt_past_") or "모의고사" in title or "기출문제" in title or "모의고사" in chapter_title or "기출문제" in chapter_title
+    return "모의고사" in title or "기출문제" in title or "모의고사" in chapter_title or "기출문제" in chapter_title
 
 
 def get_ppt_exam_session_key(item_id):

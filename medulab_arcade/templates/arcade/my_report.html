@@ -213,11 +213,25 @@
         border-color: rgba(16, 185, 129, 0.25);
         color: #10b981;
     }
+    .calendar-cell.attended-makeup {
+        background: rgba(59, 130, 246, 0.12);
+        border-color: rgba(59, 130, 246, 0.3);
+        color: #60a5fa;
+    }
+    .calendar-cell.attended-access {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.55);
+    }
     .attendance-stamp {
-        font-size: 11px;
-        margin-top: 0px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        line-height: 1;
         animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
+    .attendance-stamp .stamp-icon { font-size: 11px; }
+    .attendance-stamp .stamp-label { font-size: 8px; font-weight: 800; margin-top: 1px; }
 
     /* --- 최근 7일 그래프 --- */
     .chart-container {
@@ -693,10 +707,19 @@
                             {% if day == 0 %}
                                 <div class="calendar-cell cal-empty"></div>
                             {% else %}
-                                <div class="calendar-cell {% if day in attendance_dates %}attended{% endif %} {% if day == today.day %}today{% endif %}" id="day-{{ day }}">
+                                <div class="calendar-cell
+                                    {% if day in present_days %}attended
+                                    {% elif day in makeup_days %}attended-makeup
+                                    {% elif day in access_days %}attended-access
+                                    {% endif %}
+                                    {% if day == today.day %}today{% endif %}" id="day-{{ day }}">
                                     <span>{{ day }}</span>
-                                    {% if day in attendance_dates %}
-                                    <span class="attendance-stamp">💚</span>
+                                    {% if day in present_days %}
+                                    <span class="attendance-stamp"><span class="stamp-icon">💚</span><span class="stamp-label">출석</span></span>
+                                    {% elif day in makeup_days %}
+                                    <span class="attendance-stamp"><span class="stamp-icon">💙</span><span class="stamp-label">보강</span></span>
+                                    {% elif day in access_days %}
+                                    <span class="attendance-stamp"><span class="stamp-icon">📶</span><span class="stamp-label">접속</span></span>
                                     {% endif %}
                                 </div>
                             {% endif %}

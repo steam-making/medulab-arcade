@@ -3837,6 +3837,9 @@ def _build_report_context(user):
     current_month = today.month
     attendances = Attendance.objects.filter(user=user, date__year=current_year, date__month=current_month)
     attendance_dates = [att.date.day for att in attendances]
+    present_days = [att.date.day for att in attendances if att.attendance_type == Attendance.TYPE_PRESENT]
+    makeup_days = [att.date.day for att in attendances if att.attendance_type == Attendance.TYPE_MAKEUP]
+    access_days = [att.date.day for att in attendances if att.attendance_type == Attendance.TYPE_ACCESS]
     today_attendance = Attendance.objects.filter(user=user, date=today).first()
     has_attended_today = today_attendance is not None
     today_attendance_type_display = today_attendance.get_attendance_type_display() if today_attendance else ''
@@ -4033,6 +4036,9 @@ def _build_report_context(user):
         'has_attended_today': has_attended_today,
         'today_attendance_type_display': today_attendance_type_display,
         'attendance_dates': attendance_dates,
+        'present_days': present_days,
+        'makeup_days': makeup_days,
+        'access_days': access_days,
         'month_days': month_days,
         'month_name': month_name,
         'chart_data': chart_data,

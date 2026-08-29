@@ -2212,11 +2212,16 @@ def member_edit(request, user_id):
         user_form = AdminUserForm(instance=target_user)
         profile_form = AdminUserProfileForm(instance=profile)
         
-    child_links = list(ParentChildLink.objects.filter(parent=target_user).select_related('child__profile'))
+    is_parent_type = profile.user_type in ('parent', 'medulab_parent')
+    parent_link = None
+    if not is_parent_type:
+        parent_link = ParentChildLink.objects.filter(child=target_user).select_related('parent__profile').first()
+
+    child_links = list(ParentChildLink.objects.filter(parent=target_user).select_related('child__profile')) if is_parent_type else []
 
     # 가입 시 입력한 자녀정보(children_info)와 실제 연결된 계정(ParentChildLink)을
     # 이름 기준으로 최대한 매칭해서 하나의 표로 보여주기 위한 가공
-    children_info = profile.children_info or []
+    children_info = profile.children_info or [] if is_parent_type else []
     matched_link_ids = set()
     children_rows = []
     for child in children_info:
@@ -2242,6 +2247,8 @@ def member_edit(request, user_id):
         'child_links': child_links,
         'children_rows': children_rows,
         'extra_links': extra_links,
+        'is_parent_type': is_parent_type,
+        'parent_link': parent_link,
     }
     return render(request, 'arcade/admin/member_form.html', context)
 

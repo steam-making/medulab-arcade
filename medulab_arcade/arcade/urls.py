@@ -127,6 +127,7 @@ urlpatterns = [
     path('admin-services/members/<int:user_id>/edit/', views.member_edit, name='member_edit'),
     path('admin-services/members/<int:user_id>/delete/', views.member_delete, name='member_delete'),
     path('admin-services/members/<int:user_id>/link-child/', views.member_link_child, name='member_link_child'),
+    path('admin-services/members/<int:user_id>/create-child/', views.member_create_child, name='member_create_child'),
     path('admin-services/members/<int:user_id>/unlink-child/<int:link_id>/', views.member_unlink_child, name='member_unlink_child'),
 
     # 일정 관리 (관리자 전용)

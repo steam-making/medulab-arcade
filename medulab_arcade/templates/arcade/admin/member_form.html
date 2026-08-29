@@ -168,7 +168,7 @@
                             </form>
                         </span>
                         {% else %}
-                        <button type="button" class="btn-match" onclick="openMatchModal('{{ row.info.name|default:""|escapejs }}')">🔍 매칭</button>
+                        <button type="button" class="btn-match" onclick="openMatchModal('{{ row.info.name|default:""|escapejs }}', '{{ row.info.birth_date|default:""|escapejs }}')">🔍 매칭</button>
                         {% endif %}
                     </td>
                 </tr>
@@ -215,6 +215,28 @@
                 <input type="text" id="matchModalSearch" class="form-input" placeholder="자녀(학생) 이름 또는 아이디 검색..." autocomplete="off">
                 <div class="era-dropdown" id="matchModalDropdown"></div>
             </div>
+
+            <button type="button" id="toggleCreatePanel" style="margin-top:14px; background:none; border:none; color:var(--accent-blue); font-size:12px; cursor:pointer; text-decoration:underline; padding:0;">계정이 없으신가요? 메듀랩 학생 회원으로 새로 만들기</button>
+
+            <div id="createChildPanel" style="display:none; margin-top:14px; padding-top:16px; border-top:1px solid var(--border);">
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">아래 정보로 메듀랩 학생 회원 계정을 새로 만들고 바로 연결합니다.</p>
+                <form method="post" action="{% url 'member_create_child' target_user.id %}" id="createChildForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="child_name" id="createChildName">
+                    <input type="hidden" name="child_birth_date" id="createChildBirthDate">
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label style="font-size:12px;">아이디</label>
+                        <input type="text" name="username" id="createChildUsername" class="form-input" style="padding:8px 12px; font-size:13px;" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="font-size:12px;">초기 비밀번호</label>
+                        <input type="text" name="password" id="createChildPassword" class="form-input" style="padding:8px 12px; font-size:13px;" required>
+                        <div class="form-help">생년월일로 자동 채웠어요. 필요하면 바꿔 주세요.</div>
+                    </div>
+                    <button type="submit" class="btn-match" style="width:100%; text-align:center; margin-top:14px; padding:10px;">🆕 메듀랩 학생 계정 생성 후 연결</button>
+                </form>
+            </div>
+
             <div class="match-modal-close">
                 <button type="button" onclick="closeMatchModal()">닫기</button>
             </div>
@@ -226,7 +248,7 @@
         const linkForm = document.getElementById('linkChildForm');
         const childIdInput = document.getElementById('childIdInput');
 
-        function wireSearch(searchEl, dropdownEl) {
+        function wireSearch(searchEl, dropdownEl, onResults) {
             let timer = null;
             function runSearch() {
                 clearTimeout(timer);
@@ -237,6 +259,7 @@
                         .then(r => r.json())
                         .then(data => {
                             const items = data.members || [];
+                            if (onResults) onResults(items);
                             if (!items.length) { dropdownEl.style.display = 'none'; return; }
                             dropdownEl.innerHTML = items.map(m =>
                                 `<div class="era-dropdown-item" data-member='${JSON.stringify(m)}'>
@@ -266,12 +289,33 @@
         const modalOverlay = document.getElementById('matchModalOverlay');
         const modalSearch = document.getElementById('matchModalSearch');
         const modalDropdown = document.getElementById('matchModalDropdown');
-        const runModalSearch = wireSearch(modalSearch, modalDropdown);
+        const createPanel = document.getElementById('createChildPanel');
+        const toggleCreateBtn = document.getElementById('toggleCreatePanel');
+        const createName = document.getElementById('createChildName');
+        const createBirthDate = document.getElementById('createChildBirthDate');
+        const createUsername = document.getElementById('createChildUsername');
+        const createPassword = document.getElementById('createChildPassword');
 
-        window.openMatchModal = function(name) {
+        const runModalSearch = wireSearch(modalSearch, modalDropdown, function(items) {
+            if (!items.length && modalSearch.value.trim()) createPanel.style.display = 'block';
+        });
+
+        toggleCreateBtn.addEventListener('click', function() {
+            createPanel.style.display = (createPanel.style.display === 'none') ? 'block' : 'none';
+        });
+
+        window.openMatchModal = function(name, birthDate) {
             modalOverlay.classList.add('show');
             modalSearch.value = name || '';
             modalDropdown.style.display = 'none';
+            createPanel.style.display = 'none';
+
+            const digitsOnly = (birthDate || '').replace(/\D/g, '');
+            createName.value = name || '';
+            createBirthDate.value = birthDate || '';
+            createUsername.value = ((name || '').replace(/\s+/g, '') + digitsOnly) || '';
+            createPassword.value = digitsOnly || '';
+
             if (name) runModalSearch();
             modalSearch.focus();
         };
@@ -279,6 +323,7 @@
             modalOverlay.classList.remove('show');
             modalSearch.value = '';
             modalDropdown.style.display = 'none';
+            createPanel.style.display = 'none';
         };
         modalOverlay.addEventListener('click', function(e) {
             if (e.target === modalOverlay) closeMatchModal();

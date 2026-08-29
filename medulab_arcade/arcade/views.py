@@ -2276,6 +2276,51 @@ def member_link_child(request, user_id):
 @login_required
 @user_passes_test(staff_check)
 @require_POST
+def member_create_child(request, user_id):
+    """검색해도 계정이 없는 자녀를 메듀랩 학생 회원으로 새로 생성한 뒤 바로 연결"""
+    parent_user = get_object_or_404(User, pk=user_id)
+    username = (request.POST.get('username') or '').strip()
+    password = request.POST.get('password') or ''
+    child_name = (request.POST.get('child_name') or '').strip()
+    child_birth_date_raw = (request.POST.get('child_birth_date') or '').strip()
+
+    if not username or not password:
+        messages.error(request, '아이디와 비밀번호를 입력해 주세요.')
+        return redirect('member_edit', user_id=parent_user.id)
+
+    if User.objects.filter(username=username).exists():
+        messages.error(request, f'아이디 "{username}"는 이미 사용 중입니다.')
+        return redirect('member_edit', user_id=parent_user.id)
+
+    import datetime
+    birth_date = None
+    for fmt in ('%Y.%m.%d', '%Y-%m-%d', '%Y%m%d'):
+        try:
+            birth_date = datetime.datetime.strptime(child_birth_date_raw, fmt).date()
+            break
+        except ValueError:
+            continue
+
+    child_user = User.objects.create_user(username=username, password=password)
+    child_profile, _ = UserProfile.objects.get_or_create(user=child_user)
+    child_profile.user_type = 'medulab_member'
+    child_profile.is_approved = True
+    if child_name:
+        child_profile.real_name = child_name
+    if birth_date:
+        child_profile.birth_date = birth_date
+    child_profile.save()
+
+    ParentChildLink.objects.get_or_create(
+        parent=parent_user, child=child_user, defaults={'linked_by': request.user}
+    )
+    messages.success(request, f'"{child_name or username}" 학생 계정을 새로 만들어 연결했습니다.')
+    return redirect('member_edit', user_id=parent_user.id)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
 def member_unlink_child(request, user_id, link_id):
     """학부모-자녀 연결 해제"""
     parent_user = get_object_or_404(User, pk=user_id)

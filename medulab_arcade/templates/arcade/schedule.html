@@ -215,9 +215,12 @@
                 var props = arg.event.extendedProps;
                 var dotColor = arg.event.backgroundColor;
                 var timeText = arg.timeText;
-                
-                // 종일 일정이 아닌 경우 시작 시간을 가져옵니다.
-                if (!arg.event.allDay && !timeText) {
+
+                if (props.timeLabel) {
+                    // 서버에서 계산한 표시용 시간(그룹은 여러 시간을 한번에 표기, 예: 오전 9:00/10:30 오후 3:00/4:30)
+                    timeText = props.timeLabel;
+                } else if (!arg.event.allDay && !timeText) {
+                    // 종일 일정이 아닌 경우 시작 시간을 가져옵니다.
                     var startDate = arg.event.start;
                     var hours = startDate.getHours();
                     var minutes = startDate.getMinutes();

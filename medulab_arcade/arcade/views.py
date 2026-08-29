@@ -773,35 +773,58 @@ def schedule_view(request):
             cal_event['extendedProps']['endDate'] = ""
         calendar_events.append(cal_event)
 
-    # 정규수업은 "같은 요일에 실제로 겹치는 시작 시간" 기준으로 묶는다.
-    # 요일마다 어떤 조합의 수업이 같은 시작 시간에 걸리는지가 다를 수 있으므로,
-    # 요일별로 (시작시간, 수업 id 조합) 시그니처를 구하고, 동일한 시그니처를 가진 요일들을 다시 묶어 하나의 캘린더 이벤트로 만든다.
+    def _first_word(title):
+        return title.split(' ', 1)[0] if title else title
+
+    def _format_grouped_times(times):
+        am_parts, pm_parts = [], []
+        for t in times:
+            h, m = t.hour, t.minute
+            if h < 12:
+                hh = h if h != 0 else 12
+                am_parts.append(f"{hh}:{m:02d}")
+            else:
+                hh = h - 12 if h > 12 else 12
+                pm_parts.append(f"{hh}:{m:02d}")
+        parts = []
+        if am_parts:
+            parts.append('오전 ' + '/'.join(am_parts))
+        if pm_parts:
+            parts.append('오후 ' + '/'.join(pm_parts))
+        return ' '.join(parts)
+
+    # 정규수업은 "같은 요일 + 같은 이름(첫 단어)"을 기준으로 묶는다 (시간은 서로 달라도 됨).
+    # 요일마다 묶이는 조합이 다를 수 있으므로, 요일별로 (이름, 수업 id 조합) 시그니처를 구하고
+    # 동일한 시그니처를 가진 요일들을 다시 묶어 하나의 캘린더 이벤트로 만든다.
     weekday_events = {}
     for event in academic_events_list:
         for d in (int(x) for x in event.days_of_week.split(',')):
             weekday_events.setdefault(d, []).append(event)
 
-    combo_days = {}   # (start_time, frozenset(event_id, ...)) -> set(weekday, ...)
+    combo_days = {}   # (name_key, frozenset(event_id, ...)) -> set(weekday, ...)
     combo_events = {}  # frozenset(event_id, ...) -> [event, ...]
     for d, evs in weekday_events.items():
-        by_start = {}
+        by_name = {}
         for e in evs:
-            by_start.setdefault(e.start_time, []).append(e)
-        for start_time, group in by_start.items():
+            by_name.setdefault(_first_word(e.title), []).append(e)
+        for name_key, group in by_name.items():
             ids = frozenset(e.id for e in group)
-            combo_days.setdefault((start_time, ids), set()).add(d)
+            combo_days.setdefault((name_key, ids), set()).add(d)
             combo_events[ids] = group
 
     color = SCHEDULE_EVENT_COLORS.get(ScheduleEvent.EVENT_TYPE_ACADEMIC, '#3b82f6')
-    for (start_time, ids), days_set in combo_days.items():
-        group_events = combo_events[ids]
+    for (name_key, ids), days_set in combo_days.items():
+        group_events = sorted(combo_events[ids], key=lambda e: (e.start_time is None, e.start_time, e.title))
         days_sorted = sorted(days_set)
         days_str = ', '.join(day_names[d] for d in days_sorted)
         titles = [e.title for e in group_events]
         is_group = len(group_events) > 1
         display_title = _common_title_prefix(titles) if is_group else titles[0]
+        distinct_times = sorted({e.start_time for e in group_events if e.start_time})
+        time_label = _format_grouped_times(distinct_times)
         end_time = max((e.end_time for e in group_events if e.end_time), default=None)
-        time_str = f" {start_time.strftime('%H:%M')}" if start_time else ''
+        earliest_start = distinct_times[0] if distinct_times else None
+        time_str = f" {time_label}" if time_label else ''
 
         cal_event = {
             'id': f"academic-group-{'-'.join(str(i) for i in sorted(ids))}",
@@ -823,13 +846,14 @@ def schedule_view(request):
                 'startDate': f"매주 {days_str}요일{time_str}",
                 'endDate': '',
                 'isGroup': is_group,
+                'timeLabel': time_label,
                 'groupedItems': [{'title': e.title, 'time': _event_time_label(e)} for e in group_events],
             },
         }
         if not is_group:
             cal_event['id'] = group_events[0].id
-        if start_time:
-            cal_event['startTime'] = start_time.strftime('%H:%M:%S')
+        if earliest_start:
+            cal_event['startTime'] = earliest_start.strftime('%H:%M:%S')
         if end_time:
             cal_event['endTime'] = end_time.strftime('%H:%M:%S')
         calendar_events.append(cal_event)

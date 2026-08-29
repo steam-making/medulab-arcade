@@ -1317,6 +1317,43 @@
     </script>
     {% endif %}
 
+    {% if user.is_authenticated and user.profile.user_type == 'medulab_member' %}
+    <script>
+        (function () {
+            var today = new Date().toISOString().slice(0, 10);
+            var storageKey = 'medulab_att_checked_' + today;
+            var checked;
+            try { checked = localStorage.getItem(storageKey); } catch (e) { checked = null; }
+            if (checked) return;
+
+            function markChecked() {
+                try { localStorage.setItem(storageKey, '1'); } catch (e) {}
+            }
+
+            function submitAttendance(lat, lng) {
+                fetch('{% url "api_submit_attendance" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ lat: lat, lng: lng })
+                }).then(markChecked).catch(markChecked);
+            }
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (pos) { submitAttendance(pos.coords.latitude, pos.coords.longitude); },
+                    function () { submitAttendance(null, null); },
+                    { timeout: 8000, maximumAge: 60000 }
+                );
+            } else {
+                submitAttendance(null, null);
+            }
+        })();
+    </script>
+    {% endif %}
+
     {% block extra_js %}{% endblock %}
 </body>
 

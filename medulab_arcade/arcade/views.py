@@ -2212,7 +2212,27 @@ def member_edit(request, user_id):
         user_form = AdminUserForm(instance=target_user)
         profile_form = AdminUserProfileForm(instance=profile)
         
-    child_links = ParentChildLink.objects.filter(parent=target_user).select_related('child__profile')
+    child_links = list(ParentChildLink.objects.filter(parent=target_user).select_related('child__profile'))
+
+    # 가입 시 입력한 자녀정보(children_info)와 실제 연결된 계정(ParentChildLink)을
+    # 이름 기준으로 최대한 매칭해서 하나의 표로 보여주기 위한 가공
+    children_info = profile.children_info or []
+    matched_link_ids = set()
+    children_rows = []
+    for child in children_info:
+        match = None
+        child_name = (child.get('name') or '').strip()
+        if child_name:
+            for link in child_links:
+                if link.id in matched_link_ids:
+                    continue
+                real_name = (link.child.profile.real_name or link.child.username or '').strip()
+                if real_name and real_name == child_name:
+                    match = link
+                    matched_link_ids.add(link.id)
+                    break
+        children_rows.append({'info': child, 'link': match})
+    extra_links = [l for l in child_links if l.id not in matched_link_ids]
 
     context = {
         'user_form': user_form,
@@ -2220,6 +2240,8 @@ def member_edit(request, user_id):
         'target_user': target_user,
         'title': '회원 정보 수정',
         'child_links': child_links,
+        'children_rows': children_rows,
+        'extra_links': extra_links,
     }
     return render(request, 'arcade/admin/member_form.html', context)
 

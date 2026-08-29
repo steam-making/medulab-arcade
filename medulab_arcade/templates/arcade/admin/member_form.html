@@ -231,7 +231,7 @@
                     <div class="form-group" style="margin-bottom:0;">
                         <label style="font-size:12px;">초기 비밀번호</label>
                         <input type="text" name="password" id="createChildPassword" class="form-input" style="padding:8px 12px; font-size:13px;" required>
-                        <div class="form-help">생년월일로 자동 채웠어요. 필요하면 바꿔 주세요.</div>
+                        <div class="form-help">기본 초기 비밀번호예요. 필요하면 바꿔 주세요.</div>
                     </div>
                     <button type="submit" class="btn-match" style="width:100%; text-align:center; margin-top:14px; padding:10px;">🆕 메듀랩 학생 계정 생성 후 연결</button>
                 </form>
@@ -314,7 +314,7 @@
             createName.value = name || '';
             createBirthDate.value = birthDate || '';
             createUsername.value = ((name || '').replace(/\s+/g, '') + digitsOnly) || '';
-            createPassword.value = digitsOnly || '';
+            createPassword.value = 'md12345*';
 
             if (name) runModalSearch();
             modalSearch.focus();

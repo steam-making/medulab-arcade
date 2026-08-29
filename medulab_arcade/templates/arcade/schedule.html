@@ -54,6 +54,7 @@
     .custom-event-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
     .custom-event-time { font-size: 11px; font-weight: 800; color: #fff; }
     .custom-event-title { font-size: 12px; font-weight: 900; color: #fff; line-height: 1.35; word-break: keep-all; padding-left: 14px; }
+    .custom-event-group-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 999px; background: rgba(255,255,255,0.25); color: #fff; font-size: 10px; font-weight: 800; vertical-align: middle; }
     .fc-daygrid-more-link { font-size: 12px; font-weight: 800; color: var(--accent-blue); }
     .fc-daygrid-day-frame { height: auto !important; min-height: auto !important; }
     .side-stack { display: grid; gap: 18px; animation: fadeSlideIn 0.55s ease 0.18s both; }
@@ -230,19 +231,24 @@
                 }
 
                 var eventTypeClass = props.eventType === 'academic' ? 'custom-event-academic' : '';
+                var groupBadge = (props.isGroup && props.groupedTitles) ? ` <span class="custom-event-group-badge">${props.groupedTitles.length}</span>` : '';
                 var html = `
                     <div class="custom-event ${eventTypeClass}">
                         <div class="custom-event-top">
                             <div class="custom-event-dot" style="color: ${dotColor}; background-color: ${dotColor};"></div>
                             ${timeText ? `<div class="custom-event-time">${timeText}</div>` : ''}
                         </div>
-                        <div class="custom-event-title">${arg.event.title}</div>
+                        <div class="custom-event-title">${arg.event.title}${groupBadge}</div>
                     </div>
                 `;
                 return { html: html };
             },
             eventClick: function (info) {
                 if (info.event.extendedProps.eventType === 'holiday') return;
+                if (info.event.extendedProps.isGroup) {
+                    showGroupModal(info.event);
+                    return;
+                }
                 showEventModal(info.event);
             },
             eventDidMount: function (info) {
@@ -330,9 +336,40 @@
         var editBtn = document.getElementById('modal-edit-btn');
         var deleteForm = document.getElementById('modal-delete-form');
         if (editBtn && deleteForm) {
+            editBtn.style.display = '';
+            deleteForm.style.display = '';
             editBtn.href = '/admin-services/schedules/' + event.id + '/edit/';
             deleteForm.action = '/admin-services/schedules/' + event.id + '/delete/';
         }
+
+        document.getElementById('event-modal').classList.add('is-open');
+    }
+
+    function showGroupModal(event) {
+        var props = event.extendedProps;
+        document.getElementById('modal-title').textContent = event.title + ' 수업 목록';
+        document.getElementById('modal-date').textContent = props.startDate;
+
+        var listHtml = '<ul style="margin:0; padding-left:18px; line-height:1.9;">' +
+            (props.groupedTitles || []).map(function (t) { return '<li>' + t + '</li>'; }).join('') +
+            '</ul>';
+        document.getElementById('modal-desc').innerHTML = listHtml;
+
+        var typeEl = document.getElementById('modal-type');
+        typeEl.textContent = props.eventTypeLabel;
+        var color = '#3b82f6';
+        typeEl.style.background = color + '22';
+        typeEl.style.color = color;
+        typeEl.style.border = '1px solid ' + color + '44';
+
+        document.getElementById('modal-image-container').style.display = 'none';
+        document.getElementById('modal-external-link').style.display = 'none';
+        document.getElementById('modal-attachments').style.display = 'none';
+
+        var editBtn = document.getElementById('modal-edit-btn');
+        var deleteForm = document.getElementById('modal-delete-form');
+        if (editBtn) editBtn.style.display = 'none';
+        if (deleteForm) deleteForm.style.display = 'none';
 
         document.getElementById('event-modal').classList.add('is-open');
     }

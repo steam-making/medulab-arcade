@@ -723,8 +723,25 @@ def schedule_view(request):
     academic_events = events.filter(event_type=ScheduleEvent.EVENT_TYPE_ACADEMIC)
     
     calendar_events = []
+    academic_groups = {}  # (days_tuple, start_time, end_time) -> [event, ...]
+
+    def _common_title_prefix(titles):
+        word_lists = [t.split(' ') for t in titles]
+        prefix = []
+        for words in zip(*word_lists):
+            if len(set(words)) == 1:
+                prefix.append(words[0])
+            else:
+                break
+        return ' '.join(prefix) if prefix else titles[0]
 
     for event in events:
+        if event.event_type == ScheduleEvent.EVENT_TYPE_ACADEMIC and event.days_of_week:
+            days_key = tuple(sorted(int(d) for d in event.days_of_week.split(',')))
+            key = (days_key, event.start_time, event.end_time)
+            academic_groups.setdefault(key, []).append(event)
+            continue
+
         color = SCHEDULE_EVENT_COLORS.get(event.event_type, '#00b4ff')
         attachments = list(event.attachments.all())
         cal_event = {
@@ -742,38 +759,55 @@ def schedule_view(request):
                 'attachments': [{'name': a.file.name.split('/')[-1], 'url': a.file.url} for a in attachments],
             },
         }
-
-        if event.event_type == ScheduleEvent.EVENT_TYPE_ACADEMIC and event.days_of_week:
-            # 반복 일정 설정 (FullCalendar)
-            days = [int(d) for d in event.days_of_week.split(',')]
-            cal_event['daysOfWeek'] = days
-            if event.start_time:
-                cal_event['startTime'] = event.start_time.strftime('%H:%M:%S')
-            if event.end_time:
-                cal_event['endTime'] = event.end_time.strftime('%H:%M:%S')
-            
-            day_names = ['일', '월', '화', '수', '목', '금', '토']
-            days_str = ', '.join([day_names[d] for d in days])
-            time_str = ''
-            if event.start_time and event.end_time:
-                time_str = f" {event.start_time.strftime('%H:%M')} ~ {event.end_time.strftime('%H:%M')}"
-            
-            cal_event['extendedProps']['startDate'] = f"매주 {days_str}요일{time_str}"
-            cal_event['extendedProps']['endDate'] = ""
+        if event.start_date:
+            cal_event['start'] = event.start_date.isoformat()
+            cal_event['extendedProps']['startDate'] = event.start_date.strftime('%Y.%m.%d %H:%M')
+        if event.end_date:
+            cal_event['end'] = event.end_date.isoformat()
+            cal_event['extendedProps']['endDate'] = event.end_date.strftime('%Y.%m.%d %H:%M')
         else:
-            if event.start_date:
-                cal_event['start'] = event.start_date.isoformat()
-                cal_event['extendedProps']['startDate'] = event.start_date.strftime('%Y.%m.%d %H:%M')
-            if event.end_date:
-                cal_event['end'] = event.end_date.isoformat()
-                cal_event['extendedProps']['endDate'] = event.end_date.strftime('%Y.%m.%d %H:%M')
-            else:
-                cal_event['extendedProps']['endDate'] = ""
-
+            cal_event['extendedProps']['endDate'] = ""
         calendar_events.append(cal_event)
 
+    # 같은 요일·같은 시간대의 정규수업은 하나로 묶어서 표시 (클릭하면 목록 모달)
+    color = SCHEDULE_EVENT_COLORS.get(ScheduleEvent.EVENT_TYPE_ACADEMIC, '#3b82f6')
+    day_names = ['일', '월', '화', '수', '목', '금', '토']
+    for (days_key, start_time, end_time), group_events in academic_groups.items():
+        days_str = ', '.join(day_names[d] for d in days_key)
+        time_str = ''
+        if start_time and end_time:
+            time_str = f" {start_time.strftime('%H:%M')} ~ {end_time.strftime('%H:%M')}"
+        titles = [e.title for e in group_events]
+        display_title = _common_title_prefix(titles) if len(group_events) > 1 else titles[0]
+
+        cal_event = {
+            'id': f"academic-group-{'-'.join(str(e.id) for e in group_events)}",
+            'title': display_title,
+            'backgroundColor': color,
+            'borderColor': color,
+            'textColor': '#ffffff',
+            'daysOfWeek': list(days_key),
+            'extendedProps': {
+                'description': '',
+                'eventType': ScheduleEvent.EVENT_TYPE_ACADEMIC,
+                'eventTypeLabel': group_events[0].get_event_type_display(),
+                'imageUrl': '',
+                'externalUrl': '',
+                'attachments': [],
+                'startDate': f"매주 {days_str}요일{time_str}",
+                'endDate': '',
+                'isGroup': len(group_events) > 1,
+                'groupedTitles': titles,
+            },
+        }
+        if start_time:
+            cal_event['startTime'] = start_time.strftime('%H:%M:%S')
+        if end_time:
+            cal_event['endTime'] = end_time.strftime('%H:%M:%S')
+        calendar_events.append(cal_event)
+
+    for event in events:
         if getattr(event, 'days_of_week', None):
-            day_names = ['일', '월', '화', '수', '목', '금', '토']
             days = [int(d) for d in event.days_of_week.split(',')]
             days_str = ', '.join([day_names[d] for d in days])
             event.parsed_days_str = days_str

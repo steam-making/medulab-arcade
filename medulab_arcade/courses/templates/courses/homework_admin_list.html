@@ -2,61 +2,145 @@
 
 {% block title %}숙제 관리 | 관리자{% endblock %}
 
-{% block content %}
-<div class="container" style="max-width: 1000px; margin: 0 auto; padding: 40px 20px;">
-    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 16px; flex-wrap: wrap;">
-        <h1 style="color: #fff; font-size: 28px; font-weight: 800;">숙제 관리<span style="font-size: 16px; color: var(--text-muted); font-weight: 400; margin-left: 10px;">홈플레이 숙제 목록</span></h1>
-        <a href="{% url 'homework_create' %}" class="btn" style="background: #3b82f6;">+ 새 숙제 등록</a>
-    </header>
+{% block extra_css %}
+<style>
+    .hw-wrap { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+    .hw-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+    .hw-title { color: #fff; font-size: 26px; font-weight: 800; }
+    .hw-title .sub { font-size: 14px; color: var(--text-muted); font-weight: 400; margin-left: 10px; }
+    .hw-add-btn { background: #3b82f6; color: #fff; padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 14px; text-decoration: none; white-space: nowrap; }
+    .hw-add-btn:hover { background: #2563eb; }
 
-    <div style="background: rgba(255, 255, 255, 0.05); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;">
-        <table style="width: 100%; border-collapse: collapse; color: #fff; text-align: left;">
+    .hw-table-wrap { background: rgba(255,255,255,0.05); border-radius: 18px; border: 1px solid rgba(255,255,255,0.1); overflow-x: auto; }
+    .hw-table { width: 100%; border-collapse: collapse; color: #fff; text-align: left; min-width: 760px; }
+    .hw-table th { padding: 14px 18px; background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 12px; font-weight: 700; white-space: nowrap; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .hw-table td { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 14px; vertical-align: middle; }
+    .hw-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .hw-program { color: #60a5fa; font-weight: 700; white-space: nowrap; }
+    .hw-title-cell { min-width: 220px; }
+    .hw-students-btn { background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.3); color: #93c5fd; border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .hw-students-btn:hover { background: rgba(96,165,250,0.22); }
+    .hw-students-all { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    .hw-due { color: var(--text-muted); font-size: 13px; white-space: nowrap; }
+    .hw-badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; display: inline-block; }
+    .hw-badge-active { background: rgba(74,222,128,0.12); color: #4ade80; }
+    .hw-badge-inactive { background: rgba(255,255,255,0.1); color: var(--text-muted); }
+    .hw-actions { display: flex; gap: 12px; white-space: nowrap; }
+    .hw-actions a { color: #60a5fa; text-decoration: none; font-size: 13px; font-weight: 600; }
+    .hw-actions a.danger { color: #f87171; }
+    .hw-empty { padding: 80px 20px; text-align: center; color: var(--text-muted); }
+
+    .hw-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .hw-modal-overlay.show { display: flex; }
+    .hw-modal-box { background: #1e1b2e; border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 26px; width: 100%; max-width: 380px; max-height: 70vh; display: flex; flex-direction: column; }
+    .hw-modal-box h3 { color: #fff; font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+    .hw-modal-box .hw-modal-sub { color: var(--text-muted); font-size: 12px; margin-bottom: 16px; }
+    .hw-modal-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .hw-modal-list .row { display: flex; align-items: baseline; gap: 8px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 8px 12px; }
+    .hw-modal-list .row .name { color: #fff; font-weight: 700; font-size: 13px; }
+    .hw-modal-list .row .uname { color: var(--text-muted); font-size: 11px; }
+    .hw-modal-close { margin-top: 18px; text-align: right; }
+    .hw-modal-close button { background: rgba(255,255,255,0.06); border: none; color: var(--text-secondary); border-radius: 10px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .hw-modal-close button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hw-wrap">
+    <div class="hw-header">
+        <h1 class="hw-title">숙제 관리<span class="sub">홈플레이 숙제 목록</span></h1>
+        <a href="{% url 'homework_create' %}" class="hw-add-btn">+ 새 숙제 등록</a>
+    </div>
+
+    <div class="hw-table-wrap">
+        <table class="hw-table">
             <thead>
-                <tr style="background: rgba(255, 255, 255, 0.05); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                    <th style="padding: 16px 20px;">과정</th>
-                    <th style="padding: 16px 20px;">제목</th>
-                    <th style="padding: 16px 20px;">학생</th>
-                    <th style="padding: 16px 20px;">문제</th>
-                    <th style="padding: 16px 20px;">기한</th>
-                    <th style="padding: 16px 20px;">상태</th>
-                    <th style="padding: 16px 20px;">관리</th>
+                <tr>
+                    <th>과정</th>
+                    <th>제목</th>
+                    <th>학생</th>
+                    <th>문제</th>
+                    <th>기한</th>
+                    <th>상태</th>
+                    <th>관리</th>
                 </tr>
             </thead>
             <tbody>
                 {% for assignment in assignments %}
-                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
-                    <td style="padding: 16px 20px; color: #60a5fa; font-weight: 600;">{{ assignment.program.name }}</td>
-                    <td style="padding: 16px 20px;">{{ assignment.title }}</td>
-                    <td style="padding: 16px 20px; color: var(--text-muted);">
-                        {% if assignment.assigned_users.count > 0 %}
-                            {{ assignment.assigned_users.count }}명
+                <tr>
+                    <td class="hw-program">{{ assignment.program.name }}</td>
+                    <td class="hw-title-cell">{{ assignment.title }}</td>
+                    <td>
+                        {% if assignment.student_names %}
+                        {{ assignment.student_names|json_script:assignment.students_script_id }}
+                        <button type="button" class="hw-students-btn" onclick="openHwStudentModal('{{ assignment.students_script_id }}', '{{ assignment.title|escapejs }}')">{{ assignment.student_names|length }}명</button>
                         {% else %}
-                            <span style="font-size: 12px;">전체</span>
+                        <span class="hw-students-all">전체</span>
                         {% endif %}
                     </td>
-                    <td style="padding: 16px 20px;">{{ assignment.linked_items.count }}개</td>
-                    <td style="padding: 16px 20px; color: var(--text-muted); font-size: 13px;">{{ assignment.due_date|date:"Y-m-d H:i"|default:"-" }}</td>
-                    <td style="padding: 16px 20px;">
+                    <td>{{ assignment.linked_items.count }}개</td>
+                    <td class="hw-due">{{ assignment.due_date|date:"Y-m-d H:i"|default:"-" }}</td>
+                    <td>
                         {% if assignment.is_active %}
-                        <span style="background: rgba(74, 222, 128, 0.1); color: #4ade80; padding: 4px 10px; border-radius: 20px; font-size: 12px;">활성</span>
+                        <span class="hw-badge hw-badge-active">활성</span>
                         {% else %}
-                        <span style="background: rgba(255, 255, 255, 0.1); color: var(--text-muted); padding: 4px 10px; border-radius: 20px; font-size: 12px;">비활성</span>
+                        <span class="hw-badge hw-badge-inactive">비활성</span>
                         {% endif %}
                     </td>
-                    <td style="padding: 16px 20px;">
-                        <div style="display: flex; gap: 10px;">
-                            <a href="{% url 'homework_edit' assignment.id %}" style="color: #60a5fa; text-decoration: none; font-size: 14px;">수정</a>
-                            <a href="{% url 'homework_delete' assignment.id %}" style="color: #f87171; text-decoration: none; font-size: 14px;">삭제</a>
+                    <td>
+                        <div class="hw-actions">
+                            <a href="{% url 'homework_edit' assignment.id %}">수정</a>
+                            <a href="{% url 'homework_delete' assignment.id %}" class="danger">삭제</a>
                         </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" style="padding: 100px 20px; text-align: center; color: var(--text-muted);">등록된 숙제가 없습니다.</td>
+                    <td colspan="7" class="hw-empty">등록된 숙제가 없습니다.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<div class="hw-modal-overlay" id="hwStudentModalOverlay" onclick="if(event.target===this) closeHwStudentModal();">
+    <div class="hw-modal-box">
+        <h3 id="hwStudentModalTitle">-</h3>
+        <div class="hw-modal-sub">배정된 학생 목록</div>
+        <div class="hw-modal-list" id="hwStudentModalList"></div>
+        <div class="hw-modal-close">
+            <button type="button" onclick="closeHwStudentModal()">닫기</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openHwStudentModal(scriptId, title) {
+    const data = JSON.parse(document.getElementById(scriptId).textContent);
+    document.getElementById('hwStudentModalTitle').textContent = title;
+    const list = document.getElementById('hwStudentModalList');
+    list.innerHTML = '';
+    data.forEach(function(s) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = s.name;
+        const uname = document.createElement('span');
+        uname.className = 'uname';
+        uname.textContent = '@' + s.username;
+        row.appendChild(name);
+        row.appendChild(uname);
+        list.appendChild(row);
+    });
+    document.getElementById('hwStudentModalOverlay').classList.add('show');
+}
+function closeHwStudentModal() {
+    document.getElementById('hwStudentModalOverlay').classList.remove('show');
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeHwStudentModal();
+});
+</script>
 {% endblock %}

@@ -3294,7 +3294,18 @@ def homework_assignment_complete(request, assignment_id, student_id):
 @login_required
 @user_passes_test(is_admin)
 def homework_admin_list(request):
-    assignments = HomeworkAssignment.objects.all().select_related('program').order_by('-created_at')
+    assignments = list(
+        HomeworkAssignment.objects.all()
+        .select_related('program')
+        .prefetch_related('assigned_users__profile')
+        .order_by('-created_at')
+    )
+    for a in assignments:
+        a.students_script_id = f'hw-students-{a.id}'
+        a.student_names = [
+            {'name': u.profile.real_name or u.username, 'username': u.username}
+            for u in a.assigned_users.all()
+        ]
     return render(request, 'courses/homework_admin_list.html', {'assignments': assignments})
 
 

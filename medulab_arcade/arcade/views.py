@@ -4474,9 +4474,17 @@ def _render_staff_student_dashboard(request):
     pending_approval_count = UserProfile.objects.filter(
         user_type__in=UserProfile.FULL_ACCESS_TYPES, is_approved=False
     ).count()
-    cert_count_total = Certification.objects.count()
-    award_count_total = Award.objects.count()
-    upcoming_exam_count = ExamRegistration.objects.filter(exam_date__gte=today).count()
+    all_certs = Certification.objects.select_related('cert_info').order_by('-date_acquired', '-created_at')
+    all_awards = Award.objects.select_related('competition_type').order_by('-date_awarded', '-created_at')
+    upcoming_exams = (
+        ExamRegistration.objects.filter(exam_date__gte=today)
+        .select_related('user__profile', 'competition_type', 'cert_info')
+        .order_by('exam_date', 'exam_time', '-created_at')
+    )
+
+    cert_count_total = all_certs.count()
+    award_count_total = all_awards.count()
+    upcoming_exam_count = upcoming_exams.count()
 
     context = {
         'total_students': total_students,
@@ -4485,6 +4493,9 @@ def _render_staff_student_dashboard(request):
         'pending_approval_count': pending_approval_count,
         'cert_count_total': cert_count_total,
         'award_count_total': award_count_total,
+        'all_certs': all_certs,
+        'all_awards': all_awards,
+        'upcoming_exams': upcoming_exams,
         'upcoming_exam_count': upcoming_exam_count,
         'students': students,
         'current_month': current_month,

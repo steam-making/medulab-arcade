@@ -76,7 +76,6 @@
     <div class="pay-methods">
         <button type="button" class="pay-btn" data-method="CARD">💳 신용카드</button>
         <button type="button" class="pay-btn" data-method="TRANSFER">🏦 실시간 계좌이체</button>
-        <button type="button" class="pay-btn" data-method="VIRTUAL_ACCOUNT">🧾 가상계좌</button>
         {% if portone_channel_key_kakaopay %}
         <button type="button" class="pay-btn" data-method="EASY_PAY">💛 카카오페이</button>
         {% endif %}
@@ -123,11 +122,6 @@
                 if (!response || response.code) {
                     showStatus('error', (response && response.message) || '결제가 취소되었습니다.');
                     document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
-                    return;
-                }
-
-                if (method === 'VIRTUAL_ACCOUNT') {
-                    showStatus('success', '가상계좌가 발급되었습니다. 입금이 확인되면 자동으로 완납 처리됩니다.');
                     return;
                 }
 

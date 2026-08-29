@@ -2908,6 +2908,34 @@ def tuition_invoice_attendance_detail(request, invoice_id):
 # 학원비 결제 (포트원 V2)
 # ────────────────────────────────────────────────
 
+def _portone_method_label(method_obj):
+    """포트원 결제 응답의 method 정보를 사람이 읽기 좋은 한글 라벨로 변환"""
+    method_obj = method_obj or {}
+    method_type = method_obj.get('type', '') or ''
+
+    if 'Card' in method_type:
+        card = method_obj.get('card') or {}
+        name = card.get('name') or card.get('publisher') or card.get('issuer') or card.get('company')
+        return f'신용카드({name})' if name else '신용카드'
+
+    if 'EasyPay' in method_type:
+        provider = method_obj.get('provider') or (method_obj.get('easyPayMethod') or {}).get('provider') or ''
+        if 'KAKAO' in str(provider).upper():
+            return '카카오페이'
+        return f'간편결제({provider})' if provider else '간편결제'
+
+    if 'Transfer' in method_type:
+        return '실시간 계좌이체'
+
+    if 'VirtualAccount' in method_type:
+        return '가상계좌'
+
+    if 'Mobile' in method_type:
+        return '휴대폰 소액결제'
+
+    return method_type or '-'
+
+
 def _tuition_invoice_access_or_404(request, invoice_id):
     """본인 청구서이거나, 연결된 학부모인 경우에만 접근 허용"""
     invoice = get_object_or_404(TuitionInvoice.objects.select_related('school_class', 'student'), pk=invoice_id)
@@ -2973,7 +3001,7 @@ def tuition_verify_payment(request, invoice_id):
 
     invoice.status = TuitionInvoice.STATUS_PAID
     invoice.paid_at = timezone.now()
-    invoice.portone_pay_method = (data.get('method') or {}).get('type', '')
+    invoice.portone_pay_method = _portone_method_label(data.get('method'))
     invoice.save(update_fields=['status', 'paid_at', 'portone_pay_method'])
     return JsonResponse({'ok': True})
 
@@ -3049,7 +3077,7 @@ def tuition_batch_verify(request, batch_id):
     if paid_amount != batch.amount:
         return JsonResponse({'ok': False, 'error': '결제 금액이 청구 금액과 일치하지 않습니다.'}, status=400)
 
-    method = (data.get('method') or {}).get('type', '')
+    method = _portone_method_label(data.get('method'))
     now = timezone.now()
     batch.status = TuitionInvoice.STATUS_PAID
     batch.paid_at = now
@@ -3154,7 +3182,7 @@ def tuition_webhook(request):
         return JsonResponse({'ok': False}, status=502)
 
     if data.get('status') == 'PAID' and (data.get('amount') or {}).get('total') == target.amount:
-        method = (data.get('method') or {}).get('type', '')
+        method = _portone_method_label(data.get('method'))
         now = timezone.now()
         target.status = TuitionInvoice.STATUS_PAID
         target.paid_at = now

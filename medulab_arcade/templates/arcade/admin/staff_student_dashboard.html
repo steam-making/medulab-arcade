@@ -157,26 +157,36 @@
     </div>
 </div>
 <script>
-function toggleTodayFilter() {
-    const card = document.getElementById('todayAttendStat');
-    const active = card.classList.toggle('active');
-    document.querySelectorAll('tr[data-scheduled-today]').forEach(function(row) {
-        const relevant = row.dataset.scheduledToday === '1' || row.dataset.attendedToday === '1';
-        row.style.display = (active && !relevant) ? 'none' : '';
-    });
-}
-function showAllStudents() {
-    document.getElementById('todayAttendStat').classList.remove('active');
+const allPanelIds = ['certPanel', 'awardPanel', 'examPanel'];
+const allStatIds = ['todayAttendStat', 'certStat', 'awardStat', 'examStat'];
+
+function resetAllViews() {
+    allPanelIds.forEach(function(id) { document.getElementById(id).classList.remove('show'); });
+    allStatIds.forEach(function(id) { document.getElementById(id).classList.remove('active'); });
     document.querySelectorAll('tr[data-scheduled-today]').forEach(function(row) {
         row.style.display = '';
     });
 }
+
+function toggleTodayFilter() {
+    const wasActive = document.getElementById('todayAttendStat').classList.contains('active');
+    resetAllViews();
+    if (wasActive) return;
+    document.getElementById('todayAttendStat').classList.add('active');
+    document.querySelectorAll('tr[data-scheduled-today]').forEach(function(row) {
+        const relevant = row.dataset.scheduledToday === '1' || row.dataset.attendedToday === '1';
+        row.style.display = relevant ? '' : 'none';
+    });
+}
+function showAllStudents() {
+    resetAllViews();
+}
 function togglePanel(panelId, statId) {
-    const panel = document.getElementById(panelId);
-    const stat = document.getElementById(statId);
-    const willShow = !panel.classList.contains('show');
-    panel.classList.toggle('show', willShow);
-    stat.classList.toggle('active', willShow);
+    const wasShown = document.getElementById(panelId).classList.contains('show');
+    resetAllViews();
+    if (wasShown) return;
+    document.getElementById(panelId).classList.add('show');
+    document.getElementById(statId).classList.add('active');
 }
 </script>
 {% endblock %}

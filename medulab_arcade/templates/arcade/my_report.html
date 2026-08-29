@@ -1,5 +1,6 @@
 {% extends 'arcade/base.html' %}
 {% load humanize %}
+{% load report_extras %}
 
 {% block title %}📊 마이 리포트 - 메듀랩 아케이드{% endblock %}
 
@@ -224,7 +225,7 @@
         color: rgba(255, 255, 255, 0.55);
     }
     .calendar-cell.class-day {
-        border-color: rgba(96, 165, 250, 0.35);
+        border-color: rgba(245, 158, 11, 0.4);
     }
     .calendar-cell.class-day::after {
         content: '';
@@ -233,15 +234,28 @@
         width: 4px;
         height: 4px;
         border-radius: 50%;
-        background: #60a5fa;
+        background: #f59e0b;
     }
     .calendar-cell.holiday {
         background: rgba(255, 93, 108, 0.16) !important;
         border-color: rgba(255, 93, 108, 0.4) !important;
         color: #ff8a93 !important;
+        flex-direction: column;
+        gap: 0;
+        padding-top: 2px;
     }
     .calendar-cell.holiday::after {
         display: none;
+    }
+    .holiday-label {
+        font-size: 8px;
+        font-weight: 700;
+        color: #ff8a93;
+        line-height: 1;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .attendance-stamp {
         display: flex;
@@ -733,8 +747,8 @@
             <!-- 기본적으로 펼쳐있는 달력 그리드 영역 -->
             <div class="calendar-collapsible show" id="calendarCollapsible">
                 <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:10px; font-size:11px; color:var(--text-muted);">
-                    <span><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#60a5fa; margin-right:5px;"></span>수업일</span>
-                    <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:rgba(255,93,108,0.4); margin-right:5px; vertical-align:middle;"></span>휴원일/공휴일</span>
+                    <span><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#f59e0b; margin-right:5px;"></span>수업일</span>
+                    <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:rgba(255,93,108,0.4); margin-right:5px; vertical-align:middle;"></span>일요일/휴원일/공휴일</span>
                 </div>
                 <div class="calendar-grid">
                     <!-- 요일 헤더 -->
@@ -768,6 +782,11 @@
                                     {% elif day in access_days %}
                                     <span class="attendance-stamp"><span class="stamp-icon">📶</span><span class="stamp-label">접속</span></span>
                                     {% endif %}
+                                    {% with label=holiday_days_labels|get_item:day %}
+                                    {% if label %}
+                                    <span class="holiday-label">{{ label }}</span>
+                                    {% endif %}
+                                    {% endwith %}
                                 </div>
                             {% endif %}
                         {% endfor %}

@@ -3854,7 +3854,7 @@ def _build_report_context(user):
         for d in _class_session_dates(enrollment.school_class, current_year, current_month):
             class_scheduled_days.add(d.day)
 
-    holiday_days = set()
+    holiday_days_labels = {}
     holiday_events = ScheduleEvent.objects.filter(
         event_type=ScheduleEvent.EVENT_TYPE_HOLIDAY, is_active=True,
     )
@@ -3866,8 +3866,13 @@ def _build_report_context(user):
         cur = start_d
         while cur <= end_d:
             if cur.year == current_year and cur.month == current_month:
-                holiday_days.add(cur.day)
+                holiday_days_labels[cur.day] = event.title
             cur += timedelta(days=1)
+
+    import calendar as _cal
+    num_days_in_month = _cal.monthrange(current_year, current_month)[1]
+    sunday_days = {day for day in range(1, num_days_in_month + 1) if _cal.weekday(current_year, current_month, day) == 6}
+    holiday_days = sunday_days | set(holiday_days_labels.keys())
 
     # 달력 생성을 위한 이번 달 날짜 정보
     import calendar
@@ -4067,6 +4072,7 @@ def _build_report_context(user):
         'enrolled_classes': enrolled_classes,
         'class_scheduled_days': class_scheduled_days,
         'holiday_days': holiday_days,
+        'holiday_days_labels': holiday_days_labels,
         'month_days': month_days,
         'month_name': month_name,
         'chart_data': chart_data,

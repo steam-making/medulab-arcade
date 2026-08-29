@@ -3844,6 +3844,31 @@ def _build_report_context(user):
     has_attended_today = today_attendance is not None
     today_attendance_type_display = today_attendance.get_attendance_type_display() if today_attendance else ''
 
+    # 3-1. 수강 중인 수업 안내 + 달력에 표시할 수업일/공휴일 계산
+    enrolled_classes = list(
+        ClassEnrollment.objects.filter(student=user, is_active=True)
+        .select_related('school_class').order_by('school_class__name')
+    )
+    class_scheduled_days = set()
+    for enrollment in enrolled_classes:
+        for d in _class_session_dates(enrollment.school_class, current_year, current_month):
+            class_scheduled_days.add(d.day)
+
+    holiday_days = set()
+    holiday_events = ScheduleEvent.objects.filter(
+        event_type=ScheduleEvent.EVENT_TYPE_HOLIDAY, is_active=True,
+    )
+    for event in holiday_events:
+        if not event.start_date:
+            continue
+        start_d = timezone.localtime(event.start_date).date()
+        end_d = timezone.localtime(event.end_date).date() if event.end_date else start_d
+        cur = start_d
+        while cur <= end_d:
+            if cur.year == current_year and cur.month == current_month:
+                holiday_days.add(cur.day)
+            cur += timedelta(days=1)
+
     # 달력 생성을 위한 이번 달 날짜 정보
     import calendar
     cal = calendar.Calendar(firstweekday=6) # 일요일 시작
@@ -4039,6 +4064,9 @@ def _build_report_context(user):
         'present_days': present_days,
         'makeup_days': makeup_days,
         'access_days': access_days,
+        'enrolled_classes': enrolled_classes,
+        'class_scheduled_days': class_scheduled_days,
+        'holiday_days': holiday_days,
         'month_days': month_days,
         'month_name': month_name,
         'chart_data': chart_data,

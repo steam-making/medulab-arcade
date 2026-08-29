@@ -223,6 +223,26 @@
         border-color: rgba(255, 255, 255, 0.15);
         color: rgba(255, 255, 255, 0.55);
     }
+    .calendar-cell.class-day {
+        border-color: rgba(96, 165, 250, 0.35);
+    }
+    .calendar-cell.class-day::after {
+        content: '';
+        position: absolute;
+        bottom: 3px;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #60a5fa;
+    }
+    .calendar-cell.holiday {
+        background: rgba(255, 93, 108, 0.16) !important;
+        border-color: rgba(255, 93, 108, 0.4) !important;
+        color: #ff8a93 !important;
+    }
+    .calendar-cell.holiday::after {
+        display: none;
+    }
     .attendance-stamp {
         display: flex;
         flex-direction: column;
@@ -659,6 +679,27 @@
     <!-- 메인 컨텐츠 리스트 -->
     <div class="report-content">
 
+        {% if enrolled_classes %}
+        <!-- 0-1. 수강 중인 수업 안내 -->
+        <div class="section-card" style="margin-bottom:24px;">
+            <h3 style="margin:0 0 14px 0; color:#fff; font-size:16px;">📚 수강 중인 수업</h3>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                {% for enrollment in enrolled_classes %}
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 16px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid var(--border);">
+                    <div style="font-weight:700; color:#fff; font-size:14px;">{{ enrollment.school_class.name }}</div>
+                    <div style="font-size:13px; color:var(--text-muted);">
+                        {% if enrollment.school_class.days_of_week and enrollment.school_class.start_time %}
+                        {{ enrollment.school_class.days_display }} {{ enrollment.school_class.start_time|time:"H:i" }}~{{ enrollment.school_class.end_time|time:"H:i" }}
+                        {% else %}
+                        요일/시간 미정
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- 1. 출석 체크 달력 섹션 -->
         <div class="section-card">
             <div class="calendar-title-wrap">
@@ -691,6 +732,10 @@
 
             <!-- 기본적으로 펼쳐있는 달력 그리드 영역 -->
             <div class="calendar-collapsible show" id="calendarCollapsible">
+                <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:10px; font-size:11px; color:var(--text-muted);">
+                    <span><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#60a5fa; margin-right:5px;"></span>수업일</span>
+                    <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:rgba(255,93,108,0.4); margin-right:5px; vertical-align:middle;"></span>휴원일/공휴일</span>
+                </div>
                 <div class="calendar-grid">
                     <!-- 요일 헤더 -->
                     <div class="calendar-day-header sun">일</div>
@@ -712,6 +757,8 @@
                                     {% elif day in makeup_days %}attended-makeup
                                     {% elif day in access_days %}attended-access
                                     {% endif %}
+                                    {% if day in class_scheduled_days %}class-day{% endif %}
+                                    {% if day in holiday_days %}holiday{% endif %}
                                     {% if day == today.day %}today{% endif %}" id="day-{{ day }}">
                                     <span>{{ day }}</span>
                                     {% if day in present_days %}

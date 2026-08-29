@@ -852,9 +852,19 @@ class Contest(models.Model):
 
 
 class Attendance(models.Model):
+    TYPE_ACCESS = 'access'   # 집 등 학원 밖에서 로그인 (접속)
+    TYPE_PRESENT = 'present'  # 학원에서 로그인 + 오늘이 정규 수업일 (출석)
+    TYPE_MAKEUP = 'makeup'    # 학원에서 로그인 + 오늘이 정규 수업일이 아님 (보강)
+    TYPE_CHOICES = [
+        (TYPE_ACCESS, '접속'),
+        (TYPE_PRESENT, '출석'),
+        (TYPE_MAKEUP, '보강'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances', verbose_name='학생')
     date = models.DateField('출석일', default=timezone.localdate)
     is_present = models.BooleanField('출석 여부', default=True)
+    attendance_type = models.CharField('구분', max_length=10, choices=TYPE_CHOICES, default=TYPE_ACCESS)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -864,7 +874,7 @@ class Attendance(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return f"{self.user.username} - {self.date:%Y-%m-%d} 출석"
+        return f"{self.user.username} - {self.date:%Y-%m-%d} {self.get_attendance_type_display()}"
 
 
 class AvatarDraft(models.Model):

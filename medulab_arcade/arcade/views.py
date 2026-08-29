@@ -2691,8 +2691,10 @@ def class_admin_attendance(request, class_id):
     }
     student_ids = [e.student_id for e in enrollments]
     self_checkin_dates = set(
-        Attendance.objects.filter(user_id__in=student_ids, date__year=year, date__month=month)
-        .values_list('user_id', 'date')
+        Attendance.objects.filter(
+            user_id__in=student_ids, date__year=year, date__month=month,
+            attendance_type__in=[Attendance.TYPE_PRESENT, Attendance.TYPE_MAKEUP],
+        ).values_list('user_id', 'date')
     )
 
     rows = []
@@ -3835,7 +3837,9 @@ def _build_report_context(user):
     current_month = today.month
     attendances = Attendance.objects.filter(user=user, date__year=current_year, date__month=current_month)
     attendance_dates = [att.date.day for att in attendances]
-    has_attended_today = Attendance.objects.filter(user=user, date=today).exists()
+    today_attendance = Attendance.objects.filter(user=user, date=today).first()
+    has_attended_today = today_attendance is not None
+    today_attendance_type_display = today_attendance.get_attendance_type_display() if today_attendance else ''
 
     # 달력 생성을 위한 이번 달 날짜 정보
     import calendar
@@ -4027,6 +4031,7 @@ def _build_report_context(user):
         'coding_count': coding_count,
         'today_progress_list': today_progress_qs,
         'has_attended_today': has_attended_today,
+        'today_attendance_type_display': today_attendance_type_display,
         'attendance_dates': attendance_dates,
         'month_days': month_days,
         'month_name': month_name,
@@ -4178,19 +4183,75 @@ def child_report(request, child_id):
     return render(request, 'arcade/my_report.html', context)
 
 
+def _haversine_distance_m(lat1, lon1, lat2, lon2):
+    """두 GPS 좌표 사이의 거리(미터)를 계산"""
+    import math
+    R = 6371000
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(a))
+
+
+def _is_at_academy(lat, lng):
+    """학생이 보낸 GPS 좌표가 학원 반경 이내인지 판정 (좌표 미설정/미전송 시 항상 False)"""
+    if not (settings.ACADEMY_LATITUDE and settings.ACADEMY_LONGITUDE):
+        return False
+    if lat is None or lng is None:
+        return False
+    try:
+        distance = _haversine_distance_m(
+            float(lat), float(lng),
+            float(settings.ACADEMY_LATITUDE), float(settings.ACADEMY_LONGITUDE),
+        )
+    except (TypeError, ValueError):
+        return False
+    return distance <= settings.ACADEMY_GEOFENCE_RADIUS_M
+
+
+def _user_has_class_today(user, today):
+    """오늘 요일에 배정된 활성 수업이 하나라도 있으면 정규 수업일로 판단"""
+    code_for_py_weekday = {0: '1', 1: '2', 2: '3', 3: '4', 4: '5', 5: '6', 6: '0'}
+    code = code_for_py_weekday[today.weekday()]
+    for enrollment in ClassEnrollment.objects.filter(student=user, is_active=True).select_related('school_class'):
+        codes = enrollment.school_class.days_of_week.split(',') if enrollment.school_class.days_of_week else []
+        if code in codes:
+            return True
+    return False
+
+
 @login_required
 @require_POST
 def api_submit_attendance(request):
     from django.utils import timezone
     from .models import Attendance
-    
+
     today = timezone.localdate()
-    attendance, created = Attendance.objects.get_or_create(user=request.user, date=today)
-    
+    try:
+        payload = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        payload = {}
+
+    if _is_at_academy(payload.get('lat'), payload.get('lng')):
+        attendance_type = Attendance.TYPE_PRESENT if _user_has_class_today(request.user, today) else Attendance.TYPE_MAKEUP
+    else:
+        attendance_type = Attendance.TYPE_ACCESS
+
+    attendance, created = Attendance.objects.get_or_create(
+        user=request.user, date=today,
+        defaults={'attendance_type': attendance_type},
+    )
+    if not created and attendance.attendance_type == Attendance.TYPE_ACCESS and attendance_type != Attendance.TYPE_ACCESS:
+        attendance.attendance_type = attendance_type
+        attendance.save(update_fields=['attendance_type'])
+
     return JsonResponse({
         'status': 'success',
         'created': created,
-        'date': today.strftime('%Y-%m-%d')
+        'date': today.strftime('%Y-%m-%d'),
+        'attendance_type': attendance.attendance_type,
+        'attendance_type_display': attendance.get_attendance_type_display(),
     })
 
 

@@ -22,6 +22,11 @@ ACADEMY_CEO_NAME = os.environ.get('ACADEMY_CEO_NAME', '')
 ACADEMY_BIZ_NUMBER = os.environ.get('ACADEMY_BIZ_NUMBER', '')
 ACADEMY_ADDRESS = os.environ.get('ACADEMY_ADDRESS', '')
 
+# 학원 출석 체크 - 학생의 GPS 좌표가 학원 좌표 기준 반경 이내면 "학원에서 접속"으로 판정
+ACADEMY_LATITUDE = os.environ.get('ACADEMY_LATITUDE', '')
+ACADEMY_LONGITUDE = os.environ.get('ACADEMY_LONGITUDE', '')
+ACADEMY_GEOFENCE_RADIUS_M = int(os.environ.get('ACADEMY_GEOFENCE_RADIUS_M', '150'))
+
 # 포트원(PortOne) V2 결제 연동
 PORTONE_STORE_ID = os.environ.get('PORTONE_STORE_ID', '')
 PORTONE_CHANNEL_KEY_CARD = os.environ.get('PORTONE_CHANNEL_KEY_CARD', '')  # KG이니시스: 카드/실시간계좌이체/가상계좌

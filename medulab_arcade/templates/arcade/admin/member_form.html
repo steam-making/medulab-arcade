@@ -44,6 +44,18 @@
     .era-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #1e1b4b; border: 1px solid var(--border); border-radius: 10px; z-index: 100; max-height: 220px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.5); margin-top: 6px; }
     .era-dropdown-item { padding: 10px 14px; cursor: pointer; font-size: 13px; color: #e0e0e0; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .era-dropdown-item:hover { background: rgba(124,58,237,0.25); }
+
+    .btn-match { background: rgba(124,58,237,0.18); border: 1px solid rgba(167,139,250,0.3); color: #c4b5fd; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .btn-match:hover { background: rgba(124,58,237,0.3); }
+
+    .match-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .match-modal-overlay.show { display: flex; }
+    .match-modal-box { background: #1e1b2e; border: 1px solid var(--border); border-radius: 20px; padding: 28px; width: 100%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    .match-modal-box h3 { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .match-modal-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+    .match-modal-close { text-align: right; margin-top: 16px; }
+    .match-modal-close button { background: rgba(255,255,255,0.06); border: none; color: var(--text-secondary); border-radius: 10px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .match-modal-close button:hover { background: rgba(255,255,255,0.1); color: #fff; }
 </style>
 {% endblock %}
 
@@ -156,10 +168,7 @@
                             </form>
                         </span>
                         {% else %}
-                        <div class="era-search-wrap child-match-row" data-row="{{ forloop.counter0 }}">
-                            <input type="text" class="form-input child-match-search" style="padding:8px 12px; font-size:12px;" placeholder="자녀 계정 검색해서 매칭..." autocomplete="off">
-                            <div class="era-dropdown child-match-dropdown"></div>
-                        </div>
+                        <button type="button" class="btn-match" onclick="openMatchModal('{{ row.info.name|default:""|escapejs }}')">🔍 매칭</button>
                         {% endif %}
                     </td>
                 </tr>
@@ -197,6 +206,21 @@
             <input type="hidden" name="child_id" id="childIdInput">
         </form>
     </div>
+
+    <div class="match-modal-overlay" id="matchModalOverlay">
+        <div class="match-modal-box">
+            <h3>자녀 계정 연결</h3>
+            <p>연결할 학생 계정을 검색해서 선택해 주세요.</p>
+            <div class="era-search-wrap">
+                <input type="text" id="matchModalSearch" class="form-input" placeholder="자녀(학생) 이름 또는 아이디 검색..." autocomplete="off">
+                <div class="era-dropdown" id="matchModalDropdown"></div>
+            </div>
+            <div class="match-modal-close">
+                <button type="button" onclick="closeMatchModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     (function() {
         const linkForm = document.getElementById('linkChildForm');
@@ -204,9 +228,9 @@
 
         function wireSearch(searchEl, dropdownEl) {
             let timer = null;
-            searchEl.addEventListener('input', function() {
+            function runSearch() {
                 clearTimeout(timer);
-                const q = this.value.trim();
+                const q = searchEl.value.trim();
                 if (!q) { dropdownEl.style.display = 'none'; return; }
                 timer = setTimeout(() => {
                     fetch(`/api/search-members/?q=${encodeURIComponent(q)}`)
@@ -223,7 +247,8 @@
                             dropdownEl.style.display = 'block';
                         });
                 }, 180);
-            });
+            }
+            searchEl.addEventListener('input', runSearch);
             dropdownEl.addEventListener('click', function(e) {
                 const item = e.target.closest('.era-dropdown-item');
                 if (!item) return;
@@ -231,14 +256,32 @@
                 childIdInput.value = m.id;
                 linkForm.submit();
             });
+            return runSearch;
         }
 
         const mainSearch = document.getElementById('childSearch');
         const mainDropdown = document.getElementById('childDropdown');
         if (mainSearch && mainDropdown) wireSearch(mainSearch, mainDropdown);
 
-        document.querySelectorAll('.child-match-row').forEach(function(row) {
-            wireSearch(row.querySelector('.child-match-search'), row.querySelector('.child-match-dropdown'));
+        const modalOverlay = document.getElementById('matchModalOverlay');
+        const modalSearch = document.getElementById('matchModalSearch');
+        const modalDropdown = document.getElementById('matchModalDropdown');
+        const runModalSearch = wireSearch(modalSearch, modalDropdown);
+
+        window.openMatchModal = function(name) {
+            modalOverlay.classList.add('show');
+            modalSearch.value = name || '';
+            modalDropdown.style.display = 'none';
+            if (name) runModalSearch();
+            modalSearch.focus();
+        };
+        window.closeMatchModal = function() {
+            modalOverlay.classList.remove('show');
+            modalSearch.value = '';
+            modalDropdown.style.display = 'none';
+        };
+        modalOverlay.addEventListener('click', function(e) {
+            if (e.target === modalOverlay) closeMatchModal();
         });
 
         document.addEventListener('click', function(e) {

@@ -577,6 +577,10 @@ class TuitionInvoice(models.Model):
     def billing_period_label(self):
         return f'{self.due_date.year}년 {self.due_date.month}월'
 
+    @property
+    def attended_count(self):
+        return max(self.school_class.monthly_sessions - self.absence_count, 0)
+
     def save(self, *args, **kwargs):
         if not self.portone_payment_id:
             self.portone_payment_id = f'tuition-{uuid.uuid4().hex}'

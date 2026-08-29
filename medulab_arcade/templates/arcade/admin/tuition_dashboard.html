@@ -37,6 +37,15 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 .status-canceled { background:rgba(255,255,255,0.1); color:var(--text-secondary); }
 .back-link { color:var(--text-muted); font-size:13px; text-decoration:none; display:inline-block; margin-bottom:16px; }
 .search-btn { padding:10px 20px; border-radius:10px; background:var(--accent-green); color:var(--bg-primary); font-weight:800; border:none; cursor:pointer; font-size:13px; }
+
+.att-link { background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; font-weight:700; font-size:13px; padding:5px 12px; border-radius:8px; cursor:pointer; }
+.att-link:hover { background:rgba(59,130,246,0.22); }
+
+.att-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; align-items:center; justify-content:center; padding:20px; }
+.att-modal-overlay.show { display:flex; }
+.att-modal-box { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:28px; max-width:420px; width:100%; max-height:80vh; overflow-y:auto; position:relative; }
+.att-modal-close { position:absolute; top:16px; right:16px; background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1; }
+.att-modal-close:hover { color:#fff; }
 </style>
 {% endblock %}
 
@@ -51,7 +60,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
             <thead>
                 <tr>
                     <th>청구 월</th><th>수업명</th>
-                    <th>이전달 출석수</th><th>이전달 결석수</th><th>차감액</th><th>수강료</th>
+                    <th>전월 출석</th><th>차감액</th><th>수강료</th>
                     <th>금액</th><th>납부 기한</th><th>상태</th><th>결제일</th><th>결제 수단</th>
                 </tr>
             </thead>
@@ -60,8 +69,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
                 <tr>
                     <td style="font-weight:700; color:#fff;">{{ inv.billing_period_label }}</td>
                     <td>{{ inv.school_class.name }}</td>
-                    <td>{{ inv.attended_count }}회</td>
-                    <td>{% if inv.absence_count %}<span style="color:#fbbf24;">{{ inv.absence_count }}회</span>{% else %}0회{% endif %}</td>
+                    <td><button type="button" class="att-link" onclick="openAttendanceModal({{ inv.id }})">{{ inv.attended_count }}/{{ inv.school_class.monthly_sessions }}</button></td>
                     <td>{% if inv.absence_deduction %}<span style="color:#fbbf24;">-{{ inv.absence_deduction|intcomma }}원</span>{% else %}-{% endif %}</td>
                     <td>{{ inv.base_amount|intcomma }}원</td>
                     <td style="font-weight:700; color:#fff;">{{ inv.amount|intcomma }}원</td>
@@ -75,7 +83,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
                     <td>{{ inv.portone_pay_method|default:"-" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:40px;">청구 내역이 없습니다.</td></tr>
+                <tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:40px;">청구 내역이 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -115,7 +123,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
             <thead>
                 <tr>
                     <th>학생</th><th>수업명</th>
-                    <th>이전달 출석수</th><th>이전달 결석수</th><th>차감액</th><th>수강료</th>
+                    <th>전월 출석</th><th>차감액</th><th>수강료</th>
                     <th>금액</th><th>납부 기한</th><th>상태</th><th>결제일</th>
                 </tr>
             </thead>
@@ -124,8 +132,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
                 <tr>
                     <td><a href="?student_id={{ inv.student.id }}" class="student-link">{{ inv.student.profile.real_name|default:inv.student.username }}</a></td>
                     <td>{{ inv.school_class.name }}</td>
-                    <td>{{ inv.attended_count }}회</td>
-                    <td>{% if inv.absence_count %}<span style="color:#fbbf24;">{{ inv.absence_count }}회</span>{% else %}0회{% endif %}</td>
+                    <td><button type="button" class="att-link" onclick="openAttendanceModal({{ inv.id }})">{{ inv.attended_count }}/{{ inv.school_class.monthly_sessions }}</button></td>
                     <td>{% if inv.absence_deduction %}<span style="color:#fbbf24;">-{{ inv.absence_deduction|intcomma }}원</span>{% else %}-{% endif %}</td>
                     <td>{{ inv.base_amount|intcomma }}원</td>
                     <td style="font-weight:700; color:#fff;">{{ inv.amount|intcomma }}원</td>
@@ -138,11 +145,37 @@ tr:hover td { background:rgba(255,255,255,0.02); }
                     <td>{{ inv.paid_at|date:"Y.m.d H:i"|default:"-" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:40px;">해당 월의 청구서가 없습니다.</td></tr>
+                <tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:40px;">해당 월의 청구서가 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     {% endif %}
 </div>
+
+<div class="att-modal-overlay" id="attModalOverlay" onclick="if(event.target===this) closeAttendanceModal();">
+    <div class="att-modal-box">
+        <button type="button" class="att-modal-close" onclick="closeAttendanceModal()">✕</button>
+        <div id="attModalBody">불러오는 중...</div>
+    </div>
+</div>
+
+<script>
+function openAttendanceModal(invoiceId) {
+    var overlay = document.getElementById('attModalOverlay');
+    var body = document.getElementById('attModalBody');
+    body.innerHTML = '불러오는 중...';
+    overlay.classList.add('show');
+    fetch('/admin-services/tuition/' + invoiceId + '/attendance/')
+        .then(function (r) { return r.text(); })
+        .then(function (html) { body.innerHTML = html; })
+        .catch(function () { body.innerHTML = '<p style="color:#fca5a5;">출석 정보를 불러오지 못했습니다.</p>'; });
+}
+function closeAttendanceModal() {
+    document.getElementById('attModalOverlay').classList.remove('show');
+}
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeAttendanceModal();
+});
+</script>
 {% endblock %}

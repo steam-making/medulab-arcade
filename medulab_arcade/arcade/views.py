@@ -2787,6 +2787,35 @@ def tuition_admin_dashboard(request):
     return render(request, 'arcade/admin/tuition_dashboard.html', context)
 
 
+@login_required
+@user_passes_test(staff_check)
+def tuition_invoice_attendance_detail(request, invoice_id):
+    """청구서의 전월 출석 근거를 보여주는 모달 내용 (결석 차감 계산에 쓰인 그대로)"""
+    invoice = get_object_or_404(
+        TuitionInvoice.objects.select_related('student__profile', 'school_class'), pk=invoice_id
+    )
+    period_start = invoice.due_date.replace(day=1)
+    prev_month_last_day = period_start - timedelta(days=1)
+    prev_year, prev_month = prev_month_last_day.year, prev_month_last_day.month
+
+    scheduled_dates = _class_session_dates(invoice.school_class, prev_year, prev_month)
+    enrollment = ClassEnrollment.objects.filter(school_class=invoice.school_class, student=invoice.student).first()
+    present_map = {}
+    if enrollment:
+        present_map = {
+            r.date: r.is_present
+            for r in ClassAttendance.objects.filter(enrollment=enrollment, date__in=scheduled_dates)
+        }
+    cells = [{'date': d, 'is_present': present_map.get(d, True)} for d in scheduled_dates]
+
+    context = {
+        'invoice': invoice,
+        'prev_year': prev_year, 'prev_month': prev_month,
+        'cells': cells,
+    }
+    return render(request, 'arcade/admin/_invoice_attendance_modal.html', context)
+
+
 # ────────────────────────────────────────────────
 # 학원비 결제 (포트원 V2)
 # ────────────────────────────────────────────────

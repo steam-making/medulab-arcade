@@ -150,6 +150,7 @@ urlpatterns = [
 
     # 납부 관리 (관리자 전용)
     path('admin-services/tuition/', views.tuition_admin_dashboard, name='tuition_admin_dashboard'),
+    path('admin-services/tuition/<int:invoice_id>/attendance/', views.tuition_invoice_attendance_detail, name='tuition_invoice_attendance_detail'),
 
     # 학원비 결제 (포트원)
     path('tuition/<int:invoice_id>/checkout/', views.tuition_checkout, name='tuition_checkout'),

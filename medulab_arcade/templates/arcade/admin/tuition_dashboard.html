@@ -34,9 +34,12 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 .amount-final { font-weight:800; color:#fff; }
 .amount-base { font-size:11px; color:var(--text-muted); text-decoration:line-through; }
 .amount-deduction { font-size:11px; color:#fbbf24; }
-.date-due { font-size:12px; }
-.date-paid { font-size:11px; color:var(--text-muted); margin-top:2px; }
-.date-method { font-size:11px; color:#93c5fd; margin-top:2px; }
+.date-line { font-size:11px; color:var(--text-secondary); white-space:nowrap; }
+.date-line + .date-line { margin-top:3px; }
+.date-line .dl-label { color:var(--text-muted); margin-right:4px; }
+.date-line.due { font-size:12px; color:#fff; font-weight:700; }
+.date-line.method { color:#93c5fd; }
+.date-line.paid { color:var(--text-muted); }
 .student-link { color:#93c5fd; text-decoration:none; font-weight:700; }
 .student-link:hover { text-decoration:underline; }
 .status-badge { padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
@@ -91,9 +94,9 @@ tr:hover td { background:rgba(255,255,255,0.02); }
                         {% else %}<span class="status-badge status-unpaid">미납</span>{% endif %}
                     </td>
                     <td>
-                        <div class="date-due">{{ inv.due_date|date:"Y.m.d" }}</div>
-                        {% if inv.portone_pay_method %}<div class="date-method">{{ inv.portone_pay_method }}</div>{% endif %}
-                        {% if inv.paid_at %}<div class="date-paid">결제 {{ inv.paid_at|date:"Y.m.d H:i" }}</div>{% endif %}
+                        <div class="date-line due"><span class="dl-label">기한</span>{{ inv.due_date|date:"Y.m.d" }}</div>
+                        <div class="date-line method"><span class="dl-label">결제방법</span>{{ inv.portone_pay_method|default:"-" }}</div>
+                        <div class="date-line paid"><span class="dl-label">결제일</span>{{ inv.paid_at|date:"Y.m.d H:i"|default:"-" }}</div>
                     </td>
                 </tr>
                 {% empty %}
@@ -161,9 +164,9 @@ tr:hover td { background:rgba(255,255,255,0.02); }
                         {% else %}<span class="status-badge status-unpaid">미납</span>{% endif %}
                     </td>
                     <td>
-                        <div class="date-due">{{ inv.due_date|date:"Y.m.d" }}</div>
-                        {% if inv.portone_pay_method %}<div class="date-method">{{ inv.portone_pay_method }}</div>{% endif %}
-                        {% if inv.paid_at %}<div class="date-paid">결제 {{ inv.paid_at|date:"Y.m.d H:i" }}</div>{% endif %}
+                        <div class="date-line due"><span class="dl-label">기한</span>{{ inv.due_date|date:"Y.m.d" }}</div>
+                        <div class="date-line method"><span class="dl-label">결제방법</span>{{ inv.portone_pay_method|default:"-" }}</div>
+                        <div class="date-line paid"><span class="dl-label">결제일</span>{{ inv.paid_at|date:"Y.m.d H:i"|default:"-" }}</div>
                     </td>
                 </tr>
                 {% empty %}

@@ -21,6 +21,11 @@
     .attend-badge { padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; }
     .attend-yes { background: rgba(0,255,180,0.15); color: var(--accent-green); }
     .attend-no { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+
+    .stat-card.clickable-stat { cursor:pointer; transition: all .15s; }
+    .stat-card.clickable-stat:hover { background: rgba(255,255,255,0.05); }
+    .stat-card.clickable-stat.active { border-color: var(--accent-green); box-shadow: 0 0 0 1px var(--accent-green) inset; }
+    .stat-card.clickable-stat .label { display:flex; align-items:center; justify-content:center; gap:5px; }
 </style>
 {% endblock %}
 
@@ -30,7 +35,10 @@
 
     <div class="stat-grid">
         <div class="stat-card"><div class="value">{{ total_students }}</div><div class="label">전체 학생 수</div></div>
-        <div class="stat-card"><div class="value">{{ today_attended_count }}</div><div class="label">오늘 출석</div></div>
+        <div class="stat-card clickable-stat" id="todayAttendStat" onclick="toggleTodayFilter()">
+            <div class="value">{{ today_attended_count }}/{{ today_scheduled_count }}</div>
+            <div class="label">오늘 출석</div>
+        </div>
         <div class="stat-card"><div class="value">{{ pending_approval_count }}</div><div class="label">승인 대기 회원</div></div>
         <div class="stat-card"><div class="value">{{ cert_count_total }}</div><div class="label">누적 자격증 취득</div></div>
         <div class="stat-card"><div class="value">{{ award_count_total }}</div><div class="label">누적 수상 이력</div></div>
@@ -44,7 +52,7 @@
             </thead>
             <tbody>
                 {% for s in students %}
-                <tr class="clickable" onclick="location.href='{% url 'admin_student_report' s.id %}'">
+                <tr class="clickable" data-scheduled-today="{{ s.scheduled_today|yesno:'1,0' }}" onclick="location.href='{% url 'admin_student_report' s.id %}'">
                     <td style="font-weight:700; color:#fff;">{{ s.profile.real_name|default:s.username }} <span style="color:var(--text-muted); font-size:11px; font-weight:400;">@{{ s.username }}</span></td>
                     <td>
                         {% if s.attended_today %}<span class="attend-badge attend-yes">✅ 출석</span>
@@ -63,4 +71,13 @@
         </table>
     </div>
 </div>
+<script>
+function toggleTodayFilter() {
+    const card = document.getElementById('todayAttendStat');
+    const active = card.classList.toggle('active');
+    document.querySelectorAll('tr[data-scheduled-today]').forEach(function(row) {
+        row.style.display = (active && row.dataset.scheduledToday !== '1') ? 'none' : '';
+    });
+}
+</script>
 {% endblock %}

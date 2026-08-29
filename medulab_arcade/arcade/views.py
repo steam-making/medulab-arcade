@@ -4436,12 +4436,26 @@ def _render_staff_student_dashboard(request):
     ):
         month_attendance_counts[row['user_id']] = row['cnt']
 
+    # 오늘 요일에 배정된 활성 수업이 있는 학생 = 오늘 출석해야 할 학생
+    code_for_py_weekday = {0: '1', 1: '2', 2: '3', 3: '4', 4: '5', 5: '6', 6: '0'}
+    today_code = code_for_py_weekday[today.weekday()]
+    today_scheduled_ids = set()
+    for enrollment in (
+        ClassEnrollment.objects.filter(student_id__in=student_ids, is_active=True)
+        .select_related('school_class')
+    ):
+        codes = enrollment.school_class.days_of_week.split(',') if enrollment.school_class.days_of_week else []
+        if today_code in codes:
+            today_scheduled_ids.add(enrollment.student_id)
+
     for s in students:
         s.attended_today = s.id in today_attended_ids
         s.month_attendance_count = month_attendance_counts.get(s.id, 0)
+        s.scheduled_today = s.id in today_scheduled_ids
 
     total_students = len(students)
     today_attended_count = len(today_attended_ids)
+    today_scheduled_count = len(today_scheduled_ids)
     pending_approval_count = UserProfile.objects.filter(
         user_type__in=UserProfile.FULL_ACCESS_TYPES, is_approved=False
     ).count()
@@ -4452,6 +4466,7 @@ def _render_staff_student_dashboard(request):
     context = {
         'total_students': total_students,
         'today_attended_count': today_attended_count,
+        'today_scheduled_count': today_scheduled_count,
         'pending_approval_count': pending_approval_count,
         'cert_count_total': cert_count_total,
         'award_count_total': award_count_total,

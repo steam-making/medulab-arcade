@@ -155,7 +155,10 @@ urlpatterns = [
     # 학원비 결제 (포트원)
     path('tuition/<int:invoice_id>/checkout/', views.tuition_checkout, name='tuition_checkout'),
     path('tuition/<int:invoice_id>/verify/', views.tuition_verify_payment, name='tuition_verify_payment'),
+    path('tuition/batch/checkout/', views.tuition_batch_checkout, name='tuition_batch_checkout'),
+    path('tuition/batch/<int:batch_id>/verify/', views.tuition_batch_verify, name='tuition_batch_verify'),
     path('tuition/webhook/', views.tuition_webhook, name='tuition_webhook'),
+    path('my-report/payment-history/', views.parent_payment_history, name='parent_payment_history'),
 
     # 배지 관리 (관리자 전용)
     path('admin-services/badges/', views.badge_list, name='badge_list'),

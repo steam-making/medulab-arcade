@@ -26,7 +26,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -2978,6 +2978,111 @@ def tuition_verify_payment(request, invoice_id):
     return JsonResponse({'ok': True})
 
 
+@login_required
+def tuition_batch_checkout(request):
+    """학부모가 연결된 모든 자녀의 미납 학원비를 한 번에 결제"""
+    child_ids = ParentChildLink.objects.filter(parent=request.user).values_list('child_id', flat=True)
+    invoices = list(
+        TuitionInvoice.objects.filter(student_id__in=child_ids, status=TuitionInvoice.STATUS_UNPAID)
+        .select_related('school_class', 'student__profile').order_by('due_date')
+    )
+    if not invoices:
+        messages.info(request, '미납된 학원비가 없습니다.')
+        return redirect('my_report')
+
+    total_amount = sum(inv.amount for inv in invoices)
+    current_ids = {inv.id for inv in invoices}
+
+    batch = None
+    for candidate in TuitionBatchPayment.objects.filter(payer=request.user, status=TuitionInvoice.STATUS_UNPAID):
+        if set(candidate.invoices.values_list('id', flat=True)) == current_ids:
+            batch = candidate
+            break
+    if not batch:
+        batch = TuitionBatchPayment.objects.create(payer=request.user, amount=total_amount)
+        batch.invoices.set(invoices)
+
+    context = {
+        'batch': batch,
+        'invoices': invoices,
+        'total_amount': total_amount,
+        'portone_store_id': settings.PORTONE_STORE_ID,
+        'portone_channel_key_card': settings.PORTONE_CHANNEL_KEY_CARD,
+        'portone_channel_key_kakaopay': settings.PORTONE_CHANNEL_KEY_KAKAOPAY,
+        'portone_customer_email': request.user.email or f'{request.user.username}@medulab.kr',
+        'portone_customer_phone': re.sub(r'\D', '', request.user.profile.phone_number or '') or '01000000000',
+        'portone_customer_name': request.user.profile.real_name or request.user.username,
+    }
+    return render(request, 'arcade/tuition_batch_checkout.html', context)
+
+
+@login_required
+@require_POST
+def tuition_batch_verify(request, batch_id):
+    """일괄결제 완료 콜백 후 서버가 포트원 API로 실제 결제 상태를 재검증"""
+    import requests
+    batch = get_object_or_404(TuitionBatchPayment, pk=batch_id, payer=request.user)
+
+    if batch.status == TuitionInvoice.STATUS_PAID:
+        return JsonResponse({'ok': True, 'already_paid': True})
+
+    if not settings.PORTONE_API_SECRET:
+        return JsonResponse({'ok': False, 'error': '결제 연동이 아직 설정되지 않았습니다.'}, status=503)
+
+    try:
+        resp = requests.get(
+            f'https://api.portone.io/payments/{batch.portone_payment_id}',
+            headers={'Authorization': f'PortOne {settings.PORTONE_API_SECRET}'},
+            timeout=10,
+        )
+    except requests.RequestException:
+        return JsonResponse({'ok': False, 'error': '결제 확인 중 오류가 발생했습니다.'}, status=502)
+
+    if resp.status_code != 200:
+        return JsonResponse({'ok': False, 'error': '결제 정보를 확인할 수 없습니다.'}, status=502)
+
+    data = resp.json()
+    if data.get('status') != 'PAID':
+        return JsonResponse({'ok': False, 'error': '결제가 완료되지 않았습니다.'}, status=400)
+
+    paid_amount = (data.get('amount') or {}).get('total')
+    if paid_amount != batch.amount:
+        return JsonResponse({'ok': False, 'error': '결제 금액이 청구 금액과 일치하지 않습니다.'}, status=400)
+
+    method = (data.get('method') or {}).get('type', '')
+    now = timezone.now()
+    batch.status = TuitionInvoice.STATUS_PAID
+    batch.paid_at = now
+    batch.portone_pay_method = method
+    batch.save(update_fields=['status', 'paid_at', 'portone_pay_method'])
+    batch.invoices.update(status=TuitionInvoice.STATUS_PAID, paid_at=now, portone_pay_method=method)
+    return JsonResponse({'ok': True})
+
+
+@login_required
+def parent_payment_history(request):
+    """학부모의 연결된 모든 자녀 납부 내역 (읽기 전용)"""
+    if request.user.profile.user_type != 'medulab_parent':
+        return redirect('my_report')
+
+    links = ParentChildLink.objects.filter(parent=request.user).select_related('child__profile')
+    child_ids = [l.child_id for l in links]
+    invoices = TuitionInvoice.objects.filter(student_id__in=child_ids).select_related(
+        'school_class', 'student__profile'
+    ).order_by('-due_date', 'student__profile__real_name')
+
+    unpaid_total = sum(inv.amount for inv in invoices if inv.status == TuitionInvoice.STATUS_UNPAID)
+    paid_total = sum(inv.amount for inv in invoices if inv.status == TuitionInvoice.STATUS_PAID)
+
+    context = {
+        'links': links,
+        'invoices': invoices,
+        'unpaid_total': unpaid_total,
+        'paid_total': paid_total,
+    }
+    return render(request, 'arcade/payment_history.html', context)
+
+
 def _verify_portone_webhook_signature(request):
     """포트원 웹훅은 Svix 표준 서명 방식을 사용 (id.timestamp.body 를 HMAC-SHA256)"""
     import base64
@@ -3024,12 +3129,18 @@ def tuition_webhook(request):
     if not payment_id:
         return JsonResponse({'ok': True})
 
+    target = None
+    is_batch = False
     try:
-        invoice = TuitionInvoice.objects.get(portone_payment_id=payment_id)
+        target = TuitionInvoice.objects.get(portone_payment_id=payment_id)
     except TuitionInvoice.DoesNotExist:
-        return JsonResponse({'ok': True})
+        try:
+            target = TuitionBatchPayment.objects.get(portone_payment_id=payment_id)
+            is_batch = True
+        except TuitionBatchPayment.DoesNotExist:
+            return JsonResponse({'ok': True})
 
-    if invoice.status == TuitionInvoice.STATUS_PAID or not settings.PORTONE_API_SECRET:
+    if target.status == TuitionInvoice.STATUS_PAID or not settings.PORTONE_API_SECRET:
         return JsonResponse({'ok': True})
 
     try:
@@ -3042,11 +3153,15 @@ def tuition_webhook(request):
     except requests.RequestException:
         return JsonResponse({'ok': False}, status=502)
 
-    if data.get('status') == 'PAID' and (data.get('amount') or {}).get('total') == invoice.amount:
-        invoice.status = TuitionInvoice.STATUS_PAID
-        invoice.paid_at = timezone.now()
-        invoice.portone_pay_method = (data.get('method') or {}).get('type', '')
-        invoice.save(update_fields=['status', 'paid_at', 'portone_pay_method'])
+    if data.get('status') == 'PAID' and (data.get('amount') or {}).get('total') == target.amount:
+        method = (data.get('method') or {}).get('type', '')
+        now = timezone.now()
+        target.status = TuitionInvoice.STATUS_PAID
+        target.paid_at = now
+        target.portone_pay_method = method
+        target.save(update_fields=['status', 'paid_at', 'portone_pay_method'])
+        if is_batch:
+            target.invoices.update(status=TuitionInvoice.STATUS_PAID, paid_at=now, portone_pay_method=method)
 
     return JsonResponse({'ok': True})
 
@@ -4306,6 +4421,13 @@ def child_report(request, child_id):
     context['viewing_as_parent'] = True
     context['viewed_child_id'] = link.child_id
     context['sibling_links'] = all_links
+
+    # 자녀가 여럿이어도 매번 들어가지 않도록, 연결된 모든 자녀의 미납 학원비를 한 곳에서 확인
+    all_child_ids = [l.child_id for l in all_links]
+    context['all_children_unpaid_invoices'] = TuitionInvoice.objects.filter(
+        student_id__in=all_child_ids, status=TuitionInvoice.STATUS_UNPAID
+    ).select_related('school_class', 'student__profile').order_by('due_date')
+
     return render(request, 'arcade/my_report.html', context)
 
 

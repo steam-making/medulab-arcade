@@ -587,6 +587,31 @@ class TuitionInvoice(models.Model):
         super().save(*args, **kwargs)
 
 
+class TuitionBatchPayment(models.Model):
+    """학부모가 연결된 여러 자녀의 미납 청구서를 한 번에 결제할 때 쓰는 묶음 결제 단위"""
+    payer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tuition_batch_payments', verbose_name='결제자(학부모)')
+    invoices = models.ManyToManyField(TuitionInvoice, related_name='batch_payments', verbose_name='포함된 청구서')
+    amount = models.PositiveIntegerField('결제 금액(원)')
+    status = models.CharField('상태', max_length=10, choices=TuitionInvoice.STATUS_CHOICES, default=TuitionInvoice.STATUS_UNPAID)
+    portone_payment_id = models.CharField('포트원 결제건 ID', max_length=100, unique=True, blank=True)
+    portone_pay_method = models.CharField('결제 수단', max_length=30, blank=True)
+    paid_at = models.DateTimeField('결제 완료 일시', null=True, blank=True)
+    created_at = models.DateTimeField('생성일', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '학원비 일괄결제'
+        verbose_name_plural = '학원비 일괄결제'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.payer.username} 일괄결제 {self.amount}원'
+
+    def save(self, *args, **kwargs):
+        if not self.portone_payment_id:
+            self.portone_payment_id = f'tuition-batch-{uuid.uuid4().hex}'
+        super().save(*args, **kwargs)
+
+
 class ParentChildLink(models.Model):
     parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='child_links', verbose_name='학부모')
     child = models.ForeignKey(User, on_delete=models.CASCADE, related_name='parent_links', verbose_name='자녀(학생)')

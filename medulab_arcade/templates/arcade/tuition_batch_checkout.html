@@ -1,0 +1,126 @@
+{% extends 'arcade/base.html' %}
+{% load humanize %}
+
+{% block title %}학원비 일괄 결제 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+.checkout-wrap { max-width:560px; margin:60px auto; padding:0 20px; }
+.checkout-title { font: 900 24px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:24px; }
+.invoice-card { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:24px 28px; margin-bottom:20px; }
+.invoice-item { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.06); gap:12px; }
+.invoice-item:last-of-type { border-bottom:none; }
+.invoice-item-name { font-weight:700; color:#fff; font-size:14px; }
+.invoice-item-meta { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.invoice-item-amount { font-weight:800; color:#fff; font-size:14px; white-space:nowrap; }
+.invoice-row.total { display:flex; justify-content:space-between; border-top:1px solid var(--border); margin-top:8px; padding-top:16px; font-size:18px; font-weight:900; color:#fff; }
+.pay-methods { display:flex; flex-direction:column; gap:10px; }
+.pay-btn { padding:16px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:#fff; font-weight:700; font-size:14px; cursor:pointer; transition:all .2s; text-align:left; display:flex; align-items:center; gap:10px; }
+.pay-btn:hover { background:rgba(0,255,180,0.1); border-color:var(--accent-green); }
+.pay-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.pay-status { margin-top:16px; padding:14px 16px; border-radius:10px; font-size:13px; display:none; }
+.pay-status.error { display:block; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; }
+.pay-status.success { display:block; background:rgba(0,255,180,0.1); border:1px solid rgba(0,255,180,0.3); color:var(--accent-green); }
+.pay-status.info { display:block; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="checkout-wrap">
+    <h1 class="checkout-title">💳 학원비 일괄 결제</h1>
+
+    <div class="invoice-card">
+        {% for inv in invoices %}
+        <div class="invoice-item">
+            <div>
+                <div class="invoice-item-name">{{ inv.student.profile.real_name|default:inv.student.username }} · {{ inv.school_class.name }}</div>
+                <div class="invoice-item-meta">{{ inv.billing_period_label }} · 납부 기한 {{ inv.due_date|date:"Y.m.d" }}</div>
+            </div>
+            <div class="invoice-item-amount">{{ inv.amount|intcomma }}원</div>
+        </div>
+        {% endfor %}
+        <div class="invoice-row total"><span>총 결제 금액</span><span>{{ total_amount|intcomma }}원</span></div>
+    </div>
+
+    {% if not portone_store_id %}
+    <div class="pay-status info" style="display:block;">결제 연동 설정이 아직 완료되지 않았습니다. 관리자에게 문의해 주세요.</div>
+    {% else %}
+    <div class="pay-methods">
+        <button type="button" class="pay-btn" data-method="CARD">💳 신용카드</button>
+        <button type="button" class="pay-btn" data-method="TRANSFER">🏦 실시간 계좌이체</button>
+        <button type="button" class="pay-btn" data-method="VIRTUAL_ACCOUNT">🧾 가상계좌</button>
+        {% if portone_channel_key_kakaopay %}
+        <button type="button" class="pay-btn" data-method="EASY_PAY">💛 카카오페이</button>
+        {% endif %}
+    </div>
+    <div id="payStatus" class="pay-status"></div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+<script>
+(function () {
+    var statusEl = document.getElementById('payStatus');
+    function showStatus(type, message) {
+        if (!statusEl) return;
+        statusEl.className = 'pay-status ' + type;
+        statusEl.textContent = message;
+    }
+
+    document.querySelectorAll('.pay-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = true; });
+            showStatus('info', '결제창을 여는 중입니다...');
+
+            var method = btn.dataset.method;
+            var params = {
+                storeId: '{{ portone_store_id }}',
+                channelKey: method === 'EASY_PAY' ? '{{ portone_channel_key_kakaopay }}' : '{{ portone_channel_key_card }}',
+                paymentId: '{{ batch.portone_payment_id }}',
+                orderName: '메듀랩 학원비 일괄결제 ({{ invoices|length }}건)',
+                totalAmount: {{ total_amount }},
+                currency: 'CURRENCY_KRW',
+                payMethod: method,
+                customer: {
+                    fullName: '{{ portone_customer_name|escapejs }}',
+                    email: '{{ portone_customer_email|escapejs }}',
+                    phoneNumber: '{{ portone_customer_phone|escapejs }}',
+                },
+            };
+            if (method === 'EASY_PAY') {
+                params.easyPay = { easyPayProvider: 'EASY_PAY_PROVIDER_KAKAOPAY' };
+            }
+
+            PortOne.requestPayment(params).then(function (response) {
+                if (!response || response.code) {
+                    showStatus('error', (response && response.message) || '결제가 취소되었습니다.');
+                    document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
+                    return;
+                }
+
+                if (method === 'VIRTUAL_ACCOUNT') {
+                    showStatus('success', '가상계좌가 발급되었습니다. 입금이 확인되면 자동으로 완납 처리됩니다.');
+                    return;
+                }
+
+                fetch('{% url "tuition_batch_verify" batch.id %}', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                }).then(function (r) { return r.json(); }).then(function (data) {
+                    if (data.ok) {
+                        showStatus('success', '결제가 완료되었습니다.');
+                        setTimeout(function () { window.location.href = '{% url "my_report" %}'; }, 1200);
+                    } else {
+                        showStatus('error', data.error || '결제 확인에 실패했습니다.');
+                        document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
+                    }
+                });
+            }).catch(function () {
+                showStatus('error', '결제 중 오류가 발생했습니다.');
+                document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
+            });
+        });
+    });
+})();
+</script>
+{% endblock %}

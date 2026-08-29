@@ -1,0 +1,66 @@
+{% extends 'arcade/base.html' %}
+{% load humanize %}
+
+{% block title %}납부 내역 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+.hist-wrap { max-width:900px; margin:50px auto; padding:0 20px; }
+.hist-title { font: 900 26px 'Orbitron', sans-serif; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom:20px; }
+.back-link { color:var(--text-muted); font-size:13px; text-decoration:none; display:inline-block; margin-bottom:16px; }
+.stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:24px; }
+.stat-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:20px; }
+.stat-card .label { font-size:12px; color:var(--text-muted); font-weight:700; margin-bottom:8px; }
+.stat-card .value { font-size:22px; font-weight:900; color:#fff; }
+.stat-card.paid .value { color:var(--accent-green); }
+.stat-card.unpaid .value { color:#f59e0b; }
+.table-wrap { background:var(--bg-card); border-radius:18px; border:1px solid var(--border); overflow-x:auto; box-shadow:0 10px 30px rgba(0,0,0,0.2); }
+table { width:100%; border-collapse:collapse; text-align:left; min-width:640px; }
+th { padding:16px 20px; background:rgba(255,255,255,0.03); color:var(--text-muted); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+td { padding:14px 20px; border-top:1px solid var(--border); font-size:14px; }
+tr:hover td { background:rgba(255,255,255,0.02); }
+.status-badge { padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
+.status-paid { background:rgba(0,255,180,0.15); color:var(--accent-green); }
+.status-unpaid { background:rgba(251,191,36,0.15); color:#fbbf24; }
+.status-canceled { background:rgba(255,255,255,0.1); color:var(--text-secondary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hist-wrap">
+    <a href="{% url 'my_report' %}" class="back-link">← 마이 리포트로 돌아가기</a>
+    <h1 class="hist-title">📋 납부 내역</h1>
+
+    <div class="stat-grid">
+        <div class="stat-card paid"><div class="label">누적 완납</div><div class="value">{{ paid_total|intcomma }}원</div></div>
+        <div class="stat-card unpaid"><div class="label">현재 미납</div><div class="value">{{ unpaid_total|intcomma }}원</div></div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>자녀</th><th>청구 월</th><th>수업명</th><th>금액</th><th>납부 기한</th><th>상태</th><th>결제일</th></tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td>{{ inv.student.profile.real_name|default:inv.student.username }}</td>
+                    <td>{{ inv.billing_period_label }}</td>
+                    <td>{{ inv.school_class.name }}</td>
+                    <td>{{ inv.amount|intcomma }}원</td>
+                    <td>{{ inv.due_date|date:"Y.m.d" }}</td>
+                    <td>
+                        {% if inv.status == 'paid' %}<span class="status-badge status-paid">✅ 완납</span>
+                        {% elif inv.status == 'canceled' %}<span class="status-badge status-canceled">취소</span>
+                        {% else %}<span class="status-badge status-unpaid">미납</span>{% endif %}
+                    </td>
+                    <td>{{ inv.paid_at|date:"Y.m.d H:i"|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:40px;">납부 내역이 없습니다.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

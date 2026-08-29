@@ -444,8 +444,8 @@
         {% else %}
         <a href="{% url 'profile' %}" style="color:var(--text-muted); font-size:13px; text-decoration:none;">← 내 프로필로 돌아가기</a>
         {% endif %}
-        {% if sibling_links|length > 1 %}
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            {% if sibling_links|length > 1 %}
             {% for link in sibling_links %}
             <a href="{% url 'child_report' link.child.id %}"
                style="padding:7px 16px; border-radius:999px; font-size:13px; font-weight:700; text-decoration:none; transition:all .15s;
@@ -453,8 +453,14 @@
                 👤 {{ link.child.profile.real_name|default:link.child.username }}
             </a>
             {% endfor %}
+            {% endif %}
+            {% if not viewing_as_admin %}
+            <a href="{% url 'parent_payment_history' %}"
+               style="padding:7px 16px; border-radius:999px; font-size:13px; font-weight:700; text-decoration:none; background:rgba(59,130,246,0.15); color:#93c5fd; border:1px solid rgba(59,130,246,0.3);">
+                📋 납부내역
+            </a>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
     {% endif %}
 
@@ -472,7 +478,31 @@
         {% endif %}
     </div>
 
-    {% if unpaid_invoices %}
+    {% if viewing_as_parent %}
+        {% if all_children_unpaid_invoices %}
+        <div class="section-card" style="margin-bottom:24px; border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.06);">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:8px; font-weight:800; color:#f59e0b;">
+                    💳 미납 학원비 {{ all_children_unpaid_invoices|length }}건 (자녀 전체)
+                </div>
+                {% if all_children_unpaid_invoices|length > 1 %}
+                <a href="{% url 'tuition_batch_checkout' %}" style="padding:9px 20px; border-radius:10px; background:linear-gradient(135deg,#f59e0b,#f97316); color:#1a1200; font-weight:800; font-size:13px; text-decoration:none;">🧾 전체 한번에 결제하기</a>
+                {% endif %}
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                {% for inv in all_children_unpaid_invoices %}
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 16px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid var(--border);">
+                    <div>
+                        <div style="font-weight:700; color:#fff; font-size:14px;">{{ inv.student.profile.real_name|default:inv.student.username }} · {{ inv.billing_period_label }} · {{ inv.school_class.name }}</div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">납부 기한 {{ inv.due_date|date:"Y.m.d" }} · {{ inv.amount|intcomma }}원</div>
+                    </div>
+                    <a href="{% url 'tuition_checkout' inv.id %}" style="padding:9px 20px; border-radius:10px; background:#f59e0b; color:#1a1200; font-weight:800; font-size:13px; text-decoration:none;">결제하기</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% elif unpaid_invoices %}
     <div class="section-card" style="margin-bottom:24px; border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.06);">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; font-weight:800; color:#f59e0b;">
             💳 미납 학원비 {{ unpaid_invoices|length }}건

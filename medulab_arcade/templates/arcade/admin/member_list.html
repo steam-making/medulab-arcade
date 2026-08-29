@@ -50,8 +50,22 @@
     .add-btn { padding: 12px 24px; border-radius: 12px; background: var(--accent-green); color: var(--bg-primary); font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,255,180,0.2); font-size: 14px; }
     .add-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,255,180,0.3); }
 
-    .approval-pending { color: #ffc107; font-weight: 700; font-size: 12px; }
+    .approval-pending { color: #ffc107; font-weight: 700; font-size: 12px; background: rgba(255,193,7,0.12); border: 1px solid rgba(255,193,7,0.3); border-radius: 999px; padding: 5px 12px; cursor: pointer; transition: all 0.2s; }
+    .approval-pending:hover { background: rgba(255,193,7,0.22); }
     .approval-inline { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .approve-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; align-items:center; justify-content:center; padding:20px; }
+    .approve-modal-overlay.show { display:flex; }
+    .approve-modal-box { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:32px; max-width:380px; width:100%; text-align:center; }
+    .approve-modal-box .icon { font-size:36px; margin-bottom:14px; }
+    .approve-modal-box h3 { color:#fff; font-size:17px; font-weight:900; margin:0 0 8px 0; }
+    .approve-modal-box p { color:var(--text-muted); font-size:13px; margin:0 0 24px 0; }
+    .approve-modal-actions { display:flex; gap:10px; }
+    .approve-modal-actions button { flex:1; padding:12px; border-radius:10px; font-weight:800; font-size:14px; cursor:pointer; border:1px solid var(--border); }
+    .approve-modal-cancel { background:rgba(255,255,255,0.06); color:#fff; }
+    .approve-modal-cancel:hover { background:rgba(255,255,255,0.1); }
+    .approve-modal-confirm { background:var(--accent-green); color:var(--bg-primary); border-color:transparent; }
+    .approve-modal-confirm:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,255,180,0.25); }
 </style>
 {% endblock %}
 
@@ -114,16 +128,10 @@
                         {% if u.profile.is_approved %}
                         <span style="font-size: 12px; color: var(--accent-green);">● 승인됨</span>
                         {% elif u.profile.needs_approval %}
-                        <span class="approval-inline">
-                            <span class="approval-pending">⏳ 승인 대기</span>
-                            {% if u.profile.user_type == 'medulab_member' %}
-                            <form action="{% url 'member_approve' u.id %}" method="POST" style="display:inline;">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <button type="submit" class="btn-icon btn-approve" title="승인">승인</button>
-                            </form>
-                            {% endif %}
-                        </span>
+                        <button type="button" class="approval-pending"
+                            onclick="openApproveModal({{ u.id }}, '{{ u.profile.real_name|default:u.username|escapejs }}', '{{ u.profile.get_user_type_display|escapejs }}')">
+                            ⏳ 승인 대기
+                        </button>
                         {% else %}
                         <span style="font-size: 12px; color: var(--text-muted);">○ 미승인</span>
                         {% endif %}
@@ -167,4 +175,37 @@
         </table>
     </div>
 </div>
+
+<div class="approve-modal-overlay" id="approveModalOverlay" onclick="if(event.target===this) closeApproveModal();">
+    <div class="approve-modal-box">
+        <div class="icon">⏳</div>
+        <h3 id="approveModalName">-</h3>
+        <p id="approveModalType">이 회원을 승인할까요?</p>
+        <form id="approveModalForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div class="approve-modal-actions">
+                <button type="button" class="approve-modal-cancel" onclick="closeApproveModal()">취소</button>
+                <button type="submit" class="approve-modal-confirm">✅ 승인하기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+var approveUrlTemplate = "{% url 'member_approve' 999999 %}".replace('999999', '__ID__');
+
+function openApproveModal(userId, name, typeLabel) {
+    document.getElementById('approveModalName').textContent = name;
+    document.getElementById('approveModalType').textContent = typeLabel + ' 회원으로 승인할까요?';
+    document.getElementById('approveModalForm').action = approveUrlTemplate.replace('__ID__', userId);
+    document.getElementById('approveModalOverlay').classList.add('show');
+}
+function closeApproveModal() {
+    document.getElementById('approveModalOverlay').classList.remove('show');
+}
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeApproveModal();
+});
+</script>
 {% endblock %}

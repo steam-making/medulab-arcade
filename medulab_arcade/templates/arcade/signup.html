@@ -377,7 +377,7 @@
                         <div style="display:grid; grid-template-columns:1fr 130px 1fr 90px 36px; background:rgba(255,255,255,0.05); border-bottom:1px solid var(--auth-border);">
                             <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">이름</span>
                             <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">생년월일</span>
-                            <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">학교</span>
+                            <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">학교명</span>
                             <span style="padding:9px 12px; font-size:12px; font-weight:700; color:var(--text-muted);">학년</span>
                             <span></span>
                         </div>
@@ -642,8 +642,8 @@
             row.style.cssText = 'display:grid; grid-template-columns:1fr 130px 1fr 90px 36px; border-bottom:1px solid var(--auth-border);';
             row.innerHTML = `
                 <input type="text" placeholder="이름" value="${escChild(name)}" data-col="name" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--auth-border); font-size:13px; outline:none;">
-                <input type="text" placeholder="생년월일" value="${escChild(birth_date)}" data-col="birth_date" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--auth-border); font-size:13px; outline:none;">
-                <input type="text" placeholder="학교" value="${escChild(school)}" data-col="school" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--auth-border); font-size:13px; outline:none;">
+                <input type="text" placeholder="예: 20160315" value="${escChild(birth_date)}" data-col="birth_date" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--auth-border); font-size:13px; outline:none;">
+                <input type="text" placeholder="학교명" value="${escChild(school)}" data-col="school" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--auth-border); font-size:13px; outline:none;">
                 <input type="text" placeholder="학년" value="${escChild(grade)}" data-col="grade" style="width:100%; padding:9px 12px; background:transparent; color:#e0e0e0; border:none; border-right:1px solid var(--auth-border); font-size:13px; outline:none;">
                 <button type="button" class="child-row-del" style="display:flex; align-items:center; justify-content:center; background:transparent; border:none; color:rgba(255,80,80,0.5); cursor:pointer; font-size:16px;">✕</button>
             `;

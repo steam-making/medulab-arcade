@@ -6,20 +6,22 @@
 <style>
     /* 기존 네비게이션은 숨기고 푸터만 표시하거나, 상황에 맞게 조정 */
     .nav { display: none !important; } /* 헤더는 공간 확보를 위해 숨김 유지 (원본 느낌) */
-    .footer { 
-        display: block !important; 
-        position: fixed; bottom: 0; left: 0; right: 0; 
-        height: 60px; background: #08080f; border-top: 1px solid var(--border);
+    .footer {
+        position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
+        height: 36px; background: #08080f; border-top: 1px solid var(--border);
         display: flex !important; align-items: center; justify-content: center;
-        font-size: 13px; color: var(--text-muted); z-index: 1000;
-        margin: 0;
+        font-size: 12px; color: var(--text-muted); z-index: 1000 !important;
+        margin: 0; padding: 0 !important;
     }
+    /* 편집 화면 공간 확보를 위해 사업자 정보/링크는 숨기고 저작권 표기만 표시 */
+    .footer .footer-biz-info, .footer .footer-links { display: none !important; }
+    .footer p { margin: 0; }
     #particles { opacity: 0.1; }
 
-    /* 실습 환경 컨테이너 (푸터 공간 60px 제외) */
+    /* 실습 환경 컨테이너 (푸터 공간 36px 제외) */
     .editor-container {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 60px; /* 푸터 높이만큼 띄움 */
+        position: fixed !important;
+        top: 0 !important; left: 0 !important; right: 0 !important; bottom: 36px !important; /* 푸터 높이만큼 띄움 */
         display: flex;
         gap: 12px;
         padding: 12px;

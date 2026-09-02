@@ -1238,6 +1238,8 @@ class InstagramPost(models.Model):
     caption = models.TextField('캡션', blank=True, default='')
     carousel_children = models.JSONField('여러 장(캐러셀) 하위 미디어 목록', blank=True, null=True,
         help_text='[{"media_type":"IMAGE","media_url":"...","thumbnail_url":"..."}, ...]')
+    manual_category = models.CharField('수동 지정 필터 카테고리', max_length=20, blank=True, default='',
+        help_text='관리자가 직접 배정한 카테고리 코드. 비어 있으면 캡션 키워드로 자동 분류됨.')
     posted_at = models.DateTimeField('게시일시', null=True, blank=True)
     synced_at = models.DateTimeField('동기화 시각', auto_now=True)
 

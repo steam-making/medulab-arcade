@@ -58,6 +58,7 @@
 .gal-share-menu.show { display: flex; }
 .gal-share-menu button { background: none; border: none; color: #e5e7eb; font-size: 13px; text-align: left; padding: 10px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 .gal-share-menu button:hover { background: rgba(255,255,255,0.08); }
+.gal-cat-option.active { background: rgba(0,255,180,0.12); color: var(--accent-green); font-weight: 700; }
 .gal-toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; font-size: 13px; padding: 10px 20px; border-radius: 999px; z-index: 1100; opacity: 0; pointer-events: none; transition: opacity .2s; }
 .gal-toast.show { opacity: 1; }
 </style>
@@ -130,6 +131,17 @@
                     <button type="button" id="galShareNative" hidden>📱 다른 앱으로 공유 (카카오톡 등)</button>
                 </div>
             </div>
+            {% if user.is_staff %}
+            <div style="position:relative;">
+                <button type="button" class="gal-modal-share-btn" id="galCategoryBtn">🏷️ 필터 이동</button>
+                <div class="gal-share-menu" id="galCategoryMenu">
+                    <button type="button" class="gal-cat-option" data-category="">🔄 자동 분류로</button>
+                    {% for cat in categories %}
+                    <button type="button" class="gal-cat-option" data-category="{{ cat.code }}">{{ cat.label }}</button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
         <div class="gal-modal-footer">
             <div class="gal-modal-cap" id="galModalCaption"></div>
@@ -147,11 +159,14 @@
             try { children = JSON.parse(el.dataset.children); } catch (e) { children = null; }
         }
         return {
+            mediaId: el.dataset.mediaId,
             mediaType: el.dataset.mediaType,
             mediaUrl: el.dataset.mediaUrl,
             thumbnailUrl: el.dataset.thumbnailUrl,
             permalink: el.dataset.permalink,
             caption: el.dataset.caption,
+            manualCategory: el.dataset.manualCategory || '',
+            el: el,
             children: children,
         };
     }
@@ -169,6 +184,8 @@
     const shareCopyBtn = document.getElementById('galShareCopy');
     const shareNativeBtn = document.getElementById('galShareNative');
     const toastEl = document.getElementById('galToast');
+    const categoryBtn = document.getElementById('galCategoryBtn');
+    const categoryMenu = document.getElementById('galCategoryMenu');
 
     if (navigator.share) {
         shareNativeBtn.hidden = false;
@@ -218,12 +235,20 @@
         }
     }
 
+    function updateCategoryMenuActive() {
+        if (!categoryMenu) return;
+        categoryMenu.querySelectorAll('.gal-cat-option').forEach(function(btn) {
+            btn.classList.toggle('active', (btn.dataset.category || '') === (currentPost.manualCategory || ''));
+        });
+    }
+
     function openModal(post) {
         currentPost = post;
         childIndex = 0;
         captionEl.textContent = post.caption || '';
         linkEl.href = post.permalink || '#';
         renderChild();
+        updateCategoryMenuActive();
         overlay.classList.add('show');
     }
 
@@ -232,6 +257,7 @@
         mediaEl.innerHTML = '';
         currentPost = null;
         shareMenu.classList.remove('show');
+        if (categoryMenu) categoryMenu.classList.remove('show');
     }
 
     let toastTimer = null;
@@ -300,6 +326,46 @@
             });
         } catch (e) { /* 사용자가 취소한 경우 등은 무시 */ }
     });
+
+    if (categoryBtn && categoryMenu) {
+        categoryBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            categoryMenu.classList.toggle('show');
+        });
+        document.addEventListener('click', function(e) {
+            if (categoryMenu.classList.contains('show') && !e.target.closest('.gal-share-menu') && e.target !== categoryBtn) {
+                categoryMenu.classList.remove('show');
+            }
+        });
+        categoryMenu.querySelectorAll('.gal-cat-option').forEach(function(btn) {
+            btn.addEventListener('click', async function() {
+                if (!currentPost) return;
+                const category = btn.dataset.category || '';
+                categoryMenu.classList.remove('show');
+                try {
+                    const res = await fetch(`/gallery/post/${currentPost.mediaId}/category/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '',
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `category=${encodeURIComponent(category)}`,
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        currentPost.manualCategory = data.category;
+                        if (currentPost.el) currentPost.el.dataset.manualCategory = data.category;
+                        updateCategoryMenuActive();
+                        showToast(`"${data.label}" 카테고리로 배정했습니다`);
+                    } else {
+                        showToast(data.error || '변경에 실패했습니다');
+                    }
+                } catch (e) {
+                    showToast('변경에 실패했습니다');
+                }
+            });
+        });
+    }
 
     const syncForm = document.querySelector('.gal-sync-btn')?.closest('form');
     if (syncForm) {

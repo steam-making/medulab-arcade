@@ -3762,10 +3762,12 @@ def _instagram_gallery_queryset(tag):
     info = INSTAGRAM_GALLERY_CATEGORY_MAP.get(tag)
     if info:
         _, keywords = info
-        q = Q()
+        keyword_q = Q()
         for kw in keywords:
-            q |= Q(caption__icontains=kw)
-        qs = qs.filter(q)
+            keyword_q |= Q(caption__icontains=kw)
+        # 관리자가 이 카테고리로 수동 배정한 게시물은 무조건 포함,
+        # 그 외엔 수동 배정이 없는(자동 분류) 게시물 중 키워드가 맞는 것만 포함
+        qs = qs.filter(Q(manual_category=tag) | (Q(manual_category='') & keyword_q))
     return qs
 
 
@@ -3822,6 +3824,21 @@ def instagram_gallery_more(request):
         'has_next': page_obj.has_next(),
         'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
     })
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def instagram_post_set_category(request, media_id):
+    """관리자가 게시물의 필터 카테고리를 수동으로 재배정 (빈 값이면 자동 분류로 복귀)"""
+    post = get_object_or_404(InstagramPost, media_id=media_id)
+    category = request.POST.get('category', '').strip()
+    if category and category not in INSTAGRAM_GALLERY_CATEGORY_MAP:
+        return JsonResponse({'success': False, 'error': '알 수 없는 카테고리입니다.'}, status=400)
+    post.manual_category = category
+    post.save(update_fields=['manual_category'])
+    label = INSTAGRAM_GALLERY_CATEGORY_MAP[category][0] if category else '자동 분류'
+    return JsonResponse({'success': True, 'category': category, 'label': label})
 
 
 @login_required

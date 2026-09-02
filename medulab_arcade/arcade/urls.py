@@ -29,6 +29,7 @@ urlpatterns = [
     path('schedule/timetable/', views.timetable_view, name='timetable'),
     path('gallery/', views.instagram_gallery, name='instagram_gallery'),
     path('gallery/more/', views.instagram_gallery_more, name='instagram_gallery_more'),
+    path('gallery/post/<str:media_id>/category/', views.instagram_post_set_category, name='instagram_post_set_category'),
     path('gallery/sync/', views.instagram_gallery_sync, name='instagram_gallery_sync'),
     path('admin-services/instagram/', views.instagram_admin_config, name='instagram_admin_config'),
     path('admin-services/timetable/', views.timetable_admin_list, name='timetable_admin_list'),

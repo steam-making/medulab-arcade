@@ -1,10 +1,12 @@
 {% for post in posts %}
 <button type="button" class="gal-item"
+    data-media-id="{{ post.media_id }}"
     data-media-type="{{ post.media_type }}"
     data-media-url="{{ post.media_url }}"
     data-thumbnail-url="{{ post.thumbnail_url }}"
     data-permalink="{{ post.permalink }}"
     data-caption="{{ post.caption }}"
+    data-manual-category="{{ post.manual_category }}"
     {% if post.children_json %}data-children="{{ post.children_json }}"{% endif %}>
     {% if post.media_type == 'VIDEO' %}
     <img src="{{ post.thumbnail_url|default:post.media_url }}" loading="lazy" alt="">

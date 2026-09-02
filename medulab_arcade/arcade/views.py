@@ -3765,6 +3765,21 @@ def instagram_gallery(request):
 
 @login_required
 @user_passes_test(staff_check)
+@require_POST
+def instagram_gallery_sync(request):
+    """학원 갤러리 화면에서 관리자가 바로 누르는 수동 동기화"""
+    from .instagram_sync import sync_posts
+
+    result = sync_posts()
+    if result.get('success'):
+        messages.success(request, f"인스타그램 동기화 완료: {result.get('count', 0)}건")
+    else:
+        messages.error(request, f"인스타그램 동기화 실패: {result.get('error')}")
+    return redirect('instagram_gallery')
+
+
+@login_required
+@user_passes_test(staff_check)
 def instagram_admin_config(request):
     """인스타그램 연동 설정 (액세스 토큰/계정 ID) 관리 + 수동 동기화"""
     from .instagram_sync import sync_posts

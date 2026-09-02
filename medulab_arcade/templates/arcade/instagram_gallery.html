@@ -9,6 +9,9 @@
 .gal-title { color: #fff; font-size: 28px; font-weight: 800; margin: 0; }
 .gal-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
 .gal-follow { background: linear-gradient(135deg,#f58529,#dd2a7b,#8134af,#515bd4); color: #fff; padding: 8px 18px; border-radius: 999px; text-decoration: none; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.gal-sync-btn { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 999px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.gal-sync-btn:hover { background: rgba(255,255,255,0.15); }
+.gal-sync-btn:disabled { opacity: 0.6; cursor: default; }
 .gal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 @media (max-width: 900px) { .gal-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 600px) { .gal-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -48,9 +51,17 @@
 <div class="gal-wrap">
     <div class="gal-header">
         <h1 class="gal-title">📸 학원 갤러리</h1>
-        {% if config and config.ig_user_id %}
-        <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="gal-follow">Instagram에서 보기 →</a>
-        {% endif %}
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            {% if user.is_staff %}
+            <form method="post" action="{% url 'instagram_gallery_sync' %}">
+                {% csrf_token %}
+                <button type="submit" class="gal-sync-btn">🔄 동기화</button>
+            </form>
+            {% endif %}
+            {% if config and config.ig_user_id %}
+            <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="gal-follow">Instagram에서 보기 →</a>
+            {% endif %}
+        </div>
     </div>
     <div class="gal-sub">메듀랩 인스타그램에 올라온 사진/영상을 모아 보여드려요.</div>
 
@@ -213,6 +224,15 @@
         if (e.key === 'ArrowLeft') prevBtn.click();
         if (e.key === 'ArrowRight') nextBtn.click();
     });
+
+    const syncForm = document.querySelector('.gal-sync-btn')?.closest('form');
+    if (syncForm) {
+        syncForm.addEventListener('submit', function() {
+            const btn = syncForm.querySelector('.gal-sync-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ 동기화 중...';
+        });
+    }
 })();
 </script>
 {% endblock %}

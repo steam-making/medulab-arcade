@@ -63,7 +63,7 @@ def refresh_token_if_needed(config):
     return config
 
 
-def sync_posts(limit=60):
+def sync_posts(limit=500):
     """인스타그램 게시물을 가져와 InstagramPost에 upsert."""
     config = get_config()
     if not config.access_token or not config.ig_user_id:

@@ -7,7 +7,11 @@
 .gal-wrap { max-width: 1300px; margin: 40px auto; padding: 0 20px; }
 .gal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 16px; flex-wrap: wrap; }
 .gal-title { color: #fff; font-size: 28px; font-weight: 800; margin: 0; }
-.gal-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+.gal-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+.gal-filter-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.gal-filter-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-secondary); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.gal-filter-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.gal-filter-btn.active { background: linear-gradient(135deg,#f58529,#dd2a7b,#8134af,#515bd4); border-color: transparent; color: #fff; }
 .gal-follow { background: linear-gradient(135deg,#f58529,#dd2a7b,#8134af,#515bd4); color: #fff; padding: 8px 18px; border-radius: 999px; text-decoration: none; font-weight: 700; font-size: 13px; white-space: nowrap; }
 .gal-sync-btn { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 999px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
 .gal-sync-btn:hover { background: rgba(255,255,255,0.15); }
@@ -77,8 +81,15 @@
     </div>
     <div class="gal-sub">메듀랩 인스타그램에 올라온 사진/영상을 모아 보여드려요.</div>
 
+    <div class="gal-filter-bar">
+        <a href="{% url 'instagram_gallery' %}" class="gal-filter-btn {% if not current_tag %}active{% endif %}">전체</a>
+        {% for cat in categories %}
+        <a href="?tag={{ cat.code }}" class="gal-filter-btn {% if cat.active %}active{% endif %}">{{ cat.label }}</a>
+        {% endfor %}
+    </div>
+
     {% if posts %}
-    <div class="gal-grid" id="galGrid">
+    <div class="gal-grid" id="galGrid" data-tag="{{ current_tag }}">
         {% include 'arcade/_instagram_gallery_items.html' %}
     </div>
     {% if page_obj.has_next %}
@@ -90,6 +101,8 @@
     <div class="gal-empty">
         {% if not config or not config.ig_user_id %}
         아직 인스타그램 연동이 설정되지 않았습니다.
+        {% elif current_tag %}
+        해당 카테고리의 게시물이 없습니다.
         {% else %}
         표시할 게시물이 없습니다.
         {% endif %}
@@ -301,9 +314,10 @@
     if (moreBtn) {
         moreBtn.addEventListener('click', function() {
             const page = moreBtn.dataset.nextPage;
+            const tag = grid.dataset.tag || '';
             moreBtn.disabled = true;
             moreBtn.textContent = '불러오는 중...';
-            fetch(`{% url 'instagram_gallery_more' %}?page=${page}`)
+            fetch(`{% url 'instagram_gallery_more' %}?page=${page}&tag=${encodeURIComponent(tag)}`)
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     grid.insertAdjacentHTML('beforeend', data.html);

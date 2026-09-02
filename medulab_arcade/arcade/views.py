@@ -3744,11 +3744,35 @@ def profile_view(request):
 
 INSTAGRAM_GALLERY_PAGE_SIZE = 40
 
+# 캡션/해시태그 키워드로 게시물을 분류하는 필터 카테고리
+# (코드, 라벨, 매칭 키워드 목록) — caption에 키워드가 하나라도 포함되면 해당 카테고리로 분류
+INSTAGRAM_GALLERY_CATEGORIES = [
+    ('ai', 'AI', ['ai', '인공지능']),
+    ('robot', '로봇', ['로봇']),
+    ('coding', '코딩', ['코딩', '파이썬', 'python', '스크래치', '엔트리']),
+    ('cert', '자격증', ['자격증']),
+    ('instructor', '지도사', ['지도사']),
+    ('special', '특강', ['특강', '3d펜', '드론', '항공', '실험과학', '창의수학', '생명과학']),
+]
+INSTAGRAM_GALLERY_CATEGORY_MAP = {code: (label, keywords) for code, label, keywords in INSTAGRAM_GALLERY_CATEGORIES}
 
-def _instagram_gallery_page(page_number):
+
+def _instagram_gallery_queryset(tag):
+    qs = InstagramPost.objects.all()
+    info = INSTAGRAM_GALLERY_CATEGORY_MAP.get(tag)
+    if info:
+        _, keywords = info
+        q = Q()
+        for kw in keywords:
+            q |= Q(caption__icontains=kw)
+        qs = qs.filter(q)
+    return qs
+
+
+def _instagram_gallery_page(page_number, tag=None):
     from django.core.paginator import Paginator
 
-    paginator = Paginator(InstagramPost.objects.all(), INSTAGRAM_GALLERY_PAGE_SIZE)
+    paginator = Paginator(_instagram_gallery_queryset(tag), INSTAGRAM_GALLERY_PAGE_SIZE)
     page_obj = paginator.get_page(page_number)
     for post in page_obj:
         post.children_json = json.dumps(post.carousel_children) if post.carousel_children else ''
@@ -3766,19 +3790,32 @@ def instagram_gallery(request):
             sync_posts()
             config.refresh_from_db()
 
-    page_obj = _instagram_gallery_page(1)
+    tag = request.GET.get('tag', '').strip()
+    if tag not in INSTAGRAM_GALLERY_CATEGORY_MAP:
+        tag = ''
+    page_obj = _instagram_gallery_page(1, tag)
+
+    categories = [
+        {'code': code, 'label': label, 'active': code == tag}
+        for code, label, _ in INSTAGRAM_GALLERY_CATEGORIES
+    ]
 
     return render(request, 'arcade/instagram_gallery.html', {
         'posts': page_obj,
         'page_obj': page_obj,
         'config': config,
+        'categories': categories,
+        'current_tag': tag,
     })
 
 
 def instagram_gallery_more(request):
     """"더보기" 버튼용 다음 페이지 게시물 부분 렌더링"""
     page_number = request.GET.get('page', '2')
-    page_obj = _instagram_gallery_page(page_number)
+    tag = request.GET.get('tag', '').strip()
+    if tag not in INSTAGRAM_GALLERY_CATEGORY_MAP:
+        tag = ''
+    page_obj = _instagram_gallery_page(page_number, tag)
     html = render(request, 'arcade/_instagram_gallery_items.html', {'posts': page_obj}).content.decode('utf-8')
     return JsonResponse({
         'html': html,

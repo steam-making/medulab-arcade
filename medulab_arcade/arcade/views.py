@@ -3753,7 +3753,10 @@ def instagram_gallery(request):
             sync_posts()
             config.refresh_from_db()
 
-    posts = InstagramPost.objects.all()[:60]
+    posts = list(InstagramPost.objects.all()[:60])
+    for post in posts:
+        post.children_json = json.dumps(post.carousel_children) if post.carousel_children else ''
+
     return render(request, 'arcade/instagram_gallery.html', {
         'posts': posts,
         'config': config,

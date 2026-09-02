@@ -74,7 +74,10 @@ def sync_posts(limit=60):
 
     url = f'{api_base}/{config.ig_user_id}/media'
     params = {
-        'fields': 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp',
+        'fields': (
+            'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,'
+            'children{media_type,media_url,thumbnail_url}'
+        ),
         'access_token': config.access_token,
         'limit': min(limit, 100),
     }
@@ -90,6 +93,16 @@ def sync_posts(limit=60):
                 return {'success': False, 'error': message}
 
             for item in data.get('data', []):
+                children = None
+                if item.get('media_type') == 'CAROUSEL_ALBUM' and item.get('children', {}).get('data'):
+                    children = [
+                        {
+                            'media_type': child.get('media_type', ''),
+                            'media_url': child.get('media_url', ''),
+                            'thumbnail_url': child.get('thumbnail_url', ''),
+                        }
+                        for child in item['children']['data']
+                    ]
                 InstagramPost.objects.update_or_create(
                     media_id=item['id'],
                     defaults={
@@ -98,6 +111,7 @@ def sync_posts(limit=60):
                         'thumbnail_url': item.get('thumbnail_url', ''),
                         'permalink': item.get('permalink', ''),
                         'caption': item.get('caption', ''),
+                        'carousel_children': children,
                         'posted_at': parse_datetime(item['timestamp']) if item.get('timestamp') else None,
                     }
                 )

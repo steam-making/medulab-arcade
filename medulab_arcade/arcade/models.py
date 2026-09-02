@@ -1236,6 +1236,8 @@ class InstagramPost(models.Model):
     thumbnail_url = models.URLField('썸네일 URL(동영상용)', max_length=500, blank=True, default='')
     permalink = models.URLField('인스타그램 링크', max_length=500, blank=True, default='')
     caption = models.TextField('캡션', blank=True, default='')
+    carousel_children = models.JSONField('여러 장(캐러셀) 하위 미디어 목록', blank=True, null=True,
+        help_text='[{"media_type":"IMAGE","media_url":"...","thumbnail_url":"..."}, ...]')
     posted_at = models.DateTimeField('게시일시', null=True, blank=True)
     synced_at = models.DateTimeField('동기화 시각', auto_now=True)
 

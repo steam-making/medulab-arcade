@@ -13,8 +13,14 @@
     --border: rgba(255,255,255,0.08);
 }
 
-/* ── 상단 배너 ── */
-.lp-banner-full { width:100%; line-height:0; }
+/* ── 배너 (부모 여백 무시하고 전체 폭으로 확장) ── */
+.lp-banner-full {
+    width:100vw; position:relative; left:50%; right:50%;
+    margin-left:-50vw; margin-right:-50vw;
+    margin-top:0; margin-bottom:40px;
+    line-height:0;
+    animation:fadeDown .7s .35s ease both;
+}
 .lp-banner-full img { display:block; width:100%; height:auto; }
 
 /* ── 히어로 ── */
@@ -302,13 +308,6 @@
 {% block content %}
 
 <!-- ══════════════════════════════════════
-     상단 배너
-══════════════════════════════════════ -->
-<div class="lp-banner-full">
-    <img src="{% static 'arcade/img/home_banner_medulab.jpg' %}" alt="메듀랩 AI로봇코딩학원">
-</div>
-
-<!-- ══════════════════════════════════════
      히어로
 ══════════════════════════════════════ -->
 <section class="lp-hero">
@@ -330,6 +329,10 @@
             <span class="lp-tag">🦾 로봇</span>
             <span class="lp-tag">⌨️ 타자연습</span>
             <span class="lp-tag">🏆 대회수상</span>
+        </div>
+
+        <div class="lp-banner-full">
+            <img src="{% static 'arcade/img/home_banner_medulab.jpg' %}" alt="메듀랩 AI로봇코딩학원">
         </div>
 
         <div class="lp-cta">

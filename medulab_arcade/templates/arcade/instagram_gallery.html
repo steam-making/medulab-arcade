@@ -47,8 +47,15 @@
 .gal-dot.active { background: #fff; }
 .gal-modal-footer { margin-top: 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; max-height: 18vh; overflow-y: auto; }
 .gal-modal-cap { color: #e5e7eb; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
-.gal-modal-link { display: inline-flex; align-items: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 12px; font-weight: 700; text-decoration: none; padding: 0 14px; height: 36px; border-radius: 999px; white-space: nowrap; }
-.gal-modal-link:hover { background: rgba(255,255,255,0.15); }
+.gal-modal-actions { display: flex; gap: 8px; margin-top: 12px; }
+.gal-modal-link, .gal-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 12px; font-weight: 700; text-decoration: none; padding: 0 14px; height: 36px; border-radius: 999px; white-space: nowrap; cursor: pointer; }
+.gal-modal-link:hover, .gal-modal-share-btn:hover { background: rgba(255,255,255,0.15); }
+.gal-share-menu { position: absolute; bottom: calc(100% + 8px); left: 0; background: #1e1b2e; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 6px; display: none; flex-direction: column; min-width: 180px; z-index: 5; }
+.gal-share-menu.show { display: flex; }
+.gal-share-menu button { background: none; border: none; color: #e5e7eb; font-size: 13px; text-align: left; padding: 10px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.gal-share-menu button:hover { background: rgba(255,255,255,0.08); }
+.gal-toast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; font-size: 13px; padding: 10px 20px; border-radius: 999px; z-index: 1100; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.gal-toast.show { opacity: 1; }
 </style>
 {% endblock %}
 
@@ -93,7 +100,6 @@
 <div class="gal-modal-overlay" id="galModalOverlay">
     <div class="gal-modal-box">
         <div class="gal-modal-topbar">
-            <a href="#" target="_blank" rel="noopener noreferrer" class="gal-modal-link" id="galModalLink">Instagram에서 원본 보기 →</a>
             <button type="button" class="gal-modal-close" id="galModalClose">✕</button>
         </div>
         <div class="gal-modal-media-wrap" id="galModalMediaWrap">
@@ -102,11 +108,23 @@
             <button type="button" class="gal-nav-btn gal-nav-next" id="galChildNext" hidden>›</button>
         </div>
         <div class="gal-dots" id="galDots"></div>
+        <div class="gal-modal-actions">
+            <a href="#" target="_blank" rel="noopener noreferrer" class="gal-modal-link" id="galModalLink">📷 인스타 보기</a>
+            <div style="position:relative;">
+                <button type="button" class="gal-modal-share-btn" id="galShareBtn">🔗 공유</button>
+                <div class="gal-share-menu" id="galShareMenu">
+                    <button type="button" id="galShareCopy">🔗 링크 복사</button>
+                    <button type="button" id="galShareNative" hidden>📱 다른 앱으로 공유 (카카오톡 등)</button>
+                </div>
+            </div>
+        </div>
         <div class="gal-modal-footer">
             <div class="gal-modal-cap" id="galModalCaption"></div>
         </div>
     </div>
 </div>
+
+<div class="gal-toast" id="galToast"></div>
 
 <script>
 (function() {
@@ -133,6 +151,15 @@
     const linkEl = document.getElementById('galModalLink');
     const prevBtn = document.getElementById('galChildPrev');
     const nextBtn = document.getElementById('galChildNext');
+    const shareBtn = document.getElementById('galShareBtn');
+    const shareMenu = document.getElementById('galShareMenu');
+    const shareCopyBtn = document.getElementById('galShareCopy');
+    const shareNativeBtn = document.getElementById('galShareNative');
+    const toastEl = document.getElementById('galToast');
+
+    if (navigator.share) {
+        shareNativeBtn.hidden = false;
+    }
 
     let currentPost = null;
     let childIndex = 0;
@@ -191,6 +218,15 @@
         overlay.classList.remove('show');
         mediaEl.innerHTML = '';
         currentPost = null;
+        shareMenu.classList.remove('show');
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function() { toastEl.classList.remove('show'); }, 2000);
     }
 
     if (grid) {
@@ -219,6 +255,37 @@
         if (e.key === 'Escape') closeModal();
         if (e.key === 'ArrowLeft') prevBtn.click();
         if (e.key === 'ArrowRight') nextBtn.click();
+    });
+
+    shareBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        shareMenu.classList.toggle('show');
+    });
+    document.addEventListener('click', function(e) {
+        if (shareMenu.classList.contains('show') && !e.target.closest('.gal-share-menu') && e.target !== shareBtn) {
+            shareMenu.classList.remove('show');
+        }
+    });
+    shareCopyBtn.addEventListener('click', async function() {
+        if (!currentPost) return;
+        shareMenu.classList.remove('show');
+        try {
+            await navigator.clipboard.writeText(currentPost.permalink);
+            showToast('링크가 복사되었습니다');
+        } catch (e) {
+            try { window.prompt('아래 링크를 복사하세요', currentPost.permalink); } catch (e2) { /* 환경상 prompt 미지원 */ }
+        }
+    });
+    shareNativeBtn.addEventListener('click', async function() {
+        if (!currentPost) return;
+        shareMenu.classList.remove('show');
+        try {
+            await navigator.share({
+                title: '메듀랩 갤러리',
+                text: (currentPost.caption || '').slice(0, 80),
+                url: currentPost.permalink,
+            });
+        } catch (e) { /* 사용자가 취소한 경우 등은 무시 */ }
     });
 
     const syncForm = document.querySelector('.gal-sync-btn')?.closest('form');

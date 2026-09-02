@@ -32,9 +32,10 @@
 .gal-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
 .gal-modal-overlay.show { display: flex; }
 .gal-modal-box { position: relative; width: 100%; max-width: 520px; max-height: 92vh; display: flex; flex-direction: column; }
+.gal-modal-topbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-bottom: 10px; }
 .gal-modal-media-wrap { position: relative; width: 100%; aspect-ratio: 1/1; background: #000; border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .gal-modal-media-wrap img, .gal-modal-media-wrap video { width: 100%; height: 100%; object-fit: contain; display: block; }
-.gal-modal-close { position: absolute; top: -44px; right: 0; background: rgba(255,255,255,0.1); border: none; color: #fff; font-size: 20px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; line-height: 1; }
+.gal-modal-close { background: rgba(255,255,255,0.1); border: none; color: #fff; font-size: 20px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; line-height: 1; flex-shrink: 0; }
 .gal-modal-close:hover { background: rgba(255,255,255,0.2); }
 .gal-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; font-size: 22px; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
 .gal-nav-btn:hover { background: rgba(0,0,0,0.75); }
@@ -46,8 +47,8 @@
 .gal-dot.active { background: #fff; }
 .gal-modal-footer { margin-top: 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; max-height: 18vh; overflow-y: auto; }
 .gal-modal-cap { color: #e5e7eb; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
-.gal-modal-link { display: inline-block; margin-top: 10px; color: #93c5fd; font-size: 12px; text-decoration: none; }
-.gal-modal-link:hover { text-decoration: underline; }
+.gal-modal-link { display: inline-flex; align-items: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 12px; font-weight: 700; text-decoration: none; padding: 0 14px; height: 36px; border-radius: 999px; white-space: nowrap; }
+.gal-modal-link:hover { background: rgba(255,255,255,0.15); }
 </style>
 {% endblock %}
 
@@ -91,7 +92,10 @@
 
 <div class="gal-modal-overlay" id="galModalOverlay">
     <div class="gal-modal-box">
-        <button type="button" class="gal-modal-close" id="galModalClose">✕</button>
+        <div class="gal-modal-topbar">
+            <a href="#" target="_blank" rel="noopener noreferrer" class="gal-modal-link" id="galModalLink">Instagram에서 원본 보기 →</a>
+            <button type="button" class="gal-modal-close" id="galModalClose">✕</button>
+        </div>
         <div class="gal-modal-media-wrap" id="galModalMediaWrap">
             <button type="button" class="gal-nav-btn gal-nav-prev" id="galChildPrev" hidden>‹</button>
             <div id="galModalMedia"></div>
@@ -100,7 +104,6 @@
         <div class="gal-dots" id="galDots"></div>
         <div class="gal-modal-footer">
             <div class="gal-modal-cap" id="galModalCaption"></div>
-            <a href="#" target="_blank" rel="noopener noreferrer" class="gal-modal-link" id="galModalLink">Instagram에서 원본 보기 →</a>
         </div>
     </div>
 </div>

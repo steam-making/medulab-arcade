@@ -3742,6 +3742,19 @@ def profile_view(request):
     }
     return render(request, 'arcade/profile.html', context)
 
+INSTAGRAM_GALLERY_PAGE_SIZE = 40
+
+
+def _instagram_gallery_page(page_number):
+    from django.core.paginator import Paginator
+
+    paginator = Paginator(InstagramPost.objects.all(), INSTAGRAM_GALLERY_PAGE_SIZE)
+    page_obj = paginator.get_page(page_number)
+    for post in page_obj:
+        post.children_json = json.dumps(post.carousel_children) if post.carousel_children else ''
+    return page_obj
+
+
 def instagram_gallery(request):
     """학원 인스타그램 갤러리 - 그래프 API로 동기화한 게시물을 보여줌"""
     from .instagram_sync import sync_posts
@@ -3753,13 +3766,24 @@ def instagram_gallery(request):
             sync_posts()
             config.refresh_from_db()
 
-    posts = list(InstagramPost.objects.all()[:60])
-    for post in posts:
-        post.children_json = json.dumps(post.carousel_children) if post.carousel_children else ''
+    page_obj = _instagram_gallery_page(1)
 
     return render(request, 'arcade/instagram_gallery.html', {
-        'posts': posts,
+        'posts': page_obj,
+        'page_obj': page_obj,
         'config': config,
+    })
+
+
+def instagram_gallery_more(request):
+    """"더보기" 버튼용 다음 페이지 게시물 부분 렌더링"""
+    page_number = request.GET.get('page', '2')
+    page_obj = _instagram_gallery_page(page_number)
+    html = render(request, 'arcade/_instagram_gallery_items.html', {'posts': page_obj}).content.decode('utf-8')
+    return JsonResponse({
+        'html': html,
+        'has_next': page_obj.has_next(),
+        'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
     })
 
 

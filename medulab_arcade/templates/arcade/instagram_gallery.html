@@ -23,6 +23,10 @@
 .gal-item:hover .overlay { opacity: 1; }
 .gal-item .cap { color: #fff; font-size: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .gal-empty { text-align: center; padding: 100px 20px; color: var(--text-muted); }
+.gal-more-wrap { display: flex; justify-content: center; margin-top: 28px; }
+.gal-more-btn { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: #fff; padding: 12px 32px; border-radius: 999px; font-weight: 700; font-size: 14px; cursor: pointer; }
+.gal-more-btn:hover { background: rgba(255,255,255,0.12); }
+.gal-more-btn:disabled { opacity: 0.6; cursor: default; }
 
 /* 라이트박스 모달 */
 .gal-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
@@ -67,29 +71,13 @@
 
     {% if posts %}
     <div class="gal-grid" id="galGrid">
-        {% for post in posts %}
-        <button type="button" class="gal-item" data-index="{{ forloop.counter0 }}"
-            data-media-type="{{ post.media_type }}"
-            data-media-url="{{ post.media_url }}"
-            data-thumbnail-url="{{ post.thumbnail_url }}"
-            data-permalink="{{ post.permalink }}"
-            data-caption="{{ post.caption }}"
-            {% if post.children_json %}data-children="{{ post.children_json }}"{% endif %}>
-            {% if post.media_type == 'VIDEO' %}
-            <img src="{{ post.thumbnail_url|default:post.media_url }}" loading="lazy" alt="">
-            <span class="badge">▶ 동영상</span>
-            {% elif post.media_type == 'CAROUSEL_ALBUM' %}
-            <img src="{{ post.media_url }}" loading="lazy" alt="">
-            <span class="badge">🖼 {% if post.carousel_children %}{{ post.carousel_children|length }}{% else %}여러{% endif %}장</span>
-            {% else %}
-            <img src="{{ post.media_url }}" loading="lazy" alt="">
-            {% endif %}
-            {% if post.caption %}
-            <div class="overlay"><div class="cap">{{ post.caption }}</div></div>
-            {% endif %}
-        </button>
-        {% endfor %}
+        {% include 'arcade/_instagram_gallery_items.html' %}
     </div>
+    {% if page_obj.has_next %}
+    <div class="gal-more-wrap">
+        <button type="button" class="gal-more-btn" id="galMoreBtn" data-next-page="{{ page_obj.next_page_number }}">더보기</button>
+    </div>
+    {% endif %}
     {% else %}
     <div class="gal-empty">
         {% if not config or not config.ig_user_id %}
@@ -119,7 +107,7 @@
 
 <script>
 (function() {
-    const items = [...document.querySelectorAll('.gal-item')].map(function(el) {
+    function parseItem(el) {
         let children = null;
         if (el.dataset.children) {
             try { children = JSON.parse(el.dataset.children); } catch (e) { children = null; }
@@ -132,8 +120,9 @@
             caption: el.dataset.caption,
             children: children,
         };
-    });
+    }
 
+    const grid = document.getElementById('galGrid');
     const overlay = document.getElementById('galModalOverlay');
     const mediaEl = document.getElementById('galModalMedia');
     const dotsEl = document.getElementById('galDots');
@@ -201,9 +190,13 @@
         currentPost = null;
     }
 
-    document.querySelectorAll('.gal-item').forEach(function(el, i) {
-        el.addEventListener('click', function() { openModal(items[i]); });
-    });
+    if (grid) {
+        grid.addEventListener('click', function(e) {
+            const el = e.target.closest('.gal-item');
+            if (!el) return;
+            openModal(parseItem(el));
+        });
+    }
 
     prevBtn.addEventListener('click', function() {
         if (!currentPost || !currentPost.children) return;
@@ -231,6 +224,31 @@
             const btn = syncForm.querySelector('.gal-sync-btn');
             btn.disabled = true;
             btn.textContent = '⏳ 동기화 중...';
+        });
+    }
+
+    const moreBtn = document.getElementById('galMoreBtn');
+    if (moreBtn) {
+        moreBtn.addEventListener('click', function() {
+            const page = moreBtn.dataset.nextPage;
+            moreBtn.disabled = true;
+            moreBtn.textContent = '불러오는 중...';
+            fetch(`{% url 'instagram_gallery_more' %}?page=${page}`)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    grid.insertAdjacentHTML('beforeend', data.html);
+                    if (data.has_next) {
+                        moreBtn.dataset.nextPage = data.next_page;
+                        moreBtn.disabled = false;
+                        moreBtn.textContent = '더보기';
+                    } else {
+                        moreBtn.remove();
+                    }
+                })
+                .catch(function() {
+                    moreBtn.disabled = false;
+                    moreBtn.textContent = '더보기 (실패, 다시 시도)';
+                });
         });
     }
 })();

@@ -1240,6 +1240,8 @@ class InstagramPost(models.Model):
         help_text='[{"media_type":"IMAGE","media_url":"...","thumbnail_url":"..."}, ...]')
     manual_category = models.CharField('수동 지정 필터 카테고리', max_length=20, blank=True, default='',
         help_text='관리자가 직접 배정한 카테고리 코드. 비어 있으면 캡션 키워드로 자동 분류됨.')
+    is_excluded = models.BooleanField('갤러리에서 제외', default=False,
+        help_text='인스타그램 프로필 상단 고정 게시물 등, 학원 갤러리에는 노출하지 않을 게시물')
     posted_at = models.DateTimeField('게시일시', null=True, blank=True)
     synced_at = models.DateTimeField('동기화 시각', auto_now=True)
 

@@ -3758,7 +3758,7 @@ INSTAGRAM_GALLERY_CATEGORY_MAP = {code: (label, keywords) for code, label, keywo
 
 
 def _instagram_gallery_queryset(tag):
-    qs = InstagramPost.objects.all()
+    qs = InstagramPost.objects.filter(is_excluded=False)
     info = INSTAGRAM_GALLERY_CATEGORY_MAP.get(tag)
     if info:
         _, keywords = info
@@ -3839,6 +3839,17 @@ def instagram_post_set_category(request, media_id):
     post.save(update_fields=['manual_category'])
     label = INSTAGRAM_GALLERY_CATEGORY_MAP[category][0] if category else '자동 분류'
     return JsonResponse({'success': True, 'category': category, 'label': label})
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def instagram_post_toggle_exclude(request, media_id):
+    """관리자가 게시물을 학원 갤러리 노출에서 제외/포함 토글 (고정 게시물 등)"""
+    post = get_object_or_404(InstagramPost, media_id=media_id)
+    post.is_excluded = not post.is_excluded
+    post.save(update_fields=['is_excluded'])
+    return JsonResponse({'success': True, 'is_excluded': post.is_excluded})
 
 
 @login_required

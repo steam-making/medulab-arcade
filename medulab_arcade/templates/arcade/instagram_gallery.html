@@ -141,6 +141,7 @@
                     {% endfor %}
                 </div>
             </div>
+            <button type="button" class="gal-modal-share-btn" id="galExcludeBtn">🚫 갤러리에서 제외</button>
             {% endif %}
         </div>
         <div class="gal-modal-footer">
@@ -186,6 +187,7 @@
     const toastEl = document.getElementById('galToast');
     const categoryBtn = document.getElementById('galCategoryBtn');
     const categoryMenu = document.getElementById('galCategoryMenu');
+    const excludeBtn = document.getElementById('galExcludeBtn');
 
     if (navigator.share) {
         shareNativeBtn.hidden = false;
@@ -261,11 +263,24 @@
     }
 
     let toastTimer = null;
-    function showToast(msg) {
-        toastEl.textContent = msg;
+    function showToast(msg, actionLabel, actionFn) {
+        toastEl.innerHTML = '';
+        toastEl.appendChild(document.createTextNode(msg));
+        if (actionLabel && actionFn) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = actionLabel;
+            btn.style.cssText = 'margin-left:10px; background:none; border:none; color:#93c5fd; font-weight:700; cursor:pointer; text-decoration:underline; padding:0;';
+            btn.addEventListener('click', function() {
+                clearTimeout(toastTimer);
+                toastEl.classList.remove('show');
+                actionFn();
+            });
+            toastEl.appendChild(btn);
+        }
         toastEl.classList.add('show');
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(function() { toastEl.classList.remove('show'); }, 2000);
+        toastTimer = setTimeout(function() { toastEl.classList.remove('show'); }, 4000);
     }
 
     if (grid) {
@@ -364,6 +379,38 @@
                     showToast('변경에 실패했습니다');
                 }
             });
+        });
+    }
+
+    if (excludeBtn) {
+        excludeBtn.addEventListener('click', async function() {
+            if (!currentPost) return;
+            const post = currentPost;
+            const csrftoken = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+            try {
+                const res = await fetch(`/gallery/post/${post.mediaId}/exclude/`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'X-CSRFToken': csrftoken },
+                });
+                const data = await res.json();
+                if (data.success && data.is_excluded) {
+                    if (post.el) post.el.remove();
+                    closeModal();
+                    showToast('갤러리에서 제외했습니다', '실행 취소', async function() {
+                        await fetch(`/gallery/post/${post.mediaId}/exclude/`, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: { 'X-CSRFToken': csrftoken },
+                        });
+                        window.location.reload();
+                    });
+                } else {
+                    showToast('변경에 실패했습니다');
+                }
+            } catch (e) {
+                showToast('변경에 실패했습니다');
+            }
         });
     }
 

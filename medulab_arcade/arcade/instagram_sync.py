@@ -1,4 +1,11 @@
-"""인스타그램 그래프 API 연동: 게시물 동기화 + 장기 액세스 토큰 자동 갱신."""
+"""인스타그램 게시물 동기화 + 액세스 토큰 자동 갱신.
+
+두 가지 발급 방식의 토큰을 모두 지원한다:
+- "Instagram API with Instagram Login"으로 발급한 토큰(보통 IGAA로 시작) →
+  graph.instagram.com 사용, 앱 시크릿 없이 ig_refresh_token으로 자체 갱신
+- 페이스북 페이지에 연결해 발급한 구버전 토큰(보통 EAA로 시작) →
+  graph.facebook.com 사용, 앱 ID/시크릿으로 fb_exchange_token 갱신
+"""
 from datetime import timedelta
 
 import requests
@@ -7,8 +14,9 @@ from django.utils.dateparse import parse_datetime
 
 from .models import InstagramConfig, InstagramPost
 
-GRAPH_API_VERSION = 'v21.0'
-GRAPH_API_BASE = f'https://graph.facebook.com/{GRAPH_API_VERSION}'
+API_VERSION = 'v21.0'
+IG_LOGIN_API_BASE = 'https://graph.instagram.com'
+FACEBOOK_API_BASE = f'https://graph.facebook.com/{API_VERSION}'
 REQUEST_TIMEOUT = 10
 
 
@@ -17,20 +25,33 @@ def get_config():
     return config
 
 
+def _is_ig_login_token(token):
+    return token.startswith('IGAA')
+
+
 def refresh_token_if_needed(config):
-    """장기 토큰 만료 7일 전이면 미리 갱신 (fb_exchange_token)."""
-    if not config.access_token or not config.app_id or not config.app_secret:
+    """장기 토큰 만료 7일 전이면 미리 갱신."""
+    if not config.access_token:
         return config
     if config.token_expires_at and (config.token_expires_at - timezone.now()) > timedelta(days=7):
         return config
 
     try:
-        resp = requests.get(f'{GRAPH_API_BASE}/oauth/access_token', params={
-            'grant_type': 'fb_exchange_token',
-            'client_id': config.app_id,
-            'client_secret': config.app_secret,
-            'fb_exchange_token': config.access_token,
-        }, timeout=REQUEST_TIMEOUT)
+        if _is_ig_login_token(config.access_token):
+            resp = requests.get(f'{IG_LOGIN_API_BASE}/refresh_access_token', params={
+                'grant_type': 'ig_refresh_token',
+                'access_token': config.access_token,
+            }, timeout=REQUEST_TIMEOUT)
+        elif config.app_id and config.app_secret:
+            resp = requests.get(f'{FACEBOOK_API_BASE}/oauth/access_token', params={
+                'grant_type': 'fb_exchange_token',
+                'client_id': config.app_id,
+                'client_secret': config.app_secret,
+                'fb_exchange_token': config.access_token,
+            }, timeout=REQUEST_TIMEOUT)
+        else:
+            return config
+
         data = resp.json()
         if 'access_token' in data:
             config.access_token = data['access_token']
@@ -49,8 +70,9 @@ def sync_posts(limit=60):
         return {'success': False, 'error': '액세스 토큰 또는 계정 ID가 설정되지 않았습니다.'}
 
     config = refresh_token_if_needed(config)
+    api_base = IG_LOGIN_API_BASE if _is_ig_login_token(config.access_token) else FACEBOOK_API_BASE
 
-    url = f'{GRAPH_API_BASE}/{config.ig_user_id}/media'
+    url = f'{api_base}/{config.ig_user_id}/media'
     params = {
         'fields': 'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp',
         'access_token': config.access_token,

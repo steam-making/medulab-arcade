@@ -1,0 +1,93 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}인스타그램 연동 설정 - 메듀랩 관리 서비스{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ig-wrap { max-width: 640px; margin: 40px auto; padding: 0 24px; animation: fadeSlideIn 0.4s ease; }
+    .ig-title { font: 900 26px 'Orbitron', sans-serif; background: linear-gradient(135deg,#f58529,#dd2a7b,#8134af,#515bd4); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+    .ig-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; line-height: 1.6; }
+    .ig-card { background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border); padding: 28px; box-shadow: 0 15px 40px rgba(0,0,0,0.3); margin-bottom: 20px; }
+    .ig-status { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .ig-stat { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; flex: 1; min-width: 140px; }
+    .ig-stat .label { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+    .ig-stat .value { font-size: 14px; color: #fff; font-weight: 700; }
+    .ig-stat.error .value { color: #f87171; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+    .form-input { width: 100%; padding: 11px 14px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 13px; outline: none; color-scheme: dark; box-sizing: border-box; }
+    .form-help { font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+    .btn-row { display: flex; gap: 10px; margin-top: 24px; }
+    .btn { flex: 1; padding: 13px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; text-align: center; }
+    .btn-save { background: var(--accent-green); color: var(--bg-primary); }
+    .btn-sync { background: linear-gradient(135deg,#f58529,#dd2a7b,#8134af,#515bd4); color: #fff; }
+    .guide-list { font-size: 12px; color: var(--text-secondary); line-height: 1.8; padding-left: 18px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ig-wrap">
+    <h1 class="ig-title">📸 인스타그램 연동 설정</h1>
+    <p class="ig-sub">학원 갤러리(<a href="{% url 'instagram_gallery' %}" style="color:#93c5fd;">/gallery/</a>)에 표시할 인스타그램 게시물 동기화 설정입니다.</p>
+
+    <div class="ig-card">
+        <div class="ig-status">
+            <div class="ig-stat"><div class="label">동기화된 게시물</div><div class="value">{{ post_count }}개</div></div>
+            <div class="ig-stat"><div class="label">마지막 동기화</div><div class="value">{{ config.last_synced_at|date:"Y.m.d H:i"|default:"-" }}</div></div>
+            <div class="ig-stat {% if config.last_sync_error %}error{% endif %}"><div class="label">상태</div><div class="value">{% if config.last_sync_error %}⚠️ 오류{% else %}✅ 정상{% endif %}</div></div>
+        </div>
+        {% if config.last_sync_error %}
+        <div style="background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); border-radius:10px; padding:12px 14px; font-size:12px; color:#fca5a5; margin-bottom:20px;">{{ config.last_sync_error }}</div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save">
+
+            <div class="form-group">
+                <label>인스타그램 비즈니스 계정 ID (IG User ID)</label>
+                <input type="text" name="ig_user_id" class="form-input" value="{{ config.ig_user_id }}" placeholder="예: 17841400000000000">
+                <div class="form-help">Graph API Explorer에서 "me/accounts" → 연결된 페이지 → "instagram_business_account" 필드로 조회 가능</div>
+            </div>
+
+            <div class="form-group">
+                <label>Meta 앱 ID</label>
+                <input type="text" name="app_id" class="form-input" value="{{ config.app_id }}" placeholder="developers.facebook.com 앱 설정의 앱 ID">
+            </div>
+
+            <div class="form-group">
+                <label>Meta 앱 시크릿</label>
+                <input type="text" name="app_secret" class="form-input" value="{{ config.app_secret }}" placeholder="앱 설정 > 기본 설정 > 앱 시크릿 키">
+            </div>
+
+            <div class="form-group">
+                <label>액세스 토큰 {% if config.access_token %}(등록됨 — 교체할 때만 입력){% endif %}</label>
+                <input type="text" name="access_token" class="form-input" placeholder="{% if config.access_token %}변경할 때만 새 토큰 입력{% else %}Graph API Explorer에서 발급받은 장기 토큰{% endif %}">
+                <div class="form-help">만료 7일 전부터 자동으로 갱신을 시도합니다 (앱 ID/시크릿 필요). 만료일: {{ config.token_expires_at|date:"Y.m.d H:i"|default:"미확인" }}</div>
+            </div>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn-save">💾 설정 저장</button>
+            </div>
+        </form>
+
+        <form method="post" style="margin-top:12px;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="sync">
+            <button type="submit" class="btn btn-sync" style="width:100%;">🔄 지금 동기화</button>
+        </form>
+    </div>
+
+    <div class="ig-card">
+        <div style="font-size:13px; font-weight:800; color:#fff; margin-bottom:10px;">🔧 최초 설정 방법</div>
+        <ol class="guide-list">
+            <li>학원 인스타그램 계정이 비즈니스/크리에이터 계정이고 페이스북 페이지에 연결되어 있어야 합니다.</li>
+            <li><a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;">developers.facebook.com</a>에서 앱 생성 → 앱 ID/시크릿 확인</li>
+            <li><a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;">Graph API Explorer</a>에서 방금 만든 앱 선택 → 권한에 <code>instagram_basic, pages_show_list, pages_read_engagement</code> 추가 → 액세스 토큰 생성</li>
+            <li>"토큰 디버거"로 위 토큰을 <b>장기(60일) 토큰</b>으로 교환 후 위 폼에 입력</li>
+            <li><code>me/accounts</code> 요청으로 페이지 ID 확인 → <code>{page-id}?fields=instagram_business_account</code> 요청으로 IG User ID 확인</li>
+            <li>모두 입력 후 "설정 저장" → "지금 동기화" 클릭</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

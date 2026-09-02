@@ -26,7 +26,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -3741,6 +3741,59 @@ def profile_view(request):
         'child_links': child_links,
     }
     return render(request, 'arcade/profile.html', context)
+
+def instagram_gallery(request):
+    """학원 인스타그램 갤러리 - 그래프 API로 동기화한 게시물을 보여줌"""
+    from .instagram_sync import sync_posts
+
+    config = InstagramConfig.objects.first()
+    if config and config.access_token and config.ig_user_id:
+        stale = (not config.last_synced_at) or (timezone.now() - config.last_synced_at > timedelta(minutes=30))
+        if stale:
+            sync_posts()
+            config.refresh_from_db()
+
+    posts = InstagramPost.objects.all()[:60]
+    return render(request, 'arcade/instagram_gallery.html', {
+        'posts': posts,
+        'config': config,
+    })
+
+
+@login_required
+@user_passes_test(staff_check)
+def instagram_admin_config(request):
+    """인스타그램 연동 설정 (액세스 토큰/계정 ID) 관리 + 수동 동기화"""
+    from .instagram_sync import sync_posts
+
+    config, _ = InstagramConfig.objects.get_or_create(pk=1)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'save':
+            config.app_id = request.POST.get('app_id', '').strip()
+            config.app_secret = request.POST.get('app_secret', '').strip()
+            config.ig_user_id = request.POST.get('ig_user_id', '').strip()
+            new_token = request.POST.get('access_token', '').strip()
+            if new_token:
+                config.access_token = new_token
+                config.token_expires_at = None  # 새 토큰이면 만료일 재계산 필요 → 다음 동기화 때 갱신 시도
+            config.save()
+            messages.success(request, '인스타그램 연동 설정을 저장했습니다.')
+        elif action == 'sync':
+            result = sync_posts()
+            if result.get('success'):
+                messages.success(request, f"동기화 완료: {result.get('count', 0)}건 가져왔습니다.")
+            else:
+                messages.error(request, f"동기화 실패: {result.get('error')}")
+        return redirect('instagram_admin_config')
+
+    context = {
+        'config': config,
+        'post_count': InstagramPost.objects.count(),
+    }
+    return render(request, 'arcade/admin/instagram_config.html', context)
+
 
 def board_notice(request):
     notices = Notice.objects.all()

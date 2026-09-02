@@ -1207,3 +1207,42 @@ class ExamRegistration(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.event_name} ({self.exam_date})"
+
+
+class InstagramConfig(models.Model):
+    """인스타그램 그래프 API 연동 설정 (싱글턴, pk=1 고정 사용)"""
+    access_token = models.TextField('액세스 토큰', blank=True, default='')
+    ig_user_id = models.CharField('인스타그램 비즈니스 계정 ID', max_length=50, blank=True, default='')
+    app_id = models.CharField('Meta 앱 ID', max_length=50, blank=True, default='')
+    app_secret = models.CharField('Meta 앱 시크릿', max_length=100, blank=True, default='')
+    token_expires_at = models.DateTimeField('토큰 만료 예정일시', null=True, blank=True)
+    last_synced_at = models.DateTimeField('마지막 동기화 시각', null=True, blank=True)
+    last_sync_error = models.CharField('마지막 동기화 오류', max_length=300, blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '인스타그램 연동 설정'
+        verbose_name_plural = '인스타그램 연동 설정'
+
+    def __str__(self):
+        return '인스타그램 연동 설정'
+
+
+class InstagramPost(models.Model):
+    """동기화해 온 인스타그램 게시물 캐시"""
+    media_id = models.CharField('미디어 ID', max_length=64, unique=True)
+    media_type = models.CharField('미디어 유형', max_length=20, blank=True, default='')
+    media_url = models.URLField('미디어 URL', max_length=500, blank=True, default='')
+    thumbnail_url = models.URLField('썸네일 URL(동영상용)', max_length=500, blank=True, default='')
+    permalink = models.URLField('인스타그램 링크', max_length=500, blank=True, default='')
+    caption = models.TextField('캡션', blank=True, default='')
+    posted_at = models.DateTimeField('게시일시', null=True, blank=True)
+    synced_at = models.DateTimeField('동기화 시각', auto_now=True)
+
+    class Meta:
+        ordering = ['-posted_at']
+        verbose_name = '인스타그램 게시물'
+        verbose_name_plural = '인스타그램 게시물'
+
+    def __str__(self):
+        return f'{self.media_id} ({self.posted_at})'

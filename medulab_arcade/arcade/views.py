@@ -4221,6 +4221,25 @@ def board_contest(request):
     contests = Contest.objects.filter(is_active=True).order_by('end_date', '-created_at')
     return render(request, 'arcade/board_contest.html', {'contests': contests})
 
+
+def api_national_ai_schedule(request):
+    """전국민 AI 경진대회(aichallenge4all.or.kr) 전체 대회 일정을 대신 가져와 전달
+    (해당 사이트는 CORS를 열어두지 않아 브라우저에서 직접 호출이 막혀 있어 서버에서 대신 조회함)"""
+    import requests
+    from django.core.cache import cache
+
+    data = cache.get('national_ai_schedule')
+    if data is None:
+        try:
+            resp = requests.get('https://aichallenge4all.or.kr/api/competition-schedule', timeout=8)
+            resp.raise_for_status()
+            data = resp.json()
+        except (requests.RequestException, ValueError):
+            return JsonResponse({'success': False, 'error': '전국민 AI 경진대회 사이트에서 일정을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.'}, status=502)
+        cache.set('national_ai_schedule', data, 60 * 15)
+
+    return JsonResponse({'success': True, 'items': data.get('items', [])})
+
 def board_contest_detail(request, pk):
     contest = get_object_or_404(Contest, pk=pk)
     return render(request, 'arcade/board_contest_detail.html', {'contest': contest})

@@ -178,6 +178,41 @@
         background: rgba(239, 68, 68, 0.9);
         border-color: #ef4444;
     }
+
+    .national-ai-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 14px;
+    }
+    .nai-item {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 14px;
+        padding: 16px 18px;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+    .nai-item:hover {
+        background: rgba(255,255,255,0.06);
+        border-color: rgba(99,102,241,0.35);
+        transform: translateY(-2px);
+    }
+    .nai-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .nai-status { font-size:11px; font-weight:800; padding:3px 10px; border-radius:999px; white-space:nowrap; }
+    .nai-status.st-접수중 { background:rgba(0,255,180,0.15); color:#00ffb4; }
+    .nai-status.st-예선 { background:rgba(59,130,246,0.15); color:#60a5fa; }
+    .nai-status.st-본선 { background:rgba(168,85,247,0.15); color:#c084fc; }
+    .nai-status.st-결선 { background:rgba(245,158,11,0.15); color:#fbbf24; }
+    .nai-status.st-준비중 { background:rgba(255,255,255,0.08); color:var(--text-muted); }
+    .nai-type { font-size:11px; font-weight:700; color:#93c5fd; }
+    .nai-name { font-size:14.5px; font-weight:800; color:#fff; line-height:1.4; }
+    .nai-meta { font-size:12.5px; color:rgba(255,255,255,0.6); line-height:1.5; white-space:pre-line; }
+    .nai-target { font-size:12px; color:rgba(255,255,255,0.45); }
+    .nai-prize { font-size:12.5px; color:#fbbf24; font-weight:700; white-space:pre-line; }
 </style>
 {% endblock %}
 
@@ -190,16 +225,30 @@
             <h2 style="color: #fff; font-size: 30px; font-weight: 900; margin: 0 0 8px 0; background: linear-gradient(90deg, #00ffb4, #00b4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🏆 추천 공모전</h2>
             <p style="color: var(--text-muted); font-size: 14.5px; margin: 0; line-height: 1.5;">메듀랩 학생들이 도전하여 소프트웨어적 성장과 성취감을 맛볼 수 있는 IT·SW·AI·로봇·게임 분야 공모전 목록입니다.</p>
         </div>
-        {% if user.is_staff %}
-        <div style="display: flex; gap: 10px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="btnNationalAi" style="background: linear-gradient(135deg, #0ea5e9, #6366f1); color: white; padding: 10px 20px; border-radius: 10px; border: none; font-weight: bold; font-size: 14.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); cursor: pointer; transition: opacity 0.2s;">
+                🇰🇷 전국민AI경진대회
+            </button>
+            {% if user.is_staff %}
             <button id="btnCrawl" style="background: linear-gradient(135deg, #10b981, #047857); color: white; padding: 10px 20px; border-radius: 10px; border: none; font-weight: bold; font-size: 14.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); cursor: pointer; transition: opacity 0.2s;">
                 🔄 씽굿 수집
             </button>
             <a href="{% url 'board_contest_create' %}" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 14.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);">
                 ✍️ 공모전 추가
             </a>
+            {% endif %}
         </div>
-        {% endif %}
+    </div>
+
+    <!-- 전국민 AI 경진대회 전체 일정 (토글) -->
+    <div id="nationalAiPanel" style="display:none; margin-bottom: 32px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap;">
+            <div style="font-size:15px; font-weight:800; color:#fff;">🇰🇷 전국민 AI 경진대회 · 전체 대회 일정</div>
+            <a href="https://aichallenge4all.or.kr/competitions" target="_blank" rel="noopener noreferrer" style="font-size:12.5px; color:#93c5fd; text-decoration:none;">원본 사이트 열기 →</a>
+        </div>
+        <div id="nationalAiList" class="national-ai-list">
+            <div style="text-align:center; padding:40px; color: var(--text-muted);">불러오는 중...</div>
+        </div>
     </div>
 
     <!-- 카드 그리드 -->
@@ -290,6 +339,66 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const btnNationalAi = document.getElementById('btnNationalAi');
+    const nationalAiPanel = document.getElementById('nationalAiPanel');
+    const nationalAiList = document.getElementById('nationalAiList');
+    let nationalAiLoaded = false;
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    }
+
+    function renderNationalAiItems(items) {
+        if (!items.length) {
+            nationalAiList.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">표시할 대회 일정이 없습니다.</div>';
+            return;
+        }
+        nationalAiList.innerHTML = items.map(function(item) {
+            const status = item.displayStatus || '';
+            const type = item.displayType ? `<span class="nai-type"># ${escapeHtml(item.displayType)}</span>` : '';
+            const prize = item.displayPrize ? `<div class="nai-prize">${escapeHtml(item.displayPrize)}</div>` : '';
+            return `
+                <a class="nai-item" href="${escapeHtml(item.detailUrl || '#')}" target="_blank" rel="noopener noreferrer">
+                    <div class="nai-top">
+                        <span class="nai-status st-${escapeHtml(status)}">${escapeHtml(status)}</span>
+                        ${type}
+                    </div>
+                    <div class="nai-name">${escapeHtml(item.name)}</div>
+                    <div class="nai-target">👥 ${escapeHtml(item.target)}</div>
+                    <div class="nai-meta">📅 ${escapeHtml(item.displaySchedule)}</div>
+                    ${prize}
+                </a>
+            `;
+        }).join('');
+    }
+
+    if (btnNationalAi) {
+        btnNationalAi.addEventListener('click', function() {
+            const willShow = nationalAiPanel.style.display === 'none';
+            nationalAiPanel.style.display = willShow ? 'block' : 'none';
+            if (willShow && !nationalAiLoaded) {
+                fetch("{% url 'api_national_ai_schedule' %}")
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            nationalAiLoaded = true;
+                            renderNationalAiItems(data.items || []);
+                        } else {
+                            nationalAiList.innerHTML = `<div style="text-align:center; padding:40px; color:#fca5a5;">${escapeHtml(data.error || '불러오기에 실패했습니다.')}</div>`;
+                        }
+                    })
+                    .catch(function() {
+                        nationalAiList.innerHTML = '<div style="text-align:center; padding:40px; color:#fca5a5;">불러오기에 실패했습니다. 잠시 후 다시 시도해 주세요.</div>';
+                    });
+            }
+            if (willShow) {
+                nationalAiPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
+
     const btnCrawl = document.getElementById('btnCrawl');
     if (btnCrawl) {
         btnCrawl.addEventListener('click', function() {

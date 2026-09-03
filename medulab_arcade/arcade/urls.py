@@ -54,6 +54,7 @@ urlpatterns = [
     path('board/competition-types/<int:pk>/update/', views.board_competition_type_update, name='board_competition_type_update'),
     path('board/competition-types/<int:pk>/delete/', views.board_competition_type_delete, name='board_competition_type_delete'),
     path('board/contests/', views.board_contest, name='board_contest'),
+    path('api/national-ai-schedule/', views.api_national_ai_schedule, name='api_national_ai_schedule'),
     path('board/contests/create/', views.board_contest_create, name='board_contest_create'),
     path('board/contests/<int:pk>/', views.board_contest_detail, name='board_contest_detail'),
     path('board/contests/<int:pk>/update/', views.board_contest_update, name='board_contest_update'),

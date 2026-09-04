@@ -185,13 +185,21 @@
         border-radius: 16px;
         overflow-x: auto;
     }
-    .national-ai-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 760px; }
+    .national-ai-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 900px; table-layout: fixed; }
+    .national-ai-table col.col-status { width: 9%; }
+    .national-ai-table col.col-name { width: 28%; }
+    .national-ai-table col.col-target { width: 16%; }
+    .national-ai-table col.col-schedule { width: 27%; }
+    .national-ai-table col.col-prize { width: 20%; }
     .national-ai-table th {
         padding: 14px 16px; background: rgba(255,255,255,0.03); color: var(--text-muted);
         font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
         border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-    .national-ai-table td { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 13px; vertical-align: top; }
+    .national-ai-table td {
+        padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 13px;
+        vertical-align: top; line-height: 1.55; word-break: keep-all; overflow-wrap: break-word;
+    }
     .national-ai-table tr:hover td { background: rgba(255,255,255,0.025); }
     .nai-status { font-size:11px; font-weight:800; padding:3px 10px; border-radius:999px; white-space:nowrap; display:inline-block; }
     .nai-status.st-접수중 { background:rgba(0,255,180,0.15); color:#00ffb4; }
@@ -199,11 +207,11 @@
     .nai-status.st-본선 { background:rgba(168,85,247,0.15); color:#c084fc; }
     .nai-status.st-결선 { background:rgba(245,158,11,0.15); color:#fbbf24; }
     .nai-status.st-준비중 { background:rgba(255,255,255,0.08); color:var(--text-muted); }
-    .nai-type { font-size:11px; font-weight:700; color:#93c5fd; margin-top:3px; display:block; }
+    .nai-type { font-size:11px; font-weight:700; color:#93c5fd; margin-top:4px; display:block; }
     .nai-name-cell a { color:#fff; font-weight:700; text-decoration:none; }
     .nai-name-cell a:hover { color:#93c5fd; text-decoration:underline; }
-    .nai-target-cell { color:rgba(255,255,255,0.55); white-space:nowrap; }
-    .nai-schedule-cell { color:rgba(255,255,255,0.7); white-space:pre-line; min-width:200px; }
+    .nai-target-cell { color:rgba(255,255,255,0.55); }
+    .nai-schedule-cell { color:rgba(255,255,255,0.7); white-space:pre-line; }
     .nai-prize-cell { color:#fbbf24; font-weight:700; white-space:pre-line; }
 </style>
 {% endblock %}
@@ -366,6 +374,9 @@ document.addEventListener('DOMContentLoaded', function() {
         nationalAiList.innerHTML = `
             <div class="national-ai-table-wrap">
                 <table class="national-ai-table">
+                    <colgroup>
+                        <col class="col-status"><col class="col-name"><col class="col-target"><col class="col-schedule"><col class="col-prize">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>상태</th><th>대회명</th><th>대상</th><th>일정</th><th>상금/혜택</th>

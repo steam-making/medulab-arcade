@@ -1,0 +1,3808 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>미래 직업 프로젝트 Web Activity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e17;--bg2:#11172a;--card:rgba(255,255,255,.045);--card-solid:#151b2e;
+    --text:#eef1f8;--muted:#8b93a7;--line:rgba(255,255,255,.09);
+    --primary:#00b4ff;--primary2:rgba(0,180,255,.16);--accent:#00ffb4;--purple:#a855f7;
+    --ok:#00ffb4;--danger:#ff5d6c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Noto Sans KR",Arial,sans-serif;background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(0,180,255,.12), transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, rgba(168,85,247,.10), transparent 55%),
+      var(--bg);
+    color:var(--text); min-height:100vh;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:28px 18px 60px}
+  .hero{
+    background:linear-gradient(135deg, rgba(0,180,255,.10), rgba(168,85,247,.08));
+    border:1px solid var(--line);border-radius:20px;padding:28px;margin-bottom:24px;
+    box-shadow:0 20px 50px rgba(0,0,0,.35);
+    position:relative;overflow:hidden;
+  }
+  .hero::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,var(--primary),var(--accent),var(--purple));opacity:.6;height:3px;top:0;}
+  h1{margin:0 0 10px;font-size:30px;font-family:"Orbitron","Noto Sans KR",sans-serif;font-weight:900;
+     background:linear-gradient(90deg,var(--accent),var(--primary));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+     letter-spacing:.3px;}
+  h2{font-size:22px;margin:0 0 14px;font-weight:900;color:#fff}
+  h3{font-size:17px;margin:0 0 10px;font-weight:800;color:#fff}
+  p{line-height:1.7}.muted{color:var(--muted)}
+  .tabs{display:flex;gap:8px;margin:18px 0 22px;flex-wrap:wrap}
+  .tab{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);padding:10px 18px;border-radius:999px;cursor:pointer;font-weight:700;font-size:13.5px;transition:all .2s}
+  .tab:hover{background:rgba(255,255,255,.08);border-color:rgba(0,180,255,.4)}
+  .tab.active{background:linear-gradient(135deg,var(--primary),var(--purple));color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(0,180,255,.35)}
+  .lesson{display:none;animation:fadeIn .35s ease}
+  .lesson.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .card{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:18px;padding:22px;margin:16px 0;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);border-radius:999px;padding:9px 15px;cursor:pointer;user-select:none;font-size:13.5px;transition:all .18s}
+  .chip:hover{border-color:rgba(0,180,255,.5);background:rgba(0,180,255,.08)}
+  .chip.selected{background:linear-gradient(135deg,var(--primary2),rgba(168,85,247,.16));color:#fff;border-color:var(--primary);font-weight:700;box-shadow:0 0 0 1px rgba(0,180,255,.3) inset}
+  .note{background:rgba(0,180,255,.07);border-left:4px solid var(--primary);padding:13px 16px;border-radius:10px;margin-top:12px;color:#dbeafe}
+  input[type="text"],textarea,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:15px;background:rgba(255,255,255,.04);color:var(--text);outline:none;transition:border-color .18s;color-scheme:dark}
+  input[type="text"]:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,180,255,.15)}
+  select option{background:#151b2e;color:#fff}
+  textarea{min-height:170px;resize:vertical}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .taskcard{border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0;background:rgba(255,255,255,.03)}
+  .tasktitle{font-weight:800;margin-bottom:8px;color:#fff}
+  .optionrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .optionrow label{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:rgba(255,255,255,.03);cursor:pointer;transition:all .18s}
+  .optionrow label:hover{border-color:rgba(0,180,255,.4);background:rgba(0,180,255,.06)}
+  .optionrow input{margin-right:6px}
+  .schedule-row{display:grid;grid-template-columns:1.3fr .8fr .8fr;gap:10px;align-items:center;margin:10px 0}
+  @media(max-width:720px){.grid,.grid2,.schedule-row{grid-template-columns:1fr}}
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  button.primary,button.secondary,button.success{border:0;border-radius:10px;padding:12px 18px;cursor:pointer;font-weight:800;font-size:14.5px;transition:all .2s}
+  button.primary{background:linear-gradient(135deg,var(--primary),#0ea5e9);color:#03121c;box-shadow:0 6px 18px rgba(0,180,255,.3)}
+  button.primary:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,180,255,.42)}
+  button.secondary{background:rgba(255,255,255,.08);color:var(--text)}
+  button.secondary:hover{background:rgba(255,255,255,.14)}
+  button.success{background:linear-gradient(135deg,var(--accent),#00d998);color:#031810;box-shadow:0 6px 18px rgba(0,255,180,.25)}
+  button.success:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,255,180,.38)}
+  button.success:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+  .summary{background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.2);border-radius:14px;padding:16px;line-height:1.8;color:var(--text)}
+  .small{font-size:12.5px;color:var(--muted)}
+  .pill{display:inline-block;padding:4px 11px;border-radius:999px;background:rgba(0,180,255,.14);color:#93e0ff;margin:3px 4px 3px 0;font-size:12.5px;font-weight:700}
+  .footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a href="{% url 'ai_prompts' %}" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:700;margin-bottom:16px;">← AI 프롬프트 목록으로</a>
+<section class="hero">
+  <h1>AI와 함께하는 미래 직업 프로젝트</h1>
+  <p class="muted">1~12차시 Web Activity 데모 — 선택 → 프롬프트 생성 → Gemini 활용 → 결과 확정</p>
+  <div class="tabs"><button class="tab active" data-target="lesson1">1차시</button><button class="tab" data-target="lesson2">2차시</button><button class="tab" data-target="lesson3">3차시</button><button class="tab" data-target="lesson4">4차시</button><button class="tab" data-target="lesson5">5차시</button><button class="tab" data-target="lesson6">6차시</button><button class="tab" data-target="lesson7">7차시</button><button class="tab" data-target="lesson8">8차시</button><button class="tab" data-target="lesson9">9차시</button><button class="tab" data-target="lesson10">10차시</button><button class="tab" data-target="lesson11">11차시</button><button class="tab" data-target="lesson12">12차시</button></div>
+</section>
+
+<section id="lesson1" class="lesson active">
+<div class="card"><h2>1차시 — 나의 관심 직업 찾기</h2><p>아래 항목을 선택하면 마지막에 Gemini에 넣을 직업 추천 프롬프트가 자동으로 만들어집니다.</p></div>
+<div class="card"><h3>1. 내가 좋아하는 활동 <span class="small">최대 3개</span></h3><div class="chips" data-group="likes" data-max="3">
+<span class="chip">운동</span><span class="chip">게임</span><span class="chip">음악</span><span class="chip">그림·디자인</span><span class="chip">영상</span><span class="chip">컴퓨터</span><span class="chip">동물</span><span class="chip">요리</span><span class="chip">만들기</span><span class="chip">책·글쓰기</span><span class="chip">사람과 이야기하기</span><span class="chip">가르치기</span><span class="chip">문제 해결하기</span></div></div>
+<div class="card"><h3>2. 관심 있는 분야 <span class="small">최대 3개</span></h3><div class="chips" data-group="fields" data-max="3">
+<span class="chip">스포츠</span><span class="chip">IT·AI</span><span class="chip">교육</span><span class="chip">의료·건강</span><span class="chip">과학</span><span class="chip">예술·디자인</span><span class="chip">영상·미디어</span><span class="chip">음악</span><span class="chip">동물</span><span class="chip">음식·요리</span><span class="chip">비즈니스</span><span class="chip">건축·공간</span></div></div>
+<div class="card"><h3>3. 내가 좋아하는 일의 방식 <span class="small">최대 3개</span></h3><div class="chips" data-group="workstyle" data-max="3">
+<span class="chip">직접 만들기</span><span class="chip">사람에게 설명하기</span><span class="chip">사람 돕기</span><span class="chip">분석하기</span><span class="chip">문제 해결하기</span><span class="chip">계획하기</span><span class="chip">아이디어 내기</span><span class="chip">컴퓨터 활용하기</span><span class="chip">몸을 움직이기</span><span class="chip">사람들과 협력하기</span><span class="chip">직접 관찰하기</span><span class="chip">새로운 것을 연구하기</span></div></div>
+<div class="card"><h3>4. 내 선택 확인</h3><div id="lesson1Summary" class="summary">아직 선택한 내용이 없습니다.</div><div class="btnrow"><button class="primary" onclick="buildCareerPrompt()">직업 찾기 프롬프트 만들기</button></div></div>
+<div class="card"><h3>5. Gemini용 프롬프트</h3><textarea id="careerPrompt" placeholder="위의 선택을 완료하고 버튼을 눌러주세요."></textarea><div class="btnrow"><button class="secondary" onclick="copyText('careerPrompt')">프롬프트 복사</button></div><p class="small">복사한 뒤 Gemini에 붙여넣어 실행하세요.</p></div>
+<div class="card"><h3>6. Gemini가 추천한 직업 후보 3개</h3><div class="grid"><div><input id="career1" type="text" placeholder="후보 1"></div><div><input id="career2" type="text" placeholder="후보 2"></div><div><input id="career3" type="text" placeholder="후보 3"></div></div></div>
+<div class="card"><h3>7. 이번 프로젝트에서 탐구할 직업</h3><select id="selectedJob"><option value="">직업 후보를 입력한 뒤 선택하세요</option></select><p style="margin-top:14px"><strong>선택 이유</strong></p><div class="chips" data-group="reason" data-max="2">
+<span class="chip">내가 좋아하는 분야와 관련 있어서</span><span class="chip">실제로 해보고 싶은 일이어서</span><span class="chip">어떤 일을 하는지 궁금해서</span><span class="chip">AI 때문에 어떻게 변할지 궁금해서</span><span class="chip">내가 잘할 수 있을 것 같아서</span><span class="chip">새롭게 알게 된 직업이라서</span></div><div class="btnrow"><button class="success" onclick="saveLesson1()">1차시 완료</button></div><div id="lesson1Done" class="note" style="display:none"></div></div>
+</section>
+
+<section id="lesson2" class="lesson">
+<div class="card"><h2>2차시 — 내가 선택한 직업은 지금 어떤 일을 할까?</h2><p>1차시에서 선택한 직업을 불러와 현재 업무와 필요한 능력을 조사합니다.</p><div class="note">선택 직업: <strong id="lesson2Job">아직 1차시에서 직업을 선택하지 않았습니다.</strong></div></div>
+<div class="card"><h3>1. 궁금한 업무 영역 <span class="small">최대 5개</span></h3><div class="chips" data-group="taskcats" data-max="5">
+<span class="chip">사람과 소통하기</span><span class="chip">자료·데이터 분석하기</span><span class="chip">계획 세우기</span><span class="chip">현장에서 직접 수행하기</span><span class="chip">만들기·창작하기</span><span class="chip">문제 해결하기</span><span class="chip">사람을 지도·교육하기</span><span class="chip">장비·기술 사용하기</span><span class="chip">기록·보고하기</span><span class="chip">관리·운영하기</span><span class="chip">안전·품질 확인하기</span><span class="chip">중요한 결정하기</span></div></div>
+<div class="card"><h3>2. 중요할 것 같은 능력 <span class="small">최대 5개</span></h3><div class="chips" data-group="skills" data-max="5">
+<span class="chip">의사소통</span><span class="chip">협업</span><span class="chip">분석력</span><span class="chip">문제 해결</span><span class="chip">창의성</span><span class="chip">판단력</span><span class="chip">계획·관리</span><span class="chip">디지털 활용</span><span class="chip">AI 활용</span><span class="chip">전문지식</span><span class="chip">관찰력</span><span class="chip">신체 능력</span><span class="chip">리더십</span><span class="chip">공감·사람 이해</span></div></div>
+<div class="card"><h3>3. 현재 직업 조사 프롬프트</h3><div class="btnrow"><button class="primary" onclick="buildJobResearchPrompt()">조사 프롬프트 만들기</button></div><textarea id="researchPrompt" placeholder="버튼을 눌러 프롬프트를 만들어주세요."></textarea><div class="btnrow"><button class="secondary" onclick="copyText('researchPrompt')">프롬프트 복사</button></div></div>
+<div class="card"><h3>4. Gemini 결과에서 핵심 업무 3개 정리</h3><div class="grid"><input id="task1" type="text" placeholder="핵심 업무 1"><input id="task2" type="text" placeholder="핵심 업무 2"><input id="task3" type="text" placeholder="핵심 업무 3"></div><div class="grid" style="margin-top:10px"><input id="task1desc" type="text" placeholder="업무 1 설명"><input id="task2desc" type="text" placeholder="업무 2 설명"><input id="task3desc" type="text" placeholder="업무 3 설명"></div></div>
+<div class="card"><h3>5. 필요한 핵심 능력 3개</h3><div class="grid"><input id="skill1" type="text" placeholder="핵심 능력 1"><input id="skill2" type="text" placeholder="핵심 능력 2"><input id="skill3" type="text" placeholder="핵심 능력 3"></div></div>
+<div class="card"><h3>6. 검증 프롬프트</h3><div class="btnrow"><button class="primary" onclick="buildVerificationPrompt()">내가 고른 내용 다시 확인하기</button></div><textarea id="verifyPrompt" placeholder="핵심 업무와 능력을 입력한 뒤 버튼을 눌러주세요."></textarea><div class="btnrow"><button class="secondary" onclick="copyText('verifyPrompt')">검증 프롬프트 복사</button></div></div>
+<div class="card"><h3>7. 최종 확인</h3><select id="verificationStatus"><option value="">검증 결과를 선택하세요</option><option>그대로 확정</option><option>일부 수정 후 확정</option><option>다시 선택</option></select><div class="btnrow"><button class="success" onclick="saveLesson2()">2차시 완료</button></div><div id="lesson2Done" class="note" style="display:none"></div></div>
+</section>
+
+<section id="lesson3" class="lesson">
+<div class="card"><h2>3차시 — 2038년, 이 직업은 어떻게 변할까?</h2><p>2차시에서 확정한 현재 핵심 업무 3개를 바탕으로 미래 변화와 AI·사람의 역할을 정합니다.</p><div id="lesson3Intro" class="note">2차시 데이터가 필요합니다.</div></div>
+
+<div class="card">
+  <h3>1. 현재 핵심 업무 3개 확인</h3>
+  <div id="lesson3Tasks" class="summary">2차시 완료 후 자동으로 표시됩니다.</div>
+</div>
+
+<div class="card">
+  <h3>2. 업무별 2038년 변화 예상</h3>
+  <p class="small">각 업무마다 변화 정도, AI 역할, 사람 역할, 주 담당 방식을 선택하세요.</p>
+  <div id="lesson3TaskCards"></div>
+</div>
+
+<div class="card">
+  <h3>3. 내 예상 결과 확인</h3>
+  <div id="lesson3Summary" class="summary">업무별 선택을 완료한 뒤 확인하세요.</div>
+  <div class="btnrow"><button class="secondary" onclick="renderLesson3Summary()">선택 결과 확인</button><button class="primary" onclick="buildFuturePrompt()">2038년 분석 프롬프트 만들기</button></div>
+</div>
+
+<div class="card">
+  <h3>4. Gemini용 2038년 분석 프롬프트</h3>
+  <textarea id="futurePrompt" placeholder="업무별 선택을 완료하고 프롬프트를 만들어주세요."></textarea>
+  <div class="btnrow"><button class="secondary" onclick="copyText('futurePrompt')">프롬프트 복사</button></div>
+</div>
+
+<div class="card">
+  <h3>5. Gemini 결과와 비교</h3>
+  <div id="lesson3Compare"></div>
+</div>
+
+<div class="card">
+  <h3>6. 새롭게 생길 수 있는 업무 <span class="small">선택 사항 · 최대 2개</span></h3>
+  <div class="grid2"><input id="newFutureTask1" type="text" placeholder="새로운 미래 업무 1"><input id="newFutureTask2" type="text" placeholder="새로운 미래 업무 2"></div>
+</div>
+
+<div class="card">
+  <h3>7. 3차시 최종 확정</h3>
+  <div class="btnrow"><button class="success" onclick="saveLesson3()">3차시 완료</button></div>
+  <div id="lesson3Done" class="note" style="display:none"></div>
+</div>
+</section>
+
+<section id="lesson4" class="lesson">
+<div class="card"><h2>4차시 — 2038년 나의 하루 업무 설계</h2><p>3차시에서 확정한 미래 업무를 하루의 실제 흐름으로 배치합니다.</p><div id="lesson4Intro" class="note">3차시 데이터가 필요합니다.</div></div>
+
+<div class="card">
+  <h3>1. 하루에 보여줄 핵심 업무 3개 선택</h3>
+  <p class="small">3차시의 업무 후보 중 영상에서 보여주고 싶은 업무 3개를 선택하세요.</p>
+  <div id="lesson4TaskChoices"></div>
+</div>
+
+<div class="card">
+  <h3>2. 하루 일정 배치</h3>
+  <p class="small">각 업무의 시간대와 순서를 정합니다.</p>
+  <div id="lesson4Schedule"></div>
+</div>
+
+<div class="card">
+  <h3>3. AI 비서가 도와주는 방식</h3>
+  <p>영상의 기본 설정은 <strong>2038년 어느 날, AI 비서가 미래의 나에게 오늘의 업무를 브리핑</strong>하는 것입니다.</p>
+  <div class="chips" data-group="briefingItems" data-max="4">
+    <span class="chip">오늘 일정 요약</span><span class="chip">중요 업무 우선순위</span><span class="chip">분석 결과 전달</span><span class="chip">주의할 점 알림</span><span class="chip">업무 준비 자료 제공</span><span class="chip">일정 변경 알림</span>
+  </div>
+</div>
+
+<div class="card">
+  <h3>4. 내 일정 확인</h3>
+  <div id="lesson4Summary" class="summary">핵심 업무를 선택하고 일정을 배치한 뒤 확인하세요.</div>
+  <div class="btnrow"><button class="secondary" onclick="renderLesson4Summary()">일정 확인</button><button class="primary" onclick="buildSchedulePrompt()">하루 일정 검토 프롬프트 만들기</button></div>
+</div>
+
+<div class="card">
+  <h3>5. Gemini용 일정 검토 프롬프트</h3>
+  <textarea id="schedulePrompt" placeholder="일정을 완성한 뒤 프롬프트를 만들어주세요."></textarea>
+  <div class="btnrow"><button class="secondary" onclick="copyText('schedulePrompt')">프롬프트 복사</button></div>
+</div>
+
+<div class="card">
+  <h3>6. Gemini 검토 후 최종 판단</h3>
+  <select id="scheduleVerification">
+    <option value="">검토 결과를 선택하세요</option>
+    <option>그대로 확정</option>
+    <option>일부 수정 후 확정</option>
+    <option>일정을 다시 배치</option>
+  </select>
+  <div class="btnrow"><button class="success" onclick="saveLesson4()">4차시 완료</button></div>
+  <div id="lesson4Done" class="note" style="display:none"></div>
+</div>
+</section>
+
+
+<section id="lesson5" class="lesson">
+<div class="card">
+  <h2>5차시 — 스토리보드와 AI 비서 대본 만들기</h2>
+  <p>4차시의 하루 업무 일정을 바탕으로 60~90초, 9:16 세로형 영상의 장면 구조와 AI 비서 대본을 만듭니다.</p>
+  <div id="lesson5Intro" class="note">4차시 데이터가 필요합니다.</div>
+</div>
+
+<div class="card">
+  <h3>1. 4차시 결과 확인</h3>
+  <div id="lesson5Prev" class="summary">4차시 완료 후 자동으로 표시됩니다.</div>
+</div>
+
+<div class="card">
+  <h3>2. 영상 시작 방식</h3>
+  <div class="optionrow">
+    <label><input type="radio" name="openingType" value="AI 비서가 아침 일정을 알려준다">AI 비서가 아침 일정을 알려준다</label>
+    <label><input type="radio" name="openingType" value="출근하면서 AI 비서의 브리핑을 듣는다">출근하면서 AI 비서의 브리핑을 듣는다</label>
+    <label><input type="radio" name="openingType" value="업무 공간에 도착하자 AI 비서가 나타난다">업무 공간에 도착하자 AI 비서가 나타난다</label>
+    <label><input type="radio" name="openingType" value="오늘의 중요 업무 알림으로 시작한다">오늘의 중요 업무 알림으로 시작한다</label>
+    <label><input type="radio" name="openingType" value="2038년 날짜와 직업을 먼저 보여준다">2038년 날짜와 직업을 먼저 보여준다</label>
+  </div>
+  <p style="margin-top:14px"><strong>오프닝에 보여줄 정보</strong> <span class="small">최대 3개</span></p>
+  <div class="optionrow" id="openingVisualOptions"></div>
+</div>
+
+<div class="card">
+  <h3>3. 핵심 업무 3개의 장면 구성</h3>
+  <p class="small">업무별로 화면 행동과 시각 요소를 선택하세요.</p>
+  <div id="lesson5TaskScenes"></div>
+</div>
+
+<div class="card">
+  <h3>4. AI 비서 말투</h3>
+  <select id="assistantTone">
+    <option value="">선택하세요</option>
+    <option>차분하고 전문적</option>
+    <option>친근하고 자연스럽게</option>
+    <option>짧고 정확하게</option>
+    <option>미래형 디지털 비서 느낌</option>
+    <option>밝고 활기차게</option>
+  </select>
+</div>
+
+<div class="card">
+  <h3>5. 영상 종료 방식</h3>
+  <select id="endingType">
+    <option value="">선택하세요</option>
+    <option>오늘 업무 완료를 AI 비서가 알려준다</option>
+    <option>하루 업무 결과를 짧게 정리한다</option>
+    <option>사람과 AI가 함께 일한 결과를 보여준다</option>
+    <option>다음 일정 예고로 끝낸다</option>
+    <option>주인공의 미래 업무 모습을 보여주며 끝낸다</option>
+  </select>
+</div>
+
+<div class="card">
+  <h3>6. 장면 시간 설정</h3>
+  <p>기본 6장면으로 구성합니다. 필요하면 장면 1개를 추가할 수 있으며 총 영상 길이는 <strong>60~90초</strong>가 되어야 합니다.</p>
+  <label style="display:inline-flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="useExtraScene" onchange="toggleExtraScene()"> 추가 장면 1개 사용 (최대 7장면)</label>
+  <div id="sceneDurationRows"></div>
+  <div id="durationStatus" class="note">현재 예상 길이: 0초</div>
+</div>
+
+<div class="card">
+  <h3>7. 스토리보드·대본 프롬프트 만들기</h3>
+  <div class="btnrow">
+    <button class="primary" onclick="buildStoryboardPrompt()">스토리보드·대본 프롬프트 만들기</button>
+  </div>
+  <textarea id="storyboardPrompt" placeholder="위 항목을 선택한 뒤 프롬프트를 만들어주세요."></textarea>
+  <div class="btnrow"><button class="secondary" onclick="copyText('storyboardPrompt')">프롬프트 복사</button></div>
+</div>
+
+<div class="card">
+  <h3>8. Gemini 결과 검토</h3>
+  <select id="storyboardReviewStatus">
+    <option value="">검토 결과를 선택하세요</option>
+    <option>거의 맞음</option>
+    <option>일부 수정 필요</option>
+    <option>많이 수정 필요</option>
+  </select>
+</div>
+
+<div class="card">
+  <h3>9. 최종 스토리보드 입력</h3>
+  <p class="small">Gemini 결과를 참고해 최종 사용할 내용만 입력합니다.</p>
+  <div id="finalStoryboardRows"></div>
+</div>
+
+<div class="card">
+  <h3>10. 5차시 완료</h3>
+  <div id="lesson5Checklist" class="summary">아직 완료 조건을 확인하지 않았습니다.</div>
+  <div class="btnrow">
+    <button class="secondary" onclick="checkLesson5()">완료 조건 확인</button>
+    <button class="success" id="saveLesson5Btn" onclick="saveLesson5()" disabled>5차시 완료</button>
+  </div>
+  <div id="lesson5Done" class="note" style="display:none"></div>
+</div>
+</section>
+
+
+<section id="lesson6" class="lesson">
+<div class="card">
+  <h2>6차시 — 미래 직업 장면 이미지 만들기</h2>
+  <p>5차시 스토리보드를 바탕으로 각 장면의 이미지 조건을 선택하고 Gemini용 이미지 프롬프트를 만듭니다.</p>
+  <div id="lesson6Intro" class="note">5차시 데이터가 필요합니다.</div>
+</div>
+
+<div class="card">
+  <h3>1. 주인공 기본 설정</h3>
+  <p class="small">첫 장면에서 정한 주인공 설정을 모든 장면에 공통 적용합니다. 학생 본인의 실제 얼굴은 사용하지 않습니다.</p>
+  <div class="grid2">
+    <select id="characterGender">
+      <option value="">인물 형태</option>
+      <option>남성</option>
+      <option>여성</option>
+      <option>성별이 드러나지 않는 표현</option>
+      <option>인물을 크게 보여주지 않음</option>
+    </select>
+    <select id="characterAge">
+      <option value="">연령대</option>
+      <option>20대</option>
+      <option>30대</option>
+      <option>40대</option>
+      <option>직업에 맞게 자연스럽게 설정</option>
+    </select>
+    <select id="characterClothes">
+      <option value="">복장</option>
+      <option>직업 전문 복장</option>
+      <option>비즈니스 캐주얼</option>
+      <option>작업복</option>
+      <option>스포츠웨어</option>
+      <option>의료·연구 복장</option>
+    </select>
+    <input id="characterExtra" type="text" placeholder="기타 외형·복장 특징 (선택)">
+  </div>
+</div>
+
+<div class="card">
+  <h3>2. 장면별 이미지 설정</h3>
+  <p class="small">장면을 하나씩 확인하고 공간, 행동, AI 표현, 구도, 미래 표현, 분위기를 선택하세요.</p>
+  <div id="lesson6SceneCards"></div>
+</div>
+
+<div class="card">
+  <h3>3. 장면별 이미지 프롬프트</h3>
+  <p class="small">각 장면에서 [이미지 프롬프트 만들기] 버튼을 눌러 생성합니다.</p>
+  <div id="lesson6PromptCards"></div>
+</div>
+
+<div class="card">
+  <h3>4. 이미지 생성 결과 기록</h3>
+  <p class="small">Gemini에서 이미지를 생성한 뒤 결과를 판단합니다. 수정은 7차시에서 진행합니다.</p>
+  <div id="lesson6ReviewCards"></div>
+</div>
+
+<div class="card">
+  <h3>5. 6차시 완료</h3>
+  <div id="lesson6Checklist" class="summary">아직 완료 조건을 확인하지 않았습니다.</div>
+  <div class="btnrow">
+    <button class="secondary" onclick="checkLesson6()">완료 조건 확인</button>
+    <button class="success" id="saveLesson6Btn" onclick="saveLesson6()" disabled>6차시 완료</button>
+  </div>
+  <div id="lesson6Done" class="note" style="display:none"></div>
+</div>
+</section>
+
+
+<section id="lesson7" class="lesson">
+<div class="card">
+  <h2>7차시 — 이미지 일관성 맞추기</h2>
+  <p>6차시 이미지 결과를 비교해 기준 이미지를 정하고, 장면별 수정·재생성 여부를 판단해 최종 이미지 세트를 확정합니다.</p>
+  <div id="lesson7Intro" class="note">6차시 데이터가 필요합니다.</div>
+</div>
+
+<div class="card">
+  <h3>1. 6차시 결과 확인</h3>
+  <div id="lesson7Prev" class="summary">6차시 완료 후 자동으로 표시됩니다.</div>
+</div>
+
+<div class="card">
+  <h3>2. 기준 이미지 선택</h3>
+  <p class="small">얼굴·헤어스타일·복장·전체 분위기가 가장 마음에 드는 장면을 1개 선택하세요.</p>
+  <select id="referenceScene7" onchange="referenceSceneChanged7()">
+    <option value="">기준 장면을 선택하세요</option>
+  </select>
+</div>
+
+<div class="card">
+  <h3>3. 모든 장면에서 동일하게 유지할 요소</h3>
+  <p class="small">최대 6개. 얼굴, 헤어스타일, 연령대, 복장, 이미지 스타일을 기본적으로 권장합니다.</p>
+  <div class="optionrow" id="consistencyRuleOptions7"></div>
+</div>
+
+<div class="card">
+  <h3>4. 장면별 비교·수정</h3>
+  <p class="small">기준 장면을 제외한 각 장면을 검토합니다. 실제 이미지 자체는 웹페이지에 업로드하지 않습니다.</p>
+  <div id="lesson7SceneCards"></div>
+</div>
+
+<div class="card">
+  <h3>5. 전체 일관성 최종 검수</h3>
+  <div class="optionrow" id="overallConsistency7"></div>
+</div>
+
+<div class="card">
+  <h3>6. 7차시 완료</h3>
+  <div id="lesson7Checklist" class="summary">아직 완료 조건을 확인하지 않았습니다.</div>
+  <div class="btnrow">
+    <button class="secondary" onclick="checkLesson7()">완료 조건 확인</button>
+    <button class="success" id="saveLesson7Btn" onclick="saveLesson7()" disabled>7차시 완료</button>
+  </div>
+  <div id="lesson7Done" class="note" style="display:none"></div>
+</div>
+</section>
+
+
+<section id="lesson8" class="lesson">
+<div class="card">
+  <h2>8차시 — Google Vids로 무음 러프컷 만들기</h2>
+  <p>5차시 스토리보드와 7차시 최종 이미지 세트를 이용해 9:16 영상의 기본 편집본을 완성합니다.</p>
+  <div id="lesson8Intro" class="note">5~7차시 데이터가 필요합니다.</div>
+</div>
+
+<div class="card">
+  <h3>1. 편집에 사용할 장면 확인</h3>
+  <div id="lesson8SceneSummary" class="summary">이전 차시 완료 후 자동으로 표시됩니다.</div>
+</div>
+
+<div class="card">
+  <h3>2. 오프닝 텍스트</h3>
+  <p class="small">최대 3개. 기본 추천: 2038년 + 직업명</p>
+  <div class="optionrow" id="openingText8"></div>
+</div>
+
+<div class="card">
+  <h3>3. 업무 장면 텍스트 방식</h3>
+  <select id="sceneTextStyle8" onchange="renderSceneText8()">
+    <option value="">선택하세요</option>
+    <option>텍스트 최소화 — 업무명만</option>
+    <option>시간 + 업무</option>
+    <option>짧은 설명</option>
+    <option>화면 텍스트 없음</option>
+  </select>
+  <div id="sceneTextRows8" style="margin-top:14px"></div>
+</div>
+
+<div class="card">
+  <h3>4. 화면 전환 방식</h3>
+  <select id="transitionStyle8">
+    <option value="">선택하세요</option>
+    <option>장면이 바로 바뀌는 단순 전환</option>
+    <option>부드러운 전환</option>
+    <option>대부분 단순 전환 + 중요한 장면만 부드러운 전환</option>
+    <option>Vids에서 직접 판단</option>
+  </select>
+</div>
+
+<div class="card">
+  <h3>5. 이미지 화면 배치 방식</h3>
+  <select id="imageLayout8">
+    <option value="">선택하세요</option>
+    <option>9:16 화면을 채우고 중요한 인물·행동이 잘리지 않도록 조정</option>
+    <option>인물 중심</option>
+    <option>업무 화면 중심</option>
+    <option>장면마다 직접 판단</option>
+  </select>
+</div>
+
+<div class="card">
+  <h3>6. Google Vids 편집 계획 프롬프트</h3>
+  <div class="btnrow">
+    <button class="primary" onclick="buildVidsPlan8()">Vids 편집 계획 만들기</button>
+    <button class="secondary" onclick="copyText('vidsPrompt8')">복사</button>
+  </div>
+  <textarea id="vidsPrompt8" placeholder="편집 방식을 선택한 뒤 프롬프트를 만들어주세요."></textarea>
+</div>
+
+<div class="card">
+  <h3>7. Google Vids 작업 완료 체크</h3>
+  <div id="vidsChecks8" class="optionrow"></div>
+</div>
+
+<div class="card">
+  <h3>8. 8차시 완료</h3>
+  <div id="lesson8Checklist" class="summary">아직 완료 조건을 확인하지 않았습니다.</div>
+  <div class="btnrow">
+    <button class="secondary" onclick="checkLesson8()">완료 조건 확인</button>
+    <button class="success" id="saveLesson8Btn" onclick="saveLesson8()" disabled>8차시 완료</button>
+  </div>
+  <div id="lesson8Done" class="note" style="display:none"></div>
+</div>
+</section>
+
+
+<section id="lesson9" class="lesson">
+<div class="card">
+  <h2>9차시 — 정지 이미지를 움직이는 장면으로 만들기</h2>
+  <p>8차시 러프컷의 장면 중 움직임이 필요한 장면만 선택해 Google Vids의 AI 영상 기능용 프롬프트를 만듭니다.</p>
+  <div id="lesson9Intro" class="note">8차시 데이터가 필요합니다.</div>
+</div>
+
+<div class="card">
+  <h3>1. 장면별 움직임 필요성 판단</h3>
+  <p class="small">전체 장면 중 최대 3개만 AI 영상화합니다.</p>
+  <div id="lesson9PriorityCards"></div>
+</div>
+
+<div class="card">
+  <h3>2. 선택 장면의 움직임 설정</h3>
+  <div id="lesson9MotionCards"></div>
+</div>
+
+<div class="card">
+  <h3>3. 장면별 AI 영상 프롬프트</h3>
+  <div id="lesson9PromptCards"></div>
+</div>
+
+<div class="card">
+  <h3>4. 생성 결과 검토</h3>
+  <div id="lesson9ReviewCards"></div>
+</div>
+
+<div class="card">
+  <h3>5. 전체 영상 확인</h3>
+  <div class="optionrow" id="overallMotionChecks9"></div>
+</div>
+
+<div class="card">
+  <h3>6. 9차시 완료</h3>
+  <div id="lesson9Checklist" class="summary">아직 완료 조건을 확인하지 않았습니다.</div>
+  <div class="btnrow">
+    <button class="secondary" onclick="checkLesson9()">완료 조건 확인</button>
+    <button class="success" id="saveLesson9Btn" onclick="saveLesson9()" disabled>9차시 완료</button>
+  </div>
+  <div id="lesson9Done" class="note" style="display:none"></div>
+</div>
+</section>
+
+
+<section id="lesson10" class="lesson">
+<div class="card">
+  <h2>10차시 — AI 비서 음성과 BGM 완성</h2>
+  <p>5차시 대본과 9차시 영상 구성을 바탕으로 AI 비서 음성과 Suno BGM을 적용해 최종 검수 직전 영상을 완성합니다.</p>
+  <div id="lesson10Intro" class="note">5차시와 9차시 데이터가 필요합니다.</div>
+</div>
+
+<div class="card">
+  <h3>1. 현재 영상 정보 확인</h3>
+  <div id="lesson10Summary" class="summary">이전 차시 완료 후 자동으로 표시됩니다.</div>
+</div>
+
+<div class="card">
+  <h3>2. AI 비서 음성 스타일</h3>
+  <div class="grid2">
+    <select id="voiceStyle10">
+      <option value="">목소리 느낌</option>
+      <option>차분하고 신뢰감 있게</option>
+      <option>친근하고 자연스럽게</option>
+      <option>밝고 활기차게</option>
+      <option>짧고 정확한 디지털 비서</option>
+      <option>전문적인 업무 비서</option>
+    </select>
+    <select id="voiceSpeed10">
+      <option value="">말하기 속도</option>
+      <option>천천히</option>
+      <option>보통</option>
+      <option>조금 빠르게</option>
+    </select>
+    <select id="voiceEmotion10">
+      <option value="">감정 표현</option>
+      <option>최소화</option>
+      <option>자연스럽게</option>
+      <option>조금 강조</option>
+    </select>
+  </div>
+</div>
+
+<div class="card">
+  <h3>3. 장면별 대사 검토</h3>
+  <div id="scriptReviewCards10"></div>
+</div>
+
+<div class="card">
+  <h3>4. AI 비서 대본 다듬기</h3>
+  <div class="btnrow">
+    <button class="primary" onclick="buildVoicePrompt10()">음성용 대본 프롬프트 만들기</button>
+    <button class="secondary" onclick="copyText('voicePrompt10')">복사</button>
+  </div>
+  <textarea id="voicePrompt10" placeholder="음성 스타일과 장면별 대사 사용 방식을 선택한 뒤 프롬프트를 만들어주세요."></textarea>
+</div>
+
+<div class="card">
+  <h3>5. 최종 AI 비서 대사 입력</h3>
+  <p class="small">Gemini 결과 전체를 붙이지 말고 최종 사용할 대사만 입력합니다.</p>
+  <div id="finalScripts10"></div>
+</div>
+
+<div class="card">
+  <h3>6. Google Vids 음성 적용 확인</h3>
+  <div class="optionrow" id="voiceApplyChecks10"></div>
+</div>
+
+<div class="card">
+  <h3>7. BGM 콘셉트 선택</h3>
+  <p><strong>분위기</strong> <span class="small">최대 2개</span></p>
+  <div class="optionrow" id="bgmMood10"></div>
+  <div class="grid2" style="margin-top:14px">
+    <select id="bgmTempo10">
+      <option value="">템포</option>
+      <option>느림</option>
+      <option>중간</option>
+      <option>빠름</option>
+    </select>
+    <select id="bgmStyle10">
+      <option value="">음악 성격</option>
+      <option>전자음 중심</option>
+      <option>피아노·신스 조합</option>
+      <option>현대적인 기업 영상 느낌</option>
+      <option>다큐멘터리 느낌</option>
+      <option>밝은 테크 영상 느낌</option>
+      <option>영화적이지만 과하지 않게</option>
+    </select>
+  </div>
+  <div class="note">보컬 없음 / Instrumental only</div>
+</div>
+
+<div class="card">
+  <h3>8. Suno BGM 프롬프트</h3>
+  <div class="btnrow">
+    <button class="primary" onclick="buildSunoPrompt10()">BGM 프롬프트 만들기</button>
+    <button class="secondary" onclick="copyText('sunoPrompt10')">복사</button>
+  </div>
+  <textarea id="sunoPrompt10" placeholder="BGM 분위기와 스타일을 선택한 뒤 프롬프트를 만들어주세요."></textarea>
+</div>
+
+<div class="card">
+  <h3>9. Suno 결과 비교</h3>
+  <div class="grid2">
+    <select id="bgmCandidateA10">
+      <option value="">후보 A 평가</option>
+      <option>영상과 잘 맞음</option>
+      <option>사용 가능하지만 아쉬움</option>
+      <option>사용하지 않음</option>
+    </select>
+    <select id="bgmCandidateB10">
+      <option value="">후보 B 평가</option>
+      <option>영상과 잘 맞음</option>
+      <option>사용 가능하지만 아쉬움</option>
+      <option>사용하지 않음</option>
+    </select>
+  </div>
+  <select id="selectedBgm10" style="margin-top:12px">
+    <option value="">최종 BGM 선택</option>
+    <option>후보 A</option>
+    <option>후보 B</option>
+    <option>둘 다 사용하지 않고 1회 재생성</option>
+  </select>
+</div>
+
+<div class="card">
+  <h3>10. 음량·전체 재생 확인</h3>
+  <div class="optionrow" id="audioChecks10"></div>
+</div>
+
+<div class="card">
+  <h3>11. 10차시 완료</h3>
+  <div id="lesson10Checklist" class="summary">아직 완료 조건을 확인하지 않았습니다.</div>
+  <div class="btnrow">
+    <button class="secondary" onclick="checkLesson10()">완료 조건 확인</button>
+    <button class="success" id="saveLesson10Btn" onclick="saveLesson10()" disabled>10차시 완료</button>
+  </div>
+  <div id="lesson10Done" class="note" style="display:none"></div>
+</div>
+</section>
+
+
+<section id="lesson11" class="lesson">
+<div class="card">
+  <h2>11차시 — 최종 검수와 오류 수정</h2>
+  <p>10차시 완성 후보 영상을 처음부터 끝까지 검수하고, 필수 오류를 수정해 발표 가능한 Final v1.0 영상을 확정합니다.</p>
+  <div id="lesson11Intro" class="note">10차시 데이터가 필요합니다.</div>
+</div>
+
+<div class="card">
+  <h3>1. 기본 규격 확인</h3>
+  <div id="formatChecks11" class="optionrow"></div>
+</div>
+
+<div class="card">
+  <h3>2. 내용 검수</h3>
+  <p class="small">각 항목을 문제 없음 / 수정 필요로 판단합니다.</p>
+  <div id="contentChecks11"></div>
+</div>
+
+<div class="card">
+  <h3>3. 화면 검수</h3>
+  <p class="small">문제가 있는 장면을 선택하고 화면 문제를 기록합니다.</p>
+  <div id="visualChecks11"></div>
+</div>
+
+<div class="card">
+  <h3>4. 음성 검수</h3>
+  <div id="voiceChecks11"></div>
+</div>
+
+<div class="card">
+  <h3>5. BGM 검수</h3>
+  <div id="bgmChecks11"></div>
+</div>
+
+<div class="card">
+  <h3>6. 수정 목록</h3>
+  <div id="issueList11" class="summary">검수 결과에서 수정 필요한 항목을 자동으로 모읍니다.</div>
+  <div class="btnrow">
+    <button class="secondary" onclick="refreshIssues11()">수정 목록 새로고침</button>
+  </div>
+</div>
+
+<div class="card">
+  <h3>7. 수정 도움 프롬프트</h3>
+  <div class="btnrow">
+    <button class="primary" onclick="buildFixPrompt11()">수정 방법 프롬프트 만들기</button>
+    <button class="secondary" onclick="copyText('fixPrompt11')">복사</button>
+  </div>
+  <textarea id="fixPrompt11" placeholder="수정 목록을 만든 뒤 필요한 경우 프롬프트를 생성하세요."></textarea>
+</div>
+
+<div class="card">
+  <h3>8. 전체 영상 재생 확인</h3>
+  <select id="playback11">
+    <option value="">수정 후 전체 재생 결과</option>
+    <option>처음부터 끝까지 문제 없이 재생됨</option>
+    <option>아직 수정할 부분이 있음</option>
+  </select>
+</div>
+
+<div class="card">
+  <h3>9. 최종 QA</h3>
+  <div id="finalQa11" class="optionrow"></div>
+</div>
+
+<div class="card">
+  <h3>10. 최종 영상 파일명</h3>
+  <input id="finalFilename11" type="text" placeholder="예: 축구_코치_FutureCareer_Final_v1.mp4">
+</div>
+
+<div class="card">
+  <h3>11. 11차시 완료</h3>
+  <div id="lesson11Checklist" class="summary">아직 완료 조건을 확인하지 않았습니다.</div>
+  <div class="btnrow">
+    <button class="secondary" onclick="checkLesson11()">완료 조건 확인</button>
+    <button class="success" id="saveLesson11Btn" onclick="saveLesson11()" disabled>최종 영상 확정</button>
+  </div>
+  <div id="lesson11Done" class="note" style="display:none"></div>
+</div>
+</section>
+
+
+<section id="lesson12" class="lesson">
+<div class="card">
+  <h2>12차시 — 영상 상영·발표·프로젝트 회고</h2>
+  <p>Final v1.0 영상을 제출하고, 2038년 직업 변화와 AI·사람의 역할, 내가 직접 판단한 과정을 발표·회고합니다.</p>
+  <div id="lesson12Intro" class="note">2·3·4·11차시 데이터가 필요합니다.</div>
+</div>
+
+<div class="card">
+  <h3>1. 나의 프로젝트 결과</h3>
+  <div id="projectSummary12" class="summary">이전 차시 완료 후 자동으로 표시됩니다.</div>
+</div>
+
+<div class="card">
+  <h3>2. 최종 영상 제출 확인</h3>
+  <div id="submissionChecks12" class="optionrow"></div>
+</div>
+
+<div class="card">
+  <h3>3. 발표 핵심 내용 선택</h3>
+
+  <p><strong>2038년에 가장 크게 달라진 업무</strong></p>
+  <select id="mainChange12" onchange="mainChangeChanged12()">
+    <option value="">업무를 선택하세요</option>
+  </select>
+
+  <div class="grid2" style="margin-top:14px">
+    <div>
+      <p><strong>그 업무에서 AI가 하는 일</strong> <span class="small">최대 2개</span></p>
+      <div class="optionrow" id="aiRoles12"></div>
+    </div>
+    <div>
+      <p><strong>그 업무에서 사람이 하는 일</strong> <span class="small">최대 2개</span></p>
+      <div class="optionrow" id="humanRoles12"></div>
+    </div>
+  </div>
+
+  <p style="margin-top:14px"><strong>AI와 사람이 함께 일할 때 가장 중요한 점</strong></p>
+  <select id="collaborationPoint12">
+    <option value="">선택하세요</option>
+    <option>AI 결과를 사람이 확인하는 것</option>
+    <option>사람이 목표를 정하는 것</option>
+    <option>상황에 따라 사람이 최종 판단하는 것</option>
+    <option>AI와 사람이 잘하는 일을 나누는 것</option>
+    <option>사람을 이해하는 일은 사람이 담당하는 것</option>
+  </select>
+
+  <p style="margin-top:14px"><strong>AI가 아니라 내가 직접 결정하거나 수정한 부분</strong> <span class="small">최대 3개</span></p>
+  <div class="optionrow" id="studentDecisions12"></div>
+</div>
+
+<div class="card">
+  <h3>4. 발표 카드</h3>
+  <div class="btnrow">
+    <button class="primary" onclick="buildPresentationCard12()">내 발표 카드 만들기</button>
+  </div>
+  <div id="presentationCard12" class="summary">발표 핵심 내용을 선택하면 카드가 만들어집니다.</div>
+  <div class="note" style="margin-top:12px">발표 순서: ① 직업 → ② 2038년 변화 → ③ AI 역할 → ④ 사람 역할 → ⑤ 내가 직접 결정한 부분</div>
+</div>
+
+<div class="card">
+  <h3>5. 다른 학생 발표 관찰</h3>
+  <select id="peerElement12">
+    <option value="">인상 깊었던 요소</option>
+    <option>미래 직업 아이디어</option>
+    <option>AI 활용 방법</option>
+    <option>사람의 역할</option>
+    <option>영상 장면</option>
+    <option>이미지 표현</option>
+    <option>AI 비서 활용</option>
+    <option>BGM·영상 분위기</option>
+  </select>
+  <input id="peerReason12" type="text" style="margin-top:10px" placeholder="인상 깊었던 이유 한 줄 (선택)">
+</div>
+
+<div class="card">
+  <h3>6. 자기평가</h3>
+  <div id="selfAssessment12"></div>
+</div>
+
+<div class="card">
+  <h3>7. 프로젝트 회고</h3>
+  <div class="grid2">
+    <select id="mostEnjoyable12">
+      <option value="">가장 재미있었던 활동</option>
+    </select>
+    <select id="mostDifficult12">
+      <option value="">가장 어려웠던 활동</option>
+    </select>
+    <select id="nextImprovement12">
+      <option value="">다음 프로젝트에서 더 잘해보고 싶은 것</option>
+    </select>
+  </div>
+</div>
+
+<div class="card">
+  <h3>8. 최종 학습 확인</h3>
+  <div id="learningChecks12" class="optionrow"></div>
+</div>
+
+<div class="card">
+  <h3>9. 프로젝트 완료</h3>
+  <div id="lesson12Checklist" class="summary">아직 완료 조건을 확인하지 않았습니다.</div>
+  <div class="btnrow">
+    <button class="secondary" onclick="checkLesson12()">완료 조건 확인</button>
+    <button class="success" id="saveLesson12Btn" onclick="saveLesson12()" disabled>프로젝트 완료</button>
+  </div>
+  <div id="lesson12Done" class="note" style="display:none"></div>
+</div>
+</section>
+
+<div class="footer">1~12차시 통합 데모 · 데이터는 현재 브라우저 LocalStorage에 저장됩니다.</div>
+</div>
+<script>
+const selected={};
+document.querySelectorAll('.chips').forEach(group=>{const name=group.dataset.group,max=parseInt(group.dataset.max||'99');selected[name]=[];group.querySelectorAll('.chip').forEach(chip=>{chip.addEventListener('click',()=>{const value=chip.textContent.trim();if(chip.classList.contains('selected')){chip.classList.remove('selected');selected[name]=selected[name].filter(v=>v!==value)}else{if(selected[name].length>=max){alert(`최대 ${max}개까지 선택할 수 있습니다.`);return}chip.classList.add('selected');selected[name].push(value)}if(['likes','fields','workstyle'].includes(name))updateLesson1Summary()})})});
+document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.lesson').forEach(l=>l.classList.remove('active'));tab.classList.add('active');document.getElementById(tab.dataset.target).classList.add('active');if(tab.dataset.target==='lesson2')loadLesson2Job();if(tab.dataset.target==='lesson3')initLesson3();if(tab.dataset.target==='lesson4')initLesson4();if(tab.dataset.target==='lesson5')initLesson5();if(tab.dataset.target==='lesson6')initLesson6();if(tab.dataset.target==='lesson7')initLesson7();if(tab.dataset.target==='lesson8')initLesson8();if(tab.dataset.target==='lesson9')initLesson9();if(tab.dataset.target==='lesson10')initLesson10();if(tab.dataset.target==='lesson11')initLesson11();if(tab.dataset.target==='lesson12')initLesson12()})});
+function pills(arr){if(!arr||!arr.length)return '<span class="small">아직 선택 없음</span>';return arr.map(v=>`<span class="pill">${v}</span>`).join('')}
+function updateLesson1Summary(){document.getElementById('lesson1Summary').innerHTML=`<strong>좋아하는 활동</strong><br>${pills(selected.likes)}<br><br><strong>관심 분야</strong><br>${pills(selected.fields)}<br><br><strong>좋아하는 일의 방식</strong><br>${pills(selected.workstyle)}`}
+function buildCareerPrompt(){if(!selected.likes.length||!selected.fields.length||!selected.workstyle.length){alert('좋아하는 활동, 관심 분야, 일의 방식을 먼저 선택해주세요.');return}document.getElementById('careerPrompt').value=`나는 미래 직업을 탐구하는 학생입니다.\n\n내 관심 정보를 바탕으로 이번 프로젝트에서 탐구해 볼 만한 직업 후보를 추천해 주세요.\n\n[내가 좋아하는 활동]\n${selected.likes.join(', ')}\n\n[관심 있는 분야]\n${selected.fields.join(', ')}\n\n[내가 좋아하는 일의 방식]\n${selected.workstyle.join(', ')}\n\n다음 조건을 지켜 주세요.\n1. 서로 다른 직업 후보를 8개 제안해 주세요.\n2. 현재 실제로 존재하는 직업을 중심으로 추천해 주세요.\n3. 각 직업이 어떤 일을 하는지 한 문장으로 쉽게 설명해 주세요.\n4. 왜 내 관심과 연결되는지 한 문장으로 설명해 주세요.\n5. AI가 발전하면서 앞으로 업무가 변화할 가능성이 있는 직업을 포함해 주세요.\n6. 중학생도 이해할 수 있는 쉬운 표현을 사용해 주세요.\n7. 내가 최종 직업을 고르도록 후보만 제안하고, 대신 결정하지 마세요.\n\n출력 형식:\n직업명:\n하는 일:\n나와 연결되는 이유:\nAI와 함께 달라질 수 있는 점:`}
+['career1','career2','career3'].forEach(id=>document.getElementById(id).addEventListener('input',refreshCareerSelect));
+function refreshCareerSelect(){const vals=['career1','career2','career3'].map(id=>document.getElementById(id).value.trim()).filter(Boolean),sel=document.getElementById('selectedJob'),prev=sel.value;sel.innerHTML='<option value="">직업 후보를 선택하세요</option>';vals.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o)});if(vals.includes(prev))sel.value=prev}
+function saveLesson1(){const job=document.getElementById('selectedJob').value;if(!job){alert('최종 직업을 선택해주세요.');return}if(!selected.reason.length){alert('선택 이유를 1개 이상 골라주세요.');return}const data={likes:selected.likes,interest_fields:selected.fields,work_preferences:selected.workstyle,career_candidates:['career1','career2','career3'].map(id=>document.getElementById(id).value.trim()).filter(Boolean),selected_job:job,selected_job_reason:selected.reason};localStorage.setItem('lesson1Data',JSON.stringify(data));const d=document.getElementById('lesson1Done');d.style.display='block';d.innerHTML=`<strong>1차시 완료</strong><br>선택 직업: ${job}<br>선택 이유: ${selected.reason.join(', ')}`;loadLesson2Job()}
+function loadLesson2Job(){const raw=localStorage.getItem('lesson1Data'),el=document.getElementById('lesson2Job');if(!raw){el.textContent='아직 1차시에서 직업을 선택하지 않았습니다.';return ''}const data=JSON.parse(raw);el.textContent=data.selected_job||'직업 미선택';return data.selected_job||''}
+function buildJobResearchPrompt(){const job=loadLesson2Job();if(!job){alert('먼저 1차시에서 직업을 선택해주세요.');return}if(!selected.taskcats.length||!selected.skills.length){alert('궁금한 업무 영역과 중요할 것 같은 능력을 먼저 선택해주세요.');return}document.getElementById('researchPrompt').value=`나는 "${job}" 직업을 탐구하고 있습니다.\n\n현재 이 직업이 실제로 수행하는 업무와 필요한 능력을 조사하고 싶습니다.\n\n특히 다음 업무 영역에 관심이 있습니다.\n${selected.taskcats.join(', ')}\n\n내가 중요할 것이라고 예상한 능력은 다음과 같습니다.\n${selected.skills.join(', ')}\n\n현재의 직업을 기준으로 조사해 주세요. 2038년의 미래 모습은 아직 예측하지 마세요.\n\n1. 실제 핵심 업무 후보를 8개 제안해 주세요.\n2. 각 업무를 학생이 이해할 수 있도록 한 문장으로 설명해 주세요.\n3. 각 업무에 필요한 능력을 연결해 주세요.\n4. 이 직업에서 중요한 능력 후보를 6개 정리해 주세요.\n5. 내가 예상한 내용이 맞는지도 비교해 주세요.\n6. 확실하지 않은 내용은 확실한 사실처럼 표현하지 마세요.`}
+function buildVerificationPrompt(){const job=loadLesson2Job(),tasks=[1,2,3].map(n=>({name:document.getElementById(`task${n}`).value.trim(),desc:document.getElementById(`task${n}desc`).value.trim()})),skills=[1,2,3].map(n=>document.getElementById(`skill${n}`).value.trim());if(!job||tasks.some(t=>!t.name)||skills.some(s=>!s)){alert('직업, 핵심 업무 3개, 핵심 능력 3개를 모두 입력해주세요.');return}document.getElementById('verifyPrompt').value=`나는 "${job}" 직업의 현재 주요 업무와 필요한 능력을 조사했습니다.\n\n핵심 업무:\n1. ${tasks[0].name}${tasks[0].desc?' - '+tasks[0].desc:''}\n2. ${tasks[1].name}${tasks[1].desc?' - '+tasks[1].desc:''}\n3. ${tasks[2].name}${tasks[2].desc?' - '+tasks[2].desc:''}\n\n핵심 능력:\n1. ${skills[0]}\n2. ${skills[1]}\n3. ${skills[2]}\n\n현재 실제 "${job}" 직업을 기준으로 검토해 주세요.\n1. 선택한 3개 업무가 주요 업무로 적절한가?\n2. 잘못되거나 과장된 내용이 있는가?\n3. 선택한 능력이 업무와 연결되는가?\n4. 중요한데 빠진 업무가 있다면 최대 2개만 알려 주세요.\n\n내가 직접 최종 판단할 수 있도록 수정이 필요한 부분만 간단하게 알려 주세요.`}
+function saveLesson2(){const job=loadLesson2Job(),status=document.getElementById('verificationStatus').value,tasks=[1,2,3].map(n=>({task_name:document.getElementById(`task${n}`).value.trim(),task_description:document.getElementById(`task${n}desc`).value.trim()})),skills=[1,2,3].map(n=>document.getElementById(`skill${n}`).value.trim());if(!job||!status){alert('직업과 검증 결과를 확인해주세요.');return}if(tasks.some(t=>!t.task_name)||skills.some(s=>!s)){alert('핵심 업무 3개와 핵심 능력 3개를 입력해주세요.');return}const data={selected_job:job,task_interest_categories:selected.taskcats,expected_competencies:selected.skills,current_core_tasks:tasks,required_competencies:skills,verification_status:status};localStorage.setItem('lesson2Data',JSON.stringify(data));const d=document.getElementById('lesson2Done');d.style.display='block';d.innerHTML=`<strong>2차시 완료</strong><br>핵심 업무: ${tasks.map(t=>t.task_name).join(', ')}<br>핵심 능력: ${skills.join(', ')}<br>검증 상태: ${status}`}
+async function copyText(id){const el=document.getElementById(id);if(!el.value){alert('복사할 내용이 없습니다.');return}try{await navigator.clipboard.writeText(el.value);alert('프롬프트를 복사했습니다.')}catch(e){el.select();document.execCommand('copy');alert('프롬프트를 복사했습니다.')}}
+loadLesson2Job();
+
+const openingVisualOptions=['2038년 표시','날짜','직업명','미래 업무 공간','AI 비서 화면','오늘의 일정','미래의 나','도시·환경'];
+const sceneActionOptions=['사람이 직접 업무 수행','AI가 데이터를 분석','AI 분석 화면 확인','AI와 사람이 함께 판단','사람과 다른 사람이 대화','AI가 추천 결과 제공','사람이 최종 결정','현장에서 결과 적용','작업 결과 확인'];
+const sceneVisualOptions=['주인공','동료','직업 관련 인물','업무 공간','야외 현장','회의 공간','이동 공간','노트북·태블릿 화면','투명 데이터 화면','AI 분석 그래픽','AI 비서 인터페이스','센서·스마트 기기','데이터','일정','분석 결과','경고·알림','추천 결과'];
+const assistantFunctionOptions=['다음 업무 안내','현재 상황 설명','분석 결과 전달','중요한 정보 알림','추천 행동 제시','일정 변경 안내','업무 완료 확인','다음 일정 연결'];
+const durationOptions=[5,8,10,12,15];
+
+function getLesson4Data(){const raw=localStorage.getItem('lesson4Data');return raw?JSON.parse(raw):null}
+
+function initLesson5(){
+  const d=getLesson4Data();
+  const intro=document.getElementById('lesson5Intro');
+  const prev=document.getElementById('lesson5Prev');
+  if(!d){
+    intro.innerHTML='먼저 4차시를 완료해주세요.';
+    prev.innerHTML='4차시 데이터가 없습니다.';
+    document.getElementById('lesson5TaskScenes').innerHTML='';
+    return;
+  }
+  intro.innerHTML=`탐구 직업: <strong>${esc(d.selected_job)}</strong> · 4차시 하루 일정을 불러왔습니다.`;
+  prev.innerHTML=`<strong>${esc(d.selected_job)}</strong><br><br>`+
+    d.daily_schedule.map(x=>`${esc(x.time)} · <strong>${esc(x.task)}</strong>`).join('<br>')+
+    `<br><br><strong>AI 비서 브리핑</strong>: ${esc((d.ai_briefing_items||[]).join(', '))}`;
+
+  const ov=document.getElementById('openingVisualOptions');
+  ov.innerHTML=openingVisualOptions.map(v=>`<label><input type="checkbox" name="openingVisual" value="${esc(v)}" onchange="limitChecks(this,'openingVisual',3)">${esc(v)}</label>`).join('');
+
+  const taskBox=document.getElementById('lesson5TaskScenes');
+  taskBox.innerHTML=d.daily_schedule.map((x,i)=>`
+    <div class="taskcard">
+      <div class="tasktitle">${i+1}. ${esc(x.task)} <span class="small">${esc(x.time)}</span></div>
+      <p><strong>장면에서 보여줄 행동</strong> <span class="small">최대 2개</span></p>
+      <div class="optionrow">${sceneActionOptions.map(v=>`<label><input type="checkbox" name="sceneAction_${i}" value="${esc(v)}" onchange="limitChecks(this,'sceneAction_${i}',2)">${esc(v)}</label>`).join('')}</div>
+      <p><strong>시각 요소</strong> <span class="small">최대 4개</span></p>
+      <div class="optionrow">${sceneVisualOptions.map(v=>`<label><input type="checkbox" name="sceneVisual_${i}" value="${esc(v)}" onchange="limitChecks(this,'sceneVisual_${i}',4)">${esc(v)}</label>`).join('')}</div>
+      <p><strong>AI 비서의 역할</strong> <span class="small">최대 2개</span></p>
+      <div class="optionrow">${assistantFunctionOptions.map(v=>`<label><input type="checkbox" name="assistantFunc_${i}" value="${esc(v)}" onchange="limitChecks(this,'assistantFunc_${i}',2)">${esc(v)}</label>`).join('')}</div>
+    </div>`).join('');
+
+  renderDurationRows();
+  renderFinalStoryboardRows();
+  restoreLesson5();
+  updateTotalDuration();
+}
+
+function sceneLabels(){
+  const extra=document.getElementById('useExtraScene')?.checked;
+  return extra?['오프닝','핵심 업무 1','핵심 업무 2','핵심 업무 3','협업·결과','추가 장면','엔딩']:['오프닝','핵심 업무 1','핵심 업무 2','핵심 업무 3','협업·결과','엔딩'];
+}
+function renderDurationRows(){
+  const labels=sceneLabels();
+  document.getElementById('sceneDurationRows').innerHTML=labels.map((label,i)=>`
+    <div class="schedule-row">
+      <strong>${i+1}. ${label}</strong>
+      <select id="sceneDuration_${i}" onchange="updateTotalDuration()">
+        <option value="">시간</option>
+        ${durationOptions.map(v=>`<option value="${v}">${v}초</option>`).join('')}
+      </select>
+      <span></span>
+    </div>`).join('');
+}
+function toggleExtraScene(){
+  renderDurationRows();
+  renderFinalStoryboardRows();
+  updateTotalDuration();
+}
+
+function updateTotalDuration(){
+  let total=0,complete=true;
+  const count=sceneLabels().length;
+  for(let i=0;i<count;i++){
+    const v=Number(document.getElementById(`sceneDuration_${i}`)?.value||0);
+    if(!v)complete=false;
+    total+=v;
+  }
+  const box=document.getElementById('durationStatus');
+  if(!complete){box.innerHTML=`현재 예상 길이: <strong>${total}초</strong> · 모든 장면 시간을 선택하세요.`}
+  else if(total<60){box.innerHTML=`현재 예상 길이: <strong>${total}초</strong> · 너무 짧습니다. 60초 이상으로 조정하세요.`}
+  else if(total>90){box.innerHTML=`현재 예상 길이: <strong>${total}초</strong> · 너무 깁니다. 90초 이하로 조정하세요.`}
+  else{box.innerHTML=`현재 예상 길이: <strong>${total}초</strong> · 60~90초 범위입니다.`}
+  return total;
+}
+
+function collectLesson5Plan(){
+  const d=getLesson4Data(); if(!d)return {error:true,msg:'4차시 데이터가 없습니다.'};
+  const opening=document.querySelector('input[name="openingType"]:checked')?.value||'';
+  const openingVisual=getChecks('openingVisual');
+  const tone=document.getElementById('assistantTone').value;
+  const ending=document.getElementById('endingType').value;
+  const tasks=d.daily_schedule.map((x,i)=>({
+    task:x.task,time:x.time,
+    actions:getChecks(`sceneAction_${i}`),
+    visuals:getChecks(`sceneVisual_${i}`),
+    assistant_functions:getChecks(`assistantFunc_${i}`)
+  }));
+  const durations=sceneLabels().map((_,i)=>Number(document.getElementById(`sceneDuration_${i}`)?.value||0));
+  if(!opening)return {error:true,msg:'영상 시작 방식을 선택해주세요.'};
+  if(!openingVisual.length)return {error:true,msg:'오프닝 시각 요소를 선택해주세요.'};
+  if(!tone)return {error:true,msg:'AI 비서 말투를 선택해주세요.'};
+  if(!ending)return {error:true,msg:'영상 종료 방식을 선택해주세요.'};
+  if(tasks.some(t=>!t.actions.length||!t.visuals.length||!t.assistant_functions.length))return {error:true,msg:'업무별 행동, 시각 요소, AI 비서 역할을 모두 선택해주세요.'};
+  if(durations.some(v=>!v))return {error:true,msg:'6개 장면의 시간을 모두 선택해주세요.'};
+  const total=durations.reduce((a,b)=>a+b,0);
+  if(total<60||total>90)return {error:true,msg:'총 영상 길이를 60~90초로 맞춰주세요.'};
+  return {error:false,d,opening,openingVisual,tone,ending,tasks,durations,total};
+}
+
+function buildStoryboardPrompt(){
+  const c=collectLesson5Plan();
+  if(c.error){alert(c.msg);return}
+  const taskText=c.tasks.map((t,i)=>`${i+1}. ${t.time} — ${t.task}
+- 장면 행동: ${t.actions.join(', ')}
+- 시각 요소: ${t.visuals.join(', ')}
+- AI 비서 역할: ${t.assistant_functions.join(', ')}`).join('\n\n');
+
+  document.getElementById('storyboardPrompt').value=`나는 2038년 미래 직업을 소개하는 9:16 세로형 영상을 만들고 있습니다.
+
+[직업]
+${c.d.selected_job}
+
+[영상 설정]
+2038년 어느 날, AI 비서가 미래의 나에게 오늘의 업무를 브리핑합니다.
+
+[오늘의 업무]
+${c.d.daily_schedule.map((x,i)=>`${i+1}. ${x.time} — ${x.task}`).join('\n')}
+
+[AI 비서 브리핑 내용]
+${(c.d.ai_briefing_items||[]).join(', ')}
+
+[영상 시작 방식]
+${c.opening}
+
+[오프닝에 보여줄 내용]
+${c.openingVisual.join(', ')}
+
+[업무별 화면 구성]
+${taskText}
+
+[AI 비서 말투]
+${c.tone}
+
+[영상 종료 방식]
+${c.ending}
+
+[장면별 예상 시간]
+${sceneLabels().map((label,i)=>`${i+1}. ${label} ${c.durations[i]}초`).join('\n')}
+
+총 예상 길이: ${c.total}초
+
+이 선택을 바탕으로 60~90초 길이의 9:16 세로형 미래 직업 영상 스토리보드와 AI 비서 대본 초안을 작성해 주세요.
+
+조건:
+1. 내가 선택한 6~7개 장면 구조를 유지해 주세요.
+2. 내가 정한 핵심 업무 3개를 모두 포함해 주세요.
+3. 내가 정한 AI 역할과 사람 역할을 임의로 바꾸지 마세요.
+4. AI가 모든 일을 대신하는 것처럼 표현하지 마세요.
+5. 각 장면은 이미지나 짧은 영상으로 쉽게 표현할 수 있어야 합니다.
+6. 한 장면에 너무 많은 행동을 넣지 마세요.
+7. AI 비서 대사는 짧고 자연스럽게 작성해 주세요.
+8. 설명문이 아니라 실제 영상에서 말할 수 있는 문장으로 작성해 주세요.
+9. 내가 정한 장면 시간을 고려해 대사 길이를 조절해 주세요.
+10. 새로운 직업 정보나 미래 기술을 임의로 크게 추가하지 마세요.
+11. 최종 선택과 수정은 내가 할 수 있도록 초안으로 제안해 주세요.
+
+출력 형식:
+[장면 1]
+예상 시간:
+장면 목적:
+화면:
+주인공 행동:
+AI 표현:
+AI 비서 대사:
+
+[장면 2]
+...
+
+[마지막 장면]\n\n[전체 확인]
+예상 영상 길이:
+스토리 흐름:
+수정하면 좋을 부분:`;
+}
+
+function renderFinalStoryboardRows(){
+  const labels=sceneLabels();
+  document.getElementById('finalStoryboardRows').innerHTML=labels.map((label,i)=>`
+    <div class="taskcard">
+      <div class="tasktitle">장면 ${i+1} — ${label}</div>
+      <div class="grid2">
+        <input id="scenePurpose_${i}" type="text" placeholder="장면 목적">
+        <input id="sceneScreen_${i}" type="text" placeholder="화면 설명">
+        <input id="sceneActionText_${i}" type="text" placeholder="주인공 행동">
+        <input id="sceneAIVisual_${i}" type="text" placeholder="AI 표현">
+      </div>
+      <textarea id="sceneScript_${i}" style="min-height:90px;margin-top:10px" placeholder="AI 비서 대사"></textarea>
+    </div>`).join('');
+}
+
+function checkLesson5(){
+  const c=collectLesson5Plan();
+  const review=document.getElementById('storyboardReviewStatus').value;
+  const finalScenes=sceneLabels().map((_,i)=>({
+    purpose:document.getElementById(`scenePurpose_${i}`).value.trim(),
+    screen:document.getElementById(`sceneScreen_${i}`).value.trim(),
+    action:document.getElementById(`sceneActionText_${i}`).value.trim(),
+    ai_visual:document.getElementById(`sceneAIVisual_${i}`).value.trim(),
+    script:document.getElementById(`sceneScript_${i}`).value.trim()
+  }));
+  const checks=[
+    ['4차시 데이터',!c.error],
+    ['Gemini 결과 검토',!!review],
+    ['최종 장면 입력',finalScenes.every(x=>x.purpose&&x.screen&&x.action&&x.ai_visual&&x.script)],
+    ['60~90초',!c.error && c.total>=60 && c.total<=90]
+  ];
+  document.getElementById('lesson5Checklist').innerHTML=checks.map(x=>`${x[1]?'✓':'✗'} ${x[0]}`).join('<br>');
+  const ok=checks.every(x=>x[1]);
+  document.getElementById('saveLesson5Btn').disabled=!ok;
+  return {ok,c,review,finalScenes};
+}
+
+function saveLesson5(){
+  const chk=checkLesson5();
+  if(!chk.ok){alert('완료 조건을 먼저 충족해주세요.');return}
+  const c=chk.c;
+  const labels=sceneLabels();
+  const storyboard=chk.finalScenes.map((s,i)=>({
+    scene_id:i+1,
+    scene_type:i===0?'opening':(i===labels.length-1?'ending':(i>=1&&i<=3?'task':(labels[i]==='추가 장면'?'extra':'collaboration_result'))),
+    purpose:s.purpose,
+    related_task:(i>=1&&i<=3)?c.d.daily_schedule[i-1].task:'',
+    screen_description:s.screen,
+    character_action:s.action,
+    ai_visual:s.ai_visual,
+    assistant_script:s.script,
+    duration:c.durations[i]
+  }));
+  const data={
+    selected_job:c.d.selected_job,
+    opening_type:c.opening,
+    opening_visual_elements:c.openingVisual,
+    assistant_tone:c.tone,
+    ending_type:c.ending,
+    total_duration:c.total,
+    storyboard_review_status:chk.review,
+    storyboard
+  };
+  localStorage.setItem('lesson5Data',JSON.stringify(data));
+  const done=document.getElementById('lesson5Done');done.style.display='block';
+  done.innerHTML=`<strong>5차시 완료</strong><br>총 ${c.total}초 · ${storyboard.length}장면 스토리보드 저장 완료`;
+}
+
+function restoreLesson5(){
+  const raw=localStorage.getItem('lesson5Data'); if(!raw)return;
+  const s=JSON.parse(raw);
+  const extra=document.getElementById('useExtraScene');
+  if(extra){extra.checked=(s.storyboard||[]).length===7; renderDurationRows(); renderFinalStoryboardRows();}
+  const op=[...document.querySelectorAll('input[name="openingType"]')].find(x=>x.value===s.opening_type); if(op)op.checked=true;
+  (s.opening_visual_elements||[]).forEach(v=>{const el=[...document.querySelectorAll('input[name="openingVisual"]')].find(x=>x.value===v);if(el)el.checked=true});
+  document.getElementById('assistantTone').value=s.assistant_tone||'';
+  document.getElementById('endingType').value=s.ending_type||'';
+  document.getElementById('storyboardReviewStatus').value=s.storyboard_review_status||'';
+  (s.storyboard||[]).forEach((x,i)=>{
+    const dur=document.getElementById(`sceneDuration_${i}`); if(dur)dur.value=x.duration||'';
+    const p=document.getElementById(`scenePurpose_${i}`); if(p)p.value=x.purpose||'';
+    const sc=document.getElementById(`sceneScreen_${i}`); if(sc)sc.value=x.screen_description||'';
+    const a=document.getElementById(`sceneActionText_${i}`); if(a)a.value=x.character_action||'';
+    const ai=document.getElementById(`sceneAIVisual_${i}`); if(ai)ai.value=x.ai_visual||'';
+    const sp=document.getElementById(`sceneScript_${i}`); if(sp)sp.value=x.assistant_script||'';
+  });
+  updateTotalDuration();
+}
+
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function getLesson2Data(){const raw=localStorage.getItem('lesson2Data');return raw?JSON.parse(raw):null}
+function getLesson3Data(){const raw=localStorage.getItem('lesson3Data');return raw?JSON.parse(raw):null}
+
+const changeOptions=['거의 비슷할 것 같다','일부가 AI로 바뀔 것 같다','AI와 함께하는 일이 크게 늘어날 것 같다','대부분 자동화될 수도 있다','아직 잘 모르겠다'];
+const aiRoleOptions=['많은 자료 빠르게 분석하기','데이터에서 패턴 찾기','여러 후보 제안하기','반복 작업 처리하기','일정·계획 자동 정리하기','이미지·영상 분석하기','결과 예측하기','보고서·요약 만들기','실시간 정보 제공하기','개인별 맞춤 추천하기','자동으로 기록하기','아직 잘 모르겠다'];
+const humanRoleOptions=['최종 판단하기','목표 정하기','사람과 직접 대화하기','감정과 상황 이해하기','책임 있는 결정하기','새로운 아이디어 만들기','현장에서 상황에 맞게 대응하기','다른 사람을 설득하기','지도·교육하기','윤리적인 문제 판단하기','AI 결과 확인하기','예상하지 못한 문제 해결하기'];
+const roleTypeOptions=['AI 중심','사람 중심','AI + 사람 협업'];
+
+function initLesson3(){
+  const d=getLesson2Data();
+  const intro=document.getElementById('lesson3Intro');
+  const taskBox=document.getElementById('lesson3Tasks');
+  const cards=document.getElementById('lesson3TaskCards');
+  const compare=document.getElementById('lesson3Compare');
+  if(!d){intro.innerHTML='먼저 2차시를 완료해주세요.';taskBox.innerHTML='2차시 데이터가 없습니다.';cards.innerHTML='';compare.innerHTML='';return}
+  intro.innerHTML=`탐구 직업: <strong>${esc(d.selected_job)}</strong> · 2차시 핵심 업무를 불러왔습니다.`;
+  taskBox.innerHTML=d.current_core_tasks.map((t,i)=>`<strong>${i+1}. ${esc(t.task_name)}</strong>${t.task_description?`<br><span class="small">${esc(t.task_description)}</span>`:''}`).join('<br><br>');
+  cards.innerHTML=d.current_core_tasks.map((t,i)=>`
+    <div class="taskcard" data-taskindex="${i}">
+      <div class="tasktitle">${i+1}. ${esc(t.task_name)}</div>
+      <label>2038년 변화 정도</label>
+      <select id="change_${i}"><option value="">선택하세요</option>${changeOptions.map(v=>`<option>${v}</option>`).join('')}</select>
+      <p><strong>AI가 잘 도울 수 있는 부분</strong> <span class="small">최대 3개</span></p>
+      <div class="optionrow">${aiRoleOptions.map((v,j)=>`<label><input type="checkbox" name="ai_${i}" value="${esc(v)}" onchange="limitChecks(this,'ai_${i}',3)">${esc(v)}</label>`).join('')}</div>
+      <p><strong>사람에게 중요한 부분</strong> <span class="small">최대 3개</span></p>
+      <div class="optionrow">${humanRoleOptions.map(v=>`<label><input type="checkbox" name="human_${i}" value="${esc(v)}" onchange="limitChecks(this,'human_${i}',3)">${esc(v)}</label>`).join('')}</div>
+      <p><strong>주 담당 방식</strong></p>
+      <select id="roleType_${i}"><option value="">선택하세요</option>${roleTypeOptions.map(v=>`<option>${v}</option>`).join('')}</select>
+    </div>`).join('');
+  compare.innerHTML=d.current_core_tasks.map((t,i)=>`
+    <div class="taskcard">
+      <div class="tasktitle">${i+1}. ${esc(t.task_name)}</div>
+      <select id="compare_${i}">
+        <option value="">Gemini 결과와 비교한 뒤 선택하세요</option>
+        <option>AI 결과와 거의 비슷했다</option>
+        <option>일부 수정하면 좋겠다</option>
+        <option>예상과 많이 달랐다</option>
+        <option>다시 생각해 보고 싶다</option>
+      </select>
+    </div>`).join('');
+  restoreLesson3();
+}
+
+function limitChecks(el,name,max){
+  const checked=[...document.querySelectorAll(`input[name="${name}"]:checked`)];
+  if(checked.length>max){el.checked=false;alert(`최대 ${max}개까지 선택할 수 있습니다.`)}
+}
+function getChecks(name){return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(x=>x.value)}
+
+function collectLesson3(requireCompare=false){
+  const d=getLesson2Data(); if(!d)return null;
+  const future=d.current_core_tasks.map((t,i)=>({
+    current_task:t.task_name,
+    current_description:t.task_description||'',
+    change_level:document.getElementById(`change_${i}`)?.value||'',
+    ai_roles:getChecks(`ai_${i}`),
+    human_roles:getChecks(`human_${i}`),
+    role_type:document.getElementById(`roleType_${i}`)?.value||'',
+    comparison_status:document.getElementById(`compare_${i}`)?.value||''
+  }));
+  const invalid=future.some(x=>!x.change_level||!x.ai_roles.length||!x.human_roles.length||!x.role_type||(requireCompare&&!x.comparison_status));
+  if(invalid)return {error:true,future,d};
+  return {error:false,future,d};
+}
+
+function renderLesson3Summary(){
+  const c=collectLesson3(false);
+  if(!c||c.error){alert('각 업무의 변화 정도, AI 역할, 사람 역할, 담당 방식을 모두 선택해주세요.');return}
+  document.getElementById('lesson3Summary').innerHTML=
+    `<strong>${esc(c.d.selected_job)} — 2038년 예상</strong><br><br>`+
+    c.future.map((x,i)=>`<strong>${i+1}. ${esc(x.current_task)}</strong><br>변화: ${esc(x.change_level)}<br>AI: ${esc(x.ai_roles.join(', '))}<br>사람: ${esc(x.human_roles.join(', '))}<br>방식: <strong>${esc(x.role_type)}</strong>`).join('<br><br>');
+}
+
+function buildFuturePrompt(){
+  const c=collectLesson3(false);
+  if(!c||c.error){alert('먼저 업무별 선택을 완료해주세요.');return}
+  const predictions=c.future.map((x,i)=>`${i+1}. ${x.current_task}
+- 변화 정도: ${x.change_level}
+- AI가 도울 부분: ${x.ai_roles.join(', ')}
+- 사람에게 중요한 부분: ${x.human_roles.join(', ')}
+- 예상 담당 방식: ${x.role_type}`).join('\n\n');
+  document.getElementById('futurePrompt').value=`나는 미래 직업 영상 프로젝트에서 "${c.d.selected_job}" 직업의 2038년 모습을 탐구하고 있습니다.
+
+현재 핵심 업무:
+${c.d.current_core_tasks.map((t,i)=>`${i+1}. ${t.task_name}${t.task_description?' - '+t.task_description:''}`).join('\n')}
+
+나는 각 업무가 2038년에 다음과 같이 변화할 것이라고 예상했습니다.
+
+${predictions}
+
+각 업무별로 내가 예상한 변화 정도, AI 역할, 사람 역할, 협업 방식을 검토해 주세요.
+
+조건:
+1. 2038년을 현실적으로 발전 가능한 미래로 가정해 주세요.
+2. 현재 존재하는 기술과 발전 방향을 바탕으로 설명해 주세요.
+3. 직업 전체가 사라진다고 단정하지 말고 '업무 변화'를 중심으로 설명해 주세요.
+4. AI가 잘할 수 있는 부분과 사람이 중요한 부분을 구분해 주세요.
+5. 내 예상이 합리적이면 그대로 인정해 주세요.
+6. 과도하거나 가능성이 낮은 예상은 이유와 함께 수정 방향을 알려 주세요.
+7. 새롭게 생길 수 있는 핵심 업무가 있다면 최대 2개만 제안해 주세요.
+8. 최종 결정은 내가 하도록 대신 결정하지 마세요.
+
+출력 형식:
+[업무 1]
+현재 업무:
+2038년 예상:
+내 예상 검토:
+AI 역할:
+사람 역할:
+협업 방식:
+수정이 필요한 점:
+
+[업무 2]
+...
+
+[업무 3]
+...
+
+[2038년 새롭게 생길 수 있는 업무]
+1.
+2.`;
+}
+
+function saveLesson3(){
+  const c=collectLesson3(true);
+  if(!c||c.error){alert('업무별 선택과 Gemini 결과 비교까지 모두 완료해주세요.');return}
+  const newTasks=[document.getElementById('newFutureTask1').value.trim(),document.getElementById('newFutureTask2').value.trim()].filter(Boolean);
+  const data={selected_job:c.d.selected_job,current_core_tasks:c.d.current_core_tasks,required_competencies:c.d.required_competencies,future_tasks:c.future,new_future_tasks:newTasks};
+  localStorage.setItem('lesson3Data',JSON.stringify(data));
+  const done=document.getElementById('lesson3Done');done.style.display='block';
+  done.innerHTML=`<strong>3차시 완료</strong><br>${c.future.map(x=>`${esc(x.current_task)} → ${esc(x.role_type)}`).join('<br>')}${newTasks.length?`<br>새로운 업무: ${esc(newTasks.join(', '))}`:''}`;
+}
+
+function restoreLesson3(){
+  const raw=localStorage.getItem('lesson3Data'); if(!raw)return;
+  const s=JSON.parse(raw);
+  s.future_tasks.forEach((x,i)=>{
+    const ch=document.getElementById(`change_${i}`); if(ch)ch.value=x.change_level;
+    const rt=document.getElementById(`roleType_${i}`); if(rt)rt.value=x.role_type;
+    x.ai_roles.forEach(v=>{const el=[...document.querySelectorAll(`input[name="ai_${i}"]`)].find(q=>q.value===v);if(el)el.checked=true});
+    x.human_roles.forEach(v=>{const el=[...document.querySelectorAll(`input[name="human_${i}"]`)].find(q=>q.value===v);if(el)el.checked=true});
+    const co=document.getElementById(`compare_${i}`); if(co)co.value=x.comparison_status||'';
+  });
+  document.getElementById('newFutureTask1').value=s.new_future_tasks?.[0]||'';
+  document.getElementById('newFutureTask2').value=s.new_future_tasks?.[1]||'';
+}
+
+const timeSlots=['08:00~10:00','10:00~12:00','13:00~15:00','15:00~17:00','17:00 이후'];
+function initLesson4(){
+  const d=getLesson3Data(),intro=document.getElementById('lesson4Intro'),choices=document.getElementById('lesson4TaskChoices');
+  if(!d){intro.innerHTML='먼저 3차시를 완료해주세요.';choices.innerHTML='';document.getElementById('lesson4Schedule').innerHTML='';return}
+  intro.innerHTML=`탐구 직업: <strong>${esc(d.selected_job)}</strong> · 2038년 업무 후보를 불러왔습니다.`;
+  const candidates=[
+    ...d.future_tasks.map(x=>({name:x.current_task,source:'기존 핵심 업무'})),
+    ...(d.new_future_tasks||[]).map(x=>({name:x,source:'새로운 미래 업무'}))
+  ];
+  choices.innerHTML=candidates.map((x,i)=>`<label class="taskcard" style="display:block;cursor:pointer"><input type="checkbox" name="dayTask" value="${esc(x.name)}" onchange="dayTaskChanged(this)"> <strong>${esc(x.name)}</strong><br><span class="small">${esc(x.source)}</span></label>`).join('');
+  restoreLesson4();
+  renderScheduleRows();
+}
+
+function dayTaskChanged(el){
+  const checked=[...document.querySelectorAll('input[name="dayTask"]:checked')];
+  if(checked.length>3){el.checked=false;alert('핵심 업무는 3개만 선택합니다.');return}
+  renderScheduleRows();
+}
+function selectedDayTasks(){return [...document.querySelectorAll('input[name="dayTask"]:checked')].map(x=>x.value)}
+function renderScheduleRows(saved=null){
+  const tasks=selectedDayTasks(),box=document.getElementById('lesson4Schedule');
+  if(!tasks.length){box.innerHTML='<span class="small">위에서 업무를 선택하면 일정 입력칸이 표시됩니다.</span>';return}
+  const old={};
+  [...box.querySelectorAll('.schedule-row')].forEach(r=>{
+    old[r.dataset.task]={time:r.querySelector('.timeSel')?.value||'',order:r.querySelector('.orderSel')?.value||''}
+  });
+  box.innerHTML=tasks.map(t=>{
+    const val=(saved&&saved[t])||old[t]||{};
+    return `<div class="schedule-row" data-task="${esc(t)}">
+      <strong>${esc(t)}</strong>
+      <select class="orderSel"><option value="">순서</option>${[1,2,3].map(n=>`<option ${String(val.order)===String(n)?'selected':''}>${n}</option>`).join('')}</select>
+      <select class="timeSel"><option value="">시간대</option>${timeSlots.map(v=>`<option ${val.time===v?'selected':''}>${v}</option>`).join('')}</select>
+    </div>`
+  }).join('');
+}
+function collectSchedule(){
+  const tasks=selectedDayTasks();
+  if(tasks.length!==3)return {error:true,msg:'핵심 업무를 정확히 3개 선택해주세요.'};
+  const rows=[...document.querySelectorAll('#lesson4Schedule .schedule-row')].map(r=>({task:r.dataset.task,order:r.querySelector('.orderSel').value,time:r.querySelector('.timeSel').value}));
+  if(rows.some(x=>!x.order||!x.time))return {error:true,msg:'각 업무의 순서와 시간대를 모두 선택해주세요.'};
+  if(new Set(rows.map(x=>x.order)).size!==3)return {error:true,msg:'업무 순서는 1, 2, 3을 한 번씩만 사용해주세요.'};
+  return {error:false,rows:rows.sort((a,b)=>Number(a.order)-Number(b.order))};
+}
+function renderLesson4Summary(){
+  const c=collectSchedule();if(c.error){alert(c.msg);return}
+  document.getElementById('lesson4Summary').innerHTML=`<strong>2038년 하루 업무</strong><br><br><strong>AI 비서 브리핑</strong>: ${selected.briefingItems.length?esc(selected.briefingItems.join(', ')):'아직 선택 없음'}<br><br>`+c.rows.map(x=>`${x.order}. <strong>${esc(x.task)}</strong> · ${esc(x.time)}`).join('<br>');
+}
+function buildSchedulePrompt(){
+  const d=getLesson3Data(),c=collectSchedule();
+  if(!d){alert('3차시 데이터가 없습니다.');return}
+  if(c.error){alert(c.msg);return}
+  if(!selected.briefingItems.length){alert('AI 비서가 알려줄 내용을 1개 이상 선택해주세요.');return}
+  const futureMap=Object.fromEntries(d.future_tasks.map(x=>[x.current_task,x]));
+  const detail=c.rows.map(x=>{
+    const f=futureMap[x.task];
+    return `${x.order}. ${x.time} — ${x.task}${f?`\n   AI 역할: ${f.ai_roles.join(', ')}\n   사람 역할: ${f.human_roles.join(', ')}\n   담당 방식: ${f.role_type}`:''}`
+  }).join('\n');
+  document.getElementById('schedulePrompt').value=`나는 2038년 "${d.selected_job}"의 하루 업무를 설계하고 있습니다.
+
+영상 설정:
+2038년 어느 날, AI 비서가 미래의 나에게 오늘의 업무를 브리핑합니다.
+
+AI 비서가 브리핑할 내용:
+${selected.briefingItems.join(', ')}
+
+내가 정한 하루 일정:
+${detail}
+
+이 일정이 2038년 "${d.selected_job}"의 하루 업무로 자연스럽고 영상으로 표현하기 적절한지 검토해 주세요.
+
+조건:
+1. 내 직업과 3차시에서 정한 AI·사람 역할을 유지해 주세요.
+2. 일정을 대신 새로 만들지 말고, 내가 정한 순서를 우선 검토해 주세요.
+3. 업무 순서가 비현실적이거나 앞뒤가 맞지 않으면 이유를 알려 주세요.
+4. 60~90초 세로형 영상에서 보여주기 좋은 핵심 장면인지 평가해 주세요.
+5. 너무 비슷한 업무가 있으면 알려 주세요.
+6. 수정이 필요하다면 최소한의 수정안만 제안해 주세요.
+7. 최종 결정은 내가 하도록 해 주세요.
+
+출력 형식:
+[전체 평가]
+- 자연스러운 점:
+- 수정이 필요한 점:
+
+[업무별 검토]
+1.
+2.
+3.
+
+[AI 비서 브리핑 검토]
+- 잘 맞는 점:
+- 보완할 점:`;
+}
+function saveLesson4(){
+  const d=getLesson3Data(),c=collectSchedule(),status=document.getElementById('scheduleVerification').value;
+  if(!d){alert('3차시 데이터가 없습니다.');return}
+  if(c.error){alert(c.msg);return}
+  if(!selected.briefingItems.length){alert('AI 비서 브리핑 항목을 선택해주세요.');return}
+  if(!status){alert('Gemini 검토 후 최종 판단을 선택해주세요.');return}
+  const data={selected_job:d.selected_job,selected_future_tasks:c.rows.map(x=>x.task),daily_schedule:c.rows,ai_briefing_items:selected.briefingItems,schedule_verification:status};
+  localStorage.setItem('lesson4Data',JSON.stringify(data));
+  const done=document.getElementById('lesson4Done');done.style.display='block';
+  done.innerHTML=`<strong>4차시 완료</strong><br>${c.rows.map(x=>`${x.time} · ${esc(x.task)}`).join('<br>')}<br>검토: ${esc(status)}`;
+}
+function restoreLesson4(){
+  const raw=localStorage.getItem('lesson4Data');if(!raw)return;
+  const s=JSON.parse(raw);
+  [...document.querySelectorAll('input[name="dayTask"]')].forEach(x=>x.checked=s.selected_future_tasks?.includes(x.value));
+  const saved={};(s.daily_schedule||[]).forEach(x=>saved[x.task]={order:x.order,time:x.time});
+  renderScheduleRows(saved);
+  selected.briefingItems=[...(s.ai_briefing_items||[])];
+  const group=document.querySelector('[data-group="briefingItems"]');
+  if(group)group.querySelectorAll('.chip').forEach(ch=>ch.classList.toggle('selected',selected.briefingItems.includes(ch.textContent.trim())));
+  document.getElementById('scheduleVerification').value=s.schedule_verification||'';
+}
+
+
+const envOptions=['사무실','교실','병원·의료 공간','스포츠 훈련장','연구실','제작 스튜디오','야외 현장','회의실','이동 공간','미래형 업무 공간','5차시 화면 설명 유지'];
+const actionOptions6=['AI 화면 확인','데이터 분석','다른 사람에게 설명','업무 수행','결과 확인','사람과 대화','최종 판단','장비 조작','이동','협업'];
+const aiVisualOptions6=['노트북 화면','태블릿','투명 디스플레이','데이터 오버레이','분석 그래프','작은 AI 비서 인터페이스','스마트 안경','센서·스마트 장비','화면에 AI를 직접 표시하지 않음'];
+const cameraOptions=['전신','상반신','허리 위','업무 공간이 함께 보이는 중간 거리','넓은 공간 중심','손과 작업 화면 중심','어깨 너머 화면','AI가 장면에 맞게 추천'];
+const futureLevelOptions=['낮음 — 현재 업무환경과 비슷하고 AI 장비만 발전','중간 — 현재 환경 기반으로 스마트 장비·AI 인터페이스가 자연스럽게 발전','높음 — 미래적인 장비와 공간을 적극적으로 표현'];
+const moodOptions=['현실적이고 전문적','밝고 긍정적','차분하고 집중된','역동적','첨단 기술 중심','따뜻하고 인간적인'];
+const timeOptions=['아침','오전','오후','저녁','4차시 일정에 맞게 자동 설정'];
+const reviewOptions6=['그대로 사용','일부 수정 필요','다시 생성','다른 결과와 비교 필요'];
+const issueOptions6=['직업처럼 보이지 않음','행동이 다름','AI 표현이 이상함','너무 미래적임','미래 느낌이 부족함','인물 모습이 이상함','공간이 적절하지 않음','구도가 좋지 않음','다른 장면과 인물이 달라짐'];
+
+function getLesson5Data(){const raw=localStorage.getItem('lesson5Data');return raw?JSON.parse(raw):null}
+
+function initLesson6(){
+  const d=getLesson5Data();
+  const intro=document.getElementById('lesson6Intro');
+  const sceneBox=document.getElementById('lesson6SceneCards');
+  const promptBox=document.getElementById('lesson6PromptCards');
+  const reviewBox=document.getElementById('lesson6ReviewCards');
+
+  if(!d){
+    intro.innerHTML='먼저 5차시를 완료해주세요.';
+    sceneBox.innerHTML=''; promptBox.innerHTML=''; reviewBox.innerHTML='';
+    return;
+  }
+
+  intro.innerHTML=`탐구 직업: <strong>${esc(d.selected_job)}</strong> · ${d.storyboard.length}개 장면의 스토리보드를 불러왔습니다.`;
+
+  sceneBox.innerHTML=d.storyboard.map((s,i)=>`
+    <div class="taskcard">
+      <div class="tasktitle">장면 ${s.scene_id} — ${esc(s.purpose)}</div>
+      <div class="note"><strong>화면</strong>: ${esc(s.screen_description)}<br><strong>주인공 행동</strong>: ${esc(s.character_action)}<br><strong>AI 표현</strong>: ${esc(s.ai_visual)}</div>
+
+      <p><strong>업무 공간</strong> <span class="small">최대 2개</span></p>
+      <div class="optionrow">${envOptions.map(v=>`<label><input type="checkbox" name="env6_${i}" value="${esc(v)}" onchange="limitChecks(this,'env6_${i}',2)">${esc(v)}</label>`).join('')}</div>
+
+      <p><strong>추가 행동</strong> <span class="small">최대 2개</span></p>
+      <div class="optionrow">${actionOptions6.map(v=>`<label><input type="checkbox" name="action6_${i}" value="${esc(v)}" onchange="limitChecks(this,'action6_${i}',2)">${esc(v)}</label>`).join('')}</div>
+
+      <p><strong>AI 표현</strong> <span class="small">최대 2개</span></p>
+      <div class="optionrow">${aiVisualOptions6.map(v=>`<label><input type="checkbox" name="aiv6_${i}" value="${esc(v)}" onchange="limitChecks(this,'aiv6_${i}',2)">${esc(v)}</label>`).join('')}</div>
+
+      <div class="grid2" style="margin-top:14px">
+        <select id="camera6_${i}"><option value="">카메라 구도</option>${cameraOptions.map(v=>`<option>${v}</option>`).join('')}</select>
+        <select id="future6_${i}"><option value="">2038년 표현 정도</option>${futureLevelOptions.map(v=>`<option>${v}</option>`).join('')}</select>
+        <select id="mood6_${i}"><option value="">분위기</option>${moodOptions.map(v=>`<option>${v}</option>`).join('')}</select>
+        <select id="time6_${i}"><option value="">시간대</option>${timeOptions.map(v=>`<option>${v}</option>`).join('')}</select>
+      </div>
+    </div>
+  `).join('');
+
+  promptBox.innerHTML=d.storyboard.map((s,i)=>`
+    <div class="taskcard">
+      <div class="tasktitle">장면 ${s.scene_id} 이미지 프롬프트</div>
+      <div class="btnrow"><button class="primary" onclick="buildImagePrompt6(${i})">이미지 프롬프트 만들기</button><button class="secondary" onclick="copyText('imagePrompt6_${i}')">복사</button></div>
+      <textarea id="imagePrompt6_${i}" placeholder="장면 설정을 완료한 뒤 프롬프트를 만들어주세요."></textarea>
+      <p class="small">권장 파일명: <strong>S${String(s.scene_id).padStart(2,'0')}_${sanitizeFileName(d.selected_job)}_${s.scene_type}.png</strong></p>
+    </div>
+  `).join('');
+
+  reviewBox.innerHTML=d.storyboard.map((s,i)=>`
+    <div class="taskcard">
+      <div class="tasktitle">장면 ${s.scene_id} 결과 확인</div>
+      <select id="review6_${i}" onchange="toggleIssues6(${i})">
+        <option value="">이미지 결과를 선택하세요</option>
+        ${reviewOptions6.map(v=>`<option>${v}</option>`).join('')}
+      </select>
+      <div id="issues6_${i}" style="display:none;margin-top:12px">
+        <p><strong>수정이 필요한 이유</strong> <span class="small">최대 3개</span></p>
+        <div class="optionrow">${issueOptions6.map(v=>`<label><input type="checkbox" name="issue6_${i}" value="${esc(v)}" onchange="limitChecks(this,'issue6_${i}',3)">${esc(v)}</label>`).join('')}</div>
+      </div>
+      <label style="display:block;margin-top:14px"><input type="checkbox" id="done6_${i}"> 최종 사용할 이미지 선택 완료</label>
+    </div>
+  `).join('');
+
+  restoreLesson6();
+}
+
+function sanitizeFileName(s){return String(s||'job').replace(/[\\/:*?"<>| ]+/g,'_')}
+
+function getCharacterProfile6(){
+  const gender=document.getElementById('characterGender').value;
+  const age=document.getElementById('characterAge').value;
+  const clothes=document.getElementById('characterClothes').value;
+  const extra=document.getElementById('characterExtra').value.trim();
+  if(!gender||!age||!clothes)return null;
+  return {gender,age,clothes,extra};
+}
+
+function collectScene6(i){
+  const d=getLesson5Data(); if(!d)return null;
+  const profile=getCharacterProfile6();
+  return {
+    scene:d.storyboard[i],
+    environment:getChecks(`env6_${i}`),
+    actions:getChecks(`action6_${i}`),
+    ai_visual:getChecks(`aiv6_${i}`),
+    camera_shot:document.getElementById(`camera6_${i}`).value,
+    future_level:document.getElementById(`future6_${i}`).value,
+    mood:document.getElementById(`mood6_${i}`).value,
+    time_of_day:document.getElementById(`time6_${i}`).value,
+    character_profile:profile
+  };
+}
+
+function buildImagePrompt6(i){
+  const d=getLesson5Data(), c=collectScene6(i);
+  if(!d||!c){alert('5차시 데이터가 없습니다.');return}
+  if(!c.character_profile){alert('주인공 기본 설정을 먼저 완료해주세요.');return}
+  if(!c.environment.length||!c.actions.length||!c.ai_visual.length||!c.camera_shot||!c.future_level||!c.mood||!c.time_of_day){
+    alert('해당 장면의 공간, 행동, AI 표현, 구도, 미래 표현, 분위기, 시간대를 모두 선택해주세요.');
+    return;
+  }
+  const p=c.character_profile;
+  const profile=`${p.gender}, ${p.age}, ${p.clothes}${p.extra?', '+p.extra:''}`;
+  document.getElementById(`imagePrompt6_${i}`).value=`2038년의 "${d.selected_job}"가 실제 업무를 수행하는 장면을 만들어 주세요.
+
+[장면 목적]
+${c.scene.purpose}
+
+[5차시 화면 설명]
+${c.scene.screen_description}
+
+[주인공]
+${profile}
+
+[주인공 행동]
+${c.scene.character_action}
+
+[추가 행동]
+${c.actions.join(', ')}
+
+[업무 공간]
+${c.environment.join(', ')}
+
+[AI 표현]
+${c.ai_visual.join(', ')}
+
+[카메라 구도]
+${c.camera_shot}
+
+[미래 표현 정도]
+${c.future_level}
+
+[분위기]
+${c.mood}
+
+[시간대]
+${c.time_of_day}
+
+이미지 조건:
+1. 9:16 세로형 영상 장면으로 사용할 이미지입니다.
+2. 실제 직업 현장처럼 현실적으로 표현해 주세요.
+3. 2038년이지만 지나치게 SF 영화처럼 표현하지 마세요.
+4. AI 기술은 업무를 돕는 장비나 인터페이스 형태로 자연스럽게 표현해 주세요.
+5. 의미 없는 휴머노이드 로봇을 추가하지 마세요.
+6. 주인공의 업무 행동이 한눈에 보이게 해 주세요.
+7. 화면에 불필요한 글자나 긴 텍스트를 만들지 마세요.
+8. 인물의 얼굴과 신체가 자연스럽게 표현되도록 해 주세요.
+9. 다른 장면에서도 같은 주인공을 유지할 수 있도록 외형과 복장을 명확하게 유지해 주세요.
+10. 학생 본인의 실제 얼굴은 사용하지 않습니다.`;
+}
+
+function toggleIssues6(i){
+  const v=document.getElementById(`review6_${i}`).value;
+  const box=document.getElementById(`issues6_${i}`);
+  box.style.display=(v==='일부 수정 필요'||v==='다시 생성'||v==='다른 결과와 비교 필요')?'block':'none';
+}
+
+function checkLesson6(){
+  const d=getLesson5Data();
+  const profile=getCharacterProfile6();
+  if(!d||!profile){
+    document.getElementById('lesson6Checklist').innerHTML='✗ 5차시 데이터 또는 주인공 설정이 부족합니다.';
+    document.getElementById('saveLesson6Btn').disabled=true;
+    return {ok:false};
+  }
+  const scenes=d.storyboard.map((s,i)=>{
+    const c=collectScene6(i);
+    const prompt=document.getElementById(`imagePrompt6_${i}`).value.trim();
+    const review=document.getElementById(`review6_${i}`).value;
+    const issues=getChecks(`issue6_${i}`);
+    const done=document.getElementById(`done6_${i}`).checked;
+    return {...c,prompt,review,issues,done};
+  });
+  const checks=[
+    ['주인공 기본 설정',!!profile],
+    ['모든 장면 이미지 조건',scenes.every(x=>x.environment.length&&x.actions.length&&x.ai_visual.length&&x.camera_shot&&x.future_level&&x.mood&&x.time_of_day)],
+    ['모든 장면 프롬프트 생성',scenes.every(x=>!!x.prompt)],
+    ['모든 장면 결과 검토',scenes.every(x=>!!x.review)],
+    ['최종 이미지 선택',scenes.every(x=>x.done)]
+  ];
+  const ok=checks.every(x=>x[1]);
+  document.getElementById('lesson6Checklist').innerHTML=checks.map(x=>`${x[1]?'✓':'✗'} ${x[0]}`).join('<br>');
+  document.getElementById('saveLesson6Btn').disabled=!ok;
+  return {ok,d,profile,scenes};
+}
+
+function saveLesson6(){
+  const chk=checkLesson6();
+  if(!chk.ok){alert('6차시 완료 조건을 먼저 충족해주세요.');return}
+  const data={
+    selected_job:chk.d.selected_job,
+    character_profile:chk.profile,
+    image_scenes:chk.scenes.map((x,i)=>({
+      scene_id:x.scene.scene_id,
+      source_storyboard:x.scene,
+      environment:x.environment,
+      actions:x.actions,
+      ai_visual:x.ai_visual,
+      camera_shot:x.camera_shot,
+      future_level:x.future_level,
+      mood:x.mood,
+      time_of_day:x.time_of_day,
+      generated_prompt:x.prompt,
+      review_status:x.review,
+      review_issues:x.issues,
+      image_completed:x.done,
+      recommended_filename:`S${String(x.scene.scene_id).padStart(2,'0')}_${sanitizeFileName(chk.d.selected_job)}_${x.scene.scene_type}.png`
+    }))
+  };
+  localStorage.setItem('lesson6Data',JSON.stringify(data));
+  const done=document.getElementById('lesson6Done'); done.style.display='block';
+  done.innerHTML=`<strong>6차시 완료</strong><br>${data.image_scenes.length}개 장면 이미지 제작·선택 상태 저장 완료`;
+}
+
+function restoreLesson6(){
+  const raw=localStorage.getItem('lesson6Data'); if(!raw)return;
+  const s=JSON.parse(raw),p=s.character_profile||{};
+  document.getElementById('characterGender').value=p.gender||'';
+  document.getElementById('characterAge').value=p.age||'';
+  document.getElementById('characterClothes').value=p.clothes||'';
+  document.getElementById('characterExtra').value=p.extra||'';
+
+  (s.image_scenes||[]).forEach((x,i)=>{
+    x.environment?.forEach(v=>{const el=[...document.querySelectorAll(`input[name="env6_${i}"]`)].find(q=>q.value===v);if(el)el.checked=true});
+    x.actions?.forEach(v=>{const el=[...document.querySelectorAll(`input[name="action6_${i}"]`)].find(q=>q.value===v);if(el)el.checked=true});
+    x.ai_visual?.forEach(v=>{const el=[...document.querySelectorAll(`input[name="aiv6_${i}"]`)].find(q=>q.value===v);if(el)el.checked=true});
+    const cam=document.getElementById(`camera6_${i}`); if(cam)cam.value=x.camera_shot||'';
+    const fut=document.getElementById(`future6_${i}`); if(fut)fut.value=x.future_level||'';
+    const mood=document.getElementById(`mood6_${i}`); if(mood)mood.value=x.mood||'';
+    const time=document.getElementById(`time6_${i}`); if(time)time.value=x.time_of_day||'';
+    const pr=document.getElementById(`imagePrompt6_${i}`); if(pr)pr.value=x.generated_prompt||'';
+    const rv=document.getElementById(`review6_${i}`); if(rv)rv.value=x.review_status||'';
+    toggleIssues6(i);
+    x.review_issues?.forEach(v=>{const el=[...document.querySelectorAll(`input[name="issue6_${i}"]`)].find(q=>q.value===v);if(el)el.checked=true});
+    const dn=document.getElementById(`done6_${i}`); if(dn)dn.checked=!!x.image_completed;
+  });
+}
+
+
+const consistencyRules7=['얼굴 특징','헤어스타일','연령대','체형','복장 종류','복장 색상','직업 장비','이미지 스타일','미래 표현 정도'];
+const consistencyIssues7=[
+  '얼굴이 다름','헤어스타일이 다름','나이가 달라 보임','체형이 다름','복장이 다름',
+  '직업이 잘 드러나지 않음','행동이 스토리보드와 다름','필요한 장비가 없음','잘못된 물건이 있음',
+  'AI 화면이 너무 과함','AI 표현이 부족함','의미 없는 로봇이 있음','AI 인터페이스가 장면과 맞지 않음',
+  '9:16에 적합하지 않음','주인공 위치가 좋지 않음','배경이 너무 복잡함','중요한 행동이 잘 안 보임',
+  '너무 SF 같음','현재처럼 보여 미래 느낌이 부족함','다른 장면과 시대 분위기가 다름','문제 없음'
+];
+const correctionMethods7=['현재 이미지를 최대한 유지하고 수정','같은 장면을 다시 생성','그대로 사용'];
+const preserveOptions7=['현재 구도','인물 자세','업무 행동','공간','조명','AI 인터페이스 위치','배경','색감','없음'];
+const revisionComparison7=['수정 후 이미지가 더 좋음','기존 이미지가 더 좋음','둘 다 아쉬움','한 번 더 수정 필요'];
+const finalImageStatus7=['기존 이미지 사용','수정 이미지 사용','재생성 이미지 사용'];
+const overallChecks7=[
+  '주인공이 모든 장면에서 같은 사람처럼 보인다',
+  '주인공의 복장이 자연스럽게 이어진다',
+  '직업이 장면에서 잘 드러난다',
+  '2038년 분위기가 장면마다 비슷하다',
+  'AI 표현 방식이 지나치게 들쭉날쭉하지 않다',
+  '모든 이미지가 9:16 영상에 사용하기 적합하다',
+  '스토리보드의 행동과 이미지가 일치한다'
+];
+
+function getLesson6Data(){const raw=localStorage.getItem('lesson6Data');return raw?JSON.parse(raw):null}
+
+function initLesson7(){
+  const d=getLesson6Data();
+  const intro=document.getElementById('lesson7Intro');
+  const prev=document.getElementById('lesson7Prev');
+  const ref=document.getElementById('referenceScene7');
+  const rules=document.getElementById('consistencyRuleOptions7');
+  const overall=document.getElementById('overallConsistency7');
+
+  if(!d){
+    intro.innerHTML='먼저 6차시를 완료해주세요.';
+    prev.innerHTML='6차시 데이터가 없습니다.';
+    document.getElementById('lesson7SceneCards').innerHTML='';
+    return;
+  }
+
+  intro.innerHTML=`탐구 직업: <strong>${esc(d.selected_job)}</strong> · ${d.image_scenes.length}개 이미지 장면을 불러왔습니다.`;
+  prev.innerHTML=`<strong>주인공 설정</strong>: ${esc(d.character_profile.gender)}, ${esc(d.character_profile.age)}, ${esc(d.character_profile.clothes)}${d.character_profile.extra?`, ${esc(d.character_profile.extra)}`:''}<br><br>`+
+    d.image_scenes.map(x=>`장면 ${x.scene_id} · ${esc(x.source_storyboard.purpose)} · <strong>${esc(x.review_status)}</strong>${x.review_issues?.length?` · 문제: ${esc(x.review_issues.join(', '))}`:''}`).join('<br>');
+
+  ref.innerHTML='<option value="">기준 장면을 선택하세요</option>'+
+    d.image_scenes.map(x=>`<option value="${x.scene_id}">장면 ${x.scene_id} — ${esc(x.source_storyboard.purpose)}</option>`).join('');
+
+  rules.innerHTML=consistencyRules7.map(v=>`<label><input type="checkbox" name="rule7" value="${esc(v)}" onchange="limitChecks(this,'rule7',6)">${esc(v)}</label>`).join('');
+
+  overall.innerHTML=overallChecks7.map((v,i)=>`<label style="display:block;width:100%"><input type="checkbox" name="overall7" value="${esc(v)}"> ${esc(v)}</label>`).join('');
+
+  renderLesson7Scenes();
+  restoreLesson7();
+}
+
+function referenceSceneChanged7(){
+  renderLesson7Scenes();
+  restoreSceneOnly7();
+}
+
+function renderLesson7Scenes(){
+  const d=getLesson6Data();
+  if(!d)return;
+  const refId=Number(document.getElementById('referenceScene7').value||0);
+  const box=document.getElementById('lesson7SceneCards');
+
+  box.innerHTML=d.image_scenes.map((x,i)=>{
+    const isRef=refId===Number(x.scene_id);
+    if(isRef){
+      return `<div class="taskcard" data-l7scene="${i}">
+        <div class="tasktitle">장면 ${x.scene_id} — ${esc(x.source_storyboard.purpose)} <span class="pill">기준 이미지</span></div>
+        <div class="note">이 장면은 주인공 일관성의 기준으로 사용합니다.<br>권장 파일명: <strong>${esc(x.recommended_filename)}</strong></div>
+        <input type="hidden" id="method7_${i}" value="그대로 사용">
+        <input type="hidden" id="comparison7_${i}" value="기준 이미지">
+        <input type="hidden" id="finalStatus7_${i}" value="기존 이미지 사용">
+        <label style="display:block;margin-top:14px"><input type="checkbox" id="confirmed7_${i}"> 기준 이미지 최종 확정</label>
+      </div>`;
+    }
+
+    return `<div class="taskcard" data-l7scene="${i}">
+      <div class="tasktitle">장면 ${x.scene_id} — ${esc(x.source_storyboard.purpose)}</div>
+      <div class="note">6차시 결과: <strong>${esc(x.review_status)}</strong>${x.review_issues?.length?`<br>기존 문제: ${esc(x.review_issues.join(', '))}`:''}<br>파일명: ${esc(x.recommended_filename)}</div>
+
+      <p><strong>기준 이미지와 비교했을 때 문제</strong> <span class="small">복수 선택</span></p>
+      <div class="optionrow">${consistencyIssues7.map(v=>`<label><input type="checkbox" name="issue7_${i}" value="${esc(v)}" onchange="issueChanged7(${i},this)">${esc(v)}</label>`).join('')}</div>
+
+      <p><strong>수정 방법</strong></p>
+      <select id="method7_${i}" onchange="methodChanged7(${i})">
+        <option value="">선택하세요</option>
+        ${correctionMethods7.map(v=>`<option>${v}</option>`).join('')}
+      </select>
+
+      <div id="correctionArea7_${i}" style="display:none;margin-top:12px">
+        <p><strong>현재 이미지에서 유지하고 싶은 요소</strong> <span class="small">최대 4개</span></p>
+        <div class="optionrow">${preserveOptions7.map(v=>`<label><input type="checkbox" name="preserve7_${i}" value="${esc(v)}" onchange="limitChecks(this,'preserve7_${i}',4)">${esc(v)}</label>`).join('')}</div>
+
+        <div class="btnrow">
+          <button class="primary" onclick="buildRevisionPrompt7(${i})">수정 프롬프트 만들기</button>
+          <button class="secondary" onclick="copyText('revisionPrompt7_${i}')">복사</button>
+        </div>
+        <textarea id="revisionPrompt7_${i}" placeholder="수정 방법과 문제를 선택한 뒤 프롬프트를 만들어주세요."></textarea>
+
+        <p><strong>수정 결과 비교</strong></p>
+        <select id="comparison7_${i}">
+          <option value="">선택하세요</option>
+          ${revisionComparison7.map(v=>`<option>${v}</option>`).join('')}
+        </select>
+      </div>
+
+      <p style="margin-top:14px"><strong>최종 사용할 이미지</strong></p>
+      <select id="finalStatus7_${i}">
+        <option value="">선택하세요</option>
+        ${finalImageStatus7.map(v=>`<option>${v}</option>`).join('')}
+      </select>
+
+      <label style="display:block;margin-top:14px"><input type="checkbox" id="confirmed7_${i}"> 이 장면 최종 확정</label>
+    </div>`;
+  }).join('');
+
+  d.image_scenes.forEach((_,i)=>methodChanged7(i));
+}
+
+function issueChanged7(i,el){
+  const name=`issue7_${i}`;
+  const checked=[...document.querySelectorAll(`input[name="${name}"]:checked`)];
+  if(el.value==='문제 없음' && el.checked){
+    checked.forEach(x=>{if(x!==el)x.checked=false});
+  }else if(el.checked){
+    const none=checked.find(x=>x.value==='문제 없음');
+    if(none)none.checked=false;
+  }
+}
+
+function methodChanged7(i){
+  const method=document.getElementById(`method7_${i}`)?.value||'';
+  const area=document.getElementById(`correctionArea7_${i}`);
+  if(!area)return;
+  area.style.display=(method==='현재 이미지를 최대한 유지하고 수정'||method==='같은 장면을 다시 생성')?'block':'none';
+  if(method==='그대로 사용'){
+    const final=document.getElementById(`finalStatus7_${i}`);
+    if(final)final.value='기존 이미지 사용';
+  }
+}
+
+function getCharacterProfileText7(d){
+  const p=d.character_profile||{};
+  return `${p.gender||''}, ${p.age||''}, ${p.clothes||''}${p.extra?', '+p.extra:''}`;
+}
+
+function buildRevisionPrompt7(i){
+  const d=getLesson6Data();
+  const refId=Number(document.getElementById('referenceScene7').value||0);
+  const rules=getChecks('rule7');
+  const scene=d?.image_scenes?.[i];
+  if(!d||!scene){alert('6차시 데이터가 없습니다.');return}
+  if(!refId){alert('기준 이미지를 먼저 선택해주세요.');return}
+  if(!rules.length){alert('일관성 유지 요소를 선택해주세요.');return}
+
+  const method=document.getElementById(`method7_${i}`).value;
+  const issues=getChecks(`issue7_${i}`);
+  const preserve=getChecks(`preserve7_${i}`);
+
+  if(!method||method==='그대로 사용'){alert('수정 또는 다시 생성 방법을 선택한 장면에서 사용하세요.');return}
+  if(!issues.length||issues.includes('문제 없음')){alert('수정해야 할 문제를 1개 이상 선택해주세요.');return}
+  if(!preserve.length){alert('유지할 요소를 1개 이상 선택해주세요.');return}
+
+  const ref=d.image_scenes.find(x=>Number(x.scene_id)===refId);
+  const profile=getCharacterProfileText7(d);
+
+  let text='';
+  if(method==='현재 이미지를 최대한 유지하고 수정'){
+    text=`이 이미지는 2038년 "${d.selected_job}" 미래 직업 영상의 장면 ${scene.scene_id}입니다.
+
+현재 이미지를 기본으로 유지하면서 필요한 부분만 수정해 주세요.
+
+[전체 영상에서 유지해야 할 주인공 설정]
+${profile}
+
+[캐릭터 기준 이미지]
+장면 ${ref.scene_id} — ${ref.source_storyboard.purpose}
+이 기준 이미지와 같은 사람으로 보이도록 유지해 주세요.
+
+[모든 장면에서 동일하게 유지할 요소]
+${rules.join(', ')}
+
+[현재 장면의 목적]
+${scene.source_storyboard.purpose}
+
+[현재 화면]
+${scene.source_storyboard.screen_description}
+
+[현재 이미지에서 유지할 요소]
+${preserve.join(', ')}
+
+[수정해야 하는 문제]
+${issues.join(', ')}
+
+조건:
+1. 현재 이미지의 좋은 부분은 불필요하게 바꾸지 마세요.
+2. 기준 이미지와 같은 인물로 보이도록 유지해 주세요.
+3. 선택한 일관성 요소가 장면마다 갑자기 달라지지 않게 해 주세요.
+4. 스토리보드의 업무 행동은 변경하지 마세요.
+5. 실제 직업 현장처럼 현실적으로 유지해 주세요.
+6. 2038년이지만 지나치게 SF 영화처럼 만들지 마세요.
+7. AI는 업무를 지원하는 기술로 자연스럽게 표현해 주세요.
+8. 의미 없는 로봇이나 불필요한 미래 장비를 추가하지 마세요.
+9. 9:16 세로형 영상에 적합한 구도를 유지해 주세요.
+10. 화면에 불필요한 텍스트를 만들지 마세요.`;
+  }else{
+    text=`다음 장면을 다시 만들어 주세요.
+
+[직업]
+${d.selected_job}
+
+[장면]
+장면 ${scene.scene_id} — ${scene.source_storyboard.purpose}
+
+[화면]
+${scene.source_storyboard.screen_description}
+
+[주인공 행동]
+${scene.source_storyboard.character_action}
+
+[전체 주인공 기준]
+${profile}
+
+[캐릭터 기준 이미지]
+장면 ${ref.scene_id} — ${ref.source_storyboard.purpose}
+기준 이미지와 같은 인물로 보이도록 해 주세요.
+
+[반드시 동일하게 유지할 요소]
+${rules.join(', ')}
+
+[이전 이미지의 문제]
+${issues.join(', ')}
+
+[이전 이미지에서 유지하고 싶은 요소]
+${preserve.join(', ')}
+
+[6차시 원본 이미지 프롬프트]
+${scene.generated_prompt}
+
+추가 조건:
+- 9:16 세로형
+- 현실적인 2038년 업무 환경
+- 동일한 주인공
+- 동일한 직업 복장과 스타일
+- 직업 행동이 명확하게 보이는 구성
+- 자연스러운 AI 기술 표현
+- 지나친 SF 표현 금지
+- 불필요한 텍스트 금지`;
+  }
+  document.getElementById(`revisionPrompt7_${i}`).value=text;
+}
+
+function collectLesson7(){
+  const d=getLesson6Data();
+  if(!d)return {error:true,msg:'6차시 데이터가 없습니다.'};
+  const refId=Number(document.getElementById('referenceScene7').value||0);
+  const rules=getChecks('rule7');
+  if(!refId)return {error:true,msg:'기준 이미지를 선택해주세요.'};
+  if(!rules.length)return {error:true,msg:'일관성 유지 요소를 선택해주세요.'};
+
+  const scenes=d.image_scenes.map((x,i)=>{
+    const isRef=Number(x.scene_id)===refId;
+    if(isRef){
+      return {
+        scene_id:x.scene_id,
+        consistency_issues:[],
+        correction_method:'그대로 사용',
+        preserve_elements:[],
+        revision_prompt:'',
+        revision_comparison:'기준 이미지',
+        final_image_status:'기존 이미지 사용',
+        final_confirmed:!!document.getElementById(`confirmed7_${i}`)?.checked,
+        reference_scene:true
+      };
+    }
+    const method=document.getElementById(`method7_${i}`)?.value||'';
+    const issues=getChecks(`issue7_${i}`);
+    const preserve=getChecks(`preserve7_${i}`);
+    const prompt=document.getElementById(`revisionPrompt7_${i}`)?.value.trim()||'';
+    const comparison=document.getElementById(`comparison7_${i}`)?.value||'';
+    const finalStatus=document.getElementById(`finalStatus7_${i}`)?.value||'';
+    const confirmed=!!document.getElementById(`confirmed7_${i}`)?.checked;
+    return {
+      scene_id:x.scene_id,
+      consistency_issues:issues,
+      correction_method:method,
+      preserve_elements:preserve,
+      revision_prompt:prompt,
+      revision_comparison:comparison,
+      final_image_status:finalStatus,
+      final_confirmed:confirmed,
+      reference_scene:false
+    };
+  });
+
+  return {error:false,d,refId,rules,scenes};
+}
+
+function checkLesson7(){
+  const c=collectLesson7();
+  if(c.error){
+    document.getElementById('lesson7Checklist').innerHTML=`✗ ${esc(c.msg)}`;
+    document.getElementById('saveLesson7Btn').disabled=true;
+    return {ok:false};
+  }
+
+  const sceneLogicOk=c.scenes.every(x=>{
+    if(x.reference_scene)return x.final_confirmed;
+    if(!x.consistency_issues.length||!x.correction_method||!x.final_image_status||!x.final_confirmed)return false;
+    if(x.correction_method==='그대로 사용')return true;
+    return x.preserve_elements.length>0 && !!x.revision_prompt && !!x.revision_comparison;
+  });
+  const overallChecked=getChecks('overall7');
+  const overallOk=overallChecked.length===overallChecks7.length;
+
+  const checks=[
+    ['기준 이미지 선택',!!c.refId],
+    ['일관성 기준 선택',c.rules.length>0],
+    ['모든 장면 비교·수정 판단',sceneLogicOk],
+    ['모든 장면 최종 이미지 확정',c.scenes.every(x=>x.final_confirmed&&!!x.final_image_status)],
+    ['전체 일관성 검수',overallOk]
+  ];
+  const ok=checks.every(x=>x[1]);
+  document.getElementById('lesson7Checklist').innerHTML=checks.map(x=>`${x[1]?'✓':'✗'} ${x[0]}`).join('<br>');
+  document.getElementById('saveLesson7Btn').disabled=!ok;
+  return {ok,c,overallChecked};
+}
+
+function saveLesson7(){
+  const chk=checkLesson7();
+  if(!chk.ok){alert('7차시 완료 조건을 먼저 충족해주세요.');return}
+  const c=chk.c;
+  const data={
+    selected_job:c.d.selected_job,
+    character_profile:c.d.character_profile,
+    reference_scene_id:c.refId,
+    consistency_rules:c.rules,
+    final_image_scenes:c.scenes,
+    overall_consistency_confirmed:true,
+    overall_checks:chk.overallChecked
+  };
+  localStorage.setItem('lesson7Data',JSON.stringify(data));
+  const done=document.getElementById('lesson7Done');
+  done.style.display='block';
+  done.innerHTML=`<strong>7차시 완료</strong><br>기준 장면 ${c.refId} · ${c.scenes.length}개 최종 이미지 장면 확정`;
+}
+
+function restoreSceneOnly7(){
+  const raw=localStorage.getItem('lesson7Data'); if(!raw)return;
+  const s=JSON.parse(raw);
+  const d=getLesson6Data(); if(!d)return;
+
+  (s.final_image_scenes||[]).forEach(saved=>{
+    const i=d.image_scenes.findIndex(x=>Number(x.scene_id)===Number(saved.scene_id));
+    if(i<0)return;
+    if(saved.reference_scene){
+      const conf=document.getElementById(`confirmed7_${i}`); if(conf)conf.checked=!!saved.final_confirmed;
+      return;
+    }
+    saved.consistency_issues?.forEach(v=>{const el=[...document.querySelectorAll(`input[name="issue7_${i}"]`)].find(q=>q.value===v);if(el)el.checked=true});
+    const method=document.getElementById(`method7_${i}`); if(method)method.value=saved.correction_method||'';
+    methodChanged7(i);
+    saved.preserve_elements?.forEach(v=>{const el=[...document.querySelectorAll(`input[name="preserve7_${i}"]`)].find(q=>q.value===v);if(el)el.checked=true});
+    const prompt=document.getElementById(`revisionPrompt7_${i}`); if(prompt)prompt.value=saved.revision_prompt||'';
+    const comp=document.getElementById(`comparison7_${i}`); if(comp)comp.value=saved.revision_comparison||'';
+    const fin=document.getElementById(`finalStatus7_${i}`); if(fin)fin.value=saved.final_image_status||'';
+    const conf=document.getElementById(`confirmed7_${i}`); if(conf)conf.checked=!!saved.final_confirmed;
+  });
+}
+
+function restoreLesson7(){
+  const raw=localStorage.getItem('lesson7Data'); if(!raw)return;
+  const s=JSON.parse(raw);
+  const ref=document.getElementById('referenceScene7');
+  if(ref)ref.value=s.reference_scene_id||'';
+
+  (s.consistency_rules||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="rule7"]')].find(q=>q.value===v);
+    if(el)el.checked=true;
+  });
+
+  renderLesson7Scenes();
+  restoreSceneOnly7();
+
+  (s.overall_checks||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="overall7"]')].find(q=>q.value===v);
+    if(el)el.checked=true;
+  });
+}
+
+
+const openingTextOptions8=['2038년','날짜','직업명','오늘의 업무','AI 비서 브리핑 시작','텍스트 없음'];
+const vidsCompletionChecks8=[
+  '9:16 프로젝트를 만들었다',
+  '모든 최종 이미지를 넣었다',
+  '이미지 순서가 스토리보드와 같다',
+  '장면별 시간이 맞다',
+  '필요한 화면 텍스트를 넣었다',
+  '전환을 적용했다',
+  '아직 음성과 BGM을 넣지 않았다',
+  '전체 영상을 처음부터 끝까지 재생했다',
+  '영상 길이가 60~90초다'
+];
+
+function getLesson7Data(){const raw=localStorage.getItem('lesson7Data');return raw?JSON.parse(raw):null}
+
+function initLesson8(){
+  const l5=getLesson5Data(), l6=getLesson6Data(), l7=getLesson7Data();
+  const intro=document.getElementById('lesson8Intro');
+  const sum=document.getElementById('lesson8SceneSummary');
+  if(!l5||!l6||!l7){
+    intro.innerHTML='5차시, 6차시, 7차시를 먼저 완료해주세요.';
+    sum.innerHTML='필요한 이전 데이터가 없습니다.';
+    return;
+  }
+
+  intro.innerHTML=`탐구 직업: <strong>${esc(l5.selected_job)}</strong> · ${l5.storyboard.length}장면 · 총 ${l5.total_duration}초`;
+
+  const finalMap=Object.fromEntries((l7.final_image_scenes||[]).map(x=>[Number(x.scene_id),x]));
+  const fileMap=Object.fromEntries((l6.image_scenes||[]).map(x=>[Number(x.scene_id),x.recommended_filename]));
+
+  sum.innerHTML=l5.storyboard.map(s=>{
+    const f=finalMap[Number(s.scene_id)]||{};
+    return `<strong>장면 ${s.scene_id}</strong> · ${esc(s.purpose)} · ${s.duration}초<br>
+      이미지: ${esc(fileMap[Number(s.scene_id)]||'파일명 확인 필요')} · ${esc(f.final_image_status||'최종 상태 확인 필요')}`;
+  }).join('<br><br>');
+
+  document.getElementById('openingText8').innerHTML=openingTextOptions8.map(v=>
+    `<label><input type="checkbox" name="openingText8" value="${esc(v)}" onchange="openingTextChanged8(this)">${esc(v)}</label>`
+  ).join('');
+
+  document.getElementById('vidsChecks8').innerHTML=vidsCompletionChecks8.map(v=>
+    `<label style="display:block;width:100%"><input type="checkbox" name="vidsCheck8" value="${esc(v)}">${esc(v)}</label>`
+  ).join('');
+
+  renderSceneText8();
+  restoreLesson8();
+}
+
+function openingTextChanged8(el){
+  const checked=getChecks('openingText8');
+  if(el.value==='텍스트 없음' && el.checked){
+    [...document.querySelectorAll('input[name="openingText8"]')].forEach(x=>{if(x!==el)x.checked=false});
+    return;
+  }
+  if(el.checked){
+    const none=[...document.querySelectorAll('input[name="openingText8"]')].find(x=>x.value==='텍스트 없음');
+    if(none)none.checked=false;
+  }
+  if(getChecks('openingText8').length>3){
+    el.checked=false;
+    alert('최대 3개까지 선택할 수 있습니다.');
+  }
+}
+
+function sceneTextDefault8(scene, style, index){
+  const l4=getLesson4Data();
+  if(style==='텍스트 최소화 — 업무명만'){
+    return scene.related_task || scene.purpose || '';
+  }
+  if(style==='시간 + 업무'){
+    const task=scene.related_task || scene.purpose || '';
+    const sch=(l4?.daily_schedule||[]).find(x=>x.task===scene.related_task);
+    return `${sch?.time||''}${sch?.time?' · ':''}${task}`;
+  }
+  if(style==='짧은 설명'){
+    return scene.purpose || scene.related_task || '';
+  }
+  return '';
+}
+
+function renderSceneText8(){
+  const l5=getLesson5Data();
+  const box=document.getElementById('sceneTextRows8');
+  if(!l5||!box)return;
+  const style=document.getElementById('sceneTextStyle8')?.value||'';
+  if(!style){
+    box.innerHTML='<span class="small">텍스트 방식을 선택하면 장면별 입력칸이 나타납니다.</span>';
+    return;
+  }
+  box.innerHTML=l5.storyboard.map((s,i)=>{
+    const def=sceneTextDefault8(s,style,i);
+    const disabled=style==='화면 텍스트 없음'?'disabled':'';
+    return `<div class="schedule-row">
+      <strong>장면 ${s.scene_id}</strong>
+      <input id="screenText8_${i}" type="text" value="${esc(def)}" ${disabled} placeholder="화면 텍스트">
+      <select id="textUse8_${i}" ${disabled}>
+        <option>그대로 사용</option>
+        <option>짧게 수정</option>
+        <option>텍스트 사용 안 함</option>
+      </select>
+    </div>`;
+  }).join('');
+}
+
+function collectLesson8Plan(){
+  const l5=getLesson5Data(),l6=getLesson6Data(),l7=getLesson7Data();
+  if(!l5||!l6||!l7)return {error:true,msg:'5~7차시 데이터가 필요합니다.'};
+  const opening=getChecks('openingText8');
+  const textStyle=document.getElementById('sceneTextStyle8').value;
+  const transition=document.getElementById('transitionStyle8').value;
+  const layout=document.getElementById('imageLayout8').value;
+  if(!opening.length)return {error:true,msg:'오프닝 텍스트 방식을 선택해주세요.'};
+  if(!textStyle||!transition||!layout)return {error:true,msg:'텍스트, 전환, 이미지 배치 방식을 모두 선택해주세요.'};
+
+  const fileMap=Object.fromEntries((l6.image_scenes||[]).map(x=>[Number(x.scene_id),x.recommended_filename]));
+  const finalMap=Object.fromEntries((l7.final_image_scenes||[]).map(x=>[Number(x.scene_id),x]));
+
+  const scenes=l5.storyboard.map((s,i)=>({
+    scene_id:s.scene_id,
+    purpose:s.purpose,
+    image_filename:fileMap[Number(s.scene_id)]||'',
+    final_image_status:finalMap[Number(s.scene_id)]?.final_image_status||'',
+    duration:s.duration,
+    screen_text:textStyle==='화면 텍스트 없음'?'':(document.getElementById(`screenText8_${i}`)?.value.trim()||''),
+    text_use:textStyle==='화면 텍스트 없음'?'텍스트 사용 안 함':(document.getElementById(`textUse8_${i}`)?.value||'')
+  }));
+  return {error:false,l5,l6,l7,opening,textStyle,transition,layout,scenes};
+}
+
+function buildVidsPlan8(){
+  const c=collectLesson8Plan();
+  if(c.error){alert(c.msg);return}
+  document.getElementById('vidsPrompt8').value=`나는 Google Vids를 사용하여 2038년 미래 직업 프로젝트 영상을 편집하려고 합니다.
+
+[영상 규격]
+9:16 세로형
+총 길이: ${c.l5.total_duration}초
+장면 수: ${c.l5.storyboard.length}
+
+[직업]
+${c.l5.selected_job}
+
+[장면 구성]
+${c.scenes.map(s=>`장면 ${s.scene_id} — ${s.purpose}
+이미지: ${s.image_filename} (${s.final_image_status})
+시간: ${s.duration}초
+화면 텍스트: ${s.text_use==='텍스트 사용 안 함'?'사용 안 함':s.screen_text}`).join('\n\n')}
+
+[오프닝 텍스트]
+${c.opening.join(', ')}
+
+[업무 장면 텍스트 방식]
+${c.textStyle}
+
+[화면 전환 방식]
+${c.transition}
+
+[이미지 배치 방식]
+${c.layout}
+
+Google Vids에서 이 영상을 조립하기 위한 간단한 편집 순서를 만들어 주세요.
+
+조건:
+1. 내가 정한 장면 순서를 변경하지 마세요.
+2. 장면별 시간을 변경하지 마세요.
+3. 새로운 장면을 임의로 추가하지 마세요.
+4. 7차시에서 확정한 이미지를 그대로 사용합니다.
+5. 이번 차시에서는 새로운 AI 영상 장면을 만들지 않습니다.
+6. 이번 차시에서는 AI 음성이나 BGM을 추가하지 않습니다.
+7. 텍스트는 내가 선택한 방식대로 최소한으로 사용합니다.
+8. 효과나 전환을 과하게 사용하지 마세요.
+9. 9:16 화면에서 중요한 인물이나 행동이 잘리지 않도록 확인하도록 안내해 주세요.
+10. 학생이 그대로 따라 할 수 있도록 간단한 체크리스트 형식으로 작성해 주세요.
+
+출력 형식:
+[프로젝트 설정]
+-
+
+[장면 1]
+이미지:
+시간:
+텍스트:
+화면 배치:
+전환:
+
+[장면 2]
+...
+
+[최종 확인]
+-`;
+}
+
+function checkLesson8(){
+  const c=collectLesson8Plan();
+  const allChecks=getChecks('vidsCheck8');
+  const prompt=!!document.getElementById('vidsPrompt8').value.trim();
+  const checks=[
+    ['편집 방식 설정',!c.error],
+    ['Vids 편집 계획 프롬프트 생성',prompt],
+    ['Google Vids 작업 체크',allChecks.length===vidsCompletionChecks8.length]
+  ];
+  const ok=checks.every(x=>x[1]);
+  document.getElementById('lesson8Checklist').innerHTML=checks.map(x=>`${x[1]?'✓':'✗'} ${x[0]}`).join('<br>');
+  document.getElementById('saveLesson8Btn').disabled=!ok;
+  return {ok,c,allChecks};
+}
+
+function saveLesson8(){
+  const chk=checkLesson8();
+  if(!chk.ok){alert('8차시 완료 조건을 먼저 충족해주세요.');return}
+  const c=chk.c;
+  const data={
+    selected_job:c.l5.selected_job,
+    vids_project:{
+      aspect_ratio:'9:16',
+      total_duration:c.l5.total_duration,
+      scene_count:c.scenes.length
+    },
+    editing_style:{
+      opening_text_elements:c.opening,
+      scene_text_style:c.textStyle,
+      transition_style:c.transition,
+      image_layout_style:c.layout
+    },
+    scene_edit_plan:c.scenes,
+    completion_checks:chk.allChecks,
+    vids_roughcut_completed:true
+  };
+  localStorage.setItem('lesson8Data',JSON.stringify(data));
+  const done=document.getElementById('lesson8Done');
+  done.style.display='block';
+  done.innerHTML=`<strong>8차시 완료</strong><br>9:16 · ${data.vids_project.scene_count}장면 · ${data.vids_project.total_duration}초 무음 러프컷 완료`;
+}
+
+function restoreLesson8(){
+  const raw=localStorage.getItem('lesson8Data'); if(!raw)return;
+  const s=JSON.parse(raw);
+  (s.editing_style?.opening_text_elements||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="openingText8"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+  document.getElementById('sceneTextStyle8').value=s.editing_style?.scene_text_style||'';
+  document.getElementById('transitionStyle8').value=s.editing_style?.transition_style||'';
+  document.getElementById('imageLayout8').value=s.editing_style?.image_layout_style||'';
+  renderSceneText8();
+
+  (s.scene_edit_plan||[]).forEach((x,i)=>{
+    const text=document.getElementById(`screenText8_${i}`); if(text)text.value=x.screen_text||'';
+    const use=document.getElementById(`textUse8_${i}`); if(use)use.value=x.text_use||'그대로 사용';
+  });
+
+  (s.completion_checks||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="vidsCheck8"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+}
+
+
+const priorityOptions9=['움직임이 꼭 필요함','움직임이 있으면 좋음','정지 이미지로 충분함'];
+const subjectMotionOptions9=[
+  '주인공이 자연스럽게 움직인다','주인공이 작업을 수행한다','다른 인물이 움직인다',
+  '화면 속 데이터가 변화한다','장비가 작동한다','배경에 자연스러운 움직임이 있다',
+  '주인공이 이동한다','사람끼리 대화·상호작용한다'
+];
+const cameraMotionOptions9=[
+  '카메라 고정','천천히 앞으로 이동','천천히 뒤로 이동','왼쪽 → 오른쪽 이동',
+  '오른쪽 → 왼쪽 이동','주인공을 자연스럽게 따라가기','아주 약한 자연스러운 카메라 움직임'
+];
+const intensityOptions9=['매우 약하게','자연스럽게','역동적으로'];
+const preserveOptions9=['주인공 얼굴','헤어스타일','복장','업무 공간','직업 장비','AI 인터페이스','이미지 구도','조명·분위기','2038년 표현 방식'];
+const resultOptions9=['그대로 사용','한 번 수정해서 다시 생성','정지 이미지가 더 좋음'];
+const revisionIssues9=[
+  '인물 움직임이 이상함','얼굴이 변함','행동이 다름','카메라가 너무 많이 움직임',
+  '움직임이 너무 적음','움직임이 너무 빠름','AI 화면이 이상하게 변함',
+  '배경이 불안정함','새로운 물체가 생김','원래 이미지 분위기가 사라짐'
+];
+const overallChecks9=[
+  'AI 영상이 필요한 장면에만 사용되었다',
+  '움직임 때문에 업무 내용이 더 잘 보인다',
+  '주인공 일관성이 크게 깨지지 않았다',
+  '9:16 화면에 맞는다',
+  '영상 순서가 바뀌지 않았다',
+  '전체 길이가 60~90초다',
+  '움직임이 과도하지 않다',
+  '아직 최종 음성/BGM 작업 전 상태다'
+];
+
+function getLesson8Data(){const raw=localStorage.getItem('lesson8Data');return raw?JSON.parse(raw):null}
+
+function initLesson9(){
+  const l5=getLesson5Data(), l7=getLesson7Data(), l8=getLesson8Data();
+  const intro=document.getElementById('lesson9Intro');
+  if(!l5||!l7||!l8){
+    intro.innerHTML='5차시, 7차시, 8차시를 먼저 완료해주세요.';
+    document.getElementById('lesson9PriorityCards').innerHTML='';
+    document.getElementById('lesson9MotionCards').innerHTML='';
+    document.getElementById('lesson9PromptCards').innerHTML='';
+    document.getElementById('lesson9ReviewCards').innerHTML='';
+    return;
+  }
+
+  intro.innerHTML=`탐구 직업: <strong>${esc(l5.selected_job)}</strong> · ${l8.vids_project.scene_count}장면 · ${l8.vids_project.total_duration}초`;
+
+  const editMap=Object.fromEntries((l8.scene_edit_plan||[]).map(x=>[Number(x.scene_id),x]));
+  document.getElementById('lesson9PriorityCards').innerHTML=l5.storyboard.map((s,i)=>{
+    const e=editMap[Number(s.scene_id)]||{};
+    return `<div class="taskcard">
+      <div class="tasktitle">장면 ${s.scene_id} — ${esc(s.purpose)}</div>
+      <div class="note">이미지: ${esc(e.image_filename||'확인 필요')} · ${s.duration}초</div>
+      <select id="priority9_${i}" onchange="priorityChanged9(${i},this)">
+        <option value="">움직임 필요성을 선택하세요</option>
+        ${priorityOptions9.map(v=>`<option>${v}</option>`).join('')}
+      </select>
+      <label style="display:block;margin-top:12px">
+        <input type="checkbox" id="selectMotion9_${i}" onchange="selectedMotionChanged9(${i},this)">
+        이 장면을 AI 영상화 대상으로 선택
+      </label>
+    </div>`;
+  }).join('');
+
+  renderMotionAreas9();
+  document.getElementById('overallMotionChecks9').innerHTML=overallChecks9.map(v=>
+    `<label style="display:block;width:100%"><input type="checkbox" name="overall9" value="${esc(v)}">${esc(v)}</label>`
+  ).join('');
+
+  restoreLesson9();
+}
+
+function selectedMotionIndexes9(){
+  const l5=getLesson5Data(); if(!l5)return [];
+  return l5.storyboard.map((_,i)=>i).filter(i=>document.getElementById(`selectMotion9_${i}`)?.checked);
+}
+
+function priorityChanged9(i,sel){
+  const cb=document.getElementById(`selectMotion9_${i}`);
+  if(sel.value==='정지 이미지로 충분함' && cb?.checked) cb.checked=false;
+  renderMotionAreas9();
+}
+
+function selectedMotionChanged9(i,el){
+  const priority=document.getElementById(`priority9_${i}`)?.value||'';
+  if(priority==='정지 이미지로 충분함'){
+    el.checked=false;
+    alert('정지 이미지로 충분함을 선택한 장면은 AI 영상화 대상으로 선택할 수 없습니다.');
+    return;
+  }
+  const indexes=selectedMotionIndexes9();
+  if(indexes.length>3){
+    el.checked=false;
+    alert('AI 영상화 장면은 최대 3개까지 선택할 수 있습니다.');
+  }
+  renderMotionAreas9();
+}
+
+function renderMotionAreas9(){
+  const l5=getLesson5Data(),l7=getLesson7Data();
+  if(!l5||!l7)return;
+  const selectedIdx=new Set(selectedMotionIndexes9());
+  const rules=l7.consistency_rules||[];
+
+  document.getElementById('lesson9MotionCards').innerHTML=l5.storyboard.map((s,i)=>{
+    if(!selectedIdx.has(i)) return '';
+    return `<div class="taskcard">
+      <div class="tasktitle">장면 ${s.scene_id} — 움직임 설정</div>
+      <p><strong>무엇이 움직일까?</strong> <span class="small">최대 2개</span></p>
+      <div class="optionrow">${subjectMotionOptions9.map(v=>`<label><input type="checkbox" name="subjectMotion9_${i}" value="${esc(v)}" onchange="limitChecks(this,'subjectMotion9_${i}',2)">${esc(v)}</label>`).join('')}</div>
+
+      <div class="grid2" style="margin-top:14px">
+        <select id="cameraMotion9_${i}">
+          <option value="">카메라 움직임</option>
+          ${cameraMotionOptions9.map(v=>`<option>${v}</option>`).join('')}
+        </select>
+        <select id="intensity9_${i}">
+          <option value="">움직임 강도</option>
+          ${intensityOptions9.map(v=>`<option>${v}</option>`).join('')}
+        </select>
+      </div>
+
+      <p><strong>반드시 유지할 요소</strong> <span class="small">최대 5개</span></p>
+      <div class="optionrow">${preserveOptions9.map(v=>`<label><input type="checkbox" name="preserve9_${i}" value="${esc(v)}" onchange="limitChecks(this,'preserve9_${i}',5)">${esc(v)}</label>`).join('')}</div>
+      <p class="small">7차시 일관성 기준: ${esc(rules.join(', '))}</p>
+    </div>`;
+  }).join('');
+
+  document.getElementById('lesson9PromptCards').innerHTML=l5.storyboard.map((s,i)=>{
+    if(!selectedIdx.has(i)) return '';
+    return `<div class="taskcard">
+      <div class="tasktitle">장면 ${s.scene_id} AI 영상 프롬프트</div>
+      <div class="btnrow">
+        <button class="primary" onclick="buildMotionPrompt9(${i})">영상 프롬프트 만들기</button>
+        <button class="secondary" onclick="copyText('motionPrompt9_${i}')">복사</button>
+      </div>
+      <textarea id="motionPrompt9_${i}" placeholder="움직임 설정을 완료한 뒤 프롬프트를 만들어주세요."></textarea>
+    </div>`;
+  }).join('');
+
+  document.getElementById('lesson9ReviewCards').innerHTML=l5.storyboard.map((s,i)=>{
+    if(!selectedIdx.has(i)) return '';
+    return `<div class="taskcard">
+      <div class="tasktitle">장면 ${s.scene_id} 생성 결과</div>
+      <select id="result9_${i}" onchange="resultChanged9(${i})">
+        <option value="">첫 번째 결과를 선택하세요</option>
+        ${resultOptions9.map(v=>`<option>${v}</option>`).join('')}
+      </select>
+
+      <div id="revisionArea9_${i}" style="display:none;margin-top:12px">
+        <p><strong>수정 사유</strong> <span class="small">최대 3개</span></p>
+        <div class="optionrow">${revisionIssues9.map(v=>`<label><input type="checkbox" name="revisionIssue9_${i}" value="${esc(v)}" onchange="limitChecks(this,'revisionIssue9_${i}',3)">${esc(v)}</label>`).join('')}</div>
+        <div class="btnrow">
+          <button class="primary" onclick="buildRevisionPrompt9(${i})">재생성 프롬프트 만들기</button>
+          <button class="secondary" onclick="copyText('revisionPrompt9_${i}')">복사</button>
+        </div>
+        <textarea id="revisionPrompt9_${i}" placeholder="수정 사유를 선택한 뒤 재생성 프롬프트를 만들어주세요."></textarea>
+      </div>
+
+      <p style="margin-top:14px"><strong>최종 적용</strong></p>
+      <select id="finalMedia9_${i}">
+        <option value="">선택하세요</option>
+        <option value="ai_video">AI 영상 클립 사용</option>
+        <option value="static_image">정지 이미지 유지</option>
+      </select>
+      <label style="display:block;margin-top:12px"><input type="checkbox" id="confirm9_${i}"> 이 장면 최종 확정</label>
+    </div>`;
+  }).join('');
+
+  restoreVisibleLesson9Selections();
+}
+
+function collectMotionScene9(i){
+  const l5=getLesson5Data(),l7=getLesson7Data(),l8=getLesson8Data();
+  if(!l5||!l7||!l8)return null;
+  return {
+    scene:l5.storyboard[i],
+    priority:document.getElementById(`priority9_${i}`)?.value||'',
+    subject_motion:getChecks(`subjectMotion9_${i}`),
+    camera_motion:document.getElementById(`cameraMotion9_${i}`)?.value||'',
+    motion_intensity:document.getElementById(`intensity9_${i}`)?.value||'',
+    preserve_elements:getChecks(`preserve9_${i}`)
+  };
+}
+
+function buildMotionPrompt9(i){
+  const c=collectMotionScene9(i);
+  if(!c)return;
+  if(!c.subject_motion.length||!c.camera_motion||!c.motion_intensity||!c.preserve_elements.length){
+    alert('움직임, 카메라, 강도, 유지 요소를 모두 선택해주세요.');
+    return;
+  }
+  document.getElementById(`motionPrompt9_${i}`).value=`이 이미지를 자연스러운 짧은 영상으로 움직여 주세요.
+
+[장면]
+${c.scene.purpose}
+
+[원래 화면]
+${c.scene.screen_description}
+
+[주인공 행동]
+${c.scene.character_action}
+
+[움직임]
+${c.subject_motion.map(v=>'- '+v).join('\n')}
+
+[카메라]
+${c.camera_motion}
+
+[움직임 강도]
+${c.motion_intensity}
+
+[반드시 유지]
+${c.preserve_elements.map(v=>'- '+v).join('\n')}
+
+주의:
+1. 새로운 인물이나 물건을 불필요하게 추가하지 마세요.
+2. 얼굴과 신체 형태가 변형되지 않게 해 주세요.
+3. 원래 업무 행동이 더 잘 보이도록 움직임을 적용해 주세요.
+4. 원본 이미지의 구도와 2038년 분위기를 크게 바꾸지 마세요.
+5. 지나치게 빠르거나 영화적인 카메라 움직임은 사용하지 마세요.
+6. AI 화면이나 직업 장비가 불안정하게 변형되지 않도록 해 주세요.`;
+}
+
+function resultChanged9(i){
+  const result=document.getElementById(`result9_${i}`)?.value||'';
+  const box=document.getElementById(`revisionArea9_${i}`);
+  if(box)box.style.display=(result==='한 번 수정해서 다시 생성')?'block':'none';
+}
+
+function buildRevisionPrompt9(i){
+  const base=document.getElementById(`motionPrompt9_${i}`)?.value.trim()||'';
+  const issues=getChecks(`revisionIssue9_${i}`);
+  if(!base){alert('먼저 첫 번째 영상 프롬프트를 만들어주세요.');return}
+  if(!issues.length){alert('수정 사유를 선택해주세요.');return}
+  document.getElementById(`revisionPrompt9_${i}`).value=`이전 결과를 다음과 같이 수정해 주세요.
+
+[기존 프롬프트]
+${base}
+
+[수정해야 하는 문제]
+${issues.map(v=>'- '+v).join('\n')}
+
+수정 조건:
+- 원래 프롬프트의 장면 목적과 행동은 유지해 주세요.
+- 움직임을 새롭게 크게 추가하지 마세요.
+- 선택한 문제만 우선 개선해 주세요.
+- 주인공 얼굴, 복장, 배경, AI 인터페이스의 일관성을 유지해 주세요.
+- 자연스러운 업무 장면으로 만들어 주세요.`;
+}
+
+function collectLesson9(){
+  const l5=getLesson5Data(),l7=getLesson7Data(),l8=getLesson8Data();
+  if(!l5||!l7||!l8)return {error:true,msg:'5·7·8차시 데이터가 필요합니다.'};
+
+  const priorities=l5.storyboard.map((s,i)=>document.getElementById(`priority9_${i}`)?.value||'');
+  if(priorities.some(v=>!v))return {error:true,msg:'모든 장면의 움직임 필요성을 판단해주세요.'};
+
+  const selectedIdx=selectedMotionIndexes9();
+  if(selectedIdx.length>3)return {error:true,msg:'AI 영상화 장면은 최대 3개입니다.'};
+
+  const motionScenes=selectedIdx.map(i=>{
+    const c=collectMotionScene9(i);
+    const prompt=document.getElementById(`motionPrompt9_${i}`)?.value.trim()||'';
+    const result=document.getElementById(`result9_${i}`)?.value||'';
+    const issues=getChecks(`revisionIssue9_${i}`);
+    const revisionPrompt=document.getElementById(`revisionPrompt9_${i}`)?.value.trim()||'';
+    const finalMedia=document.getElementById(`finalMedia9_${i}`)?.value||'';
+    const confirmed=!!document.getElementById(`confirm9_${i}`)?.checked;
+    return {
+      scene_id:c.scene.scene_id,
+      motion_priority:c.priority,
+      subject_motion:c.subject_motion,
+      camera_motion:c.camera_motion,
+      motion_intensity:c.motion_intensity,
+      preserve_elements:c.preserve_elements,
+      motion_prompt:prompt,
+      first_result_status:result,
+      revision_issues:issues,
+      revision_prompt:revisionPrompt,
+      generation_count:result==='한 번 수정해서 다시 생성'?2:1,
+      final_media_type:finalMedia,
+      final_confirmed:confirmed
+    };
+  });
+
+  return {error:false,l5,l7,l8,priorities,motionScenes};
+}
+
+function checkLesson9(){
+  const c=collectLesson9();
+  if(c.error){
+    document.getElementById('lesson9Checklist').innerHTML=`✗ ${esc(c.msg)}`;
+    document.getElementById('saveLesson9Btn').disabled=true;
+    return {ok:false};
+  }
+  const sceneOk=c.motionScenes.every(x=>{
+    if(!x.subject_motion.length||!x.camera_motion||!x.motion_intensity||!x.preserve_elements.length||!x.motion_prompt||!x.first_result_status||!x.final_media_type||!x.final_confirmed)return false;
+    if(x.first_result_status==='한 번 수정해서 다시 생성' && (!x.revision_issues.length||!x.revision_prompt))return false;
+    return true;
+  });
+  const overall=getChecks('overall9');
+  const checks=[
+    ['모든 장면 움직임 필요성 판단',true],
+    ['영상화 장면 최대 3개',c.motionScenes.length<=3],
+    ['선택 장면 프롬프트·결과 확정',sceneOk],
+    ['전체 영상 검수',overall.length===overallChecks9.length]
+  ];
+  const ok=checks.every(x=>x[1]);
+  document.getElementById('lesson9Checklist').innerHTML=checks.map(x=>`${x[1]?'✓':'✗'} ${x[0]}`).join('<br>');
+  document.getElementById('saveLesson9Btn').disabled=!ok;
+  return {ok,c,overall};
+}
+
+function saveLesson9(){
+  const chk=checkLesson9();
+  if(!chk.ok){alert('9차시 완료 조건을 먼저 충족해주세요.');return}
+  const data={
+    selected_job:chk.c.l5.selected_job,
+    scene_priorities:chk.c.priorities,
+    motion_scenes:chk.c.motionScenes,
+    overall_checks:chk.overall,
+    motion_edit_completed:true
+  };
+  localStorage.setItem('lesson9Data',JSON.stringify(data));
+  const done=document.getElementById('lesson9Done');
+  done.style.display='block';
+  done.innerHTML=`<strong>9차시 완료</strong><br>AI 영상화 대상 ${data.motion_scenes.length}개 장면 · 움직임 편집 확정`;
+}
+
+function restoreVisibleLesson9Selections(){
+  const raw=localStorage.getItem('lesson9Data'); if(!raw)return;
+  const s=JSON.parse(raw),l5=getLesson5Data(); if(!l5)return;
+  (s.motion_scenes||[]).forEach(saved=>{
+    const i=l5.storyboard.findIndex(x=>Number(x.scene_id)===Number(saved.scene_id));
+    if(i<0||!document.getElementById(`cameraMotion9_${i}`))return;
+    saved.subject_motion?.forEach(v=>{const el=[...document.querySelectorAll(`input[name="subjectMotion9_${i}"]`)].find(x=>x.value===v);if(el)el.checked=true});
+    document.getElementById(`cameraMotion9_${i}`).value=saved.camera_motion||'';
+    document.getElementById(`intensity9_${i}`).value=saved.motion_intensity||'';
+    saved.preserve_elements?.forEach(v=>{const el=[...document.querySelectorAll(`input[name="preserve9_${i}"]`)].find(x=>x.value===v);if(el)el.checked=true});
+    const mp=document.getElementById(`motionPrompt9_${i}`); if(mp)mp.value=saved.motion_prompt||'';
+    const rs=document.getElementById(`result9_${i}`); if(rs)rs.value=saved.first_result_status||'';
+    resultChanged9(i);
+    saved.revision_issues?.forEach(v=>{const el=[...document.querySelectorAll(`input[name="revisionIssue9_${i}"]`)].find(x=>x.value===v);if(el)el.checked=true});
+    const rp=document.getElementById(`revisionPrompt9_${i}`); if(rp)rp.value=saved.revision_prompt||'';
+    const fm=document.getElementById(`finalMedia9_${i}`); if(fm)fm.value=saved.final_media_type||'';
+    const cf=document.getElementById(`confirm9_${i}`); if(cf)cf.checked=!!saved.final_confirmed;
+  });
+}
+
+function restoreLesson9(){
+  const raw=localStorage.getItem('lesson9Data'); if(!raw)return;
+  const s=JSON.parse(raw),l5=getLesson5Data(); if(!l5)return;
+
+  (s.scene_priorities||[]).forEach((v,i)=>{
+    const el=document.getElementById(`priority9_${i}`); if(el)el.value=v||'';
+  });
+
+  const selectedSceneIds=new Set((s.motion_scenes||[]).map(x=>Number(x.scene_id)));
+  l5.storyboard.forEach((sc,i)=>{
+    const cb=document.getElementById(`selectMotion9_${i}`);
+    if(cb)cb.checked=selectedSceneIds.has(Number(sc.scene_id));
+  });
+
+  renderMotionAreas9();
+
+  (s.overall_checks||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="overall9"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+}
+
+
+const scriptUseOptions10=['그대로 사용','더 짧게 만들기','자연스럽게 수정하기','대사 없음'];
+const voiceApplyChecks10=[
+  '모든 필요한 장면에 음성을 적용했다',
+  '음성이 장면보다 길지 않다',
+  '발음을 확인했다',
+  '직업명 등 중요한 단어의 발음을 확인했다',
+  '장면 전환과 음성이 어색하게 겹치지 않는다'
+];
+const bgmMoods10=['미래적','전문적','밝음','차분함','역동적','따뜻함','긴장감','희망적'];
+const audioChecks10=[
+  'AI 비서 말이 명확히 들린다',
+  'BGM이 음성을 덮지 않는다',
+  '장면이 바뀔 때 음악이 갑자기 끊기지 않는다',
+  '시작과 끝이 어색하지 않다',
+  '영상 길이가 60~90초다',
+  '9:16 화면비가 유지된다',
+  '대사와 화면이 일치한다',
+  '발음 오류가 없다'
+];
+
+function getLesson9Data(){const raw=localStorage.getItem('lesson9Data');return raw?JSON.parse(raw):null}
+
+function initLesson10(){
+  const l5=getLesson5Data(), l9=getLesson9Data();
+  const intro=document.getElementById('lesson10Intro');
+  const sum=document.getElementById('lesson10Summary');
+  if(!l5||!l9){
+    intro.innerHTML='5차시와 9차시를 먼저 완료해주세요.';
+    sum.innerHTML='필요한 이전 데이터가 없습니다.';
+    return;
+  }
+
+  intro.innerHTML=`탐구 직업: <strong>${esc(l5.selected_job)}</strong> · ${l5.storyboard.length}장면 · 총 ${l5.total_duration}초`;
+  sum.innerHTML=`<strong>AI 비서 기본 말투</strong>: ${esc(l5.assistant_tone)}<br><br>`+
+    l5.storyboard.map(s=>`장면 ${s.scene_id} · ${s.duration}초 · ${esc(s.assistant_script||'대사 없음')}`).join('<br>');
+
+  document.getElementById('scriptReviewCards10').innerHTML=l5.storyboard.map((s,i)=>`
+    <div class="taskcard">
+      <div class="tasktitle">장면 ${s.scene_id} — ${esc(s.purpose)} · ${s.duration}초</div>
+      <div class="note">${esc(s.assistant_script||'대사 없음')}</div>
+      <select id="scriptUse10_${i}">
+        <option value="">대사 사용 방식을 선택하세요</option>
+        ${scriptUseOptions10.map(v=>`<option>${v}</option>`).join('')}
+      </select>
+    </div>`).join('');
+
+  document.getElementById('finalScripts10').innerHTML=l5.storyboard.map((s,i)=>`
+    <div class="taskcard">
+      <div class="tasktitle">장면 ${s.scene_id} — 최종 대사</div>
+      <textarea id="finalScript10_${i}" style="min-height:80px" placeholder="최종 AI 비서 대사"></textarea>
+      <select id="pronunciation10_${i}" style="margin-top:10px">
+        <option value="">발음 확인 상태</option>
+        <option>발음 정상</option>
+        <option>발음 수정 필요</option>
+        <option>대사 없음</option>
+      </select>
+    </div>`).join('');
+
+  document.getElementById('voiceApplyChecks10').innerHTML=voiceApplyChecks10.map(v=>
+    `<label style="display:block;width:100%"><input type="checkbox" name="voiceCheck10" value="${esc(v)}">${esc(v)}</label>`
+  ).join('');
+
+  document.getElementById('bgmMood10').innerHTML=bgmMoods10.map(v=>
+    `<label><input type="checkbox" name="bgmMood10" value="${esc(v)}" onchange="limitChecks(this,'bgmMood10',2)">${esc(v)}</label>`
+  ).join('');
+
+  document.getElementById('audioChecks10').innerHTML=audioChecks10.map(v=>
+    `<label style="display:block;width:100%"><input type="checkbox" name="audioCheck10" value="${esc(v)}">${esc(v)}</label>`
+  ).join('');
+
+  restoreLesson10();
+}
+
+function buildVoicePrompt10(){
+  const l5=getLesson5Data();
+  if(!l5){alert('5차시 데이터가 없습니다.');return}
+  const style=document.getElementById('voiceStyle10').value;
+  const speed=document.getElementById('voiceSpeed10').value;
+  const emotion=document.getElementById('voiceEmotion10').value;
+  if(!style||!speed||!emotion){alert('음성 스타일을 모두 선택해주세요.');return}
+
+  const scenes=l5.storyboard.map((s,i)=>({
+    scene_id:s.scene_id,
+    duration:s.duration,
+    current_script:s.assistant_script||'',
+    use:document.getElementById(`scriptUse10_${i}`).value
+  }));
+  if(scenes.some(x=>!x.use)){alert('모든 장면의 대사 사용 방식을 선택해주세요.');return}
+
+  document.getElementById('voicePrompt10').value=`2038년 미래 직업 영상에서 사용할 AI 비서 음성을 준비하고 있습니다.
+
+[직업]
+${l5.selected_job}
+
+[기존 AI 비서 말투]
+${l5.assistant_tone}
+
+[목소리 느낌]
+${style}
+
+[말하기 속도]
+${speed}
+
+[감정 표현]
+${emotion}
+
+다음은 장면별 시간, 현재 대사, 학생이 선택한 수정 방향입니다.
+
+${scenes.map(x=>`[장면 ${x.scene_id}]
+시간: ${x.duration}초
+현재 대사: ${x.current_script||'대사 없음'}
+수정 방향: ${x.use}`).join('\n\n')}
+
+각 장면의 시간 안에 자연스럽게 말할 수 있도록 AI 비서 대사를 검토해 주세요.
+
+조건:
+1. 기존 내용의 의미를 바꾸지 마세요.
+2. 새로운 직업 정보는 추가하지 마세요.
+3. 말로 들었을 때 자연스러운 문장으로 작성하세요.
+4. 장면 시간이 짧으면 대사를 줄이세요.
+5. 한 문장을 지나치게 길게 만들지 마세요.
+6. AI 비서가 모든 일을 담당하는 것처럼 표현하지 마세요.
+7. 대사가 필요 없는 장면은 '대사 없음'으로 표시해 주세요.
+8. 전체 영상은 60~90초입니다.
+9. 학생이 선택한 수정 방향을 우선 반영해 주세요.
+
+출력 형식:
+[장면 1]
+최종 대사:
+
+[장면 2]
+최종 대사:
+
+...`;
+}
+
+function buildSunoPrompt10(){
+  const l5=getLesson5Data();
+  if(!l5){alert('5차시 데이터가 없습니다.');return}
+  const moods=getChecks('bgmMood10');
+  const tempo=document.getElementById('bgmTempo10').value;
+  const style=document.getElementById('bgmStyle10').value;
+  if(!moods.length||!tempo||!style){alert('BGM 분위기, 템포, 음악 성격을 모두 선택해주세요.');return}
+
+  const moodMap={
+    '미래적':'futuristic','전문적':'professional','밝음':'bright','차분함':'calm',
+    '역동적':'dynamic','따뜻함':'warm','긴장감':'tense','희망적':'hopeful'
+  };
+  const tempoMap={'느림':'slow','중간':'medium','빠름':'fast'};
+  const styleMap={
+    '전자음 중심':'modern electronic synth',
+    '피아노·신스 조합':'soft piano and synth',
+    '현대적인 기업 영상 느낌':'modern corporate technology',
+    '다큐멘터리 느낌':'technology documentary',
+    '밝은 테크 영상 느낌':'bright technology video',
+    '영화적이지만 과하지 않게':'subtle cinematic technology'
+  };
+
+  document.getElementById('sunoPrompt10').value=`Create an instrumental background track for a short future-career educational video set in 2038.
+
+Career:
+${l5.selected_job}
+
+Mood:
+${moods.map(x=>moodMap[x]||x).join(', ')}
+
+Tempo:
+${tempoMap[tempo]||tempo}
+
+Style:
+${styleMap[style]||style}
+
+Purpose:
+Background music under an AI assistant voice-over.
+
+Requirements:
+- Instrumental only
+- No vocals
+- No lyrics
+- Clear but unobtrusive rhythm
+- Do not overpower narration
+- Modern and realistic, not overly sci-fi
+- Suitable for a ${l5.total_duration}-second educational video
+- Keep the beginning and ending easy to fade in and fade out`;
+}
+
+function collectLesson10(){
+  const l5=getLesson5Data(),l9=getLesson9Data();
+  if(!l5||!l9)return {error:true,msg:'5차시와 9차시 데이터가 필요합니다.'};
+
+  const voice={
+    voice_style:document.getElementById('voiceStyle10').value,
+    voice_speed:document.getElementById('voiceSpeed10').value,
+    voice_emotion:document.getElementById('voiceEmotion10').value
+  };
+  if(!voice.voice_style||!voice.voice_speed||!voice.voice_emotion)return {error:true,msg:'AI 비서 음성 스타일을 모두 선택해주세요.'};
+
+  const finalScripts=l5.storyboard.map((s,i)=>({
+    scene_id:s.scene_id,
+    assistant_script:document.getElementById(`finalScript10_${i}`).value.trim(),
+    pronunciation_status:document.getElementById(`pronunciation10_${i}`).value,
+    script_use:document.getElementById(`scriptUse10_${i}`).value
+  }));
+  if(finalScripts.some(x=>!x.script_use||!x.pronunciation_status))return {error:true,msg:'모든 장면의 대사 사용 방식과 발음 상태를 확인해주세요.'};
+  if(finalScripts.some(x=>x.script_use!=='대사 없음' && !x.assistant_script))return {error:true,msg:'대사가 필요한 장면의 최종 대사를 입력해주세요.'};
+
+  const moods=getChecks('bgmMood10');
+  const tempo=document.getElementById('bgmTempo10').value;
+  const style=document.getElementById('bgmStyle10').value;
+  const sunoPrompt=document.getElementById('sunoPrompt10').value.trim();
+  const candA=document.getElementById('bgmCandidateA10').value;
+  const candB=document.getElementById('bgmCandidateB10').value;
+  const selectedBgm=document.getElementById('selectedBgm10').value;
+  if(!moods.length||!tempo||!style||!sunoPrompt||!candA||!candB||!selectedBgm)return {error:true,msg:'BGM 계획과 후보 비교를 완료해주세요.'};
+
+  return {
+    error:false,l5,l9,voice,finalScripts,
+    bgm:{moods,tempo,style,instrumental:true,suno_prompt:sunoPrompt,candidate_a_status:candA,candidate_b_status:candB,selected_bgm:selectedBgm},
+    voiceChecks:getChecks('voiceCheck10'),
+    audioChecks:getChecks('audioCheck10')
+  };
+}
+
+function checkLesson10(){
+  const c=collectLesson10();
+  if(c.error){
+    document.getElementById('lesson10Checklist').innerHTML=`✗ ${esc(c.msg)}`;
+    document.getElementById('saveLesson10Btn').disabled=true;
+    return {ok:false};
+  }
+  const voicePrompt=!!document.getElementById('voicePrompt10').value.trim();
+  const checks=[
+    ['AI 비서 음성 스타일 설정',true],
+    ['음성용 대본 프롬프트 생성',voicePrompt],
+    ['최종 대사·발음 확인',c.finalScripts.every(x=>!!x.pronunciation_status)],
+    ['Google Vids 음성 적용 확인',c.voiceChecks.length===voiceApplyChecks10.length],
+    ['Suno BGM 계획·비교 완료',!!c.bgm.selected_bgm],
+    ['음량·전체 재생 확인',c.audioChecks.length===audioChecks10.length]
+  ];
+  const ok=checks.every(x=>x[1]);
+  document.getElementById('lesson10Checklist').innerHTML=checks.map(x=>`${x[1]?'✓':'✗'} ${x[0]}`).join('<br>');
+  document.getElementById('saveLesson10Btn').disabled=!ok;
+  return {ok,c};
+}
+
+function saveLesson10(){
+  const chk=checkLesson10();
+  if(!chk.ok){alert('10차시 완료 조건을 먼저 충족해주세요.');return}
+  const c=chk.c;
+  const data={
+    selected_job:c.l5.selected_job,
+    voice_plan:c.voice,
+    final_scripts:c.finalScripts.map(x=>({
+      scene_id:x.scene_id,
+      assistant_script:x.assistant_script,
+      voice_applied:true,
+      pronunciation_ok:x.pronunciation_status==='발음 정상'||x.pronunciation_status==='대사 없음',
+      pronunciation_status:x.pronunciation_status
+    })),
+    bgm_plan:c.bgm,
+    audio_check:{
+      voice_checks:c.voiceChecks,
+      audio_checks:c.audioChecks,
+      voice_clear:c.audioChecks.includes('AI 비서 말이 명확히 들린다'),
+      bgm_balance:c.audioChecks.includes('BGM이 음성을 덮지 않는다'),
+      transitions_ok:c.audioChecks.includes('장면이 바뀔 때 음악이 갑자기 끊기지 않는다')
+    },
+    audio_edit_completed:true
+  };
+  localStorage.setItem('lesson10Data',JSON.stringify(data));
+  const done=document.getElementById('lesson10Done');
+  done.style.display='block';
+  done.innerHTML=`<strong>10차시 완료</strong><br>AI 비서 음성 + BGM 적용 후보본 확정`;
+}
+
+function restoreLesson10(){
+  const raw=localStorage.getItem('lesson10Data'); if(!raw)return;
+  const s=JSON.parse(raw);
+  document.getElementById('voiceStyle10').value=s.voice_plan?.voice_style||'';
+  document.getElementById('voiceSpeed10').value=s.voice_plan?.voice_speed||'';
+  document.getElementById('voiceEmotion10').value=s.voice_plan?.voice_emotion||'';
+
+  (s.final_scripts||[]).forEach((x,i)=>{
+    const fs=document.getElementById(`finalScript10_${i}`); if(fs)fs.value=x.assistant_script||'';
+    const pr=document.getElementById(`pronunciation10_${i}`); if(pr)pr.value=x.pronunciation_status||'';
+  });
+
+  (s.bgm_plan?.moods||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="bgmMood10"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+  document.getElementById('bgmTempo10').value=s.bgm_plan?.tempo||'';
+  document.getElementById('bgmStyle10').value=s.bgm_plan?.style||'';
+  document.getElementById('sunoPrompt10').value=s.bgm_plan?.suno_prompt||'';
+  document.getElementById('bgmCandidateA10').value=s.bgm_plan?.candidate_a_status||'';
+  document.getElementById('bgmCandidateB10').value=s.bgm_plan?.candidate_b_status||'';
+  document.getElementById('selectedBgm10').value=s.bgm_plan?.selected_bgm||'';
+
+  (s.audio_check?.voice_checks||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="voiceCheck10"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+  (s.audio_check?.audio_checks||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="audioCheck10"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+}
+
+
+const formatChecks11=[
+  '9:16 세로형이다',
+  '영상 길이가 60~90초다',
+  '모든 장면이 존재한다',
+  '장면 순서가 정상이다',
+  '영상이 처음부터 끝까지 정상 재생된다'
+];
+
+const contentCheckItems11=[
+  '2038년이라는 설정이 드러난다',
+  '선택한 직업이 명확하다',
+  '핵심 업무 3개가 모두 나온다',
+  'AI의 역할이 표현된다',
+  '사람의 역할이 표현된다',
+  '사람과 AI의 협업 관계가 자연스럽다',
+  'AI가 모든 업무를 대신하는 것처럼 보이지 않는다',
+  '3~5차시에서 정한 내용과 모순되지 않는다'
+];
+
+const visualIssueOptions11=[
+  '이미지가 스토리보드와 다름',
+  '주인공 모습이 달라짐',
+  '직업이 잘 드러나지 않음',
+  'AI 표현이 이상함',
+  '움직임이 부자연스러움',
+  '인물 얼굴·신체가 변형됨',
+  '화면 텍스트 오류',
+  '화면 텍스트가 너무 많음',
+  '9:16에서 중요한 부분이 잘림',
+  '장면 시간이 너무 짧음',
+  '장면 시간이 너무 김',
+  '전환이 어색함',
+  '문제 없음'
+];
+
+const voiceIssueOptions11=[
+  'AI 비서 음성이 명확함',
+  '발음 오류 없음',
+  '대사가 화면 내용과 맞음',
+  '음성이 장면보다 길지 않음',
+  '말하기 속도가 자연스러움',
+  '장면 사이 음성이 어색하게 끊기지 않음'
+];
+
+const bgmIssueOptions11=[
+  '영상 분위기와 맞음',
+  'AI 비서 음성을 방해하지 않음',
+  '너무 크지 않음',
+  '시작이 자연스러움',
+  '끝이 자연스러움',
+  '갑자기 끊기는 부분 없음'
+];
+
+const finalQaItems11=[
+  '2038년 설정이 보인다',
+  '직업이 명확하다',
+  '핵심 업무 3개가 나온다',
+  'AI와 사람의 역할이 구분된다',
+  '영상 순서가 자연스럽다',
+  '이미지가 장면 내용과 맞는다',
+  '인물 일관성이 유지된다',
+  '움직임에 심각한 오류가 없다',
+  '화면 텍스트 오류가 없다',
+  'AI 비서 음성이 명확하다',
+  '발음 오류가 없다',
+  'BGM이 음성을 방해하지 않는다',
+  '9:16이다',
+  '60~90초다',
+  '처음부터 끝까지 정상 재생된다'
+];
+
+function getLesson10Data(){const raw=localStorage.getItem('lesson10Data');return raw?JSON.parse(raw):null}
+
+function initLesson11(){
+  const l5=getLesson5Data(), l10=getLesson10Data();
+  const intro=document.getElementById('lesson11Intro');
+  if(!l5||!l10){
+    intro.innerHTML='5차시와 10차시를 먼저 완료해주세요.';
+    return;
+  }
+
+  intro.innerHTML=`탐구 직업: <strong>${esc(l5.selected_job)}</strong> · ${l5.storyboard.length}장면 · 총 ${l5.total_duration}초 · 음성/BGM 적용 완료`;
+
+  document.getElementById('formatChecks11').innerHTML=formatChecks11.map(v=>
+    `<label style="display:block;width:100%"><input type="checkbox" name="format11" value="${esc(v)}">${esc(v)}</label>`
+  ).join('');
+
+  document.getElementById('contentChecks11').innerHTML=contentCheckItems11.map((v,i)=>`
+    <div class="schedule-row">
+      <strong>${esc(v)}</strong>
+      <select id="contentStatus11_${i}" onchange="refreshIssues11()">
+        <option value="">판단</option>
+        <option>문제 없음</option>
+        <option>수정 필요</option>
+      </select>
+      <select id="contentPriority11_${i}">
+        <option value="">우선순위</option>
+        <option>필수 수정</option>
+        <option>가능하면 수정</option>
+        <option>수정하지 않아도 됨</option>
+      </select>
+    </div>
+  `).join('');
+
+  document.getElementById('visualChecks11').innerHTML=l5.storyboard.map((s,i)=>`
+    <div class="taskcard">
+      <div class="tasktitle">장면 ${s.scene_id} — ${esc(s.purpose)}</div>
+      <div class="optionrow">${visualIssueOptions11.map(v=>`<label><input type="checkbox" name="visualIssue11_${i}" value="${esc(v)}" onchange="visualIssueChanged11(${i},this);refreshIssues11()">${esc(v)}</label>`).join('')}</div>
+      <div class="grid2" style="margin-top:12px">
+        <select id="visualPriority11_${i}">
+          <option value="">우선순위</option>
+          <option>필수 수정</option>
+          <option>가능하면 수정</option>
+          <option>수정하지 않아도 됨</option>
+        </select>
+        <select id="visualFix11_${i}">
+          <option value="">수정 방법</option>
+          <option>기존 이미지로 교체</option>
+          <option>7차시 수정 이미지 사용</option>
+          <option>AI 영상 대신 정지 이미지 사용</option>
+          <option>화면 텍스트 직접 수정</option>
+          <option>단순 전환으로 변경</option>
+          <option>장면 시간 조정</option>
+          <option>수정하지 않음</option>
+        </select>
+      </div>
+      <select id="visualStatus11_${i}" style="margin-top:10px">
+        <option value="">수정 상태</option>
+        <option>수정 전</option>
+        <option>수정 중</option>
+        <option>수정 완료</option>
+        <option>수정하지 않기로 결정</option>
+      </select>
+    </div>
+  `).join('');
+
+  document.getElementById('voiceChecks11').innerHTML=voiceIssueOptions11.map((v,i)=>`
+    <div class="schedule-row">
+      <strong>${esc(v)}</strong>
+      <select id="voiceStatus11_${i}" onchange="refreshIssues11()">
+        <option value="">판단</option>
+        <option>문제 없음</option>
+        <option>수정 필요</option>
+      </select>
+      <select id="voiceFix11_${i}">
+        <option value="">수정 방법</option>
+        <option>발음 수정</option>
+        <option>대사 축소</option>
+        <option>대사 다시 생성</option>
+        <option>음성 다시 적용</option>
+        <option>음성 위치 조정</option>
+        <option>수정하지 않음</option>
+      </select>
+    </div>
+  `).join('');
+
+  document.getElementById('bgmChecks11').innerHTML=bgmIssueOptions11.map((v,i)=>`
+    <div class="schedule-row">
+      <strong>${esc(v)}</strong>
+      <select id="bgmStatus11_${i}" onchange="refreshIssues11()">
+        <option value="">판단</option>
+        <option>문제 없음</option>
+        <option>수정 필요</option>
+      </select>
+      <select id="bgmFix11_${i}">
+        <option value="">수정 방법</option>
+        <option>BGM 음량 낮추기</option>
+        <option>시작 위치 수정</option>
+        <option>종료 위치 수정</option>
+        <option>Fade 적용</option>
+        <option>다른 BGM 사용</option>
+        <option>수정하지 않음</option>
+      </select>
+    </div>
+  `).join('');
+
+  document.getElementById('finalQa11').innerHTML=finalQaItems11.map(v=>
+    `<label style="display:block;width:100%"><input type="checkbox" name="finalQa11" value="${esc(v)}">${esc(v)}</label>`
+  ).join('');
+
+  document.getElementById('finalFilename11').value=`${sanitizeFileName(l5.selected_job)}_FutureCareer_Final_v1.mp4`;
+
+  restoreLesson11();
+  refreshIssues11();
+}
+
+function visualIssueChanged11(i,el){
+  const name=`visualIssue11_${i}`;
+  const checked=[...document.querySelectorAll(`input[name="${name}"]:checked`)];
+  if(el.value==='문제 없음' && el.checked){
+    checked.forEach(x=>{if(x!==el)x.checked=false});
+  }else if(el.checked){
+    const none=checked.find(x=>x.value==='문제 없음');
+    if(none)none.checked=false;
+  }
+}
+
+function collectIssues11(){
+  const l5=getLesson5Data();
+  const issues=[];
+
+  contentCheckItems11.forEach((item,i)=>{
+    const status=document.getElementById(`contentStatus11_${i}`)?.value||'';
+    const priority=document.getElementById(`contentPriority11_${i}`)?.value||'';
+    if(status==='수정 필요'){
+      issues.push({
+        category:'내용',
+        scene_id:null,
+        issue:item,
+        priority:priority||'우선순위 미지정',
+        correction_method:'내용 확인 후 최소 수정',
+        status:'수정 전'
+      });
+    }
+  });
+
+  (l5?.storyboard||[]).forEach((s,i)=>{
+    const selected=getChecks(`visualIssue11_${i}`).filter(x=>x!=='문제 없음');
+    const priority=document.getElementById(`visualPriority11_${i}`)?.value||'';
+    const fix=document.getElementById(`visualFix11_${i}`)?.value||'';
+    const status=document.getElementById(`visualStatus11_${i}`)?.value||'';
+    selected.forEach(issue=>{
+      issues.push({
+        category:'화면',
+        scene_id:s.scene_id,
+        issue,
+        priority:priority||'우선순위 미지정',
+        correction_method:fix||'수정 방법 미지정',
+        status:status||'수정 전'
+      });
+    });
+  });
+
+  voiceIssueOptions11.forEach((item,i)=>{
+    const status=document.getElementById(`voiceStatus11_${i}`)?.value||'';
+    const fix=document.getElementById(`voiceFix11_${i}`)?.value||'';
+    if(status==='수정 필요'){
+      issues.push({
+        category:'음성',
+        scene_id:null,
+        issue:item,
+        priority:'필수 수정',
+        correction_method:fix||'수정 방법 미지정',
+        status:'수정 전'
+      });
+    }
+  });
+
+  bgmIssueOptions11.forEach((item,i)=>{
+    const status=document.getElementById(`bgmStatus11_${i}`)?.value||'';
+    const fix=document.getElementById(`bgmFix11_${i}`)?.value||'';
+    if(status==='수정 필요'){
+      issues.push({
+        category:'BGM',
+        scene_id:null,
+        issue:item,
+        priority:'가능하면 수정',
+        correction_method:fix||'수정 방법 미지정',
+        status:'수정 전'
+      });
+    }
+  });
+
+  return issues;
+}
+
+function refreshIssues11(){
+  const issues=collectIssues11();
+  const box=document.getElementById('issueList11');
+  if(!box)return;
+  if(!issues.length){
+    box.innerHTML='<strong>현재 수정 필요 항목 없음</strong>';
+    return;
+  }
+  box.innerHTML=issues.map((x,i)=>
+    `<strong>${i+1}. [${esc(x.category)}]${x.scene_id?` 장면 ${x.scene_id}`:''}</strong><br>${esc(x.issue)}<br><span class="small">우선순위: ${esc(x.priority)} · 수정 방법: ${esc(x.correction_method)} · 상태: ${esc(x.status)}</span>`
+  ).join('<br><br>');
+}
+
+function buildFixPrompt11(){
+  const l5=getLesson5Data();
+  if(!l5){alert('5차시 데이터가 없습니다.');return}
+  const issues=collectIssues11();
+  if(!issues.length){alert('현재 수정 필요 항목이 없습니다.');return}
+
+  document.getElementById('fixPrompt11').value=`나는 2038년 미래 직업 영상을 최종 검수하고 있습니다.
+
+[직업]
+${l5.selected_job}
+
+[현재 발견한 문제]
+${issues.map((x,i)=>`${i+1}. [${x.category}]${x.scene_id?` 장면 ${x.scene_id}`:''} — ${x.issue}
+우선순위: ${x.priority}
+현재 선택한 수정 방법: ${x.correction_method}`).join('\n\n')}
+
+[기존 스토리보드]
+${l5.storyboard.map(s=>`장면 ${s.scene_id} — ${s.purpose}
+화면: ${s.screen_description}
+행동: ${s.character_action}
+대사: ${s.assistant_script}`).join('\n\n')}
+
+이 영상의 기존 기획을 변경하지 않고 문제를 최소한으로 수정하는 방법을 알려 주세요.
+
+조건:
+1. 새로운 장면을 추가하지 마세요.
+2. 직업과 2038년 설정을 바꾸지 마세요.
+3. AI와 사람의 역할을 바꾸지 마세요.
+4. 가능한 경우 재생성보다 기존 자료 수정 방법을 우선하세요.
+5. Google Vids에서 학생이 직접 수정할 수 있는 방법을 먼저 제안하세요.
+6. 가장 중요한 수정부터 알려 주세요.
+7. 불필요한 완성도 개선은 제안하지 마세요.
+
+출력 형식:
+[가장 먼저 수정할 것]
+-
+
+[수정 방법]
+1.
+2.
+3.
+
+[수정하지 않아도 되는 것]
+-`;
+}
+
+function collectLesson11(){
+  const l5=getLesson5Data(),l10=getLesson10Data();
+  if(!l5||!l10)return {error:true,msg:'5차시와 10차시 데이터가 필요합니다.'};
+
+  const formats=getChecks('format11');
+  const content=contentCheckItems11.map((item,i)=>({
+    item,
+    status:document.getElementById(`contentStatus11_${i}`)?.value||'',
+    priority:document.getElementById(`contentPriority11_${i}`)?.value||''
+  }));
+  const voice=voiceIssueOptions11.map((item,i)=>({
+    item,
+    status:document.getElementById(`voiceStatus11_${i}`)?.value||'',
+    correction_method:document.getElementById(`voiceFix11_${i}`)?.value||''
+  }));
+  const bgm=bgmIssueOptions11.map((item,i)=>({
+    item,
+    status:document.getElementById(`bgmStatus11_${i}`)?.value||'',
+    correction_method:document.getElementById(`bgmFix11_${i}`)?.value||''
+  }));
+  const playback=document.getElementById('playback11').value;
+  const finalQa=getChecks('finalQa11');
+  const filename=document.getElementById('finalFilename11').value.trim();
+  const issues=collectIssues11();
+
+  return {error:false,l5,l10,formats,content,voice,bgm,playback,finalQa,filename,issues};
+}
+
+function checkLesson11(){
+  const c=collectLesson11();
+  if(c.error){
+    document.getElementById('lesson11Checklist').innerHTML=`✗ ${esc(c.msg)}`;
+    document.getElementById('saveLesson11Btn').disabled=true;
+    return {ok:false};
+  }
+
+  const contentDone=c.content.every(x=>x.status && (x.status==='문제 없음' || x.priority));
+  const voiceDone=c.voice.every(x=>x.status && (x.status==='문제 없음' || x.correction_method));
+  const bgmDone=c.bgm.every(x=>x.status && (x.status==='문제 없음' || x.correction_method));
+
+  const requiredIssuesDone=c.issues
+    .filter(x=>x.priority==='필수 수정')
+    .every(x=>x.status==='수정 완료' || x.category==='내용' || x.category==='음성');
+
+  const checks=[
+    ['기본 규격 확인',c.formats.length===formatChecks11.length],
+    ['내용 검수 완료',contentDone],
+    ['화면/음성/BGM 검수 완료',voiceDone&&bgmDone],
+    ['필수 수정 항목 처리',requiredIssuesDone],
+    ['수정 후 전체 재생',c.playback==='처음부터 끝까지 문제 없이 재생됨'],
+    ['최종 QA 완료',c.finalQa.length===finalQaItems11.length],
+    ['최종 파일명',!!c.filename]
+  ];
+
+  const ok=checks.every(x=>x[1]);
+  document.getElementById('lesson11Checklist').innerHTML=checks.map(x=>`${x[1]?'✓':'✗'} ${x[0]}`).join('<br>');
+  document.getElementById('saveLesson11Btn').disabled=!ok;
+  return {ok,c};
+}
+
+function saveLesson11(){
+  const chk=checkLesson11();
+  if(!chk.ok){alert('11차시 완료 조건을 먼저 충족해주세요.');return}
+  const c=chk.c;
+  const data={
+    selected_job:c.l5.selected_job,
+    qa_results:{
+      format_checks:c.formats,
+      content_checks:c.content,
+      voice_checks:c.voice,
+      bgm_checks:c.bgm,
+      final_qa:c.finalQa
+    },
+    issues:c.issues.map((x,i)=>({issue_id:i+1,...x})),
+    final_review:{
+      full_playback_completed:true,
+      final_qa_completed:true,
+      final_video_confirmed:true
+    },
+    final_video:{
+      version:'1.0',
+      filename:c.filename
+    }
+  };
+  localStorage.setItem('lesson11Data',JSON.stringify(data));
+  const done=document.getElementById('lesson11Done');
+  done.style.display='block';
+  done.innerHTML=`<strong>11차시 완료</strong><br>Final v1.0 확정 · ${esc(c.filename)}`;
+}
+
+function restoreLesson11(){
+  const raw=localStorage.getItem('lesson11Data'); if(!raw)return;
+  const s=JSON.parse(raw);
+
+  (s.qa_results?.format_checks||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="format11"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+
+  (s.qa_results?.content_checks||[]).forEach((x,i)=>{
+    const st=document.getElementById(`contentStatus11_${i}`); if(st)st.value=x.status||'';
+    const pr=document.getElementById(`contentPriority11_${i}`); if(pr)pr.value=x.priority||'';
+  });
+
+  (s.qa_results?.voice_checks||[]).forEach((x,i)=>{
+    const st=document.getElementById(`voiceStatus11_${i}`); if(st)st.value=x.status||'';
+    const fx=document.getElementById(`voiceFix11_${i}`); if(fx)fx.value=x.correction_method||'';
+  });
+
+  (s.qa_results?.bgm_checks||[]).forEach((x,i)=>{
+    const st=document.getElementById(`bgmStatus11_${i}`); if(st)st.value=x.status||'';
+    const fx=document.getElementById(`bgmFix11_${i}`); if(fx)fx.value=x.correction_method||'';
+  });
+
+  (s.qa_results?.final_qa||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="finalQa11"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+
+  document.getElementById('playback11').value='처음부터 끝까지 문제 없이 재생됨';
+  document.getElementById('finalFilename11').value=s.final_video?.filename||'';
+  refreshIssues11();
+}
+
+
+const submissionItems12=[
+  '최종 영상 파일명을 확인했다',
+  '영상이 정상 재생된다',
+  'Final v1.0 버전이다',
+  '강사 공유폴더에 제출했다'
+];
+
+const collaborationOptions12=[
+  'AI 결과를 사람이 확인하는 것',
+  '사람이 목표를 정하는 것',
+  '상황에 따라 사람이 최종 판단하는 것',
+  'AI와 사람이 잘하는 일을 나누는 것',
+  '사람을 이해하는 일은 사람이 담당하는 것'
+];
+
+const studentDecisionOptions12=[
+  '탐구할 직업','핵심 업무','2038년 미래 모습','AI와 사람의 역할',
+  '하루 일정','영상 장면','사용할 이미지','이미지 수정',
+  '움직일 장면','AI 비서 대사','BGM','최종 영상 수정'
+];
+
+const selfAssessmentItems12=[
+  ['career_change_understanding','AI와 직업 변화'],
+  ['human_ai_roles','AI와 사람 역할 구분'],
+  ['ai_tool_use','AI 도구 활용'],
+  ['video_creation','영상 제작'],
+  ['ai_result_evaluation','AI 결과 검토·수정']
+];
+
+const assessmentOptions12=['잘 설명할 수 있다','어느 정도 설명할 수 있다','아직 어렵다'];
+
+const activityOptions12=[
+  '미래 직업 상상','Gemini 활용','이미지 만들기','이미지 수정',
+  'AI 영상 만들기','영상 편집','AI 음성','Suno BGM','발표'
+];
+
+const improvementOptions12=[
+  '질문·프롬프트 만들기','AI 결과 판단','이미지 제작','영상 제작',
+  '편집','스토리 만들기','발표','기타'
+];
+
+const learningCheckItems12=[
+  'AI가 직업의 업무를 변화시킬 수 있다는 것을 알았다',
+  'AI가 만든 결과가 항상 정답은 아니라는 것을 알았다',
+  'AI가 잘하는 일과 사람이 중요한 일을 구분할 수 있다',
+  'AI 결과를 직접 선택하고 수정했다',
+  'AI를 활용해 하나의 영상 프로젝트를 완성했다',
+  '내가 만든 결과를 다른 사람에게 설명했다'
+];
+
+function getLesson11Data(){const raw=localStorage.getItem('lesson11Data');return raw?JSON.parse(raw):null}
+
+function initLesson12(){
+  const l2=getLesson2Data(),l3=getLesson3Data(),l4=getLesson4Data(),l11=getLesson11Data();
+  const intro=document.getElementById('lesson12Intro');
+  const summary=document.getElementById('projectSummary12');
+
+  if(!l2||!l3||!l4||!l11){
+    intro.innerHTML='2차시, 3차시, 4차시, 11차시를 먼저 완료해주세요.';
+    summary.innerHTML='필요한 이전 데이터가 없습니다.';
+    return;
+  }
+
+  intro.innerHTML=`탐구 직업: <strong>${esc(l11.selected_job)}</strong> · 최종 영상: <strong>${esc(l11.final_video.filename)}</strong>`;
+
+  summary.innerHTML=`
+    <strong>직업</strong>: ${esc(l11.selected_job)}<br>
+    <strong>최종 영상</strong>: ${esc(l11.final_video.filename)}<br>
+    <strong>영상 규격</strong>: 9:16 / 60~90초 / Final v${esc(l11.final_video.version)}<br><br>
+    <strong>현재 핵심 업무 3개</strong><br>
+    ${l2.current_core_tasks.map((x,i)=>`${i+1}. ${esc(x.task_name)}`).join('<br>')}<br><br>
+    <strong>2038년 AI·사람 역할</strong><br>
+    ${l3.future_tasks.map((x,i)=>`${i+1}. ${esc(x.current_task)} · ${esc(x.role_type)}`).join('<br>')}<br><br>
+    <strong>2038년 하루 업무</strong><br>
+    ${l4.daily_schedule.map(x=>`${esc(x.time)} · ${esc(x.task)}`).join('<br>')}
+  `;
+
+  document.getElementById('submissionChecks12').innerHTML=submissionItems12.map(v=>
+    `<label style="display:block;width:100%"><input type="checkbox" name="submission12" value="${esc(v)}">${esc(v)}</label>`
+  ).join('');
+
+  const main=document.getElementById('mainChange12');
+  main.innerHTML='<option value="">업무를 선택하세요</option>'+
+    l3.future_tasks.map((x,i)=>`<option value="${i}">${esc(x.current_task)} — ${esc(x.change_level)}</option>`).join('');
+
+  document.getElementById('studentDecisions12').innerHTML=studentDecisionOptions12.map(v=>
+    `<label><input type="checkbox" name="decision12" value="${esc(v)}" onchange="limitChecks(this,'decision12',3)">${esc(v)}</label>`
+  ).join('');
+
+  document.getElementById('selfAssessment12').innerHTML=selfAssessmentItems12.map(([key,label])=>`
+    <div class="schedule-row">
+      <strong>${esc(label)}</strong>
+      <select id="self12_${key}">
+        <option value="">자기평가</option>
+        ${assessmentOptions12.map(v=>`<option>${v}</option>`).join('')}
+      </select>
+      <span></span>
+    </div>
+  `).join('');
+
+  const enjoyable=document.getElementById('mostEnjoyable12');
+  const difficult=document.getElementById('mostDifficult12');
+  enjoyable.innerHTML='<option value="">가장 재미있었던 활동</option>'+activityOptions12.map(v=>`<option>${v}</option>`).join('');
+  difficult.innerHTML='<option value="">가장 어려웠던 활동</option>'+activityOptions12.map(v=>`<option>${v}</option>`).join('');
+  document.getElementById('nextImprovement12').innerHTML='<option value="">다음 프로젝트에서 더 잘해보고 싶은 것</option>'+improvementOptions12.map(v=>`<option>${v}</option>`).join('');
+
+  document.getElementById('learningChecks12').innerHTML=learningCheckItems12.map(v=>
+    `<label style="display:block;width:100%"><input type="checkbox" name="learning12" value="${esc(v)}">${esc(v)}</label>`
+  ).join('');
+
+  restoreLesson12();
+  mainChangeChanged12();
+}
+
+function mainChangeChanged12(){
+  const l3=getLesson3Data();
+  const idx=Number(document.getElementById('mainChange12')?.value);
+  const aiBox=document.getElementById('aiRoles12');
+  const humanBox=document.getElementById('humanRoles12');
+  if(!l3 || Number.isNaN(idx) || !l3.future_tasks[idx]){
+    aiBox.innerHTML='<span class="small">먼저 업무를 선택하세요.</span>';
+    humanBox.innerHTML='<span class="small">먼저 업무를 선택하세요.</span>';
+    return;
+  }
+  const task=l3.future_tasks[idx];
+  aiBox.innerHTML=(task.ai_roles||[]).map(v=>
+    `<label><input type="checkbox" name="aiRole12" value="${esc(v)}" onchange="limitChecks(this,'aiRole12',2)">${esc(v)}</label>`
+  ).join('');
+  humanBox.innerHTML=(task.human_roles||[]).map(v=>
+    `<label><input type="checkbox" name="humanRole12" value="${esc(v)}" onchange="limitChecks(this,'humanRole12',2)">${esc(v)}</label>`
+  ).join('');
+
+  restorePresentationRoleSelections12();
+}
+
+function collectPresentation12(){
+  const l3=getLesson3Data(),l11=getLesson11Data();
+  if(!l3||!l11)return {error:true,msg:'이전 데이터가 없습니다.'};
+
+  const rawIdx=document.getElementById('mainChange12').value;
+  if(rawIdx==='')return {error:true,msg:'가장 크게 달라진 업무를 선택해주세요.'};
+  const idx=Number(rawIdx);
+  const task=l3.future_tasks[idx];
+  const aiRoles=getChecks('aiRole12');
+  const humanRoles=getChecks('humanRole12');
+  const collaboration=document.getElementById('collaborationPoint12').value;
+  const decisions=getChecks('decision12');
+
+  if(!aiRoles.length)return {error:true,msg:'AI 역할을 1개 이상 선택해주세요.'};
+  if(!humanRoles.length)return {error:true,msg:'사람 역할을 1개 이상 선택해주세요.'};
+  if(!collaboration)return {error:true,msg:'AI와 사람이 함께 일할 때 중요한 점을 선택해주세요.'};
+  if(!decisions.length)return {error:true,msg:'직접 결정하거나 수정한 부분을 선택해주세요.'};
+
+  return {
+    error:false,
+    selected_job:l11.selected_job,
+    main_future_change:task.current_task,
+    change_level:task.change_level,
+    ai_roles:aiRoles,
+    human_roles:humanRoles,
+    collaboration_point:collaboration,
+    student_decisions:decisions
+  };
+}
+
+function buildPresentationCard12(){
+  const p=collectPresentation12();
+  if(p.error){alert(p.msg);return}
+  document.getElementById('presentationCard12').innerHTML=`
+    <h3 style="margin-top:0">나의 미래 직업 — ${esc(p.selected_job)}</h3>
+    <strong>2038년 가장 크게 달라진 업무</strong><br>
+    ${esc(p.main_future_change)} · ${esc(p.change_level)}<br><br>
+    <strong>AI의 역할</strong><br>
+    ${esc(p.ai_roles.join(' / '))}<br><br>
+    <strong>사람의 역할</strong><br>
+    ${esc(p.human_roles.join(' / '))}<br><br>
+    <strong>AI와 사람이 함께 일할 때 중요한 점</strong><br>
+    ${esc(p.collaboration_point)}<br><br>
+    <strong>내가 직접 결정하거나 수정한 부분</strong><br>
+    ${esc(p.student_decisions.join(' / '))}
+  `;
+}
+
+function collectLesson12(){
+  const l11=getLesson11Data();
+  if(!l11)return {error:true,msg:'11차시 데이터가 없습니다.'};
+
+  const presentation=collectPresentation12();
+  if(presentation.error)return presentation;
+
+  const submission=getChecks('submission12');
+  const peer={
+    impressive_element:document.getElementById('peerElement12').value,
+    reason:document.getElementById('peerReason12').value.trim()
+  };
+
+  const selfAssessment={};
+  for(const [key] of selfAssessmentItems12){
+    selfAssessment[key]=document.getElementById(`self12_${key}`).value;
+  }
+
+  const reflection={
+    most_enjoyable:document.getElementById('mostEnjoyable12').value,
+    most_difficult:document.getElementById('mostDifficult12').value,
+    next_improvement:document.getElementById('nextImprovement12').value
+  };
+
+  const learning=getChecks('learning12');
+
+  return {
+    error:false,
+    l11,
+    presentation,
+    submission,
+    peer,
+    selfAssessment,
+    reflection,
+    learning
+  };
+}
+
+function checkLesson12(){
+  const c=collectLesson12();
+  if(c.error){
+    document.getElementById('lesson12Checklist').innerHTML=`✗ ${esc(c.msg)}`;
+    document.getElementById('saveLesson12Btn').disabled=true;
+    return {ok:false};
+  }
+
+  const selfDone=Object.values(c.selfAssessment).every(Boolean);
+  const reflectionDone=Object.values(c.reflection).every(Boolean);
+  const checks=[
+    ['최종 영상 제출 확인',c.submission.length===submissionItems12.length],
+    ['발표 카드 내용 선택',!c.presentation.error],
+    ['다른 학생 발표 관찰',!!c.peer.impressive_element],
+    ['자기평가 완료',selfDone],
+    ['프로젝트 회고 완료',reflectionDone],
+    ['최종 학습 확인',c.learning.length===learningCheckItems12.length]
+  ];
+  const ok=checks.every(x=>x[1]);
+
+  document.getElementById('lesson12Checklist').innerHTML=checks.map(x=>`${x[1]?'✓':'✗'} ${x[0]}`).join('<br>');
+  document.getElementById('saveLesson12Btn').disabled=!ok;
+  return {ok,c};
+}
+
+function saveLesson12(){
+  const chk=checkLesson12();
+  if(!chk.ok){alert('12차시 완료 조건을 먼저 충족해주세요.');return}
+  const c=chk.c;
+
+  const data={
+    selected_job:c.presentation.selected_job,
+    presentation:{
+      selected_job:c.presentation.selected_job,
+      main_future_change:c.presentation.main_future_change,
+      change_level:c.presentation.change_level,
+      ai_roles:c.presentation.ai_roles,
+      human_roles:c.presentation.human_roles,
+      collaboration_point:c.presentation.collaboration_point,
+      student_decisions:c.presentation.student_decisions
+    },
+    final_submission:{
+      filename:c.l11.final_video.filename,
+      submitted:true,
+      checks:c.submission
+    },
+    peer_reflection:c.peer,
+    self_assessment:c.selfAssessment,
+    reflection:c.reflection,
+    learning_checks:c.learning,
+    course_completion:true
+  };
+
+  localStorage.setItem('lesson12Data',JSON.stringify(data));
+
+  const done=document.getElementById('lesson12Done');
+  done.style.display='block';
+  done.innerHTML=`
+    <strong>미래 직업 영상 제작 프로젝트 완료</strong><br><br>
+    탐구 직업: <strong>${esc(data.selected_job)}</strong><br>
+    최종 영상: ${esc(data.final_submission.filename)}<br>
+    2038년 핵심 변화: ${esc(data.presentation.main_future_change)}<br><br>
+    1~12차시 프로젝트를 모두 완료했습니다.
+  `;
+}
+
+function restorePresentationRoleSelections12(){
+  const raw=localStorage.getItem('lesson12Data'); if(!raw)return;
+  const s=JSON.parse(raw);
+  (s.presentation?.ai_roles||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="aiRole12"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+  (s.presentation?.human_roles||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="humanRole12"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+}
+
+function restoreLesson12(){
+  const raw=localStorage.getItem('lesson12Data'); if(!raw)return;
+  const s=JSON.parse(raw),l3=getLesson3Data();
+
+  (s.final_submission?.checks||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="submission12"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+
+  if(l3 && s.presentation?.main_future_change){
+    const idx=l3.future_tasks.findIndex(x=>x.current_task===s.presentation.main_future_change);
+    if(idx>=0)document.getElementById('mainChange12').value=String(idx);
+  }
+
+  document.getElementById('collaborationPoint12').value=s.presentation?.collaboration_point||'';
+
+  (s.presentation?.student_decisions||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="decision12"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+
+  document.getElementById('peerElement12').value=s.peer_reflection?.impressive_element||'';
+  document.getElementById('peerReason12').value=s.peer_reflection?.reason||'';
+
+  for(const [key] of selfAssessmentItems12){
+    const el=document.getElementById(`self12_${key}`);
+    if(el)el.value=s.self_assessment?.[key]||'';
+  }
+
+  document.getElementById('mostEnjoyable12').value=s.reflection?.most_enjoyable||'';
+  document.getElementById('mostDifficult12').value=s.reflection?.most_difficult||'';
+  document.getElementById('nextImprovement12').value=s.reflection?.next_improvement||'';
+
+  (s.learning_checks||[]).forEach(v=>{
+    const el=[...document.querySelectorAll('input[name="learning12"]')].find(x=>x.value===v);
+    if(el)el.checked=true;
+  });
+
+  mainChangeChanged12();
+  buildPresentationCard12();
+}
+
+</script>
+</body>
+</html>

@@ -96,6 +96,11 @@ def ai_prompts(request):
     return render(request, 'arcade/ai_prompts.html')
 
 
+def future_career_video(request):
+    """AI 미래직업영상 만들기 Web Activity (12차시, 독립형 페이지)"""
+    return render(request, 'arcade/tools/future_career_video.html')
+
+
 def ai_favorites(request):
     return render(request, 'arcade/ai_favorites.html')
 

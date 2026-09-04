@@ -179,40 +179,32 @@
         border-color: #ef4444;
     }
 
-    .national-ai-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 14px;
-    }
-    .nai-item {
+    .national-ai-table-wrap {
         background: rgba(255,255,255,0.03);
         border: 1px solid rgba(255,255,255,0.07);
-        border-radius: 14px;
-        padding: 16px 18px;
-        text-decoration: none;
-        color: inherit;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        transition: all 0.2s;
+        border-radius: 16px;
+        overflow-x: auto;
     }
-    .nai-item:hover {
-        background: rgba(255,255,255,0.06);
-        border-color: rgba(99,102,241,0.35);
-        transform: translateY(-2px);
+    .national-ai-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 760px; }
+    .national-ai-table th {
+        padding: 14px 16px; background: rgba(255,255,255,0.03); color: var(--text-muted);
+        font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-    .nai-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .nai-status { font-size:11px; font-weight:800; padding:3px 10px; border-radius:999px; white-space:nowrap; }
+    .national-ai-table td { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 13px; vertical-align: top; }
+    .national-ai-table tr:hover td { background: rgba(255,255,255,0.025); }
+    .nai-status { font-size:11px; font-weight:800; padding:3px 10px; border-radius:999px; white-space:nowrap; display:inline-block; }
     .nai-status.st-접수중 { background:rgba(0,255,180,0.15); color:#00ffb4; }
     .nai-status.st-예선 { background:rgba(59,130,246,0.15); color:#60a5fa; }
     .nai-status.st-본선 { background:rgba(168,85,247,0.15); color:#c084fc; }
     .nai-status.st-결선 { background:rgba(245,158,11,0.15); color:#fbbf24; }
     .nai-status.st-준비중 { background:rgba(255,255,255,0.08); color:var(--text-muted); }
-    .nai-type { font-size:11px; font-weight:700; color:#93c5fd; }
-    .nai-name { font-size:14.5px; font-weight:800; color:#fff; line-height:1.4; }
-    .nai-meta { font-size:12.5px; color:rgba(255,255,255,0.6); line-height:1.5; white-space:pre-line; }
-    .nai-target { font-size:12px; color:rgba(255,255,255,0.45); }
-    .nai-prize { font-size:12.5px; color:#fbbf24; font-weight:700; white-space:pre-line; }
+    .nai-type { font-size:11px; font-weight:700; color:#93c5fd; margin-top:3px; display:block; }
+    .nai-name-cell a { color:#fff; font-weight:700; text-decoration:none; }
+    .nai-name-cell a:hover { color:#93c5fd; text-decoration:underline; }
+    .nai-target-cell { color:rgba(255,255,255,0.55); white-space:nowrap; }
+    .nai-schedule-cell { color:rgba(255,255,255,0.7); white-space:pre-line; min-width:200px; }
+    .nai-prize-cell { color:#fbbf24; font-weight:700; white-space:pre-line; }
 </style>
 {% endblock %}
 
@@ -355,23 +347,34 @@ document.addEventListener('DOMContentLoaded', function() {
             nationalAiList.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-muted);">표시할 대회 일정이 없습니다.</div>';
             return;
         }
-        nationalAiList.innerHTML = items.map(function(item) {
+        const rows = items.map(function(item) {
             const status = item.displayStatus || '';
             const type = item.displayType ? `<span class="nai-type"># ${escapeHtml(item.displayType)}</span>` : '';
-            const prize = item.displayPrize ? `<div class="nai-prize">${escapeHtml(item.displayPrize)}</div>` : '';
             return `
-                <a class="nai-item" href="${escapeHtml(item.detailUrl || '#')}" target="_blank" rel="noopener noreferrer">
-                    <div class="nai-top">
-                        <span class="nai-status st-${escapeHtml(status)}">${escapeHtml(status)}</span>
+                <tr>
+                    <td><span class="nai-status st-${escapeHtml(status)}">${escapeHtml(status)}</span></td>
+                    <td class="nai-name-cell">
+                        <a href="${escapeHtml(item.detailUrl || '#')}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.name)}</a>
                         ${type}
-                    </div>
-                    <div class="nai-name">${escapeHtml(item.name)}</div>
-                    <div class="nai-target">👥 ${escapeHtml(item.target)}</div>
-                    <div class="nai-meta">📅 ${escapeHtml(item.displaySchedule)}</div>
-                    ${prize}
-                </a>
+                    </td>
+                    <td class="nai-target-cell">${escapeHtml(item.target)}</td>
+                    <td class="nai-schedule-cell">${escapeHtml(item.displaySchedule)}</td>
+                    <td class="nai-prize-cell">${escapeHtml(item.displayPrize) || '-'}</td>
+                </tr>
             `;
         }).join('');
+        nationalAiList.innerHTML = `
+            <div class="national-ai-table-wrap">
+                <table class="national-ai-table">
+                    <thead>
+                        <tr>
+                            <th>상태</th><th>대회명</th><th>대상</th><th>일정</th><th>상금/혜택</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        `;
     }
 
     if (btnNationalAi) {

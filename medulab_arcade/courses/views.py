@@ -2012,6 +2012,8 @@ def item_page(request, item_id):
         template_name = "learning_program/item_page_olympiad.html"
     elif is_ppt_exam:
         template_name = "learning_program/item_page_ppt.html"
+    elif "aice" in p_name or "코디니" in p_name or "codiny" in p_name:
+        template_name = "learning_program/item_page_aice.html"
     elif "python" in p_name or "파이썬" in p_name or "python" in p_type_name or "파이썬" in p_type_name:
         template_name = "learning_program/item_page_python.html"
     elif item.answer_code or item.expected_output:

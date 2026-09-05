@@ -1,0 +1,238 @@
+{% extends "arcade/base.html" %}
+
+{% block title %}{{ item.title }} - {{ program.name }} - MEDULAB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .aice-wrap {
+        display: flex;
+        height: calc(100vh - 72px);
+        min-height: 560px;
+        background: #0b0e14;
+    }
+    .aice-ide {
+        flex: 1;
+        min-width: 0;
+        position: relative;
+        background: #000;
+    }
+    .aice-ide iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block;
+    }
+
+    .aice-panel {
+        width: 380px;
+        flex-shrink: 0;
+        background: var(--bg-card);
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        transition: width 0.25s ease, min-width 0.25s ease;
+        overflow: hidden;
+        position: relative;
+    }
+    .aice-panel.collapsed {
+        width: 0;
+        min-width: 0;
+    }
+
+    .aice-toggle {
+        position: absolute;
+        top: 16px;
+        left: -34px;
+        width: 34px;
+        height: 40px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-right: none;
+        border-radius: 10px 0 0 10px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 16px;
+        z-index: 5;
+    }
+    .aice-toggle:hover { color: #fff; background: rgba(255,255,255,0.06); }
+
+    .aice-panel-inner {
+        width: 380px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .aice-panel-header {
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--border);
+    }
+    .aice-panel-breadcrumb {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .aice-panel-breadcrumb a {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 12.5px;
+    }
+    .aice-panel-chapter {
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+    .aice-panel-title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .aice-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(0,255,180,0.12);
+        color: var(--accent-green);
+        white-space: nowrap;
+    }
+    .aice-panel-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 1.4;
+    }
+
+    .aice-panel-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 22px;
+        line-height: 1.8;
+        font-size: 14.5px;
+        color: var(--text-secondary);
+    }
+    .aice-panel-content h2, .aice-panel-content h3 { color: #fff; margin: 20px 0 10px; }
+    .aice-panel-content p { margin-bottom: 14px; }
+    .aice-panel-content img { max-width: 100%; border-radius: 10px; margin: 12px 0; }
+    .aice-panel-empty {
+        color: var(--text-muted);
+        font-size: 13.5px;
+        text-align: center;
+        padding: 40px 10px;
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+    }
+
+    .aice-panel-footer {
+        padding: 16px 22px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 8px;
+    }
+    .aice-btn-nav {
+        flex: 1;
+        text-align: center;
+        padding: 11px 14px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 13px;
+        border: 1px solid var(--border);
+        color: #fff;
+        transition: all 0.2s;
+    }
+    .aice-btn-nav:hover { background: rgba(255,255,255,0.05); }
+    .aice-btn-nav.primary {
+        background: var(--accent-green);
+        color: var(--bg-primary);
+        border: none;
+    }
+    .aice-staff-actions {
+        display: flex;
+        gap: 8px;
+        padding: 0 22px 14px;
+    }
+    .aice-staff-actions a {
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        text-decoration: none;
+        border: 1px solid var(--border);
+    }
+
+    @media (max-width: 900px) {
+        .aice-wrap { flex-direction: column; height: auto; }
+        .aice-ide { height: 60vh; }
+        .aice-panel, .aice-panel.collapsed { width: 100%; min-width: 0; }
+        .aice-panel-inner { width: 100%; }
+        .aice-toggle { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="aice-wrap">
+    <div class="aice-ide">
+        <iframe src="https://aicodiny.com/codex" title="AI Codiny" allow="microphone; camera"></iframe>
+    </div>
+
+    <div class="aice-panel" id="aicePanel">
+        <button type="button" class="aice-toggle" id="aiceToggle">›</button>
+        <div class="aice-panel-inner">
+            <div class="aice-panel-header">
+                <div class="aice-panel-breadcrumb">
+                    <a href="{% url 'chapter_detail' item.chapter.id %}">← 목록으로</a>
+                    <span class="aice-panel-chapter">{{ item.chapter.title }}</span>
+                </div>
+                <div class="aice-panel-title-row">
+                    <span class="aice-badge">{{ item.get_item_type_display }}</span>
+                </div>
+                <div class="aice-panel-title">{{ item.title }}</div>
+            </div>
+
+            <div class="aice-panel-content">
+                {% if item.explain_html %}
+                    {{ item.explain_html|safe }}
+                {% else %}
+                    <div class="aice-panel-empty">아직 등록된 설명이 없습니다.<br>왼쪽 AI Codiny 화면으로 직접 실습해 보세요.</div>
+                {% endif %}
+            </div>
+
+            {% if user.is_staff %}
+            <div class="aice-staff-actions">
+                <a href="{% url 'item_edit' item.id %}" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6;">✏️ 수정</a>
+                <a href="{% url 'item_delete' item.id %}" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #ef4444;">🗑️ 삭제</a>
+            </div>
+            {% endif %}
+
+            <div class="aice-panel-footer">
+                {% if prev_item %}
+                    <a href="{% url 'item_page' prev_item.id %}" class="aice-btn-nav">← 이전</a>
+                {% endif %}
+                {% if next_item %}
+                    <a href="{% url 'item_page' next_item.id %}" class="aice-btn-nav primary">다음 →</a>
+                {% else %}
+                    <a href="{% url 'chapter_detail' item.chapter.id %}" class="aice-btn-nav primary">학습 완료</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var panel = document.getElementById('aicePanel');
+    var toggle = document.getElementById('aiceToggle');
+    if (!panel || !toggle) return;
+    toggle.addEventListener('click', function() {
+        var collapsed = panel.classList.toggle('collapsed');
+        toggle.textContent = collapsed ? '‹' : '›';
+    });
+})();
+</script>
+{% endblock %}

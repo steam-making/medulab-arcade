@@ -447,6 +447,64 @@ def translate_api(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'invalid method'}, status=405)
 
+def _ai_generate_typing_items(title, c_type, count):
+    """주제(title)에 실제로 맞는 타자연습 콘텐츠를 Gemini로 생성. 실패하면 None."""
+    import re
+    from django.conf import settings
+
+    keys = []
+    k = getattr(settings, 'GEMINI_API_KEY', '').strip()
+    if k:
+        keys.append(k)
+    for i in range(2, 21):
+        k = getattr(settings, f'GEMINI_API_KEY_{i}', '').strip()
+        if k:
+            keys.append(k)
+    if not keys:
+        return None
+
+    try:
+        import google.genai as genai
+    except ImportError:
+        return None
+
+    type_guide = {
+        'word': f'"{title}"과 직접 관련된 실제 명칭·단어 {count}개',
+        'short': f'"{title}"에 대한 한 문장짜리 짧은 문장 {count}개',
+        'long': f'"{title}"에 대한 3~4문장짜리 문단 {count}개',
+    }[c_type]
+
+    prompt = f"""당신은 한글 타자연습 콘텐츠 제작자입니다.
+주제: "{title}"
+요청: {type_guide}
+
+규칙:
+- 반드시 주제와 직접 관련된 구체적이고 실제적인 내용이어야 합니다. "{title} 연습", "{title} 기본"처럼 주제 이름 뒤에 밋밋한 접미어만 붙인 표현은 절대 금지합니다.
+- 예를 들어 주제가 "캐릭터"라면 아이언맨, 스파이더맨, 배트맨, 피카츄처럼 실제로 존재하는 캐릭터 이름을 사용하세요. 주제가 특정 게임·만화·영화라면 그 안의 실제 등장인물·용어를 사용하세요.
+- 초등학생도 이해할 수 있는 쉬운 한국어로 작성하세요.
+- 각 항목은 서로 겹치지 않게 다양하게 만드세요.
+- 아래 JSON 배열 형식으로만 응답하세요. 다른 설명이나 마크다운 코드블록 없이 배열만 출력하세요.
+
+["항목1", "항목2", ...]"""
+
+    for model_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]:
+        for key in keys:
+            try:
+                client = genai.Client(api_key=key)
+                response = client.models.generate_content(model=model_name, contents=prompt)
+                text = response.text or ''
+                match = re.search(r'\[.*\]', text, re.DOTALL)
+                if not match:
+                    continue
+                items = json.loads(match.group())
+                items = [str(x).strip() for x in items if str(x).strip()]
+                if items:
+                    return items
+            except Exception:
+                continue
+    return None
+
+
 @login_required
 
 
@@ -536,24 +594,32 @@ def generate_content_api(request):
             ],
         }
 
-        title_lower = title.lower()
-        selected = fallback_category
-        for info in knowledge_base.values():
-            if any(keyword in title_lower for keyword in info['keywords']):
-                selected = info
-                break
-
-        pool = list(selected.get(c_type) or fallback_category[c_type])
-        if not pool:
-            pool = list(fallback_category[c_type])
-
         target_count = count
-        generated_ko_list = []
-        while len(generated_ko_list) < target_count:
-            shuffled = list(pool)
-            random.shuffle(shuffled)
-            remaining = target_count - len(generated_ko_list)
-            generated_ko_list.extend(shuffled[:remaining])
+        ai_items = _ai_generate_typing_items(title, c_type, target_count)
+        selected = fallback_category
+
+        if ai_items:
+            generated_ko_list = list(ai_items[:target_count])
+            while len(generated_ko_list) < target_count:
+                generated_ko_list.append(random.choice(ai_items))
+        else:
+            title_lower = title.lower()
+            selected = fallback_category
+            for info in knowledge_base.values():
+                if any(keyword in title_lower for keyword in info['keywords']):
+                    selected = info
+                    break
+
+            pool = list(selected.get(c_type) or fallback_category[c_type])
+            if not pool:
+                pool = list(fallback_category[c_type])
+
+            generated_ko_list = []
+            while len(generated_ko_list) < target_count:
+                shuffled = list(pool)
+                random.shuffle(shuffled)
+                remaining = target_count - len(generated_ko_list)
+                generated_ko_list.extend(shuffled[:remaining])
 
         if c_type == 'long':
             ko_text = '\n\n'.join(generated_ko_list)

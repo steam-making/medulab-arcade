@@ -496,6 +496,19 @@
     // 초등 저학년/고학년, 중고등: 코딩 경험 -> 로봇 경험(있으면 교구/단계) -> 목표 순서로 진단
     const originalExpOptions = questions[1].options;
     const originalGoalOptions = questions[2].options;
+    const interestOptions = [
+        { text: '🤖 로봇', value: 'robot' },
+        { text: '🧠 AI', value: 'ai' },
+        { text: '💻 코딩', value: 'coding' },
+        { text: '🧮 창의수학', value: 'math' },
+        { text: '🔬 생명&과학실험', value: 'science' },
+        { text: '🚁 항공드론', value: 'drone' },
+        { text: '✏️ 3D펜', value: 'pen3d' },
+        { text: '🖥️ 3D모델링', value: 'model3d' },
+    ];
+    const interestLabels = {};
+    interestOptions.forEach(o => { interestLabels[o.value] = o.text.replace(/^\S+\s*/, ''); });
+
     function nonKidsFlowDefs() {
         return [
             { type: 'choice', key: 'exp', title: '본인 또는 자녀가 코딩을 배워본 경험이 있으신가요?', options: originalExpOptions },
@@ -503,7 +516,8 @@
                 { text: '🆕 아직 배워본 적 없어요', value: 'none' },
                 { text: '🤖 배워본 경험이 있어요', value: 'yes' },
             ]},
-            { type: 'choice', key: 'goal', title: '본인 또는 자녀가 무엇을 배우고 싶고, 어떤 목표를 가지고 있나요?', options: originalGoalOptions },
+            { type: 'choice', key: 'interest', title: '본인 또는 자녀가 무엇에 관심이 있거나 배우고 싶나요?', options: interestOptions },
+            { type: 'choice', key: 'goal', title: '어떤 목표를 가지고 있나요?', options: originalGoalOptions },
         ];
     }
     const robotKitOptions = ['로보티즈 올로AI', '프로보 커넥트', '프로보 테크닉', '엑스로보', '큐보', '큐보 메타', '레고 스파이크프라임'];
@@ -836,6 +850,7 @@
         } else if (answers.robotExp === 'none') {
             noteParts.push('로봇 경험: 없음');
         }
+        if (interestLabels[answers.interest]) noteParts.push(`관심 분야: ${interestLabels[answers.interest]}`);
         if (goalLabels[answers.goal]) noteParts.push(`희망 목표: ${goalLabels[answers.goal]}`);
         const trackNoteHtml = noteParts.length ? `<p class="track-note">${noteParts.join(' · ')}</p>` : '';
 

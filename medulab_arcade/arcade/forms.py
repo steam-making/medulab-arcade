@@ -869,13 +869,23 @@ class SchoolClassForm(forms.ModelForm):
 class ConsultInquiryForm(forms.ModelForm):
     class Meta:
         model = ConsultInquiry
-        fields = ['name', 'phone_number', 'message']
+        fields = ['applicant_type', 'name', 'age_or_grade', 'phone_number', 'message']
         widgets = {
+            'applicant_type': forms.RadioSelect(attrs={'class': 'applicant-radio'}),
             'name': forms.TextInput(attrs={'class': 'fi', 'placeholder': '이름'}),
+            'age_or_grade': forms.TextInput(attrs={'class': 'fi', 'placeholder': '나이 또는 학년 (예: 8세, 초등 3학년)'}),
             'phone_number': forms.TextInput(attrs={'class': 'fi', 'placeholder': '연락처 (예: 010-1234-5678)', 'inputmode': 'numeric'}),
             'message': forms.Textarea(attrs={'class': 'fi', 'rows': 4, 'placeholder': '궁금하신 내용을 남겨주시면 확인 후 연락드리겠습니다. (선택)'}),
         }
-        labels = {'name': '이름', 'phone_number': '연락처', 'message': '문의 내용'}
+        labels = {
+            'applicant_type': '신청자 구분', 'name': '이름', 'age_or_grade': '나이 또는 학년',
+            'phone_number': '연락처', 'message': '문의 내용',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].required = False
+        self.fields['age_or_grade'].required = False
 
     def clean_phone_number(self):
         phone_number = self.cleaned_data.get('phone_number', '')
@@ -883,6 +893,13 @@ class ConsultInquiryForm(forms.ModelForm):
         if len(digits) < 9 or len(digits) > 11:
             raise forms.ValidationError('연락처는 숫자 기준 9자리에서 11자리로 입력해 주세요.')
         return digits
+
+    def clean(self):
+        cleaned = super().clean()
+        applicant_type = cleaned.get('applicant_type') or ConsultInquiry.APPLICANT_SELF
+        if applicant_type == ConsultInquiry.APPLICANT_SELF and not (cleaned.get('name') or '').strip():
+            self.add_error('name', '이름을 입력해 주세요.')
+        return cleaned
 
 
 class NoticeForm(forms.ModelForm):

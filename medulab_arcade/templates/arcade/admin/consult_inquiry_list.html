@@ -14,23 +14,49 @@
     .status-handled { background: rgba(0,255,180,0.15); color: var(--accent-green); }
     .status-pending { background: rgba(255,193,7,0.15); color: #ffc107; }
     .toggle-btn { padding:6px 14px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:#fff; font-size:12px; cursor:pointer; }
+    .kakao-banner { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:16px 20px; border-radius:14px; margin-bottom:20px; }
+    .kakao-banner.on { background:rgba(0,255,180,0.1); border:1px solid rgba(0,255,180,0.3); color:var(--accent-green); }
+    .kakao-banner.off { background:rgba(254,229,0,0.1); border:1px solid rgba(254,229,0,0.3); color:#FEE500; }
+    .kakao-connect-btn { padding:9px 16px; border-radius:10px; border:none; background:#FEE500; color:#111; font-weight:800; font-size:13px; text-decoration:none; }
+    .applicant-tag { display:inline-block; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:800; margin-right:6px; }
+    .applicant-tag.self { background:rgba(59,130,246,0.15); color:#93c5fd; }
+    .applicant-tag.parent { background:rgba(168,85,247,0.15); color:#c4b5fd; }
+    .children-list { font-size:12px; color:var(--text-muted); margin-top:4px; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="admin-wrap">
     <h1 class="page-title">💬 상담 문의 관리</h1>
+
+    {% if kakao_connected %}
+    <div class="kakao-banner on">✅ 카카오톡 알림 연동됨 — 새 상담 문의가 접수되면 카카오톡으로 알려드려요.</div>
+    {% else %}
+    <div class="kakao-banner off">
+        <span>⚠️ 카카오톡 알림이 아직 연동되지 않았습니다. 연동하면 새 상담 문의를 카카오톡으로 바로 받아볼 수 있어요.</span>
+        <a href="{% url 'kakao_notify_connect' %}" class="kakao-connect-btn">💬 카카오톡 알림 연동하기</a>
+    </div>
+    {% endif %}
+
     <div class="table-wrap">
         <table>
             <thead>
-                <tr><th>이름</th><th>연락처</th><th>문의 내용</th><th>회원</th><th>접수일</th><th>상태</th><th></th></tr>
+                <tr><th>구분/이름</th><th>연락처</th><th>추천 트랙</th><th>문의 내용</th><th>회원</th><th>접수일</th><th>상태</th><th></th></tr>
             </thead>
             <tbody>
                 {% for i in inquiries %}
                 <tr>
-                    <td style="font-weight:700;">{{ i.name }}</td>
+                    <td style="font-weight:700;">
+                        {% if i.applicant_type == 'parent' %}<span class="applicant-tag parent">학부모</span>{% else %}<span class="applicant-tag self">본인</span>{% endif %}
+                        {{ i.name }}
+                        {% if i.applicant_type == 'self' and i.age_or_grade %}<div class="children-list">{{ i.age_or_grade }}</div>{% endif %}
+                        {% if i.applicant_type == 'parent' and i.children_info %}
+                        <div class="children-list">{% for c in i.children_info %}{{ c.name }}({{ c.age }}){% if not forloop.last %}, {% endif %}{% endfor %}</div>
+                        {% endif %}
+                    </td>
                     <td>{{ i.phone_number }}</td>
-                    <td style="color:var(--text-secondary); max-width:280px;">{{ i.message|default:"-"|truncatechars:80 }}</td>
+                    <td style="color:var(--text-muted); font-size:12px;">{{ i.finder_track|default:"-" }}</td>
+                    <td style="color:var(--text-secondary); max-width:220px;">{{ i.message|default:"-"|truncatechars:80 }}</td>
                     <td>{% if i.user %}{{ i.user.profile.real_name|default:i.user.username }}{% else %}-{% endif %}</td>
                     <td style="color:var(--text-muted); font-size:12px;">{{ i.created_at|date:"Y.m.d H:i" }}</td>
                     <td>
@@ -45,7 +71,7 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" style="text-align:center; padding:60px; color:var(--text-muted);">접수된 상담 문의가 없습니다.</td></tr>
+                <tr><td colspan="8" style="text-align:center; padding:60px; color:var(--text-muted);">접수된 상담 문의가 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

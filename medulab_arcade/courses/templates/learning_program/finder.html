@@ -335,6 +335,32 @@
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    /* 상담 신청 모달 */
+    .consult-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:200; align-items:center; justify-content:center; padding:20px; }
+    .consult-modal-overlay.show { display:flex; }
+    .consult-modal-box { background:#0b1220; border:1px solid var(--dash-border); border-radius:24px; padding:32px; max-width:460px; width:100%; max-height:88vh; overflow-y:auto; position:relative; }
+    .consult-modal-close { position:absolute; top:18px; right:20px; background:none; border:none; color:var(--text-secondary); font-size:22px; cursor:pointer; line-height:1; }
+    .consult-modal-close:hover { color:#fff; }
+    .consult-modal-title { font-size:20px; font-weight:900; color:#fff; margin-bottom:6px; }
+    .consult-modal-sub { font-size:13px; color:var(--text-muted); margin-bottom:22px; }
+    .cm-fgroup { margin-bottom:16px; }
+    .cm-fl { display:block; color:var(--text-muted); margin-bottom:6px; font-weight:700; font-size:13px; }
+    .cm-fi { width:100%; padding:11px 14px; border-radius:10px; background:rgba(255,255,255,0.05); color:#fff; border:1px solid var(--dash-border); font-size:14px; box-sizing:border-box; color-scheme:dark; }
+    .cm-applicant-toggle { display:flex; gap:10px; margin-bottom:18px; }
+    .cm-applicant-toggle label { flex:1; }
+    .cm-applicant-toggle input[type="radio"] { display:none; }
+    .cm-toggle-btn { display:block; text-align:center; padding:11px; border-radius:10px; border:1px solid var(--dash-border); background:rgba(255,255,255,0.04); color:var(--text-muted); font-weight:800; font-size:13px; cursor:pointer; }
+    .cm-applicant-toggle input[type="radio"]:checked + .cm-toggle-btn { background:rgba(0,255,180,0.12); border-color:var(--neon-green); color:var(--neon-green); }
+    .cm-child-row { display:flex; gap:8px; margin-bottom:8px; }
+    .cm-child-row .cm-fi { flex:1; }
+    .cm-child-remove { flex:none; width:36px; border-radius:9px; border:1px solid var(--dash-border); background:rgba(239,68,68,0.12); color:#fca5a5; font-weight:800; cursor:pointer; }
+    .cm-child-add { padding:8px 14px; border-radius:9px; border:1px dashed var(--dash-border); background:none; color:var(--text-muted); font-weight:700; font-size:12px; cursor:pointer; }
+    .cm-child-add:hover { color:#fff; border-color:var(--neon-green); }
+    .cm-submit-btn { width:100%; padding:14px; border:none; border-radius:12px; background:linear-gradient(135deg,var(--neon-blue),var(--neon-purple)); color:#fff; font-weight:900; font-size:15px; cursor:pointer; margin-top:6px; }
+    .cm-error { margin-bottom:16px; padding:12px 14px; border-radius:10px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; font-size:13px; }
+    .cm-success { text-align:center; padding:20px 0; }
+    .cm-success .icon { font-size:44px; margin-bottom:12px; }
 </style>
 {% endblock %}
 
@@ -367,6 +393,14 @@
         </div>
     </div>
 </main>
+
+<div class="consult-modal-overlay" id="consultModalOverlay" onclick="if(event.target===this) closeConsultModal();">
+    <div class="consult-modal-box">
+        {% csrf_token %}
+        <button type="button" class="consult-modal-close" onclick="closeConsultModal()">✕</button>
+        <div id="consultModalBody"></div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -375,17 +409,45 @@
     const questions = JSON.parse('{{ finder_questions_json|escapejs }}');
     const recommendations = JSON.parse('{{ finder_recommendations_json|escapejs }}');
 
+    // 유아(만 5~7세)는 보통 학부모가 대신 진단하므로, 2/3번째 질문을 자녀 특성/학습 희망 방향으로 교체
+    const kidsQuestion2 = {
+        indicator: 'STEP 02',
+        title: '자녀는 어떤 특성을 가지고 있나요?',
+        options: [
+            { text: '😊 밝고 사교적이에요', value: 'kid_social' },
+            { text: '🎨 만들기·꾸미기를 좋아해요', value: 'kid_creative' },
+            { text: '🧸 궁금한 건 뭐든 만지고 눌러봐요', value: 'kid_curious' },
+            { text: '📱 스마트기기·화면에 이미 익숙해요', value: 'kid_digital' },
+        ],
+    };
+    const kidsQuestion3 = {
+        indicator: 'STEP 03',
+        title: '자녀가 이번 학습을 통해 배웠으면 하는 부분은 무엇인가요?',
+        options: [
+            { text: '🧠 사고력과 집중력', value: 'kid_goal_logic' },
+            { text: '🤖 직접 로봇을 조립하고 움직이는 경험', value: 'kid_goal_robot' },
+            { text: '⌨️ 타자와 컴퓨터 다루는 기초 습관', value: 'kid_goal_typing' },
+            { text: '🎯 코딩의 기본 개념과 순서대로 생각하는 힘', value: 'kid_goal_coding' },
+        ],
+    };
+    const kidTraitLabels = { kid_social: '밝고 사교적인 성격', kid_creative: '만들기·꾸미기를 좋아함', kid_curious: '호기심이 많음', kid_digital: '스마트기기에 익숙함' };
+    const kidGoalLabels = { kid_goal_logic: '사고력과 집중력', kid_goal_robot: '로봇 조립·구동 경험', kid_goal_typing: '타자·컴퓨터 기초 습관', kid_goal_coding: '코딩 기본 개념' };
+
+    let activeQuestions = questions.slice();
+    const originalQuestion2 = questions[1];
+    const originalQuestion3 = questions[2];
+
     let currentStep = 0;
     const answers = {};
 
     function renderStep() {
         const body = document.getElementById('finderBody');
         const bar = document.getElementById('progressBar');
-        
-        // 진행률 바 갱신
-        bar.style.width = ((currentStep + 1) / questions.length * 100) + '%';
 
-        const q = questions[currentStep];
+        // 진행률 바 갱신
+        bar.style.width = ((currentStep + 1) / activeQuestions.length * 100) + '%';
+
+        const q = activeQuestions[currentStep];
 
         let html = `
             <div>
@@ -421,11 +483,22 @@
 
     function selectOption(value) {
         // 답변 기록
-        if (currentStep === 0) answers.age = value;
-        else if (currentStep === 1) answers.exp = value;
-        else if (currentStep === 2) answers.goal = value;
+        if (currentStep === 0) {
+            answers.age = value;
+            if (value === 'kids') {
+                activeQuestions[1] = kidsQuestion2;
+                activeQuestions[2] = kidsQuestion3;
+            } else {
+                activeQuestions[1] = originalQuestion2;
+                activeQuestions[2] = originalQuestion3;
+            }
+        } else if (currentStep === 1) {
+            if (answers.age === 'kids') answers.kidTrait = value; else answers.exp = value;
+        } else if (currentStep === 2) {
+            if (answers.age === 'kids') answers.kidGoal = value; else answers.goal = value;
+        }
 
-        if (currentStep < questions.length - 1) {
+        if (currentStep < activeQuestions.length - 1) {
             currentStep++;
             renderStep();
         } else {
@@ -465,8 +538,74 @@
         return classTracks[exp] || classTracks.none;
     }
 
+    // 유아 전용 고정 결과: 무조건 맞춤성장 + 피지컬코딩(타자연습+기초코딩+로봇제작) 과정 추천
+    function renderKidsResult() {
+        const body = document.getElementById('finderBody');
+        const bar = document.getElementById('progressBar');
+        bar.style.width = '100%';
+
+        const track = classTracks.none; // 맞춤성장
+        currentRecommendedTrackName = track.name;
+
+        const traitLabel = kidTraitLabels[answers.kidTrait] || '';
+        const goalLabel = kidGoalLabels[answers.kidGoal] || '';
+        const kidNoteHtml = (traitLabel || goalLabel) ? `
+            <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">
+                ${traitLabel ? `아이 특성: ${traitLabel}` : ''}${traitLabel && goalLabel ? ' · ' : ''}${goalLabel ? `희망 학습: ${goalLabel}` : ''}
+            </p>
+        ` : '';
+
+        const trackCardHtml = `
+            <div class="track-card" style="--track-color: ${track.color};">
+                <span class="track-badge">🏫 추천 정규수업 트랙</span>
+                <div class="track-title">${track.name}</div>
+                <p class="track-desc">${track.desc}</p>
+                ${kidNoteHtml}
+                <div class="track-btn-group">
+                    <a href="/classes/" class="btn-track primary">📋 수업 안내 보기</a>
+                    <button type="button" onclick="openConsultModal()" class="btn-track secondary">📞 상담 신청하기</button>
+                </div>
+            </div>
+        `;
+
+        const matchedCourseHtml = `
+            <div class="recommend-card">
+                <div class="rec-course-title">👉 추천 과정: 피지컬코딩 (타자연습+기초코딩+로봇제작)</div>
+                <p class="rec-course-desc">유아 눈높이에 맞춰 타자 연습으로 손과 키보드를 먼저 친해지게 하고, 블록 기초코딩과 직접 로봇을 만들어보는 활동을 함께 진행하는 입문 과정입니다.</p>
+            </div>
+        `;
+
+        body.innerHTML = `
+            <div class="result-container">
+                <span class="result-badge">매칭 진단 완료 ✨</span>
+                <h2 class="result-title">나에게 꼭 맞는 학습 프로그램을 찾았습니다!</h2>
+                <p class="result-desc">
+                    진단 결과를 토대로 설계된 학습 로드맵 제안입니다. 아래 추천 과정을 통해 코딩 잠재력을 발휘해 보세요.
+                </p>
+
+                ${trackCardHtml}
+                ${matchedCourseHtml}
+
+                <div class="btn-group">
+                    <a href="/courses/student/courses/" class="btn-finder btn-primary">전체 개설 과정 보러가기</a>
+                    <button onclick="resetFinder()" class="btn-finder btn-secondary">다시 검사하기</button>
+                </div>
+            </div>
+        `;
+
+        body.classList.remove('fade-switch');
+        void body.offsetWidth;
+        body.classList.add('fade-switch');
+    }
+
     // 추천 로직 및 결과 화면
+    let currentRecommendedTrackName = '';
     function showResult() {
+        if (answers.age === 'kids') {
+            renderKidsResult();
+            return;
+        }
+
         const body = document.getElementById('finderBody');
         const bar = document.getElementById('progressBar');
         bar.style.width = '100%';
@@ -538,6 +677,7 @@
 
         // 추천 정규수업 트랙 (맞춤성장/집중성장/융합성장) 카드
         const track = pickClassTrack(answers.exp, answers.goal);
+        currentRecommendedTrackName = track.name;
         const trackCardHtml = `
             <div class="track-card" style="--track-color: ${track.color};">
                 <span class="track-badge">🏫 추천 정규수업 트랙</span>
@@ -545,7 +685,7 @@
                 <p class="track-desc">${track.desc}</p>
                 <div class="track-btn-group">
                     <a href="/classes/" class="btn-track primary">📋 수업 안내 보기</a>
-                    <a href="/consult/" class="btn-track secondary">📞 상담 신청하기</a>
+                    <button type="button" onclick="openConsultModal()" class="btn-track secondary">📞 상담 신청하기</button>
                 </div>
             </div>
         `;
@@ -576,6 +716,140 @@
     function resetFinder() {
         currentStep = 0;
         renderStep();
+    }
+
+    // ── 상담 신청 모달 ──
+    function childRowHtml() {
+        return `
+            <div class="cm-child-row">
+                <input type="text" name="child_name[]" class="cm-fi" placeholder="자녀 이름">
+                <input type="text" name="child_age[]" class="cm-fi" placeholder="나이 또는 학년">
+                <button type="button" class="cm-child-remove" onclick="this.parentElement.remove()">✕</button>
+            </div>
+        `;
+    }
+
+    function consultFormHtml() {
+        const defaultParent = answers.age === 'kids' ? 'checked' : '';
+        const defaultSelf = answers.age === 'kids' ? '' : 'checked';
+        return `
+            <div class="consult-modal-title">📞 상담 신청하기</div>
+            <p class="consult-modal-sub">추천 트랙: <strong style="color:#fff;">${currentRecommendedTrackName || '-'}</strong></p>
+            <div id="consultModalError"></div>
+            <form id="consultModalForm">
+                <div class="cm-applicant-toggle">
+                    <label>
+                        <input type="radio" name="applicant_type" value="self" ${defaultSelf} onchange="toggleModalApplicantType(this.form)">
+                        <span class="cm-toggle-btn">🙋 본인</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="applicant_type" value="parent" ${defaultParent} onchange="toggleModalApplicantType(this.form)">
+                        <span class="cm-toggle-btn">👨‍👩‍👧 학부모</span>
+                    </label>
+                </div>
+
+                <div class="cm-self-fields">
+                    <div class="cm-fgroup">
+                        <label class="cm-fl">이름 *</label>
+                        <input type="text" name="name" class="cm-fi" placeholder="이름">
+                    </div>
+                    <div class="cm-fgroup">
+                        <label class="cm-fl">나이 또는 학년</label>
+                        <input type="text" name="age_or_grade" class="cm-fi" placeholder="예: 8세, 초등 3학년">
+                    </div>
+                </div>
+
+                <div class="cm-parent-fields" style="display:none;">
+                    <div class="cm-fgroup">
+                        <label class="cm-fl">자녀 정보 (이름 · 나이 또는 학년) *</label>
+                        <div id="modalChildRows"></div>
+                        <button type="button" class="cm-child-add" onclick="addModalChildRow()">+ 자녀 추가</button>
+                    </div>
+                </div>
+
+                <div class="cm-fgroup">
+                    <label class="cm-fl">연락처 *</label>
+                    <input type="text" name="phone_number" class="cm-fi" placeholder="연락처 (예: 010-1234-5678)" inputmode="numeric">
+                </div>
+                <div class="cm-fgroup">
+                    <label class="cm-fl">문의 내용</label>
+                    <textarea name="message" class="cm-fi" rows="3" placeholder="궁금하신 내용을 남겨주세요. (선택)"></textarea>
+                </div>
+
+                <input type="hidden" name="finder_track" value="${currentRecommendedTrackName}">
+                <button type="submit" class="cm-submit-btn">상담 신청하기</button>
+            </form>
+        `;
+    }
+
+    function addModalChildRow() {
+        document.getElementById('modalChildRows').insertAdjacentHTML('beforeend', childRowHtml());
+    }
+
+    function toggleModalApplicantType(form) {
+        const isParent = form.applicant_type.value === 'parent';
+        form.querySelector('.cm-self-fields').style.display = isParent ? 'none' : '';
+        form.querySelector('.cm-parent-fields').style.display = isParent ? '' : 'none';
+        if (isParent && document.getElementById('modalChildRows').children.length === 0) {
+            addModalChildRow();
+        }
+    }
+
+    function openConsultModal() {
+        const modalBody = document.getElementById('consultModalBody');
+        modalBody.innerHTML = consultFormHtml();
+        document.getElementById('consultModalOverlay').classList.add('show');
+
+        const form = document.getElementById('consultModalForm');
+        if (form.applicant_type.value === 'parent') {
+            toggleModalApplicantType(form);
+        }
+        form.addEventListener('submit', submitConsultModal);
+    }
+
+    function closeConsultModal() {
+        document.getElementById('consultModalOverlay').classList.remove('show');
+    }
+
+    function submitConsultModal(e) {
+        e.preventDefault();
+        const form = e.target;
+        const submitBtn = form.querySelector('.cm-submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = '신청 중...';
+
+        const formData = new FormData(form);
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch('/consult/submit/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData,
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    document.getElementById('consultModalBody').innerHTML = `
+                        <div class="cm-success">
+                            <div class="icon">✅</div>
+                            <h3 style="color:#fff; font-size:18px; font-weight:900; margin-bottom:8px;">상담 신청이 접수되었습니다!</h3>
+                            <p style="color:var(--text-muted); font-size:13px;">빠른 시일 내에 연락드리겠습니다.</p>
+                            <button type="button" class="cm-submit-btn" style="margin-top:20px;" onclick="closeConsultModal()">닫기</button>
+                        </div>
+                    `;
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '상담 신청하기';
+                    const errEl = document.getElementById('consultModalError');
+                    const messages = Object.values(data.errors || {}).flat();
+                    errEl.innerHTML = `<div class="cm-error">${messages.map(m => '· ' + m).join('<br>') || '입력값을 확인해 주세요.'}</div>`;
+                }
+            })
+            .catch(() => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '상담 신청하기';
+                document.getElementById('consultModalError').innerHTML = `<div class="cm-error">신청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</div>`;
+            });
     }
 
     // 초기 실행

@@ -16,6 +16,19 @@
 .contact-card .value { color:var(--text-muted); font-size:12px; }
 .fgroup { margin-bottom:18px; }
 label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weight:700; font-size:13px; }
+
+.applicant-toggle { display:flex; gap:10px; margin-bottom:22px; }
+.applicant-toggle label { flex:1; }
+.applicant-toggle input[type="radio"] { display:none; }
+.applicant-toggle-btn { display:block; text-align:center; padding:12px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,0.04); color:var(--text-muted); font-weight:800; font-size:14px; cursor:pointer; transition:all .15s; }
+.applicant-toggle input[type="radio"]:checked + .applicant-toggle-btn { background:rgba(0,255,180,0.12); border-color:var(--accent-green); color:var(--accent-green); }
+
+.child-row { display:flex; gap:10px; margin-bottom:10px; align-items:center; }
+.child-row .fi { flex:1; }
+.child-row-remove { flex:none; width:38px; height:38px; border-radius:10px; border:1px solid var(--border); background:rgba(239,68,68,0.1); color:#fca5a5; font-weight:800; cursor:pointer; }
+.child-row-remove:hover { background:rgba(239,68,68,0.2); }
+.child-add-btn { padding:9px 16px; border-radius:10px; border:1px dashed var(--border); background:none; color:var(--text-muted); font-weight:700; font-size:13px; cursor:pointer; }
+.child-add-btn:hover { color:#fff; border-color:var(--accent-green); }
 </style>
 {% endblock %}
 
@@ -53,16 +66,44 @@ label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weigh
 
         {% if form.errors %}
         <div style="margin-bottom:20px; padding:14px 18px; border-radius:10px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; font-size:14px;">
+            {% for e in form.non_field_errors %}<div>· {{ e }}</div>{% endfor %}
             {% for field in form %}{% for e in field.errors %}<div>· {{ field.label }}: {{ e }}</div>{% endfor %}{% endfor %}
         </div>
         {% endif %}
 
-        <form method="post">
+        <form method="post" id="consultForm">
             {% csrf_token %}
-            <div class="fgroup">
-                <label class="fl">{{ form.name.label }} <span style="color:#ef4444;">*</span></label>
-                {{ form.name }}
+
+            <div class="applicant-toggle">
+                <label>
+                    <input type="radio" name="applicant_type" value="self" checked onchange="toggleApplicantType(this.form)">
+                    <span class="applicant-toggle-btn">🙋 본인</span>
+                </label>
+                <label>
+                    <input type="radio" name="applicant_type" value="parent" onchange="toggleApplicantType(this.form)">
+                    <span class="applicant-toggle-btn">👨‍👩‍👧 학부모</span>
+                </label>
             </div>
+
+            <div class="consult-self-fields">
+                <div class="fgroup">
+                    <label class="fl">이름 <span style="color:#ef4444;">*</span></label>
+                    {{ form.name }}
+                </div>
+                <div class="fgroup">
+                    <label class="fl">나이 또는 학년</label>
+                    {{ form.age_or_grade }}
+                </div>
+            </div>
+
+            <div class="consult-parent-fields" style="display:none;">
+                <div class="fgroup">
+                    <label class="fl">자녀 정보 (이름 · 나이 또는 학년) <span style="color:#ef4444;">*</span></label>
+                    <div id="childRows"></div>
+                    <button type="button" class="child-add-btn" onclick="addChildRow()">+ 자녀 추가</button>
+                </div>
+            </div>
+
             <div class="fgroup">
                 <label class="fl">{{ form.phone_number.label }} <span style="color:#ef4444;">*</span></label>
                 {{ form.phone_number }}
@@ -75,4 +116,30 @@ label.fl { display:block; color:var(--text-muted); margin-bottom:7px; font-weigh
         </form>
     </div>
 </div>
+
+<script>
+function childRowHtml() {
+    return `
+        <div class="child-row">
+            <input type="text" name="child_name[]" class="fi" placeholder="자녀 이름">
+            <input type="text" name="child_age[]" class="fi" placeholder="나이 또는 학년">
+            <button type="button" class="child-row-remove" onclick="this.parentElement.remove()">✕</button>
+        </div>
+    `;
+}
+function addChildRow() {
+    document.getElementById('childRows').insertAdjacentHTML('beforeend', childRowHtml());
+}
+function toggleApplicantType(form) {
+    const isParent = form.applicant_type.value === 'parent';
+    form.querySelector('.consult-self-fields').style.display = isParent ? 'none' : '';
+    form.querySelector('.consult-parent-fields').style.display = isParent ? '' : 'none';
+    if (isParent && document.getElementById('childRows').children.length === 0) {
+        addChildRow();
+    }
+}
+document.addEventListener('DOMContentLoaded', function () {
+    if (document.getElementById('childRows').children.length === 0) addChildRow();
+});
+</script>
 {% endblock %}

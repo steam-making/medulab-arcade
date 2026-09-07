@@ -21,6 +21,11 @@ ACADEMY_KAKAO_CHANNEL_URL = os.environ.get('ACADEMY_KAKAO_CHANNEL_URL', '')
 ACADEMY_CEO_NAME = os.environ.get('ACADEMY_CEO_NAME', '')
 ACADEMY_BIZ_NUMBER = os.environ.get('ACADEMY_BIZ_NUMBER', '')
 ACADEMY_ADDRESS = os.environ.get('ACADEMY_ADDRESS', '')
+SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'https://medulab.kr')
+
+# 카카오 (소셜 로그인 + '나에게 보내기' 상담 알림 겸용 앱 키)
+KAKAO_CLIENT_ID = os.environ.get('KAKAO_CLIENT_ID', '')
+KAKAO_CLIENT_SECRET = os.environ.get('KAKAO_CLIENT_SECRET', '')
 
 # 학원 출석 체크 - 학생의 GPS 좌표가 학원 좌표 기준 반경 이내면 "학원에서 접속"으로 판정
 ACADEMY_LATITUDE = os.environ.get('ACADEMY_LATITUDE', '')

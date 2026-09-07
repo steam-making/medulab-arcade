@@ -1,4 +1,5 @@
 import json
+import logging
 import zipfile
 import io
 import re
@@ -3704,17 +3705,67 @@ def refund_policy(request):
     return render(request, 'arcade/refund_policy.html')
 
 
+def _parse_children_rows(request):
+    """학부모 신청 시 동적으로 추가된 자녀이름/자녀나이 행을 POST에서 읽어 리스트로 구성"""
+    names = request.POST.getlist('child_name[]')
+    ages = request.POST.getlist('child_age[]')
+    children = []
+    for name, age in zip(names, ages):
+        name = (name or '').strip()
+        age = (age or '').strip()
+        if name or age:
+            children.append({'name': name, 'age': age})
+    return children
+
+
+def _save_consult_inquiry(request):
+    """상담 문의 저장 공통 로직. (성공 시 inquiry, 실패 시 None, form) 튜플과 유사하게 동작.
+    반환: (inquiry_or_None, form)"""
+    from .forms import ConsultInquiryForm
+    from .models import ConsultInquiry
+
+    form = ConsultInquiryForm(request.POST)
+    if not form.is_valid():
+        return None, form
+
+    applicant_type = form.cleaned_data.get('applicant_type') or ConsultInquiry.APPLICANT_SELF
+    inquiry = form.save(commit=False)
+
+    if applicant_type == ConsultInquiry.APPLICANT_PARENT:
+        children = _parse_children_rows(request)
+        if not children:
+            form.add_error(None, '자녀 이름과 나이(또는 학년)를 한 명 이상 입력해 주세요.')
+            return None, form
+        inquiry.children_info = children
+        if not (inquiry.name or '').strip():
+            first_name = children[0].get('name') or ''
+            suffix = f' 외 {len(children)-1}명' if len(children) > 1 else ''
+            inquiry.name = f'{first_name}{suffix} 학부모'.strip()
+        inquiry.age_or_grade = ''
+    else:
+        inquiry.children_info = []
+
+    inquiry.finder_track = (request.POST.get('finder_track') or '').strip()[:50]
+    if request.user.is_authenticated:
+        inquiry.user = request.user
+    inquiry.save()
+
+    try:
+        from .kakao_notify import notify_new_consult_inquiry
+        notify_new_consult_inquiry(inquiry)
+    except Exception:
+        logging.getLogger(__name__).exception('상담 문의 카카오 알림 발송 중 오류')
+
+    return inquiry, form
+
+
 def consult_inquiry(request):
     """상담 문의 접수 페이지"""
     from .forms import ConsultInquiryForm
 
     if request.method == 'POST':
-        form = ConsultInquiryForm(request.POST)
-        if form.is_valid():
-            inquiry = form.save(commit=False)
-            if request.user.is_authenticated:
-                inquiry.user = request.user
-            inquiry.save()
+        inquiry, form = _save_consult_inquiry(request)
+        if inquiry:
             messages.success(request, '상담 문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.')
             return redirect('consult_inquiry')
     else:
@@ -3733,13 +3784,83 @@ def consult_inquiry(request):
     return render(request, 'arcade/consult_inquiry.html', context)
 
 
+@require_POST
+def consult_inquiry_submit(request):
+    """상담 신청 모달(AJAX)에서 호출하는 제출 엔드포인트"""
+    inquiry, form = _save_consult_inquiry(request)
+    if inquiry:
+        return JsonResponse({'ok': True})
+    errors = {field: [str(e) for e in errs] for field, errs in form.errors.items()}
+    return JsonResponse({'ok': False, 'errors': errors}, status=400)
+
+
+@login_required
+@user_passes_test(staff_check)
+def kakao_notify_connect(request):
+    """관리자가 '카카오톡 나에게 보내기' 알림 수신에 동의하도록 카카오 인증 화면으로 이동"""
+    redirect_uri = request.build_absolute_uri(reverse('kakao_notify_callback'))
+    params = {
+        'client_id': settings.KAKAO_CLIENT_ID,
+        'redirect_uri': redirect_uri,
+        'response_type': 'code',
+        'scope': 'talk_message',
+    }
+    from urllib.parse import urlencode
+    return redirect(f'https://kauth.kakao.com/oauth/authorize?{urlencode(params)}')
+
+
+@login_required
+@user_passes_test(staff_check)
+def kakao_notify_callback(request):
+    """카카오 인증 콜백: 코드를 토큰으로 교환해 KakaoNotifyToken 저장"""
+    import requests
+    from .models import KakaoNotifyToken
+
+    code = request.GET.get('code')
+    if not code:
+        messages.error(request, '카카오 인증이 취소되었거나 실패했습니다.')
+        return redirect('consult_inquiry_admin_list')
+
+    redirect_uri = request.build_absolute_uri(reverse('kakao_notify_callback'))
+    try:
+        resp = requests.post('https://kauth.kakao.com/oauth/token', data={
+            'grant_type': 'authorization_code',
+            'client_id': settings.KAKAO_CLIENT_ID,
+            'client_secret': settings.KAKAO_CLIENT_SECRET,
+            'redirect_uri': redirect_uri,
+            'code': code,
+        }, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception:
+        logging.getLogger(__name__).exception('카카오 알림 토큰 발급 실패')
+        messages.error(request, '카카오 인증에 실패했습니다. 다시 시도해 주세요.')
+        return redirect('consult_inquiry_admin_list')
+
+    KakaoNotifyToken.objects.update_or_create(
+        label='기본',
+        defaults={
+            'access_token': data['access_token'],
+            'refresh_token': data['refresh_token'],
+            'expires_at': timezone.now() + timezone.timedelta(seconds=data.get('expires_in', 3600)),
+            'is_active': True,
+        },
+    )
+    messages.success(request, '카카오톡 알림 연동이 완료되었습니다! 이제 새 상담 문의가 접수되면 카카오톡으로 알려드려요.')
+    return redirect('consult_inquiry_admin_list')
+
+
 @login_required
 @user_passes_test(staff_check)
 def consult_inquiry_admin_list(request):
     """상담 문의 관리자 목록"""
-    from .models import ConsultInquiry
+    from .models import ConsultInquiry, KakaoNotifyToken
     inquiries = ConsultInquiry.objects.select_related('user').order_by('-created_at')
-    return render(request, 'arcade/admin/consult_inquiry_list.html', {'inquiries': inquiries})
+    kakao_connected = KakaoNotifyToken.objects.filter(is_active=True).exists()
+    return render(request, 'arcade/admin/consult_inquiry_list.html', {
+        'inquiries': inquiries,
+        'kakao_connected': kakao_connected,
+    })
 
 
 @login_required

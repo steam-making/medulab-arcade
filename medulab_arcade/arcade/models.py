@@ -629,9 +629,23 @@ class ParentChildLink(models.Model):
 
 
 class ConsultInquiry(models.Model):
+    APPLICANT_SELF = 'self'
+    APPLICANT_PARENT = 'parent'
+    APPLICANT_CHOICES = [
+        (APPLICANT_SELF, '본인'),
+        (APPLICANT_PARENT, '학부모'),
+    ]
+
+    applicant_type = models.CharField('신청자 구분', max_length=10, choices=APPLICANT_CHOICES, default=APPLICANT_SELF)
     name = models.CharField('이름', max_length=50)
+    age_or_grade = models.CharField('나이/학년', max_length=30, blank=True, help_text='본인 신청일 때만 사용')
+    children_info = models.JSONField(
+        '자녀 정보', default=list, blank=True,
+        help_text='학부모 신청일 때 사용. [{"name": "자녀이름", "age": "나이/학년"}, ...]',
+    )
     phone_number = models.CharField('연락처', max_length=20)
     message = models.TextField('문의 내용', blank=True)
+    finder_track = models.CharField('프로그램 찾기 추천 트랙', max_length=50, blank=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='consult_inquiries', verbose_name='작성 회원')
     is_handled = models.BooleanField('처리 완료', default=False)
     created_at = models.DateTimeField('접수일', auto_now_add=True)
@@ -643,6 +657,24 @@ class ConsultInquiry(models.Model):
 
     def __str__(self):
         return f'{self.name} ({self.phone_number})'
+
+
+class KakaoNotifyToken(models.Model):
+    """관리자 본인의 '카카오톡 나에게 보내기' 알림용 OAuth 토큰 (신규 상담 문의 알림 발송용)"""
+    label = models.CharField('라벨', max_length=50, default='기본')
+    access_token = models.TextField('액세스 토큰')
+    refresh_token = models.TextField('리프레시 토큰')
+    expires_at = models.DateTimeField('액세스 토큰 만료일시')
+    is_active = models.BooleanField('사용 중', default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '카카오 알림 토큰'
+        verbose_name_plural = '카카오 알림 토큰'
+
+    def __str__(self):
+        return f'{self.label} (만료: {self.expires_at:%Y-%m-%d %H:%M})'
 
 
 class Like(models.Model):

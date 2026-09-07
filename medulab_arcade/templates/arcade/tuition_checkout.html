@@ -132,7 +132,7 @@
                     phoneNumber: '{{ portone_customer_phone|escapejs }}',
                 },
                 redirectUrl: window.location.origin + window.location.pathname,
-                windowType: { pc: 'REDIRECTION', mobile: 'REDIRECTION' },
+                forceRedirect: true,
             };
             if (method === 'EASY_PAY') {
                 params.easyPay = { easyPayProvider: 'EASY_PAY_PROVIDER_KAKAOPAY' };

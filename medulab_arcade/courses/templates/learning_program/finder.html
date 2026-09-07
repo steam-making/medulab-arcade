@@ -516,7 +516,7 @@
                 { text: '🆕 아직 배워본 적 없어요', value: 'none' },
                 { text: '🤖 배워본 경험이 있어요', value: 'yes' },
             ]},
-            { type: 'choice', key: 'interest', title: '본인 또는 자녀가 무엇에 관심이 있거나 배우고 싶나요?', options: interestOptions },
+            { type: 'multi_choice', key: 'interest', title: '본인 또는 자녀가 무엇에 관심이 있거나 배우고 싶나요?', options: interestOptions },
             { type: 'choice', key: 'goal', title: '어떤 목표를 가지고 있나요?', options: originalGoalOptions },
         ];
     }
@@ -563,6 +563,17 @@
                     <input type="text" id="robotLevelInput" class="robot-text-input" placeholder="예: 3단계, 중급 과정 등">
                 </div>
                 <button class="option-button" style="justify-content:center;" onclick="submitRobotDetail()">
+                    <span>다음</span><span class="option-icon" style="opacity:1; transform:none;">→</span>
+                </button>
+            `;
+        } else if (step.type === 'multi_choice') {
+            optionsHtml = `
+                <div class="checkbox-grid" style="margin-bottom:20px;">
+                    ${step.options.map(opt => `
+                        <label class="checkbox-pill"><input type="checkbox" class="multi-choice-cb" value="${opt.value}"><span>${opt.text}</span></label>
+                    `).join('')}
+                </div>
+                <button class="option-button" style="justify-content:center;" onclick="submitMultiChoice()">
                     <span>다음</span><span class="option-icon" style="opacity:1; transform:none;">→</span>
                 </button>
             `;
@@ -646,6 +657,12 @@
         }
         const level = (document.getElementById('robotLevelInput').value || '').trim();
         answers.robotDetail = { kits, level };
+        advanceStep();
+    }
+
+    function submitMultiChoice() {
+        const step = flow[currentStep];
+        answers[step.key] = Array.from(document.querySelectorAll('.multi-choice-cb:checked')).map(cb => cb.value);
         advanceStep();
     }
 
@@ -850,7 +867,9 @@
         } else if (answers.robotExp === 'none') {
             noteParts.push('로봇 경험: 없음');
         }
-        if (interestLabels[answers.interest]) noteParts.push(`관심 분야: ${interestLabels[answers.interest]}`);
+        if (answers.interest && answers.interest.length) {
+            noteParts.push(`관심 분야: ${answers.interest.map(v => interestLabels[v] || v).join(', ')}`);
+        }
         if (goalLabels[answers.goal]) noteParts.push(`희망 목표: ${goalLabels[answers.goal]}`);
         const trackNoteHtml = noteParts.length ? `<p class="track-note">${noteParts.join(' · ')}</p>` : '';
 

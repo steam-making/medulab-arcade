@@ -424,33 +424,50 @@
     const recommendations = JSON.parse('{{ finder_recommendations_json|escapejs }}');
 
     // 유아(만 5~7세)는 보통 학부모가 대신 진단하므로, 2/3번째 질문을 자녀 특성/학습 희망 방향으로 교체
-    const kidsQuestion2 = {
-        indicator: 'STEP 02',
-        title: '자녀는 어떤 특성을 가지고 있나요?',
-        options: [
+    const kidsFlowDefs = [
+        { type: 'choice', key: 'kidTrait', title: '자녀는 어떤 특성을 가지고 있나요?', options: [
             { text: '😊 밝고 사교적이에요', value: 'kid_social' },
             { text: '🎨 만들기·꾸미기를 좋아해요', value: 'kid_creative' },
             { text: '🧸 궁금한 건 뭐든 만지고 눌러봐요', value: 'kid_curious' },
             { text: '📱 스마트기기·화면에 이미 익숙해요', value: 'kid_digital' },
-        ],
-    };
-    const kidsQuestion3 = {
-        indicator: 'STEP 03',
-        title: '자녀가 이번 학습을 통해 배웠으면 하는 부분은 무엇인가요?',
-        options: [
+        ]},
+        { type: 'choice', key: 'kidGoal', title: '자녀가 이번 학습을 통해 배웠으면 하는 부분은 무엇인가요?', options: [
             { text: '🧠 사고력과 집중력', value: 'kid_goal_logic' },
             { text: '🤖 직접 로봇을 조립하고 움직이는 경험', value: 'kid_goal_robot' },
             { text: '⌨️ 타자와 컴퓨터 다루는 기초 습관', value: 'kid_goal_typing' },
             { text: '🎯 코딩의 기본 개념과 순서대로 생각하는 힘', value: 'kid_goal_coding' },
-        ],
-    };
+        ]},
+    ];
     const kidTraitLabels = { kid_social: '밝고 사교적인 성격', kid_creative: '만들기·꾸미기를 좋아함', kid_curious: '호기심이 많음', kid_digital: '스마트기기에 익숙함' };
     const kidGoalLabels = { kid_goal_logic: '사고력과 집중력', kid_goal_robot: '로봇 조립·구동 경험', kid_goal_typing: '타자·컴퓨터 기초 습관', kid_goal_coding: '코딩 기본 개념' };
 
-    let activeQuestions = questions.slice();
-    const originalQuestion2 = questions[1];
-    const originalQuestion3 = questions[2];
+    // 초등 저학년/고학년, 중고등: 코딩 경험 -> 로봇 경험(있으면 교구/단계) -> 목표 순서로 진단
+    const originalExpOptions = questions[1].options;
+    const originalGoalOptions = questions[2].options;
+    function nonKidsFlowDefs() {
+        return [
+            { type: 'choice', key: 'exp', title: '본인 또는 자녀가 코딩을 배워본 경험이 있으신가요?', options: originalExpOptions },
+            { type: 'choice', key: 'robotExp', title: '본인 또는 자녀가 로봇을 배워본 경험이 있으신가요?', options: [
+                { text: '🆕 아직 배워본 적 없어요', value: 'none' },
+                { text: '🤖 배워본 경험이 있어요', value: 'yes' },
+            ]},
+            { type: 'choice', key: 'goal', title: '본인 또는 자녀가 무엇을 배우고 싶고, 어떤 목표를 가지고 있나요?', options: originalGoalOptions },
+        ];
+    }
+    const robotDetailStep = {
+        type: 'text_pair', key: 'robotDetail',
+        title: '어떤 로봇 교구로, 어느 단계까지 배웠나요?',
+        fields: [
+            { name: 'kit', label: '사용한 교구', placeholder: '예: 프로보 커넥트, 로보티즈 올로AI 등' },
+            { name: 'level', label: '진행 단계', placeholder: '예: 3단계, 중급 과정 등' },
+        ],
+    };
+    const expLabels = {};
+    originalExpOptions.forEach(o => { expLabels[o.value] = o.text.replace(/^\S+\s*/, ''); });
+    const goalLabels = {};
+    originalGoalOptions.forEach(o => { goalLabels[o.value] = o.text.replace(/^\S+\s*/, ''); });
 
+    let flow = [{ type: 'choice', key: 'age', title: questions[0].title, options: questions[0].options }];
     let currentStep = 0;
     const answers = {};
 
@@ -459,27 +476,38 @@
         const bar = document.getElementById('progressBar');
 
         // 진행률 바 갱신
-        bar.style.width = ((currentStep + 1) / activeQuestions.length * 100) + '%';
+        bar.style.width = ((currentStep + 1) / flow.length * 100) + '%';
 
-        const q = activeQuestions[currentStep];
+        const step = flow[currentStep];
+        const indicator = 'STEP ' + String(currentStep + 1).padStart(2, '0');
 
-        let html = `
-            <div>
-                <div class="step-indicator">${q.indicator}</div>
-                <h2 class="question-title">${q.title}</h2>
-                <div class="options-list">
-        `;
-
-        q.options.forEach((opt, idx) => {
-            html += `
+        let optionsHtml;
+        if (step.type === 'text_pair') {
+            optionsHtml = step.fields.map(f => `
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; color:var(--text-secondary); margin-bottom:6px; font-size:13px; font-weight:700;">${f.label}</label>
+                    <input type="text" id="tp_${f.name}" style="width:100%; box-sizing:border-box; padding:16px 20px; border-radius:18px; background:rgba(255,255,255,0.04); border:1px solid var(--dash-border); color:#fff; font-size:15px;" placeholder="${f.placeholder}">
+                </div>
+            `).join('') + `
+                <button class="option-button" style="justify-content:center;" onclick="submitTextPair()">
+                    <span>다음</span><span class="option-icon" style="opacity:1; transform:none;">→</span>
+                </button>
+            `;
+        } else {
+            optionsHtml = step.options.map(opt => `
                 <button class="option-button" onclick="selectOption('${opt.value}')">
                     <span>${opt.text}</span>
                     <span class="option-icon">→</span>
                 </button>
-            `;
-        });
+            `).join('');
+        }
 
-        html += `
+        const html = `
+            <div>
+                <div class="step-indicator">${indicator}</div>
+                <h2 class="question-title">${step.title}</h2>
+                <div class="options-list">
+                    ${optionsHtml}
                 </div>
             </div>
             <div style="margin-top: 32px; display: flex; justify-content: flex-start;">
@@ -488,36 +516,46 @@
         `;
 
         body.innerHTML = html;
-        
+
         // 애니메이션 트리거
         body.classList.remove('fade-switch');
         void body.offsetWidth; // reflow
         body.classList.add('fade-switch');
     }
 
-    function selectOption(value) {
-        // 답변 기록
-        if (currentStep === 0) {
-            answers.age = value;
-            if (value === 'kids') {
-                activeQuestions[1] = kidsQuestion2;
-                activeQuestions[2] = kidsQuestion3;
-            } else {
-                activeQuestions[1] = originalQuestion2;
-                activeQuestions[2] = originalQuestion3;
-            }
-        } else if (currentStep === 1) {
-            if (answers.age === 'kids') answers.kidTrait = value; else answers.exp = value;
-        } else if (currentStep === 2) {
-            if (answers.age === 'kids') answers.kidGoal = value; else answers.goal = value;
-        }
-
-        if (currentStep < activeQuestions.length - 1) {
+    function advanceStep() {
+        if (currentStep < flow.length - 1) {
             currentStep++;
             renderStep();
         } else {
             showResult();
         }
+    }
+
+    function selectOption(value) {
+        const step = flow[currentStep];
+        answers[step.key] = value;
+
+        if (step.key === 'age') {
+            flow = flow.slice(0, 1).concat(value === 'kids' ? kidsFlowDefs.slice() : nonKidsFlowDefs());
+        }
+
+        if (step.key === 'robotExp') {
+            flow = flow.filter(s => s.key !== 'robotDetail');
+            if (value === 'yes') {
+                flow.splice(flow.indexOf(step) + 1, 0, robotDetailStep);
+            }
+        }
+
+        advanceStep();
+    }
+
+    function submitTextPair() {
+        const step = flow[currentStep];
+        const values = {};
+        step.fields.forEach(f => { values[f.name] = (document.getElementById('tp_' + f.name).value || '').trim(); });
+        answers[step.key] = values;
+        advanceStep();
     }
 
     function prevStep() {
@@ -710,11 +748,26 @@
         // 추천 정규수업 트랙 (맞춤성장/집중성장/융합성장) 카드
         const track = pickClassTrack(answers.exp, answers.goal);
         currentRecommendedTrackName = track.name;
+
+        const noteParts = [];
+        if (expLabels[answers.exp]) noteParts.push(`코딩 경험: ${expLabels[answers.exp]}`);
+        if (answers.robotExp === 'yes' && answers.robotDetail) {
+            const kit = answers.robotDetail.kit || '';
+            const level = answers.robotDetail.level || '';
+            const detail = [kit, level].filter(Boolean).join(' / ');
+            noteParts.push(`로봇 경험: 있음${detail ? ` (${detail})` : ''}`);
+        } else if (answers.robotExp === 'none') {
+            noteParts.push('로봇 경험: 없음');
+        }
+        if (goalLabels[answers.goal]) noteParts.push(`희망 목표: ${goalLabels[answers.goal]}`);
+        const trackNoteHtml = noteParts.length ? `<p class="track-note">${noteParts.join(' · ')}</p>` : '';
+
         const trackCardHtml = `
             <div class="track-card" style="--track-color: ${track.color};">
                 <span class="track-badge">🏫 추천 정규수업 트랙</span>
                 <div class="track-title">${track.name}</div>
                 <p class="track-desc">${track.desc}</p>
+                ${trackNoteHtml}
                 ${trackButtonsHtml()}
             </div>
         `;

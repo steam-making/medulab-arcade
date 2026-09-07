@@ -2267,15 +2267,16 @@ def member_link_child(request, user_id):
     """학부모 계정에 자녀(학생) 계정 연결"""
     parent_user = get_object_or_404(User, pk=user_id)
     child_id = request.POST.get('child_id')
+    next_url = request.POST.get('next') or reverse('member_edit', args=[parent_user.id])
     try:
         child_user = User.objects.get(pk=child_id)
     except (User.DoesNotExist, ValueError, TypeError):
         messages.error(request, '연결할 학생 계정을 찾을 수 없습니다.')
-        return redirect('member_edit', user_id=parent_user.id)
+        return redirect(next_url)
 
     if child_user.id == parent_user.id:
         messages.error(request, '같은 계정을 연결할 수 없습니다.')
-        return redirect('member_edit', user_id=parent_user.id)
+        return redirect(next_url)
 
     _, created = ParentChildLink.objects.get_or_create(
         parent=parent_user, child=child_user, defaults={'linked_by': request.user}
@@ -2284,7 +2285,7 @@ def member_link_child(request, user_id):
         messages.success(request, f'"{child_user.profile.real_name or child_user.username}" 계정을 자녀로 연결했습니다.')
     else:
         messages.info(request, '이미 연결된 계정입니다.')
-    return redirect('member_edit', user_id=parent_user.id)
+    return redirect(next_url)
 
 
 @login_required
@@ -2398,13 +2399,14 @@ def member_convert_to_active(request, user_id):
 def member_delete(request, user_id):
     """회원 삭제"""
     target_user = get_object_or_404(User, pk=user_id)
+    next_url = request.POST.get('next') or reverse('member_list')
     if target_user == request.user:
         messages.error(request, '본인 계정은 삭제할 수 없습니다.')
     else:
         username = target_user.username
         target_user.delete()
         messages.success(request, f'회원 "{username}" 계정이 삭제되었습니다.')
-    return redirect('member_list')
+    return redirect(next_url)
 
 
 # ────────────────────────────────────────────────
@@ -2702,20 +2704,27 @@ def class_enroll_student(request, class_id):
     """수업에 학생 배정 (다중 선택)"""
     school_class = get_object_or_404(SchoolClass, pk=class_id)
     student_ids = request.POST.getlist('student_ids')
+    next_url = request.POST.get('next') or reverse('class_admin_edit', args=[school_class.pk])
     added = 0
     for sid in student_ids:
         try:
             student = User.objects.get(pk=sid)
         except (User.DoesNotExist, ValueError):
             continue
-        _, created = ClassEnrollment.objects.get_or_create(school_class=school_class, student=student)
+        enrollment, created = ClassEnrollment.objects.get_or_create(
+            school_class=school_class, student=student, defaults={'is_active': True}
+        )
         if created:
+            added += 1
+        elif not enrollment.is_active:
+            enrollment.is_active = True
+            enrollment.save(update_fields=['is_active'])
             added += 1
     if added:
         messages.success(request, f'{added}명을 "{school_class.name}" 수업에 배정했습니다.')
     else:
         messages.info(request, '새로 배정된 학생이 없습니다.')
-    return redirect('class_admin_edit', class_id=school_class.pk)
+    return redirect(next_url)
 
 
 @login_required
@@ -2789,6 +2798,42 @@ def class_admin_generate_invoices(request, class_id):
     else:
         messages.info(request, f'이미 {period_label} 청구서가 모두 생성되어 있습니다.')
     return redirect('class_admin_edit', class_id=school_class.pk)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def tuition_generate_invoices_all(request):
+    """모든 활성 수업을 대상으로, 조회 중인 달의 청구서를 한번에 일괄 생성"""
+    import calendar
+    import datetime
+
+    try:
+        year = int(request.POST.get('year'))
+        month = int(request.POST.get('month'))
+    except (TypeError, ValueError):
+        today = timezone.localdate()
+        year, month = today.year, today.month
+
+    last_day = calendar.monthrange(year, month)[1]
+    due_date = datetime.date(year, month, last_day)
+
+    total_created = 0
+    class_count = 0
+    for school_class in SchoolClass.objects.filter(is_active=True):
+        created = generate_invoices_for_class(school_class, due_date=due_date)
+        if created:
+            class_count += 1
+        total_created += created
+
+    period_label = f'{year}년 {month}월'
+    if total_created:
+        messages.success(request, f'{period_label} 청구서 {total_created}건을 생성했습니다. ({class_count}개 수업)')
+    else:
+        messages.info(request, f'{period_label} 청구서가 이미 모두 생성되어 있거나, 배정된 학생이 없습니다.')
+
+    next_url = request.POST.get('next') or reverse('tuition_admin_dashboard')
+    return redirect(next_url)
 
 
 def _class_session_dates(school_class, year, month):
@@ -4697,9 +4742,12 @@ def _render_staff_student_dashboard(request):
     today = timezone.localdate()
     current_year, current_month = today.year, today.month
 
+    from .models import ParentChildLink
+
     students = list(
         User.objects.filter(profile__user_type='medulab_member')
         .select_related('profile')
+        .prefetch_related('parent_links__parent__profile')
         .order_by('profile__real_name', 'username')
     )
     student_ids = [s.id for s in students]
@@ -4732,6 +4780,12 @@ def _render_staff_student_dashboard(request):
             if existing is None or (sc.start_time and sc.start_time < existing[0]):
                 today_class_info[enrollment.student_id] = (sc.start_time, sc.name)
 
+    today_classes = list(
+        SchoolClass.objects.filter(is_active=True)
+        .order_by('start_time', 'name')
+    )
+    today_classes = [c for c in today_classes if today_code in (c.days_of_week.split(',') if c.days_of_week else [])]
+
     for s in students:
         s.attended_today = s.id in today_attended_ids
         s.month_attendance_count = month_attendance_counts.get(s.id, 0)
@@ -4739,6 +4793,7 @@ def _render_staff_student_dashboard(request):
         info = today_class_info.get(s.id)
         s.today_class_name = info[1] if info else ''
         s.today_class_time = info[0] if info else None
+        s.parent_link = s.parent_links.all()[0] if s.parent_links.all() else None
 
     # 수업시간 오름차순(수업 없는 학생은 뒤로) → 이름 오름차순
     students.sort(key=lambda s: (
@@ -4778,6 +4833,7 @@ def _render_staff_student_dashboard(request):
         'upcoming_exam_count': upcoming_exam_count,
         'students': students,
         'current_month': current_month,
+        'today_classes': today_classes,
     }
     return render(request, 'arcade/admin/staff_student_dashboard.html', context)
 

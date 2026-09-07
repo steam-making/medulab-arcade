@@ -149,6 +149,13 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-arrow">← 이전 달</a>
         <span class="pay-month">{{ year }}년 {{ month }}월</span>
         <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-arrow">다음 달 →</a>
+        <form method="post" action="{% url 'tuition_generate_invoices_all' %}" onsubmit="return confirm('{{ year }}년 {{ month }}월 청구서를 모든 수업에 대해 일괄 생성할까요? (이미 생성된 청구서는 건너뜁니다)')">
+            {% csrf_token %}
+            <input type="hidden" name="year" value="{{ year }}">
+            <input type="hidden" name="month" value="{{ month }}">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="nav-arrow" style="background:rgba(0,255,180,0.12); color:var(--accent-green); border-color:rgba(0,255,180,0.3); cursor:pointer;">🧾 {{ month }}월 청구서 일괄 생성</button>
+        </form>
     </div>
 
     <div class="stat-grid">

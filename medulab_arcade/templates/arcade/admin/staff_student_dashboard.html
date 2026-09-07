@@ -33,6 +33,29 @@
     .sub-panel-header h3 { font-size:15px; font-weight:800; color:#fff; }
     .sub-panel-header a { font-size:12px; color: var(--accent-blue); text-decoration:none; }
     .sub-panel-header a:hover { text-decoration:underline; }
+
+    .link-yes { background: rgba(0,255,180,0.15); color: var(--accent-green); }
+    .link-no { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .row-actions { display:flex; gap:6px; align-items:center; }
+    .row-action-link { border:none; background:none; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; text-decoration:none; white-space:nowrap; }
+    .row-action-link.edit { background:rgba(59,130,246,0.12); color:#93c5fd; }
+    .row-action-link.edit:hover { background:rgba(59,130,246,0.22); }
+    .row-action-link.delete { background:rgba(239,68,68,0.12); color:#fca5a5; }
+    .row-action-link.delete:hover { background:rgba(239,68,68,0.22); }
+    .quick-link-btn, .quick-assign-btn { border:none; background:rgba(251,191,36,0.12); color:#fbbf24; padding:3px 9px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .quick-link-btn:hover, .quick-assign-btn:hover { background:rgba(251,191,36,0.22); }
+    .quick-assign-select { padding:4px 6px; border-radius:6px; background:rgba(255,255,255,0.06); border:1px solid var(--border); color:#fff; font-size:11px; color-scheme:dark; max-width:150px; }
+
+    .qp-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; align-items:center; justify-content:center; padding:20px; }
+    .qp-modal-overlay.show { display:flex; }
+    .qp-modal-box { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:26px; max-width:400px; width:100%; box-sizing:border-box; position:relative; }
+    .qp-modal-close { position:absolute; top:14px; right:16px; background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; line-height:1; }
+    .qp-modal-close:hover { color:#fff; }
+    .qp-modal-box h3 { font-size:15px; font-weight:800; color:#fff; margin-bottom:14px; }
+    .qp-search-input { width:100%; padding:10px 14px; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:10px; color:#fff; font-size:13px; box-sizing:border-box; margin-bottom:10px; }
+    .qp-result-item { padding:9px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:#fff; }
+    .qp-result-item:hover { background:rgba(0,255,180,0.1); }
+    .qp-empty { color:var(--text-muted); font-size:12px; padding:8px 4px; }
 </style>
 {% endblock %}
 
@@ -129,13 +152,22 @@
     <div class="table-wrap">
         <table>
             <thead>
-                <tr><th>오늘 수업</th><th>학생</th><th>오늘 출석</th><th>{{ current_month }}월 출석 횟수</th><th>승인 상태</th></tr>
+                <tr><th>오늘 수업</th><th>학생</th><th>오늘 출석</th><th>{{ current_month }}월 출석 횟수</th><th>학부모 연동</th><th>승인 상태</th><th>관리</th></tr>
             </thead>
             <tbody>
                 {% for s in students %}
                 <tr class="clickable" data-scheduled-today="{{ s.scheduled_today|yesno:'1,0' }}" data-attended-today="{{ s.attended_today|yesno:'1,0' }}" onclick="location.href='{% url 'admin_student_report' s.id %}'">
                     <td style="font-size:12px; color:var(--text-muted); white-space:nowrap;">
                         {% if s.today_class_time %}<span style="color:#93c5fd; font-weight:700;">{{ s.today_class_time|time:"H:i" }}</span> {{ s.today_class_name }}
+                        {% elif today_classes %}
+                        <div onclick="event.stopPropagation();">
+                            <select class="quick-assign-select" id="assignSelect{{ s.id }}">
+                                {% for c in today_classes %}
+                                <option value="{{ c.id }}">{{ c.start_time|time:"H:i" }} {{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="quick-assign-btn" onclick="quickAssignClass({{ s.id }})">배정</button>
+                        </div>
                         {% else %}-{% endif %}
                     </td>
                     <td style="font-weight:700; color:#fff;">{{ s.profile.real_name|default:s.username }} <span style="color:var(--text-muted); font-size:11px; font-weight:400;">@{{ s.username }}</span></td>
@@ -144,18 +176,57 @@
                         {% else %}<span class="attend-badge attend-no">미출석</span>{% endif %}
                     </td>
                     <td>{{ s.month_attendance_count }}회</td>
+                    <td onclick="event.stopPropagation();">
+                        {% if s.parent_link %}
+                        <span class="attend-badge link-yes">🔗 {{ s.parent_link.parent.profile.real_name|default:s.parent_link.parent.username }}</span>
+                        {% else %}
+                        <span class="attend-badge link-no">미연동</span>
+                        <button type="button" class="quick-link-btn" onclick="openParentLinkModal({{ s.id }}, '{{ s.profile.real_name|default:s.username|escapejs }}')">연동</button>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if s.profile.is_approved %}<span class="attend-badge attend-yes">승인됨</span>
                         {% else %}<span class="attend-badge attend-no">대기중</span>{% endif %}
                     </td>
+                    <td onclick="event.stopPropagation();">
+                        <div class="row-actions">
+                            <a href="{% url 'member_edit' s.id %}" class="row-action-link edit">수정</a>
+                            <form method="post" action="{% url 'member_delete' s.id %}" onsubmit="return confirm('\'{{ s.profile.real_name|default:s.username|escapejs }}\' 회원을 삭제할까요? 되돌릴 수 없습니다.')">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="row-action-link delete">삭제</button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5" style="text-align:center; padding:60px; color:var(--text-muted);">등록된 메듀랩 학생회원이 없습니다.</td></tr>
+                <tr><td colspan="7" style="text-align:center; padding:60px; color:var(--text-muted);">등록된 메듀랩 학생회원이 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<div class="qp-modal-overlay" id="parentLinkOverlay" onclick="if(event.target===this) closeParentLinkModal();">
+    <div class="qp-modal-box">
+        <button type="button" class="qp-modal-close" onclick="closeParentLinkModal()">✕</button>
+        <h3 id="parentLinkTitle">학부모 연동</h3>
+        <input type="text" class="qp-search-input" id="parentSearchInput" placeholder="학부모 이름/아이디로 검색..." oninput="searchParent(this.value)">
+        <div id="parentSearchResults"></div>
+    </div>
+</div>
+
+<form id="quickLinkForm" method="post" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="child_id" id="quickLinkChildId">
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+</form>
+
+<form id="quickAssignForm" method="post" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="student_ids" id="quickAssignStudentId">
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+</form>
 <script>
 const allPanelIds = ['certPanel', 'awardPanel', 'examPanel'];
 const allStatIds = ['todayAttendStat', 'certStat', 'awardStat', 'examStat'];
@@ -188,5 +259,69 @@ function togglePanel(panelId, statId) {
     document.getElementById(panelId).classList.add('show');
     document.getElementById(statId).classList.add('active');
 }
+
+// ── 학부모 연동 (빠른 연동) ──
+let qpCurrentChildId = null;
+function openParentLinkModal(childId, childName) {
+    qpCurrentChildId = childId;
+    document.getElementById('parentLinkTitle').textContent = childName + ' - 학부모 연동';
+    document.getElementById('parentSearchInput').value = '';
+    document.getElementById('parentSearchResults').innerHTML = '<div class="qp-empty">학부모 이름이나 아이디를 입력하세요.</div>';
+    document.getElementById('parentLinkOverlay').classList.add('show');
+    setTimeout(function () { document.getElementById('parentSearchInput').focus(); }, 50);
+}
+function closeParentLinkModal() {
+    document.getElementById('parentLinkOverlay').classList.remove('show');
+    qpCurrentChildId = null;
+}
+let qpSearchTimer = null;
+function searchParent(q) {
+    clearTimeout(qpSearchTimer);
+    const resultsEl = document.getElementById('parentSearchResults');
+    if (!q || q.trim().length < 1) {
+        resultsEl.innerHTML = '<div class="qp-empty">학부모 이름이나 아이디를 입력하세요.</div>';
+        return;
+    }
+    qpSearchTimer = setTimeout(function () {
+        fetch('/api/search-members/?q=' + encodeURIComponent(q))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                const members = data.members || [];
+                if (members.length === 0) {
+                    resultsEl.innerHTML = '<div class="qp-empty">검색 결과가 없습니다.</div>';
+                    return;
+                }
+                resultsEl.innerHTML = members.map(function (m) {
+                    return '<div class="qp-result-item" onclick="selectParent(' + m.id + ', \'' + m.display.replace(/'/g, "\\'") + '\')">' +
+                        m.display + ' <span style="color:var(--text-muted); font-size:11px;">@' + m.username + '</span></div>';
+                }).join('');
+            })
+            .catch(function () { resultsEl.innerHTML = '<div class="qp-empty">검색 중 오류가 발생했습니다.</div>'; });
+    }, 250);
+}
+function selectParent(parentId, parentName) {
+    if (!qpCurrentChildId) return;
+    if (!confirm('"' + parentName + '" 계정을 학부모로 연동할까요?')) return;
+    const form = document.getElementById('quickLinkForm');
+    form.action = '/admin-services/members/' + parentId + '/link-child/';
+    document.getElementById('quickLinkChildId').value = qpCurrentChildId;
+    form.submit();
+}
+
+// ── 오늘 수업 빠른 배정 ──
+function quickAssignClass(studentId) {
+    const select = document.getElementById('assignSelect' + studentId);
+    if (!select || !select.value) return;
+    const className = select.options[select.selectedIndex].textContent;
+    if (!confirm('오늘 "' + className + '" 수업에 배정할까요?')) return;
+    const form = document.getElementById('quickAssignForm');
+    form.action = '/admin-services/classes/' + select.value + '/enroll/';
+    document.getElementById('quickAssignStudentId').value = studentId;
+    form.submit();
+}
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeParentLinkModal();
+});
 </script>
 {% endblock %}

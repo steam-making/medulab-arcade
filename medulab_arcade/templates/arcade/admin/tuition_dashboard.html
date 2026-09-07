@@ -56,6 +56,18 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 .back-link { color:var(--text-muted); font-size:13px; text-decoration:none; display:inline-block; margin-bottom:16px; }
 .search-btn { padding:10px 20px; border-radius:10px; background:var(--accent-green); color:var(--bg-primary); font-weight:800; border:none; cursor:pointer; font-size:13px; }
 
+.row-check, .select-all { width:16px; height:16px; cursor:pointer; accent-color: var(--accent-green); }
+.check-col { width:36px; text-align:center; }
+.bulk-bar { display:none; align-items:center; gap:12px; flex-wrap:wrap; background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:14px 18px; margin-bottom:14px; box-shadow:0 10px 30px rgba(0,0,0,0.2); }
+.bulk-bar.show { display:flex; }
+.bulk-bar .bulk-count { font-size:13px; font-weight:800; color:#fff; margin-right:4px; }
+.bulk-bar select { padding:9px 12px; border-radius:9px; background:rgba(255,255,255,0.06); border:1px solid var(--border); color:#fff; font-size:13px; color-scheme:dark; }
+.bulk-btn { padding:9px 16px; border-radius:9px; font-weight:700; font-size:13px; cursor:pointer; border:none; }
+.bulk-btn.status { background:rgba(59,130,246,0.15); color:#93c5fd; }
+.bulk-btn.status:hover { background:rgba(59,130,246,0.25); }
+.bulk-btn.delete { background:rgba(239,68,68,0.15); color:#fca5a5; }
+.bulk-btn.delete:hover { background:rgba(239,68,68,0.25); }
+
 .att-link { background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#93c5fd; font-weight:700; font-size:13px; padding:5px 12px; border-radius:8px; cursor:pointer; }
 .att-link:hover { background:rgba(59,130,246,0.22); }
 
@@ -76,16 +88,20 @@ tr:hover td { background:rgba(255,255,255,0.02); }
     <a href="{% url 'tuition_admin_dashboard' %}" class="back-link">← 월별 현황으로 돌아가기</a>
     <h1 class="pay-title">💳 {{ student.profile.real_name|default:student.username }}님의 납부 내역</h1>
 
+    {% include 'arcade/admin/_tuition_bulk_bar.html' %}
+
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
+                    <th class="check-col"><input type="checkbox" class="select-all"></th>
                     <th>수업</th><th>전월 출석</th><th>결제금액</th><th>상태</th><th>날짜</th><th>관리</th>
                 </tr>
             </thead>
             <tbody>
                 {% for inv in invoices %}
                 <tr>
+                    <td class="check-col"><input type="checkbox" class="row-check" name="invoice_ids" value="{{ inv.id }}" form="bulkActionForm"></td>
                     <td>
                         <div class="class-name">{{ inv.school_class.name }}</div>
                         <div class="class-period">{{ inv.billing_period_label }}</div>
@@ -120,7 +136,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:40px;">청구 내역이 없습니다.</td></tr>
+                <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:40px;">청구 내역이 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -155,16 +171,20 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <button type="submit" class="search-btn">검색</button>
     </form>
 
+    {% include 'arcade/admin/_tuition_bulk_bar.html' %}
+
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
+                    <th class="check-col"><input type="checkbox" class="select-all"></th>
                     <th>학생</th><th>수업</th><th>전월 출석</th><th>결제금액</th><th>상태</th><th>날짜</th><th>관리</th>
                 </tr>
             </thead>
             <tbody>
                 {% for inv in invoices %}
                 <tr>
+                    <td class="check-col"><input type="checkbox" class="row-check" name="invoice_ids" value="{{ inv.id }}" form="bulkActionForm"></td>
                     <td><a href="?student_id={{ inv.student.id }}" class="student-link">{{ inv.student.profile.real_name|default:inv.student.username }}</a></td>
                     <td>
                         <div class="class-name">{{ inv.school_class.name }}</div>
@@ -200,7 +220,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:40px;">해당 월의 청구서가 없습니다.</td></tr>
+                <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:40px;">해당 월의 청구서가 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -232,5 +252,56 @@ function closeAttendanceModal() {
 document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closeAttendanceModal();
 });
+
+(function () {
+    var bulkForm = document.getElementById('bulkActionForm');
+    if (!bulkForm) return;
+
+    function updateBulkBar() {
+        var checked = document.querySelectorAll('.row-check:checked');
+        var bar = document.getElementById('bulkBar');
+        var countEl = document.getElementById('bulkCount');
+        if (checked.length > 0) {
+            bar.classList.add('show');
+            countEl.textContent = checked.length + '건 선택됨';
+        } else {
+            bar.classList.remove('show');
+        }
+    }
+
+    document.querySelectorAll('.row-check').forEach(function (cb) {
+        cb.addEventListener('change', updateBulkBar);
+    });
+
+    document.querySelectorAll('.select-all').forEach(function (sa) {
+        sa.addEventListener('change', function () {
+            document.querySelectorAll('.row-check').forEach(function (cb) { cb.checked = sa.checked; });
+            updateBulkBar();
+        });
+    });
+
+    bulkForm.addEventListener('submit', function (e) {
+        var checked = document.querySelectorAll('.row-check:checked');
+        if (checked.length === 0) {
+            e.preventDefault();
+            alert('선택된 청구서가 없습니다.');
+            return;
+        }
+        var actionType = document.getElementById('bulkActionType').value;
+        if (actionType === 'delete') {
+            if (!confirm(checked.length + '건의 청구서를 삭제할까요? 되돌릴 수 없습니다.')) {
+                e.preventDefault();
+            }
+        } else if (actionType === 'status') {
+            var select = document.getElementById('bulkStatusSelect');
+            var label = select.options[select.selectedIndex].textContent;
+            if (!confirm(checked.length + '건을 "' + label + '" 처리할까요?')) {
+                e.preventDefault();
+            }
+        } else {
+            e.preventDefault();
+        }
+    });
+})();
 </script>
 {% endblock %}

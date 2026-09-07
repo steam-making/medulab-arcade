@@ -1,0 +1,16 @@
+{% load humanize %}
+<form id="bulkActionForm" method="post" action="{% url 'tuition_invoice_bulk_action' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <input type="hidden" name="bulk_action" id="bulkActionType" value="">
+    <div class="bulk-bar" id="bulkBar">
+        <span class="bulk-count" id="bulkCount">0건 선택됨</span>
+        <select name="status" id="bulkStatusSelect">
+            <option value="unpaid">미납으로 변경</option>
+            <option value="paid">완납으로 변경</option>
+            <option value="canceled">취소로 변경</option>
+        </select>
+        <button type="submit" class="bulk-btn status" onclick="document.getElementById('bulkActionType').value='status';">일괄 상태변경</button>
+        <button type="submit" class="bulk-btn delete" onclick="document.getElementById('bulkActionType').value='delete';">선택 삭제</button>
+    </div>
+</form>

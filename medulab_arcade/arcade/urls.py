@@ -162,6 +162,7 @@ urlpatterns = [
     path('admin-services/tuition/<int:invoice_id>/attendance/', views.tuition_invoice_attendance_detail, name='tuition_invoice_attendance_detail'),
     path('admin-services/tuition/<int:invoice_id>/edit/', views.tuition_invoice_edit, name='tuition_invoice_edit'),
     path('admin-services/tuition/<int:invoice_id>/delete/', views.tuition_invoice_delete, name='tuition_invoice_delete'),
+    path('admin-services/tuition/bulk/', views.tuition_invoice_bulk_action, name='tuition_invoice_bulk_action'),
 
     # 학원비 결제 (포트원)
     path('tuition/<int:invoice_id>/checkout/', views.tuition_checkout, name='tuition_checkout'),

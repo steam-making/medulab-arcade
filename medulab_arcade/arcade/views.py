@@ -3013,6 +3013,46 @@ def tuition_invoice_delete(request, invoice_id):
 
 @login_required
 @user_passes_test(staff_check)
+@require_POST
+def tuition_invoice_bulk_action(request):
+    """청구서 여러 건을 한번에 삭제하거나 상태를 일괄 변경"""
+    next_url = request.POST.get('next') or reverse('tuition_admin_dashboard')
+    ids = request.POST.getlist('invoice_ids')
+    if not ids:
+        messages.error(request, '선택된 청구서가 없습니다.')
+        return redirect(next_url)
+
+    invoices = TuitionInvoice.objects.filter(pk__in=ids)
+    bulk_action = request.POST.get('bulk_action')
+
+    if bulk_action == 'delete':
+        count = invoices.count()
+        invoices.delete()
+        messages.success(request, f'청구서 {count}건을 삭제했습니다.')
+    elif bulk_action == 'status':
+        status = request.POST.get('status')
+        if status not in dict(TuitionInvoice.STATUS_CHOICES):
+            messages.error(request, '상태 값이 올바르지 않습니다.')
+            return redirect(next_url)
+        count = 0
+        for invoice in invoices:
+            if status == TuitionInvoice.STATUS_PAID and invoice.status != TuitionInvoice.STATUS_PAID:
+                invoice.paid_at = timezone.now()
+            elif status != TuitionInvoice.STATUS_PAID:
+                invoice.paid_at = None
+            invoice.status = status
+            invoice.save(update_fields=['status', 'paid_at'])
+            count += 1
+        status_label = dict(TuitionInvoice.STATUS_CHOICES).get(status, status)
+        messages.success(request, f'청구서 {count}건을 "{status_label}"(으)로 변경했습니다.')
+    else:
+        messages.error(request, '알 수 없는 작업입니다.')
+
+    return redirect(next_url)
+
+
+@login_required
+@user_passes_test(staff_check)
 def tuition_invoice_attendance_detail(request, invoice_id):
     """청구서의 전월 출석 근거를 보여주는 모달 내용 (결석 차감 계산에 쓰인 그대로)"""
     invoice = get_object_or_404(

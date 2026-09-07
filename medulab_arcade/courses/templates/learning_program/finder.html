@@ -115,39 +115,37 @@
         transform: translateX(0);
     }
 
-    /* 로봇 교구 다중 선택 체크박스 */
+    /* 로봇 교구 / 관심분야 다중 선택 (체크박스 없이 색상 토글) */
     .checkbox-grid {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
         margin-top: 8px;
     }
-    .checkbox-pill {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        padding: 10px 14px;
+    .pill-toggle {
+        padding: 10px 16px;
         border-radius: 14px;
         background: rgba(255, 255, 255, 0.04);
         border: 1px solid var(--dash-border);
         font-size: 13px;
+        font-weight: 700;
         color: var(--text-secondary);
         cursor: pointer;
         transition: all 0.2s;
+        font-family: inherit;
     }
-    .checkbox-pill:has(input:checked) {
+    .pill-toggle:hover {
+        border-color: rgba(59, 130, 246, 0.4);
+        color: #fff;
+    }
+    .pill-toggle.selected {
         border-color: var(--neon-blue);
         color: #fff;
-        background: rgba(59, 130, 246, 0.1);
+        background: rgba(59, 130, 246, 0.18);
     }
-    .checkbox-pill input {
-        width: 16px;
-        height: 16px;
-        cursor: pointer;
-        accent-color: var(--neon-blue);
-    }
-    .checkbox-pill input:disabled + span {
-        opacity: 0.4;
+    .pill-toggle:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
     }
     .robot-form-label {
         display: block;
@@ -548,13 +546,13 @@
         if (step.type === 'robot_detail') {
             optionsHtml = `
                 <div style="margin-bottom:20px;">
-                    <label class="robot-form-label">사용한 교구 (복수 선택 가능)</label>
+                    <label class="robot-form-label">사용한 교구 (여러 개 선택 가능)</label>
                     <div class="checkbox-grid">
                         ${robotKitOptions.map(k => `
-                            <label class="checkbox-pill"><input type="checkbox" class="robot-kit-cb" value="${k}"><span>${k}</span></label>
+                            <button type="button" class="pill-toggle robot-kit-pill" data-value="${k}" onclick="this.classList.toggle('selected')">${k}</button>
                         `).join('')}
-                        <label class="checkbox-pill"><input type="checkbox" class="robot-kit-cb" value="__other__" onchange="toggleRobotOther(this)"><span>기타 직접입력</span></label>
-                        <label class="checkbox-pill"><input type="checkbox" class="robot-kit-cb" value="모르겠음" onchange="toggleDontKnowKit(this)"><span>모르겠음</span></label>
+                        <button type="button" class="pill-toggle robot-kit-pill" data-value="__other__" onclick="toggleRobotOther(this)">기타 직접입력</button>
+                        <button type="button" class="pill-toggle robot-kit-pill" data-value="모르겠음" onclick="toggleDontKnowKit(this)">모르겠음</button>
                     </div>
                     <input type="text" id="robotKitOtherInput" class="robot-text-input" style="display:none; margin-top:10px;" placeholder="교구 이름을 입력해 주세요">
                 </div>
@@ -570,7 +568,7 @@
             optionsHtml = `
                 <div class="checkbox-grid" style="margin-bottom:20px;">
                     ${step.options.map(opt => `
-                        <label class="checkbox-pill"><input type="checkbox" class="multi-choice-cb" value="${opt.value}"><span>${opt.text}</span></label>
+                        <button type="button" class="pill-toggle multi-choice-pill" data-value="${opt.value}" onclick="this.classList.toggle('selected')">${opt.text}</button>
                     `).join('')}
                 </div>
                 <button class="option-button" style="justify-content:center;" onclick="submitMultiChoice()">
@@ -634,24 +632,27 @@
         advanceStep();
     }
 
-    function toggleRobotOther(cb) {
-        document.getElementById('robotKitOtherInput').style.display = cb.checked ? 'block' : 'none';
+    function toggleRobotOther(btn) {
+        btn.classList.toggle('selected');
+        document.getElementById('robotKitOtherInput').style.display = btn.classList.contains('selected') ? 'block' : 'none';
     }
 
-    function toggleDontKnowKit(cb) {
-        document.querySelectorAll('.robot-kit-cb').forEach(other => {
-            if (other !== cb) {
-                other.disabled = cb.checked;
-                if (cb.checked) other.checked = false;
+    function toggleDontKnowKit(btn) {
+        btn.classList.toggle('selected');
+        const isSelected = btn.classList.contains('selected');
+        document.querySelectorAll('.robot-kit-pill').forEach(other => {
+            if (other !== btn) {
+                other.disabled = isSelected;
+                if (isSelected) other.classList.remove('selected');
             }
         });
-        if (cb.checked) document.getElementById('robotKitOtherInput').style.display = 'none';
+        if (isSelected) document.getElementById('robotKitOtherInput').style.display = 'none';
     }
 
     function submitRobotDetail() {
-        const checked = Array.from(document.querySelectorAll('.robot-kit-cb:checked')).map(cb => cb.value);
-        const kits = checked.filter(v => v !== '__other__');
-        if (checked.includes('__other__')) {
+        const selected = Array.from(document.querySelectorAll('.robot-kit-pill.selected')).map(b => b.dataset.value);
+        const kits = selected.filter(v => v !== '__other__');
+        if (selected.includes('__other__')) {
             const other = (document.getElementById('robotKitOtherInput').value || '').trim();
             if (other) kits.push(other);
         }
@@ -662,7 +663,7 @@
 
     function submitMultiChoice() {
         const step = flow[currentStep];
-        answers[step.key] = Array.from(document.querySelectorAll('.multi-choice-cb:checked')).map(cb => cb.value);
+        answers[step.key] = Array.from(document.querySelectorAll('.multi-choice-pill.selected')).map(b => b.dataset.value);
         advanceStep();
     }
 

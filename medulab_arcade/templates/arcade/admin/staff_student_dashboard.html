@@ -56,6 +56,12 @@
     .qp-result-item { padding:9px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:#fff; }
     .qp-result-item:hover { background:rgba(0,255,180,0.1); }
     .qp-empty { color:var(--text-muted); font-size:12px; padding:8px 4px; }
+    .day-filter-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+    .day-filter-btn { border:1px solid var(--border); background:rgba(255,255,255,0.05); color:var(--text-secondary); padding:5px 11px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; }
+    .day-filter-btn:hover { background:rgba(255,255,255,0.1); }
+    .day-filter-btn.active { background:rgba(0,255,180,0.15); color:var(--accent-green); border-color:rgba(0,255,180,0.3); }
+    .class-assign-list { max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:2px; }
+    .class-list-item { display:flex; align-items:center; flex-wrap:wrap; }
 </style>
 {% endblock %}
 
@@ -152,22 +158,15 @@
     <div class="table-wrap">
         <table>
             <thead>
-                <tr><th>오늘 수업</th><th>학생</th><th>오늘 출석</th><th>{{ current_month }}월 출석 횟수</th><th>학부모 연동</th><th>승인 상태</th><th>관리</th></tr>
+                <tr><th>수업</th><th>학생</th><th>오늘 출석</th><th>{{ current_month }}월 출석 횟수</th><th>학부모 연동</th><th>승인 상태</th><th>관리</th></tr>
             </thead>
             <tbody>
                 {% for s in students %}
                 <tr class="clickable" data-scheduled-today="{{ s.scheduled_today|yesno:'1,0' }}" data-attended-today="{{ s.attended_today|yesno:'1,0' }}" onclick="location.href='{% url 'admin_student_report' s.id %}'">
-                    <td style="font-size:12px; color:var(--text-muted); white-space:nowrap;">
+                    <td style="font-size:12px; color:var(--text-muted); white-space:nowrap;" onclick="event.stopPropagation();">
                         {% if s.today_class_time %}<span style="color:#93c5fd; font-weight:700;">{{ s.today_class_time|time:"H:i" }}</span> {{ s.today_class_name }}
-                        {% elif today_classes %}
-                        <div onclick="event.stopPropagation();">
-                            <select class="quick-assign-select" id="assignSelect{{ s.id }}">
-                                {% for c in today_classes %}
-                                <option value="{{ c.id }}">{{ c.start_time|time:"H:i" }} {{ c.name }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="button" class="quick-assign-btn" onclick="quickAssignClass({{ s.id }})">배정</button>
-                        </div>
+                        {% elif all_classes %}
+                        <button type="button" class="quick-assign-btn" onclick="openClassAssignModal({{ s.id }}, '{{ s.profile.real_name|default:s.username|escapejs }}')">배정</button>
                         {% else %}-{% endif %}
                     </td>
                     <td style="font-weight:700; color:#fff;">{{ s.profile.real_name|default:s.username }} <span style="color:var(--text-muted); font-size:11px; font-weight:400;">@{{ s.username }}</span></td>
@@ -213,6 +212,33 @@
         <h3 id="parentLinkTitle">학부모 연동</h3>
         <input type="text" class="qp-search-input" id="parentSearchInput" placeholder="학부모 이름/아이디로 검색..." oninput="searchParent(this.value)">
         <div id="parentSearchResults"></div>
+    </div>
+</div>
+
+<div class="qp-modal-overlay" id="classAssignOverlay" onclick="if(event.target===this) closeClassAssignModal();">
+    <div class="qp-modal-box">
+        <button type="button" class="qp-modal-close" onclick="closeClassAssignModal()">✕</button>
+        <h3 id="classAssignTitle">수업 배정</h3>
+        <div class="day-filter-bar">
+            <button type="button" class="day-filter-btn active" data-day="all" onclick="filterClassList('all', this)">전체</button>
+            <button type="button" class="day-filter-btn" data-day="0" onclick="filterClassList('0', this)">일</button>
+            <button type="button" class="day-filter-btn" data-day="1" onclick="filterClassList('1', this)">월</button>
+            <button type="button" class="day-filter-btn" data-day="2" onclick="filterClassList('2', this)">화</button>
+            <button type="button" class="day-filter-btn" data-day="3" onclick="filterClassList('3', this)">수</button>
+            <button type="button" class="day-filter-btn" data-day="4" onclick="filterClassList('4', this)">목</button>
+            <button type="button" class="day-filter-btn" data-day="5" onclick="filterClassList('5', this)">금</button>
+            <button type="button" class="day-filter-btn" data-day="6" onclick="filterClassList('6', this)">토</button>
+        </div>
+        <div id="classAssignList" class="class-assign-list">
+            {% for c in all_classes %}
+            <div class="qp-result-item class-list-item" data-days="{{ c.days_of_week }}" onclick="selectClassToAssign({{ c.id }}, '{{ c.name|escapejs }}')">
+                <span style="font-weight:700;">{{ c.name }}</span>
+                <span style="color:var(--text-muted); font-size:11px; margin-left:6px;">{{ c.days_display|default:"-" }} {{ c.start_time|time:"H:i"|default:"" }}</span>
+            </div>
+            {% empty %}
+            <div class="qp-empty">등록된 수업이 없습니다.</div>
+            {% endfor %}
+        </div>
     </div>
 </div>
 
@@ -308,20 +334,40 @@ function selectParent(parentId, parentName) {
     form.submit();
 }
 
-// ── 오늘 수업 빠른 배정 ──
-function quickAssignClass(studentId) {
-    const select = document.getElementById('assignSelect' + studentId);
-    if (!select || !select.value) return;
-    const className = select.options[select.selectedIndex].textContent;
-    if (!confirm('오늘 "' + className + '" 수업에 배정할까요?')) return;
+// ── 수업 빠른 배정 ──
+let qaCurrentStudentId = null;
+function openClassAssignModal(studentId, studentName) {
+    qaCurrentStudentId = studentId;
+    document.getElementById('classAssignTitle').textContent = studentName + ' - 수업 배정';
+    document.querySelectorAll('.day-filter-btn').forEach(function (b) { b.classList.remove('active'); });
+    document.querySelector('.day-filter-btn[data-day="all"]').classList.add('active');
+    document.querySelectorAll('.class-list-item').forEach(function (el) { el.style.display = ''; });
+    document.getElementById('classAssignOverlay').classList.add('show');
+}
+function closeClassAssignModal() {
+    document.getElementById('classAssignOverlay').classList.remove('show');
+    qaCurrentStudentId = null;
+}
+function filterClassList(day, btn) {
+    document.querySelectorAll('.day-filter-btn').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.querySelectorAll('.class-list-item').forEach(function (el) {
+        if (day === 'all') { el.style.display = ''; return; }
+        const days = (el.dataset.days || '').split(',');
+        el.style.display = days.indexOf(day) !== -1 ? '' : 'none';
+    });
+}
+function selectClassToAssign(classId, className) {
+    if (!qaCurrentStudentId) return;
+    if (!confirm('"' + className + '" 수업에 배정할까요?')) return;
     const form = document.getElementById('quickAssignForm');
-    form.action = '/admin-services/classes/' + select.value + '/enroll/';
-    document.getElementById('quickAssignStudentId').value = studentId;
+    form.action = '/admin-services/classes/' + classId + '/enroll/';
+    document.getElementById('quickAssignStudentId').value = qaCurrentStudentId;
     form.submit();
 }
 
 document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeParentLinkModal();
+    if (e.key === 'Escape') { closeParentLinkModal(); closeClassAssignModal(); }
 });
 </script>
 {% endblock %}

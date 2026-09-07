@@ -4780,11 +4780,10 @@ def _render_staff_student_dashboard(request):
             if existing is None or (sc.start_time and sc.start_time < existing[0]):
                 today_class_info[enrollment.student_id] = (sc.start_time, sc.name)
 
-    today_classes = list(
+    all_classes = list(
         SchoolClass.objects.filter(is_active=True)
         .order_by('start_time', 'name')
     )
-    today_classes = [c for c in today_classes if today_code in (c.days_of_week.split(',') if c.days_of_week else [])]
 
     for s in students:
         s.attended_today = s.id in today_attended_ids
@@ -4833,7 +4832,7 @@ def _render_staff_student_dashboard(request):
         'upcoming_exam_count': upcoming_exam_count,
         'students': students,
         'current_month': current_month,
-        'today_classes': today_classes,
+        'all_classes': all_classes,
     }
     return render(request, 'arcade/admin/staff_student_dashboard.html', context)
 

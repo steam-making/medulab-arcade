@@ -138,8 +138,10 @@
                         document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
                     }
                 });
-            }).catch(function () {
-                showStatus('error', '결제 중 오류가 발생했습니다.');
+            }).catch(function (err) {
+                console.error('PortOne requestPayment error:', err);
+                var detail = (err && (err.message || err.pgMessage || err.errorMsg)) || '';
+                showStatus('error', '결제 중 오류가 발생했습니다.' + (detail ? ' (' + detail + ')' : ''));
                 document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
             });
         });

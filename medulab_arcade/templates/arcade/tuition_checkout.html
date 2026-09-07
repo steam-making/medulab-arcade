@@ -81,6 +81,37 @@
         statusEl.textContent = message;
     }
 
+    function verifyPayment() {
+        fetch('{% url "tuition_verify_payment" invoice.id %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        }).then(function (r) { return r.json(); }).then(function (data) {
+            if (data.ok) {
+                showStatus('success', '결제가 완료되었습니다.');
+                setTimeout(function () { window.location.href = '{% url "my_report" %}'; }, 1200);
+            } else {
+                showStatus('error', data.error || '결제 확인에 실패했습니다.');
+                document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
+            }
+        });
+    }
+
+    // REDIRECTION 방식 결제 후 PG사에서 이 페이지로 돌아왔을 때 결과 처리
+    (function checkRedirectResult() {
+        var qs = new URLSearchParams(window.location.search);
+        if (!qs.has('paymentId')) return;
+        document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = true; });
+        history.replaceState(null, '', window.location.pathname);
+        var code = qs.get('code');
+        if (code) {
+            showStatus('error', qs.get('message') || '결제가 취소되었습니다.');
+            document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
+        } else {
+            showStatus('info', '결제 확인 중입니다...');
+            verifyPayment();
+        }
+    })();
+
     document.querySelectorAll('.pay-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = true; });
@@ -100,31 +131,22 @@
                     email: '{{ portone_customer_email|escapejs }}',
                     phoneNumber: '{{ portone_customer_phone|escapejs }}',
                 },
-                windowType: { pc: 'POPUP', mobile: 'REDIRECTION' },
+                redirectUrl: window.location.origin + window.location.pathname,
+                windowType: { pc: 'REDIRECTION', mobile: 'REDIRECTION' },
             };
             if (method === 'EASY_PAY') {
                 params.easyPay = { easyPayProvider: 'EASY_PAY_PROVIDER_KAKAOPAY' };
             }
 
             PortOne.requestPayment(params).then(function (response) {
+                // REDIRECTION 방식에서는 보통 이 콜백 대신 redirectUrl로 페이지가 이동하지만,
+                // 일부 환경에서 즉시 응답이 오는 경우를 대비해 처리를 유지한다.
                 if (!response || response.code) {
                     showStatus('error', (response && response.message) || '결제가 취소되었습니다.');
                     document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
                     return;
                 }
-
-                fetch('{% url "tuition_verify_payment" invoice.id %}', {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-                }).then(function (r) { return r.json(); }).then(function (data) {
-                    if (data.ok) {
-                        showStatus('success', '결제가 완료되었습니다.');
-                        setTimeout(function () { window.location.href = '{% url "my_report" %}'; }, 1200);
-                    } else {
-                        showStatus('error', data.error || '결제 확인에 실패했습니다.');
-                        document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
-                    }
-                });
+                verifyPayment();
             }).catch(function (err) {
                 console.error('PortOne requestPayment error:', err);
                 var detail = (err && (err.message || err.pgMessage || err.errorMsg)) || '';

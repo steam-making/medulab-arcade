@@ -94,6 +94,37 @@
         statusEl.textContent = message;
     }
 
+    function verifyPayment() {
+        fetch('{% url "tuition_batch_verify" batch.id %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+        }).then(function (r) { return r.json(); }).then(function (data) {
+            if (data.ok) {
+                showStatus('success', '결제가 완료되었습니다.');
+                setTimeout(function () { window.location.href = '{% url "my_report" %}'; }, 1200);
+            } else {
+                showStatus('error', data.error || '결제 확인에 실패했습니다.');
+                document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
+            }
+        });
+    }
+
+    // REDIRECTION 방식 결제 후 PG사에서 이 페이지로 돌아왔을 때 결과 처리
+    (function checkRedirectResult() {
+        var qs = new URLSearchParams(window.location.search);
+        if (!qs.has('paymentId')) return;
+        document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = true; });
+        history.replaceState(null, '', window.location.pathname);
+        var code = qs.get('code');
+        if (code) {
+            showStatus('error', qs.get('message') || '결제가 취소되었습니다.');
+            document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
+        } else {
+            showStatus('info', '결제 확인 중입니다...');
+            verifyPayment();
+        }
+    })();
+
     document.querySelectorAll('.pay-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = true; });
@@ -113,7 +144,8 @@
                     email: '{{ portone_customer_email|escapejs }}',
                     phoneNumber: '{{ portone_customer_phone|escapejs }}',
                 },
-                windowType: { pc: 'POPUP', mobile: 'REDIRECTION' },
+                redirectUrl: window.location.origin + window.location.pathname,
+                windowType: { pc: 'REDIRECTION', mobile: 'REDIRECTION' },
             };
             if (method === 'EASY_PAY') {
                 params.easyPay = { easyPayProvider: 'EASY_PAY_PROVIDER_KAKAOPAY' };
@@ -125,19 +157,7 @@
                     document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
                     return;
                 }
-
-                fetch('{% url "tuition_batch_verify" batch.id %}', {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-                }).then(function (r) { return r.json(); }).then(function (data) {
-                    if (data.ok) {
-                        showStatus('success', '결제가 완료되었습니다.');
-                        setTimeout(function () { window.location.href = '{% url "my_report" %}'; }, 1200);
-                    } else {
-                        showStatus('error', data.error || '결제 확인에 실패했습니다.');
-                        document.querySelectorAll('.pay-btn').forEach(function (b) { b.disabled = false; });
-                    }
-                });
+                verifyPayment();
             }).catch(function (err) {
                 console.error('PortOne requestPayment error:', err);
                 var detail = (err && (err.message || err.pgMessage || err.errorMsg)) || '';

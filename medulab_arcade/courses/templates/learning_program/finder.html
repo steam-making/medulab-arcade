@@ -69,6 +69,13 @@
         margin-bottom: 32px;
     }
 
+    .hl-word {
+        background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
     .options-list {
         display: flex;
         flex-direction: column;
@@ -528,6 +535,13 @@
     const goalLabels = {};
     originalGoalOptions.forEach(o => { goalLabels[o.value] = o.text.replace(/^\S+\s*/, ''); });
 
+    // 질문 제목에서 핵심 단어를 강조 표시
+    const highlightWords = ['연령', '학년', '코딩', '로봇', '경험', '교구', '단계', '관심', '목표', '특성', '배웠으면 하는 부분'];
+    const highlightPattern = new RegExp('(' + highlightWords.join('|') + ')', 'g');
+    function highlightTitle(title) {
+        return (title || '').replace(highlightPattern, '<span class="hl-word">$1</span>');
+    }
+
     let flow = [{ type: 'choice', key: 'age', title: questions[0].title, options: questions[0].options }];
     let currentStep = 0;
     const answers = {};
@@ -587,7 +601,7 @@
         const html = `
             <div>
                 <div class="step-indicator">${indicator}</div>
-                <h2 class="question-title">${step.title}</h2>
+                <h2 class="question-title">${highlightTitle(step.title)}</h2>
                 <div class="options-list">
                     ${optionsHtml}
                 </div>

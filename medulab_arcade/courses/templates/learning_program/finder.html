@@ -802,7 +802,7 @@
 
         function courseCardHtml(item) {
             const matched = findDbProgram(item.keyword);
-            const linksHtml = matched ? `
+            const linksHtml = (matched && !item.noLink) ? `
                 <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
                     <a href="/courses/program/${matched.id}/curriculum/" class="btn-finder btn-primary" style="flex:none; padding:8px 14px; font-size:12px;">커리큘럼 보기</a>
                     <a href="/courses/${matched.id}/" class="btn-finder btn-secondary" style="flex:none; padding:8px 14px; font-size:12px;">수강 신청</a>
@@ -819,17 +819,17 @@
 
         const ageRecommendedCourses = {
             elem_low: [
-                { title: '피지컬로봇코딩 (큐보 · 프로보 커넥트)', keyword: '로봇', desc: '큐보, 프로보 커넥트 등 로봇 교구로 조립·센서·모터 제어를 직접 실습하는 과정입니다.' },
+                { title: '피지컬로봇코딩 (큐보 · 프로보 커넥트)', keyword: '로봇', noLink: true, desc: '큐보, 프로보 커넥트 등 로봇 교구로 조립·센서·모터 제어를 직접 실습하는 과정입니다.' },
                 { title: 'AICE Future 3급 자격 취득 (KT AI코디니)', keyword: 'AICE Future 3급', desc: 'KT AI코디니로 실습하며 AICE Future 3급 자격증 취득을 목표로 하는 과정입니다.' },
                 { title: 'COS 3~4급 자격 취득 (엔트리)', keyword: 'COS 3~4급', desc: '엔트리 블록코딩으로 YBM COS(코딩활용능력) 3~4급 자격증 취득을 준비하는 과정입니다.' },
             ],
             elem_high: [
-                { title: '피지컬로봇코딩 (올로AI · 레고 스파이크프라임 · 엑스로보 · 프로보 테크닉 · 큐보 메타)', keyword: '올로AI', desc: '다양한 로봇 교구로 심화 제어와 미션 수행을 실습하는 과정입니다.' },
+                { title: '피지컬로봇코딩 (올로AI · 레고 스파이크프라임 · 엑스로보 · 프로보 테크닉 · 큐보 메타)', keyword: '올로AI', noLink: true, desc: '다양한 로봇 교구로 심화 제어와 미션 수행을 실습하는 과정입니다.' },
                 { title: 'AICE Future 1~2급 자격 취득 (KT AI코디니)', keyword: 'AICE Future 1~2급', desc: 'KT AI코디니로 실습하며 AICE Future 1~2급 자격증 취득을 목표로 하는 과정입니다.' },
                 { title: 'COS 1~2급 자격 취득 (엔트리)', keyword: 'COS 1~2급', desc: '엔트리 블록코딩으로 YBM COS 1~2급 자격증 취득을 준비하는 과정입니다.' },
             ],
             secondary: [
-                { title: '피지컬로봇코딩 (엑스로보 · 큐보메타 · 엔지니어)', keyword: '로봇', desc: '고급 로봇 교구로 엔지니어링 수준의 제어와 프로젝트를 수행하는 과정입니다.' },
+                { title: '피지컬로봇코딩 (엑스로보 · 큐보메타 · 엔지니어)', keyword: '로봇', noLink: true, desc: '고급 로봇 교구로 엔지니어링 수준의 제어와 프로젝트를 수행하는 과정입니다.' },
                 { title: 'AICE Junior AI 자격 취득', keyword: 'AICE Junior', desc: 'AI 기초 이론과 실습을 바탕으로 AICE Junior 자격증 취득을 목표로 하는 과정입니다.' },
                 { title: 'COS Pro 1~3급 자격 취득 (파이썬)', keyword: 'COS Pro', desc: '파이썬으로 YBM COS Pro 1~3급 자격증 취득을 준비하는 과정입니다.' },
                 { title: '코딩활용능력평가 1급 (파이썬)', keyword: '코딩활용능력', desc: '파이썬으로 코딩활용능력평가 1급 자격증 취득을 준비하는 과정입니다.' },

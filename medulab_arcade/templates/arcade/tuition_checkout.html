@@ -100,6 +100,7 @@
                     email: '{{ portone_customer_email|escapejs }}',
                     phoneNumber: '{{ portone_customer_phone|escapejs }}',
                 },
+                windowType: { pc: 'POPUP', mobile: 'REDIRECTION' },
             };
             if (method === 'EASY_PAY') {
                 params.easyPay = { easyPayProvider: 'EASY_PAY_PROVIDER_KAKAOPAY' };

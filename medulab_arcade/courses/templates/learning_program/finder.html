@@ -675,27 +675,33 @@
 
     // AI로봇코딩 정규수업 3대 트랙 (맞춤성장/집중성장/융합성장) 매칭
     const classTracks = {
-        none: {
+        custom: {
             name: 'AI로봇코딩 맞춤성장',
             desc: '아직 코딩을 배워본 적이 없어도 괜찮아요! 부담없이 주 1회, 눈높이에 맞춰 차근차근 시작하는 트랙입니다.',
             color: '#3b82f6',
         },
-        block: {
+        focus: {
             name: 'AI로봇코딩 집중성장',
             desc: '좋아하는 분야를 더 깊이! AI·코딩·로봇 중 한 과목을 주 2회 집중적으로 심화 학습하는 트랙입니다.',
             color: '#f59e0b',
         },
-        text: {
+        fusion: {
             name: 'AI로봇코딩 융합성장',
             desc: 'AI코딩+로봇을 융합하여 심화 학습하는 주 2회 트랙입니다. 대회 준비나 최상위 실력 완성에 적합해요.',
             color: '#a855f7',
         },
     };
 
-    function pickClassTrack(exp, goal) {
-        // 대회/올림피아드 입상이 목표라면 경험과 무관하게 가장 심화된 융합성장을 추천
-        if (goal === 'contest') return classTracks.text;
-        return classTracks[exp] || classTracks.none;
+    // 관심분야 선택 개수를 기준으로 트랙 결정 (경험 유무는 트랙 선택에 영향 없음)
+    // - 관심분야 없음/1개인데 초등 저학년 -> 맞춤성장 (저학년은 집중성장 비추천)
+    // - 관심분야 1개(저학년 제외) -> 집중성장 (한 과목 집중)
+    // - 관심분야 2개 이상 -> 융합성장 (코딩+로봇 등 함께)
+    // - 목표가 대회/올림피아드면 관심분야 개수와 무관하게 융합성장
+    function pickClassTrack(age, interestCount, goal) {
+        if (goal === 'contest') return classTracks.fusion;
+        if (interestCount >= 2) return classTracks.fusion;
+        if (interestCount === 1 && age !== 'elem_low') return classTracks.focus;
+        return classTracks.custom;
     }
 
     // 결과 카드의 버튼 영역: 처음엔 "상담 신청하기"만 보이고, 신청 완료 후 "수업 안내 보기"가 나타남
@@ -725,7 +731,7 @@
         const bar = document.getElementById('progressBar');
         bar.style.width = '100%';
 
-        const track = classTracks.none; // 맞춤성장
+        const track = classTracks.custom; // 맞춤성장
         currentRecommendedTrackName = track.name;
 
         const traitLabel = kidTraitLabels[answers.kidTrait] || '';
@@ -854,7 +860,7 @@
         }
 
         // 추천 정규수업 트랙 (맞춤성장/집중성장/융합성장) 카드
-        const track = pickClassTrack(answers.exp, answers.goal);
+        const track = pickClassTrack(answers.age, (answers.interest || []).length, answers.goal);
         currentRecommendedTrackName = track.name;
 
         const noteParts = [];

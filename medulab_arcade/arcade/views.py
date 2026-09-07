@@ -2958,6 +2958,61 @@ def tuition_admin_dashboard(request):
 
 @login_required
 @user_passes_test(staff_check)
+def tuition_invoice_edit(request, invoice_id):
+    """청구서 금액/기한/상태를 관리자가 직접 수정"""
+    invoice = get_object_or_404(TuitionInvoice.objects.select_related('student__profile', 'school_class'), pk=invoice_id)
+    next_url = request.POST.get('next') or request.GET.get('next') or reverse('tuition_admin_dashboard')
+
+    if request.method == 'POST':
+        try:
+            invoice.amount = int(request.POST.get('amount', '').strip())
+        except (TypeError, ValueError):
+            messages.error(request, '청구 금액을 올바르게 입력해 주세요.')
+            return redirect(request.get_full_path())
+
+        due_date_str = request.POST.get('due_date', '').strip()
+        if due_date_str:
+            try:
+                invoice.due_date = timezone.datetime.strptime(due_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                messages.error(request, '납부 기한 형식이 올바르지 않습니다.')
+                return redirect(request.get_full_path())
+
+        status = request.POST.get('status', '').strip()
+        if status in dict(TuitionInvoice.STATUS_CHOICES):
+            if status == TuitionInvoice.STATUS_PAID and invoice.status != TuitionInvoice.STATUS_PAID:
+                invoice.paid_at = timezone.now()
+            elif status != TuitionInvoice.STATUS_PAID:
+                invoice.paid_at = None
+            invoice.status = status
+
+        invoice.portone_pay_method = request.POST.get('portone_pay_method', '').strip()
+        invoice.save()
+        messages.success(request, '청구서를 수정했습니다.')
+        return redirect(next_url)
+
+    context = {
+        'invoice': invoice,
+        'next': next_url,
+        'title': '청구서 수정',
+    }
+    return render(request, 'arcade/admin/tuition_invoice_edit.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def tuition_invoice_delete(request, invoice_id):
+    """청구서 삭제"""
+    invoice = get_object_or_404(TuitionInvoice, pk=invoice_id)
+    invoice.delete()
+    messages.success(request, '청구서를 삭제했습니다.')
+    next_url = request.POST.get('next') or reverse('tuition_admin_dashboard')
+    return redirect(next_url)
+
+
+@login_required
+@user_passes_test(staff_check)
 def tuition_invoice_attendance_detail(request, invoice_id):
     """청구서의 전월 출석 근거를 보여주는 모달 내용 (결석 차감 계산에 쓰인 그대로)"""
     invoice = get_object_or_404(

@@ -46,6 +46,13 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 .status-paid { background:rgba(0,255,180,0.15); color:var(--accent-green); }
 .status-unpaid { background:rgba(251,191,36,0.15); color:#fbbf24; }
 .status-canceled { background:rgba(255,255,255,0.1); color:var(--text-secondary); }
+.inv-actions { display:flex; gap:8px; align-items:center; }
+.inv-actions form { display:inline; }
+.inv-action-link { border:none; background:none; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; text-decoration:none; white-space:nowrap; }
+.inv-action-link.edit { background:rgba(59,130,246,0.12); color:#93c5fd; }
+.inv-action-link.edit:hover { background:rgba(59,130,246,0.22); }
+.inv-action-link.delete { background:rgba(239,68,68,0.12); color:#fca5a5; }
+.inv-action-link.delete:hover { background:rgba(239,68,68,0.22); }
 .back-link { color:var(--text-muted); font-size:13px; text-decoration:none; display:inline-block; margin-bottom:16px; }
 .search-btn { padding:10px 20px; border-radius:10px; background:var(--accent-green); color:var(--bg-primary); font-weight:800; border:none; cursor:pointer; font-size:13px; }
 
@@ -73,7 +80,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <table>
             <thead>
                 <tr>
-                    <th>수업</th><th>전월 출석</th><th>결제금액</th><th>상태</th><th>날짜</th>
+                    <th>수업</th><th>전월 출석</th><th>결제금액</th><th>상태</th><th>날짜</th><th>관리</th>
                 </tr>
             </thead>
             <tbody>
@@ -101,9 +108,19 @@ tr:hover td { background:rgba(255,255,255,0.02); }
                         <div class="date-line method"><span class="dl-label">결제방법</span>{{ inv.portone_pay_method|default:"-" }}</div>
                         <div class="date-line paid"><span class="dl-label">결제일</span>{{ inv.paid_at|date:"Y.m.d H:i"|default:"-" }}</div>
                     </td>
+                    <td>
+                        <div class="inv-actions">
+                            <a href="{% url 'tuition_invoice_edit' inv.id %}?next={{ request.get_full_path|urlencode }}" class="inv-action-link edit">수정</a>
+                            <form method="post" action="{% url 'tuition_invoice_delete' inv.id %}" onsubmit="return confirm('이 청구서를 삭제할까요? 되돌릴 수 없습니다.')">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="inv-action-link delete">삭제</button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:40px;">청구 내역이 없습니다.</td></tr>
+                <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:40px;">청구 내역이 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -142,7 +159,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
         <table>
             <thead>
                 <tr>
-                    <th>학생</th><th>수업</th><th>전월 출석</th><th>결제금액</th><th>상태</th><th>날짜</th>
+                    <th>학생</th><th>수업</th><th>전월 출석</th><th>결제금액</th><th>상태</th><th>날짜</th><th>관리</th>
                 </tr>
             </thead>
             <tbody>
@@ -171,9 +188,19 @@ tr:hover td { background:rgba(255,255,255,0.02); }
                         <div class="date-line method"><span class="dl-label">결제방법</span>{{ inv.portone_pay_method|default:"-" }}</div>
                         <div class="date-line paid"><span class="dl-label">결제일</span>{{ inv.paid_at|date:"Y.m.d H:i"|default:"-" }}</div>
                     </td>
+                    <td>
+                        <div class="inv-actions">
+                            <a href="{% url 'tuition_invoice_edit' inv.id %}?next={{ request.get_full_path|urlencode }}" class="inv-action-link edit">수정</a>
+                            <form method="post" action="{% url 'tuition_invoice_delete' inv.id %}" onsubmit="return confirm('이 청구서를 삭제할까요? 되돌릴 수 없습니다.')">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="inv-action-link delete">삭제</button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:40px;">해당 월의 청구서가 없습니다.</td></tr>
+                <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:40px;">해당 월의 청구서가 없습니다.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

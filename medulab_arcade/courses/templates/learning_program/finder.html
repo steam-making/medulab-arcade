@@ -115,6 +115,58 @@
         transform: translateX(0);
     }
 
+    /* 로봇 교구 다중 선택 체크박스 */
+    .checkbox-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 8px;
+    }
+    .checkbox-pill {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 14px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--dash-border);
+        font-size: 13px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .checkbox-pill:has(input:checked) {
+        border-color: var(--neon-blue);
+        color: #fff;
+        background: rgba(59, 130, 246, 0.1);
+    }
+    .checkbox-pill input {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: var(--neon-blue);
+    }
+    .checkbox-pill input:disabled + span {
+        opacity: 0.4;
+    }
+    .robot-form-label {
+        display: block;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+    .robot-text-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 16px 20px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--dash-border);
+        color: #fff;
+        font-size: 15px;
+    }
+
     /* 결과 페이지 */
     .result-container {
         text-align: center;
@@ -454,13 +506,10 @@
             { type: 'choice', key: 'goal', title: '본인 또는 자녀가 무엇을 배우고 싶고, 어떤 목표를 가지고 있나요?', options: originalGoalOptions },
         ];
     }
+    const robotKitOptions = ['로보티즈 올로AI', '프로보 커넥트', '프로보 테크닉', '엑스로보', '큐보', '큐보 메타', '레고 스파이크프라임'];
     const robotDetailStep = {
-        type: 'text_pair', key: 'robotDetail',
+        type: 'robot_detail', key: 'robotDetail',
         title: '어떤 로봇 교구로, 어느 단계까지 배웠나요?',
-        fields: [
-            { name: 'kit', label: '사용한 교구', placeholder: '예: 프로보 커넥트, 로보티즈 올로AI 등' },
-            { name: 'level', label: '진행 단계', placeholder: '예: 3단계, 중급 과정 등' },
-        ],
     };
     const expLabels = {};
     originalExpOptions.forEach(o => { expLabels[o.value] = o.text.replace(/^\S+\s*/, ''); });
@@ -482,14 +531,24 @@
         const indicator = 'STEP ' + String(currentStep + 1).padStart(2, '0');
 
         let optionsHtml;
-        if (step.type === 'text_pair') {
-            optionsHtml = step.fields.map(f => `
-                <div style="margin-bottom:16px;">
-                    <label style="display:block; color:var(--text-secondary); margin-bottom:6px; font-size:13px; font-weight:700;">${f.label}</label>
-                    <input type="text" id="tp_${f.name}" style="width:100%; box-sizing:border-box; padding:16px 20px; border-radius:18px; background:rgba(255,255,255,0.04); border:1px solid var(--dash-border); color:#fff; font-size:15px;" placeholder="${f.placeholder}">
+        if (step.type === 'robot_detail') {
+            optionsHtml = `
+                <div style="margin-bottom:20px;">
+                    <label class="robot-form-label">사용한 교구 (복수 선택 가능)</label>
+                    <div class="checkbox-grid">
+                        ${robotKitOptions.map(k => `
+                            <label class="checkbox-pill"><input type="checkbox" class="robot-kit-cb" value="${k}"><span>${k}</span></label>
+                        `).join('')}
+                        <label class="checkbox-pill"><input type="checkbox" class="robot-kit-cb" value="__other__" onchange="toggleRobotOther(this)"><span>기타 직접입력</span></label>
+                        <label class="checkbox-pill"><input type="checkbox" class="robot-kit-cb" value="모르겠음" onchange="toggleDontKnowKit(this)"><span>모르겠음</span></label>
+                    </div>
+                    <input type="text" id="robotKitOtherInput" class="robot-text-input" style="display:none; margin-top:10px;" placeholder="교구 이름을 입력해 주세요">
                 </div>
-            `).join('') + `
-                <button class="option-button" style="justify-content:center;" onclick="submitTextPair()">
+                <div style="margin-bottom:16px;">
+                    <label class="robot-form-label">진행 단계</label>
+                    <input type="text" id="robotLevelInput" class="robot-text-input" placeholder="예: 3단계, 중급 과정 등">
+                </div>
+                <button class="option-button" style="justify-content:center;" onclick="submitRobotDetail()">
                     <span>다음</span><span class="option-icon" style="opacity:1; transform:none;">→</span>
                 </button>
             `;
@@ -550,11 +609,29 @@
         advanceStep();
     }
 
-    function submitTextPair() {
-        const step = flow[currentStep];
-        const values = {};
-        step.fields.forEach(f => { values[f.name] = (document.getElementById('tp_' + f.name).value || '').trim(); });
-        answers[step.key] = values;
+    function toggleRobotOther(cb) {
+        document.getElementById('robotKitOtherInput').style.display = cb.checked ? 'block' : 'none';
+    }
+
+    function toggleDontKnowKit(cb) {
+        document.querySelectorAll('.robot-kit-cb').forEach(other => {
+            if (other !== cb) {
+                other.disabled = cb.checked;
+                if (cb.checked) other.checked = false;
+            }
+        });
+        if (cb.checked) document.getElementById('robotKitOtherInput').style.display = 'none';
+    }
+
+    function submitRobotDetail() {
+        const checked = Array.from(document.querySelectorAll('.robot-kit-cb:checked')).map(cb => cb.value);
+        const kits = checked.filter(v => v !== '__other__');
+        if (checked.includes('__other__')) {
+            const other = (document.getElementById('robotKitOtherInput').value || '').trim();
+            if (other) kits.push(other);
+        }
+        const level = (document.getElementById('robotLevelInput').value || '').trim();
+        answers.robotDetail = { kits, level };
         advanceStep();
     }
 
@@ -752,9 +829,9 @@
         const noteParts = [];
         if (expLabels[answers.exp]) noteParts.push(`코딩 경험: ${expLabels[answers.exp]}`);
         if (answers.robotExp === 'yes' && answers.robotDetail) {
-            const kit = answers.robotDetail.kit || '';
+            const kitText = (answers.robotDetail.kits || []).join(', ');
             const level = answers.robotDetail.level || '';
-            const detail = [kit, level].filter(Boolean).join(' / ');
+            const detail = [kitText, level].filter(Boolean).join(' / ');
             noteParts.push(`로봇 경험: 있음${detail ? ` (${detail})` : ''}`);
         } else if (answers.robotExp === 'none') {
             noteParts.push('로봇 경험: 없음');

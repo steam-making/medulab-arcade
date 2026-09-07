@@ -400,6 +400,10 @@ class FinderOption(models.Model):
         ("logic", "사고력/기초 이해"),
         ("contest", "대회/올림피아드"),
         ("app_cert", "포트폴리오/자격증"),
+        ("robot_skill", "로봇 제작/피지컬 컴퓨팅"),
+        ("creative_project", "창작 프로젝트/포트폴리오"),
+        ("career_explore", "진로 탐색"),
+        ("fun", "재미있게 즐기면서 배우기"),
     ]
     VALUE_CHOICES = AGE_CHOICES + EXPERIENCE_CHOICES + GOAL_CHOICES
 

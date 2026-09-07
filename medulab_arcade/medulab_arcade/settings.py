@@ -34,6 +34,11 @@ PORTONE_CHANNEL_KEY_KAKAOPAY = os.environ.get('PORTONE_CHANNEL_KEY_KAKAOPAY', ''
 PORTONE_API_SECRET = os.environ.get('PORTONE_API_SECRET', '')
 PORTONE_WEBHOOK_SECRET = os.environ.get('PORTONE_WEBHOOK_SECRET', '')
 
+# Django 4.0+ 기본값(same-origin)은 결제창(KG이니시스 등)이 여는 카드사 인증 팝업의
+# window.opener/popup.closed 접근을 차단해 "Cannot read properties of null (reading 'closed')"
+# 오류 및 팝업차단 오작동을 유발한다. 팝업을 직접 연 창은 그 팝업을 계속 참조할 수 있도록 완화.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
+
 # 로그인 도우미 잠금 해제 비밀번호 (.env의 LOGIN_HELPER_PASSWORD 로 재정의 가능)
 LOGIN_HELPER_PASSWORD = os.environ.get('LOGIN_HELPER_PASSWORD', 'medu2025!')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')

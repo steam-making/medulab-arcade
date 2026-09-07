@@ -206,10 +206,17 @@
         line-height: 1.5;
         margin-bottom: 16px;
     }
+    .track-note {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 10px;
+        margin-bottom: 18px;
+    }
     .track-btn-group {
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
+        margin-top: 18px;
     }
     .btn-track {
         padding: 10px 16px;
@@ -220,6 +227,9 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
     }
     .btn-track.primary {
         background: var(--track-color, var(--neon-blue));
@@ -229,6 +239,10 @@
         background: rgba(255,255,255,0.06);
         color: #fff;
         border: 1px solid var(--dash-border);
+    }
+    .btn-track:disabled, .btn-track.done {
+        opacity: 0.55;
+        cursor: not-allowed;
     }
 
     .btn-group {
@@ -538,6 +552,27 @@
         return classTracks[exp] || classTracks.none;
     }
 
+    // 결과 카드의 버튼 영역: 처음엔 "상담 신청하기"만 보이고, 신청 완료 후 "수업 안내 보기"가 나타남
+    function trackButtonsHtml() {
+        return `
+            <div class="track-btn-group">
+                <button type="button" id="consultBtn" onclick="openConsultModal()" class="btn-track primary">📞 상담 신청하기</button>
+                <a href="/classes/" id="classesBtn" class="btn-track secondary" style="display:none;">📋 수업 안내 보기</a>
+            </div>
+        `;
+    }
+
+    function markConsultDone() {
+        const consultBtn = document.getElementById('consultBtn');
+        const classesBtn = document.getElementById('classesBtn');
+        if (consultBtn) {
+            consultBtn.disabled = true;
+            consultBtn.classList.add('done');
+            consultBtn.textContent = '✅ 상담신청완료';
+        }
+        if (classesBtn) classesBtn.style.display = '';
+    }
+
     // 유아 전용 고정 결과: 무조건 맞춤성장 + 피지컬코딩(타자연습+기초코딩+로봇제작) 과정 추천
     function renderKidsResult() {
         const body = document.getElementById('finderBody');
@@ -550,7 +585,7 @@
         const traitLabel = kidTraitLabels[answers.kidTrait] || '';
         const goalLabel = kidGoalLabels[answers.kidGoal] || '';
         const kidNoteHtml = (traitLabel || goalLabel) ? `
-            <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">
+            <p class="track-note">
                 ${traitLabel ? `아이 특성: ${traitLabel}` : ''}${traitLabel && goalLabel ? ' · ' : ''}${goalLabel ? `희망 학습: ${goalLabel}` : ''}
             </p>
         ` : '';
@@ -561,10 +596,7 @@
                 <div class="track-title">${track.name}</div>
                 <p class="track-desc">${track.desc}</p>
                 ${kidNoteHtml}
-                <div class="track-btn-group">
-                    <a href="/classes/" class="btn-track primary">📋 수업 안내 보기</a>
-                    <button type="button" onclick="openConsultModal()" class="btn-track secondary">📞 상담 신청하기</button>
-                </div>
+                ${trackButtonsHtml()}
             </div>
         `;
 
@@ -683,10 +715,7 @@
                 <span class="track-badge">🏫 추천 정규수업 트랙</span>
                 <div class="track-title">${track.name}</div>
                 <p class="track-desc">${track.desc}</p>
-                <div class="track-btn-group">
-                    <a href="/classes/" class="btn-track primary">📋 수업 안내 보기</a>
-                    <button type="button" onclick="openConsultModal()" class="btn-track secondary">📞 상담 신청하기</button>
-                </div>
+                ${trackButtonsHtml()}
             </div>
         `;
 
@@ -837,6 +866,7 @@
                             <button type="button" class="cm-submit-btn" style="margin-top:20px;" onclick="closeConsultModal()">닫기</button>
                         </div>
                     `;
+                    markConsultDone();
                 } else {
                     submitBtn.disabled = false;
                     submitBtn.textContent = '상담 신청하기';

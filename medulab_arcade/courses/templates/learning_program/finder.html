@@ -794,70 +794,54 @@
         const bar = document.getElementById('progressBar');
         bar.style.width = '100%';
 
-        const matchedRules = recommendations
-            .filter(rec => (!rec.age || rec.age === answers.age)
-                && (!rec.exp || rec.exp === answers.exp)
-                && (!rec.goal || rec.goal === answers.goal))
-            .sort((a, b) => {
-                const scoreA = (a.age ? 1 : 0) + (a.exp ? 1 : 0) + (a.goal ? 1 : 0);
-                const scoreB = (b.age ? 1 : 0) + (b.exp ? 1 : 0) + (b.goal ? 1 : 0);
-                if (scoreA !== scoreB) return scoreB - scoreA;
-                return (a.priority || 0) - (b.priority || 0);
-            });
+        // 연령대별 추천 과정 목록 (여러 개) - 실제 개설된 과정과 이름이 겹치면 상세/신청 링크를 연결
+        function findDbProgram(keyword) {
+            const kw = keyword.toLowerCase();
+            return dbPrograms.find(p => p.name.toLowerCase().includes(kw) || kw.includes(p.name.toLowerCase())) || null;
+        }
 
-        const selectedRule = matchedRules[0] || {
-            title: '기초 코딩 스타터 과정',
-            reason: '블록코딩을 통해 코딩에 대한 재미를 붙이고 논리적인 사고력을 키울 수 있는 기초 다지기 트랙입니다.',
-            program_keyword: ''
+        function courseCardHtml(item) {
+            const matched = findDbProgram(item.keyword);
+            const linksHtml = matched ? `
+                <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+                    <a href="/courses/program/${matched.id}/curriculum/" class="btn-finder btn-primary" style="flex:none; padding:8px 14px; font-size:12px;">커리큘럼 보기</a>
+                    <a href="/courses/${matched.id}/" class="btn-finder btn-secondary" style="flex:none; padding:8px 14px; font-size:12px;">수강 신청</a>
+                </div>
+            ` : '';
+            return `
+                <div class="recommend-card">
+                    <div class="rec-course-title">👉 ${item.title}</div>
+                    <p class="rec-course-desc">${(matched && matched.description) || item.desc}</p>
+                    ${linksHtml}
+                </div>
+            `;
+        }
+
+        const ageRecommendedCourses = {
+            elem_low: [
+                { title: '피지컬로봇코딩 (큐보 · 프로보 커넥트)', keyword: '로봇', desc: '큐보, 프로보 커넥트 등 로봇 교구로 조립·센서·모터 제어를 직접 실습하는 과정입니다.' },
+                { title: 'AICE Future 3급 자격 취득 (KT AI코디니)', keyword: 'AICE Future 3급', desc: 'KT AI코디니로 실습하며 AICE Future 3급 자격증 취득을 목표로 하는 과정입니다.' },
+                { title: 'COS 3~4급 자격 취득 (엔트리)', keyword: 'COS 3~4급', desc: '엔트리 블록코딩으로 YBM COS(코딩활용능력) 3~4급 자격증 취득을 준비하는 과정입니다.' },
+            ],
+            elem_high: [
+                { title: '피지컬로봇코딩 (올로AI · 레고 스파이크프라임 · 엑스로보 · 프로보 테크닉 · 큐보 메타)', keyword: '올로AI', desc: '다양한 로봇 교구로 심화 제어와 미션 수행을 실습하는 과정입니다.' },
+                { title: 'AICE Future 1~2급 자격 취득 (KT AI코디니)', keyword: 'AICE Future 1~2급', desc: 'KT AI코디니로 실습하며 AICE Future 1~2급 자격증 취득을 목표로 하는 과정입니다.' },
+                { title: 'COS 1~2급 자격 취득 (엔트리)', keyword: 'COS 1~2급', desc: '엔트리 블록코딩으로 YBM COS 1~2급 자격증 취득을 준비하는 과정입니다.' },
+            ],
+            secondary: [
+                { title: '피지컬로봇코딩 (엑스로보 · 큐보메타 · 엔지니어)', keyword: '로봇', desc: '고급 로봇 교구로 엔지니어링 수준의 제어와 프로젝트를 수행하는 과정입니다.' },
+                { title: 'AICE Junior AI 자격 취득', keyword: 'AICE Junior', desc: 'AI 기초 이론과 실습을 바탕으로 AICE Junior 자격증 취득을 목표로 하는 과정입니다.' },
+                { title: 'COS Pro 1~3급 자격 취득 (파이썬)', keyword: 'COS Pro', desc: '파이썬으로 YBM COS Pro 1~3급 자격증 취득을 준비하는 과정입니다.' },
+                { title: '코딩활용능력평가 1급 (파이썬)', keyword: '코딩활용능력', desc: '파이썬으로 코딩활용능력평가 1급 자격증 취득을 준비하는 과정입니다.' },
+            ],
         };
 
-        const recTitle = selectedRule.title;
-        const recReason = selectedRule.reason;
-        const searchKeyword = (selectedRule.program_keyword || recTitle).toLowerCase();
-
-        // DB에 개설된 프로그램 중 추천 코스 제목이 포함된 코스 찾기 (검색)
-        let matchedProgram = null;
-        for (let i = 0; i < dbPrograms.length; i++) {
-            if (dbPrograms[i].name.toLowerCase().includes(searchKeyword) || 
-                searchKeyword.includes(dbPrograms[i].name.toLowerCase())) {
-                matchedProgram = dbPrograms[i];
-                break;
-            }
-        }
-
-        // 만약 완전 매치되는 게 없다면, 가장 유사한 트랙 이름으로 하나 검색
-        if (!matchedProgram && dbPrograms.length > 0) {
-            // 차선책으로 첫 번째 매칭 시도
-            matchedProgram = dbPrograms.find(p => p.name.includes("파이썬") || p.name.includes("올림피아드") || p.name.includes("C/C++"));
-        }
-
-        let matchedCourseHtml = "";
-        let actionButtonsHtml = "";
-
-        if (matchedProgram) {
-            matchedCourseHtml = `
-                <div class="recommend-card">
-                    <div class="rec-course-title">👉 추천 과정: ${matchedProgram.name}</div>
-                    <p class="rec-course-desc">${matchedProgram.description || recReason}</p>
-                </div>
-            `;
-            actionButtonsHtml = `
-                <a href="/courses/program/${matchedProgram.id}/curriculum/" class="btn-finder btn-primary">상세 커리큘럼 보기</a>
-                <a href="/courses/${matchedProgram.id}/" class="btn-finder btn-secondary">수강 신청 페이지로</a>
-            `;
-        } else {
-            // DB에 등록된 과정이 없을 때 기본 폴백
-            matchedCourseHtml = `
-                <div class="recommend-card">
-                    <div class="rec-course-title">👉 추천 분야: ${recTitle} 관련 과정</div>
-                    <p class="rec-course-desc">${recReason}</p>
-                </div>
-            `;
-            actionButtonsHtml = `
-                <a href="/courses/student/courses/" class="btn-finder btn-primary">전체 개설 과정 보러가기</a>
-                <button onclick="resetFinder()" class="btn-finder btn-secondary">다시 검사하기</button>
-            `;
-        }
+        const courseItems = ageRecommendedCourses[answers.age] || ageRecommendedCourses.elem_high;
+        const matchedCourseHtml = courseItems.map(courseCardHtml).join('');
+        const actionButtonsHtml = `
+            <a href="/courses/student/courses/" class="btn-finder btn-primary">전체 개설 과정 보러가기</a>
+            <button onclick="resetFinder()" class="btn-finder btn-secondary">다시 검사하기</button>
+        `;
 
         // 추천 정규수업 트랙 (맞춤성장/집중성장/융합성장) 카드
         const track = pickClassTrack(answers.age, (answers.interest || []).length, answers.goal);
@@ -903,7 +887,6 @@
                 <div class="btn-group">
                     ${actionButtonsHtml}
                 </div>
-                ${matchedProgram ? `<button onclick="resetFinder()" style="margin-top:20px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:13px; text-decoration:underline;">진단 다시 하기</button>` : ''}
             </div>
         `;
 

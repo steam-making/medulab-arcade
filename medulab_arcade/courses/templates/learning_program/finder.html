@@ -271,9 +271,14 @@
     }
     .track-btn-group {
         display: flex;
+        align-items: center;
         gap: 10px;
         flex-wrap: wrap;
         margin-top: 18px;
+    }
+    .consult-hint {
+        font-size: 12px;
+        color: var(--text-muted);
     }
     .btn-track {
         padding: 10px 16px;
@@ -725,6 +730,7 @@
             <div class="track-btn-group">
                 <button type="button" id="consultBtn" onclick="openConsultModal()" class="btn-track primary">📞 상담 신청하기</button>
                 <a href="/classes/" id="classesBtn" class="btn-track secondary" style="display:none;">📋 수업 안내 보기</a>
+                <span class="consult-hint" id="consultHint">상담 신청하시면 빠른 시일 내에 연락드릴게요 😊</span>
             </div>
         `;
     }
@@ -738,6 +744,8 @@
             consultBtn.textContent = '✅ 상담신청완료';
         }
         if (classesBtn) classesBtn.style.display = '';
+        const consultHint = document.getElementById('consultHint');
+        if (consultHint) consultHint.style.display = 'none';
     }
 
     // 유아 전용 고정 결과: 무조건 맞춤성장 + 피지컬코딩(타자연습+기초코딩+로봇제작) 과정 추천

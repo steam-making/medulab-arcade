@@ -1284,3 +1284,65 @@ class InstagramPost(models.Model):
 
     def __str__(self):
         return f'{self.media_id} ({self.posted_at})'
+
+
+def _instagram_upload_original_path(instance, filename):
+    return f'instagram_uploads/originals/{instance.draft_id}/{filename}'
+
+
+def _instagram_upload_final_path(instance, filename):
+    return f'instagram_uploads/final/{instance.draft_id}/{filename}'
+
+
+class InstagramUploadDraft(models.Model):
+    """AI 인스타 업로드 - 분석/변환 결과를 게시 전 검토하기 위한 임시 초안"""
+    STATUS_DRAFT = 'draft'
+    STATUS_PUBLISHED = 'published'
+    STATUS_FAILED = 'failed'
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, '검토중'),
+        (STATUS_PUBLISHED, '게시완료'),
+        (STATUS_FAILED, '실패'),
+    ]
+
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='instagram_upload_drafts')
+    caption_draft = models.TextField('AI 생성 캡션(수정 가능)', blank=True)
+    user_context = models.TextField('업로드 시 참고 내용', blank=True)
+    status = models.CharField('상태', max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    published_media_id = models.CharField('게시된 인스타그램 미디어 ID', max_length=64, blank=True, default='')
+    published_permalink = models.URLField('게시된 인스타그램 링크', max_length=500, blank=True, default='')
+    error_message = models.CharField('실패 사유', max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = '인스타 AI 업로드 초안'
+        verbose_name_plural = '인스타 AI 업로드 초안'
+
+    def __str__(self):
+        return f'초안 #{self.pk} ({self.get_status_display()})'
+
+
+class InstagramUploadDraftItem(models.Model):
+    MEDIA_IMAGE = 'IMAGE'
+    MEDIA_VIDEO = 'VIDEO'
+    MEDIA_TYPE_CHOICES = [
+        (MEDIA_IMAGE, '이미지'),
+        (MEDIA_VIDEO, '영상'),
+    ]
+
+    draft = models.ForeignKey(InstagramUploadDraft, on_delete=models.CASCADE, related_name='items')
+    order = models.PositiveIntegerField('순서', default=0)
+    media_type = models.CharField('미디어 유형', max_length=10, choices=MEDIA_TYPE_CHOICES)
+    original_file = models.FileField('원본 파일', upload_to=_instagram_upload_original_path)
+    final_file = models.FileField('게시용 파일', upload_to=_instagram_upload_final_path, blank=True)
+    has_face = models.BooleanField('얼굴 감지됨', default=False)
+    ai_description = models.TextField('AI 분석 설명', blank=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = '인스타 AI 업로드 초안 항목'
+        verbose_name_plural = '인스타 AI 업로드 초안 항목'
+
+    def __str__(self):
+        return f'{self.draft_id}번 초안 - {self.order}번 항목'

@@ -70,6 +70,7 @@
         <h1 class="gal-title">📸 학원 갤러리</h1>
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             {% if user.is_staff %}
+            <a href="{% url 'instagram_ai_upload_start' %}" class="gal-follow">🤖 인스타 업로드</a>
             <form method="post" action="{% url 'instagram_gallery_sync' %}">
                 {% csrf_token %}
                 <button type="submit" class="gal-sync-btn">🔄 동기화</button>

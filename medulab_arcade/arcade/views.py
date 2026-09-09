@@ -27,7 +27,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -4166,6 +4166,138 @@ def instagram_admin_config(request):
         'post_count': InstagramPost.objects.count(),
     }
     return render(request, 'arcade/admin/instagram_config.html', context)
+
+
+@login_required
+@user_passes_test(staff_check)
+def instagram_ai_upload_start(request):
+    """인스타 AI 업로드 1단계: 사진/영상 업로드 + 참고 내용 입력 폼"""
+    return render(request, 'arcade/admin/instagram_ai_upload.html', {'step': 'upload'})
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def instagram_ai_upload_analyze(request):
+    """업로드된 사진/영상을 Gemini로 분석 -> 캡션 생성 -> 검토 화면
+    (이미지 스타일 변환은 Gemini 이미지 생성 모델의 무료 할당량이 0이라 제외 - 원본 그대로 게시)"""
+    from django.core.files.base import ContentFile
+    from . import instagram_ai
+
+    files = request.FILES.getlist('media')
+    if not files:
+        messages.error(request, '사진 또는 영상을 1개 이상 선택해 주세요.')
+        return redirect('instagram_ai_upload_start')
+
+    user_context = request.POST.get('user_context', '').strip()
+
+    draft = InstagramUploadDraft.objects.create(created_by=request.user, user_context=user_context)
+
+    descriptions = []
+    ai_error = None
+    for order, f in enumerate(files):
+        content_type = f.content_type or ''
+        is_video = content_type.startswith('video/')
+        media_type = InstagramUploadDraftItem.MEDIA_VIDEO if is_video else InstagramUploadDraftItem.MEDIA_IMAGE
+
+        item = InstagramUploadDraftItem.objects.create(
+            draft=draft, order=order, media_type=media_type, original_file=f,
+        )
+
+        item.original_file.open('rb')
+        file_bytes = item.original_file.read()
+        item.original_file.close()
+        # 원본을 그대로 게시용 파일로 사용 (스타일 변환 없음)
+        item.final_file.save(item.original_file.name.split('/')[-1], ContentFile(file_bytes), save=False)
+
+        if is_video:
+            item.save(update_fields=['final_file'])
+            continue
+
+        analysis = instagram_ai.analyze_photo(file_bytes, content_type or 'image/jpeg')
+        if analysis.get('error') and not ai_error:
+            ai_error = analysis['error']
+        item.ai_description = analysis.get('description', '')
+        if item.ai_description:
+            descriptions.append(item.ai_description)
+        item.save(update_fields=['ai_description', 'final_file'])
+
+    caption = instagram_ai.generate_caption(descriptions, user_context)
+    draft.caption_draft = caption or user_context or ''
+    draft.save(update_fields=['caption_draft'])
+
+    if ai_error:
+        messages.warning(request, f'일부 AI 처리에 문제가 있었습니다: {ai_error}')
+
+    return render(request, 'arcade/admin/instagram_ai_upload.html', {
+        'step': 'review',
+        'draft': draft,
+        'items': draft.items.all(),
+    })
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def instagram_ai_upload_publish(request, draft_id):
+    """검토 화면에서 확정한 캡션으로 실제 인스타그램에 게시"""
+    from .instagram_sync import publish_single_image, publish_carousel, publish_video, sync_posts
+
+    draft = get_object_or_404(InstagramUploadDraft, pk=draft_id)
+    caption = request.POST.get('caption', '').strip()
+    items = list(draft.items.all())
+
+    if not items:
+        messages.error(request, '게시할 항목이 없습니다.')
+        return redirect('instagram_ai_upload_start')
+
+    def _public_url(file_field):
+        return request.build_absolute_uri(file_field.url)
+
+    videos = [i for i in items if i.media_type == InstagramUploadDraftItem.MEDIA_VIDEO]
+    images = [i for i in items if i.media_type == InstagramUploadDraftItem.MEDIA_IMAGE]
+
+    if videos:
+        # 영상은 1개만 지원 (Reels) - 여러 개 섞인 경우 첫 영상만 게시
+        result = publish_video(_public_url(videos[0].final_file or videos[0].original_file), caption)
+    elif len(images) == 1:
+        result = publish_single_image(_public_url(images[0].final_file or images[0].original_file), caption)
+    else:
+        urls = [_public_url(i.final_file or i.original_file) for i in images]
+        result = publish_carousel(urls, caption)
+
+    if result.get('success'):
+        draft.status = InstagramUploadDraft.STATUS_PUBLISHED
+        draft.caption_draft = caption
+        draft.published_media_id = result.get('media_id', '')
+        draft.published_permalink = result.get('permalink', '')
+        draft.save(update_fields=['status', 'caption_draft', 'published_media_id', 'published_permalink'])
+        sync_posts()
+        link_text = f" 게시물 보기: {result['permalink']}" if result.get('permalink') else ''
+        messages.success(request, '인스타그램에 게시했습니다!' + link_text)
+        return redirect('instagram_gallery')
+
+    draft.status = InstagramUploadDraft.STATUS_FAILED
+    draft.error_message = result.get('error', '알 수 없는 오류')[:500]
+    draft.caption_draft = caption
+    draft.save(update_fields=['status', 'error_message', 'caption_draft'])
+    messages.error(request, f"게시 실패: {draft.error_message}")
+    return render(request, 'arcade/admin/instagram_ai_upload.html', {
+        'step': 'review',
+        'draft': draft,
+        'items': items,
+    })
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def instagram_ai_upload_discard(request, draft_id):
+    """검토 중인 초안을 취소하고 관련 파일까지 삭제"""
+    draft = get_object_or_404(InstagramUploadDraft, pk=draft_id)
+    draft.delete()  # FileField는 자동 삭제되지 않지만, 임시 업로드이므로 방치 후 별도 정리 가능
+    messages.info(request, '업로드를 취소했습니다.')
+    return redirect('instagram_gallery')
 
 
 def board_notice(request):

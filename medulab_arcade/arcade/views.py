@@ -4255,6 +4255,17 @@ def instagram_ai_upload_publish(request, draft_id):
         messages.error(request, '게시할 항목이 없습니다.')
         return redirect('instagram_ai_upload_start')
 
+    # 검토 화면에서 사용자가 재정렬한 순서(item id 목록)를 반영
+    order_raw = request.POST.get('order', '').strip()
+    if order_raw:
+        try:
+            order_ids = [int(x) for x in order_raw.split(',') if x]
+            items_by_id = {i.id: i for i in items}
+            if set(order_ids) == set(items_by_id.keys()):
+                items = [items_by_id[i] for i in order_ids]
+        except (ValueError, TypeError):
+            pass
+
     def _public_url(file_field):
         return request.build_absolute_uri(file_field.url)
 

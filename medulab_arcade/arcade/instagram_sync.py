@@ -160,6 +160,32 @@ def _publish_container(api_base, ig_user_id, access_token, creation_id):
     return data.get('id'), None
 
 
+def _wait_until_finished(api_base, creation_id, access_token, max_wait_seconds=60):
+    """미디어 컨테이너 처리가 끝날 때까지 대기. (None, None) = 완료, (None, err) = 실패/타임아웃"""
+    import time
+
+    waited = 0
+    while waited < max_wait_seconds:
+        try:
+            resp = requests.get(f'{api_base}/{creation_id}', params={
+                'fields': 'status_code',
+                'access_token': access_token,
+            }, timeout=10)
+            status = resp.json().get('status_code')
+        except requests.RequestException:
+            status = None
+        if status in (None, 'FINISHED'):
+            # status_code 필드가 없는 이미지 컨테이너는 None으로 오는 경우가 있어 완료로 간주
+            return None
+        if status == 'ERROR':
+            return '인스타그램에서 미디어 처리 중 오류가 발생했습니다.'
+        if status == 'EXPIRED':
+            return '미디어 컨테이너가 만료되었습니다. 다시 시도해 주세요.'
+        time.sleep(2)
+        waited += 2
+    return '미디어 처리가 제한 시간 내에 끝나지 않았습니다. 잠시 후 다시 시도해 주세요.'
+
+
 def _get_permalink(api_base, media_id, access_token):
     try:
         resp = requests.get(f'{api_base}/{media_id}', params={
@@ -190,6 +216,10 @@ def publish_single_image(image_public_url, caption):
     if err:
         return {'success': False, 'error': err}
 
+    wait_err = _wait_until_finished(api_base, creation_id, config.access_token)
+    if wait_err:
+        return {'success': False, 'error': wait_err}
+
     media_id, err = _publish_container(api_base, config.ig_user_id, config.access_token, creation_id)
     if err:
         return {'success': False, 'error': err}
@@ -212,6 +242,9 @@ def publish_carousel(image_public_urls, caption):
                                            image_url=url, is_carousel_item='true')
         if err:
             return {'success': False, 'error': err}
+        wait_err = _wait_until_finished(api_base, child_id, config.access_token)
+        if wait_err:
+            return {'success': False, 'error': wait_err}
         child_ids.append(child_id)
 
     creation_id, err = _create_container(
@@ -221,6 +254,10 @@ def publish_carousel(image_public_urls, caption):
     if err:
         return {'success': False, 'error': err}
 
+    wait_err = _wait_until_finished(api_base, creation_id, config.access_token)
+    if wait_err:
+        return {'success': False, 'error': wait_err}
+
     media_id, err = _publish_container(api_base, config.ig_user_id, config.access_token, creation_id)
     if err:
         return {'success': False, 'error': err}
@@ -229,10 +266,8 @@ def publish_carousel(image_public_urls, caption):
     return {'success': True, 'media_id': media_id, 'permalink': permalink}
 
 
-def publish_video(video_public_url, caption, max_wait_seconds=60):
+def publish_video(video_public_url, caption, max_wait_seconds=120):
     """영상 1개 게시(REELS). 업로드 처리 완료까지 폴링 후 게시. 반환: {success, media_id, permalink, error}"""
-    import time
-
     config = refresh_token_if_needed(get_config())
     ok, err = _publish_ready(config)
     if not ok:
@@ -244,24 +279,9 @@ def publish_video(video_public_url, caption, max_wait_seconds=60):
     if err:
         return {'success': False, 'error': err}
 
-    waited = 0
-    while waited < max_wait_seconds:
-        try:
-            resp = requests.get(f'{api_base}/{creation_id}', params={
-                'fields': 'status_code',
-                'access_token': config.access_token,
-            }, timeout=10)
-            status = resp.json().get('status_code')
-        except requests.RequestException:
-            status = None
-        if status == 'FINISHED':
-            break
-        if status == 'ERROR':
-            return {'success': False, 'error': '인스타그램에서 영상 처리 중 오류가 발생했습니다.'}
-        time.sleep(3)
-        waited += 3
-    else:
-        return {'success': False, 'error': '영상 처리가 제한 시간 내에 끝나지 않았습니다. 잠시 후 다시 시도해 주세요.'}
+    wait_err = _wait_until_finished(api_base, creation_id, config.access_token, max_wait_seconds=max_wait_seconds)
+    if wait_err:
+        return {'success': False, 'error': wait_err}
 
     media_id, err = _publish_container(api_base, config.ig_user_id, config.access_token, creation_id)
     if err:

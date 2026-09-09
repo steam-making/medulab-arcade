@@ -1249,6 +1249,7 @@ class InstagramConfig(models.Model):
     app_secret = models.CharField('Meta 앱 시크릿', max_length=100, blank=True, default='')
     token_expires_at = models.DateTimeField('토큰 만료 예정일시', null=True, blank=True)
     last_synced_at = models.DateTimeField('마지막 동기화 시각', null=True, blank=True)
+    last_attempted_at = models.DateTimeField('마지막 동기화 시도 시각(성공/실패 무관)', null=True, blank=True)
     last_sync_error = models.CharField('마지막 동기화 오류', max_length=300, blank=True, default='')
     updated_at = models.DateTimeField(auto_now=True)
 

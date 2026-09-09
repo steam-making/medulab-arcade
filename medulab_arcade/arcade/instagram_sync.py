@@ -71,6 +71,8 @@ def sync_posts(limit=500):
 
     config = refresh_token_if_needed(config)
     api_base = IG_LOGIN_API_BASE if _is_ig_login_token(config.access_token) else FACEBOOK_API_BASE
+    config.last_attempted_at = timezone.now()
+    config.save(update_fields=['last_attempted_at'])
 
     url = f'{api_base}/{config.ig_user_id}/media'
     params = {

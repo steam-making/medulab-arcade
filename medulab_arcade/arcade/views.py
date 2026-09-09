@@ -4053,7 +4053,11 @@ def instagram_gallery(request):
 
     config = InstagramConfig.objects.first()
     if config and config.access_token and config.ig_user_id:
-        stale = (not config.last_synced_at) or (timezone.now() - config.last_synced_at > timedelta(minutes=30))
+        # 직전 시도가 실패했으면(예: 일시적 API 차단) 30분마다 재시도하지 않고 더 길게 쉬어서
+        # 반복 요청으로 차단이 길어지는 것을 막는다.
+        cooldown = timedelta(hours=6) if config.last_sync_error else timedelta(minutes=30)
+        last_check = config.last_attempted_at or config.last_synced_at
+        stale = (not last_check) or (timezone.now() - last_check > cooldown)
         if stale:
             sync_posts()
             config.refresh_from_db()

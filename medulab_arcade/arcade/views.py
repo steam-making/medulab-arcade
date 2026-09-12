@@ -111,24 +111,29 @@ def future_career_video_save(request):
         return JsonResponse({'success': False, 'error': '잘못된 요청입니다.'}, status=400)
 
     name = (payload.get('name') or '').strip()
+    grade = (payload.get('grade') or '').strip()
     data = payload.get('data') or {}
     overwrite = bool(payload.get('overwrite'))
 
     if not name:
         return JsonResponse({'success': False, 'error': '이름을 입력해 주세요.'}, status=400)
+    if not grade:
+        return JsonResponse({'success': False, 'error': '학년을 입력해 주세요.'}, status=400)
     if len(name) > 50:
         return JsonResponse({'success': False, 'error': '이름은 50자 이내로 입력해 주세요.'}, status=400)
+    if len(grade) > 20:
+        return JsonResponse({'success': False, 'error': '학년은 20자 이내로 입력해 주세요.'}, status=400)
     if not isinstance(data, dict):
         return JsonResponse({'success': False, 'error': '저장할 데이터 형식이 올바르지 않습니다.'}, status=400)
 
-    existing = FutureCareerSave.objects.filter(name=name).first()
+    existing = FutureCareerSave.objects.filter(name=name, grade=grade).first()
     if existing and not overwrite:
         return JsonResponse({
             'success': False, 'exists': True,
             'updated_at': timezone.localtime(existing.updated_at).strftime('%Y-%m-%d %H:%M'),
         })
 
-    obj, _ = FutureCareerSave.objects.update_or_create(name=name, defaults={'data': data})
+    obj, _ = FutureCareerSave.objects.update_or_create(name=name, grade=grade, defaults={'data': data})
     return JsonResponse({'success': True, 'updated_at': timezone.localtime(obj.updated_at).strftime('%Y-%m-%d %H:%M')})
 
 
@@ -141,12 +146,15 @@ def future_career_video_load(request):
         return JsonResponse({'success': False, 'error': '잘못된 요청입니다.'}, status=400)
 
     name = (payload.get('name') or '').strip()
+    grade = (payload.get('grade') or '').strip()
     if not name:
         return JsonResponse({'success': False, 'error': '이름을 입력해 주세요.'}, status=400)
+    if not grade:
+        return JsonResponse({'success': False, 'error': '학년을 입력해 주세요.'}, status=400)
 
-    obj = FutureCareerSave.objects.filter(name=name).first()
+    obj = FutureCareerSave.objects.filter(name=name, grade=grade).first()
     if not obj:
-        return JsonResponse({'success': False, 'error': f'"{name}" 이름으로 저장된 내용이 없습니다.'})
+        return JsonResponse({'success': False, 'error': f'"{name}({grade})" 이름으로 저장된 내용이 없습니다.'})
 
     return JsonResponse({
         'success': True, 'data': obj.data,

@@ -895,21 +895,24 @@
 </section>
 
 <div class="footer">1~12차시 통합 데모 · 데이터는 현재 브라우저에 저장되며, 상단 "저장/불러오기"로 이름을 입력해 다른 날·다른 기기에서도 이어할 수 있습니다.</div>
-</div>
-</div>
 
 <div class="fcv-modal-overlay" id="fcvSaveOverlay" onclick="if(event.target===this)closeFcvSaveModal()">
   <div class="fcv-modal-box">
     <button type="button" class="fcv-modal-close" onclick="closeFcvSaveModal()">✕</button>
     <h3>💾 저장 / 불러오기</h3>
-    <p class="small">이름을 입력하고 저장하면, 나중에 같은 이름으로 다른 날·다른 기기에서도 이어서 진행할 수 있어요.</p>
-    <input type="text" id="fcvSaveName" placeholder="이름을 입력하세요">
+    <p class="small">이름과 학년을 입력하고 저장하면, 나중에 같은 이름·학년으로 다른 날·다른 기기에서도 이어서 진행할 수 있어요.</p>
+    <div class="grid2">
+      <input type="text" id="fcvSaveName" placeholder="이름을 입력하세요">
+      <input type="text" id="fcvSaveGrade" placeholder="학년 (예: 초5, 중2)">
+    </div>
     <div class="fcv-modal-btn-row">
       <button type="button" class="fcv-modal-btn-save" onclick="fcvDoSave(false)">💾 저장하기</button>
       <button type="button" class="fcv-modal-btn-load" onclick="fcvDoLoad()">📂 불러오기</button>
     </div>
     <div class="fcv-modal-status" id="fcvSaveStatus"></div>
   </div>
+</div>
+</div>
 </div>
 {% endblock %}
 
@@ -918,7 +921,9 @@
 // ── 저장 / 불러오기 (이름 기반, 로그인 불필요) ──
 function openFcvSaveModal(){
   const saved = localStorage.getItem('fcvSavedName');
+  const savedGrade = localStorage.getItem('fcvSavedGrade');
   if(saved) document.getElementById('fcvSaveName').value = saved;
+  if(savedGrade) document.getElementById('fcvSaveGrade').value = savedGrade;
   document.getElementById('fcvSaveStatus').textContent = '';
   document.getElementById('fcvSaveOverlay').classList.add('show');
 }
@@ -937,16 +942,18 @@ function fcvCollectAllData(){
 }
 function fcvDoSave(overwrite){
   const name = document.getElementById('fcvSaveName').value.trim();
+  const grade = document.getElementById('fcvSaveGrade').value.trim();
   const statusEl = document.getElementById('fcvSaveStatus');
   if(!name){ alert('이름을 입력해 주세요.'); return; }
+  if(!grade){ alert('학년을 입력해 주세요.'); return; }
   statusEl.textContent = '저장 중...';
   fetch('{% url "future_career_video_save" %}', {
     method:'POST',
     headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
-    body: JSON.stringify({name, data: fcvCollectAllData(), overwrite: !!overwrite})
+    body: JSON.stringify({name, grade, data: fcvCollectAllData(), overwrite: !!overwrite})
   }).then(r=>r.json()).then(res=>{
     if(res.exists){
-      if(confirm(`"${name}" 이름으로 이미 저장된 내용이 있습니다 (${res.updated_at} 저장). 덮어쓸까요?`)){
+      if(confirm(`"${name}(${grade})" 이름으로 이미 저장된 내용이 있습니다 (${res.updated_at} 저장). 덮어쓸까요?`)){
         fcvDoSave(true);
       } else {
         statusEl.textContent = '저장을 취소했습니다.';
@@ -955,7 +962,8 @@ function fcvDoSave(overwrite){
     }
     if(res.success){
       localStorage.setItem('fcvSavedName', name);
-      statusEl.textContent = `✅ "${name}" 이름으로 저장했습니다. (${res.updated_at})`;
+      localStorage.setItem('fcvSavedGrade', grade);
+      statusEl.textContent = `✅ "${name}(${grade})" 이름으로 저장했습니다. (${res.updated_at})`;
     } else {
       statusEl.textContent = '⚠️ ' + (res.error || '저장에 실패했습니다.');
     }
@@ -963,19 +971,21 @@ function fcvDoSave(overwrite){
 }
 function fcvDoLoad(){
   const name = document.getElementById('fcvSaveName').value.trim();
+  const grade = document.getElementById('fcvSaveGrade').value.trim();
   const statusEl = document.getElementById('fcvSaveStatus');
   if(!name){ alert('이름을 입력해 주세요.'); return; }
+  if(!grade){ alert('학년을 입력해 주세요.'); return; }
   statusEl.textContent = '불러오는 중...';
   fetch('{% url "future_career_video_load" %}', {
     method:'POST',
     headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
-    body: JSON.stringify({name})
+    body: JSON.stringify({name, grade})
   }).then(r=>r.json()).then(res=>{
     if(!res.success){
       statusEl.textContent = '⚠️ ' + (res.error || '불러오기에 실패했습니다.');
       return;
     }
-    if(!confirm(`"${name}" 님의 저장된 내용(${res.updated_at})을 불러올까요? 현재 화면에 입력된 내용은 덮어써집니다.`)) {
+    if(!confirm(`"${name}(${grade})" 님의 저장된 내용(${res.updated_at})을 불러올까요? 현재 화면에 입력된 내용은 덮어써집니다.`)) {
       statusEl.textContent = '불러오기를 취소했습니다.';
       return;
     }
@@ -983,6 +993,7 @@ function fcvDoLoad(){
       localStorage.setItem(key, JSON.stringify(res.data[key]));
     });
     localStorage.setItem('fcvSavedName', name);
+    localStorage.setItem('fcvSavedGrade', grade);
     statusEl.textContent = `✅ 불러왔습니다. 화면을 새로고침합니다...`;
     setTimeout(()=>location.reload(), 600);
   }).catch(()=>{ statusEl.textContent = '⚠️ 불러오기 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'; });

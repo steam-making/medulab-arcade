@@ -92,6 +92,10 @@ class Item(models.Model):
     key = models.CharField("키워드/ID", max_length=100, help_text="예: ex01, prob02")
     title = models.CharField("제목", max_length=200)
     item_type = models.CharField("유형", max_length=50, choices=ITEM_TYPES, default='example')
+    requires_coding = models.BooleanField(
+        "AI Codiny 실습 필요", default=True,
+        help_text="체크 해제 시 AICE 학습 화면에서 AI Codiny 실습 창 없이 설명 패널만 넓게 보여줍니다 (이론/개념 설명용).",
+    )
     explain_html = models.TextField("설명 (HTML 가능)", blank=True, null=True)
     question_image = models.ImageField("문제 공통 이미지", upload_to="item_images/", null=True, blank=True)
     hint = models.TextField("힌트", blank=True, null=True)

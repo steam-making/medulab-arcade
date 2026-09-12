@@ -172,17 +172,38 @@
         .aice-panel-inner { width: 100%; }
         .aice-toggle { display: none; }
     }
+
+    /* 코딩 실습이 필요 없는 항목(이론/개념 설명) - AI Codiny 없이 패널을 넓게 사용 */
+    .aice-wrap.wide {
+        height: auto;
+        min-height: calc(100vh - 72px);
+        justify-content: center;
+    }
+    .aice-wrap.wide .aice-panel {
+        width: 100%;
+        max-width: 900px;
+        border-left: none;
+    }
+    .aice-wrap.wide .aice-panel-inner { width: 100%; }
+    .aice-wrap.wide .aice-panel-content { font-size: 15.5px; padding: 28px 40px; }
+    @media (max-width: 720px) {
+        .aice-wrap.wide .aice-panel-content { padding: 22px; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="aice-wrap">
+<div class="aice-wrap{% if no_coding %} wide{% endif %}">
+    {% if not no_coding %}
     <div class="aice-ide">
         <iframe src="https://aicodiny.com/codex" title="AI Codiny" allow="microphone; camera"></iframe>
     </div>
+    {% endif %}
 
     <div class="aice-panel" id="aicePanel">
+        {% if not no_coding %}
         <button type="button" class="aice-toggle" id="aiceToggle">›</button>
+        {% endif %}
         <div class="aice-panel-inner">
             <div class="aice-panel-header">
                 <div class="aice-panel-breadcrumb">
@@ -199,7 +220,7 @@
                 {% if item.explain_html %}
                     {{ item.explain_html|safe }}
                 {% else %}
-                    <div class="aice-panel-empty">아직 등록된 설명이 없습니다.<br>왼쪽 AI Codiny 화면으로 직접 실습해 보세요.</div>
+                    <div class="aice-panel-empty">아직 등록된 설명이 없습니다.{% if not no_coding %}<br>왼쪽 AI Codiny 화면으로 직접 실습해 보세요.{% endif %}</div>
                 {% endif %}
             </div>
 

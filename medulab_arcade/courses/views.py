@@ -2060,6 +2060,7 @@ def item_page(request, item_id):
         "olympiad_examples": olympiad_examples,
         "olympiad_feedback_sections": olympiad_feedback_sections,
         "sub_questions": sub_questions,
+        "no_coding": not item.requires_coding,
     })
 
 

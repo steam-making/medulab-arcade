@@ -77,6 +77,7 @@ class ItemForm(forms.ModelForm):
             "key",
             "title",
             "item_type",
+            "requires_coding",
             "explain_html",
             "question_image",
             "hint",
@@ -91,6 +92,7 @@ class ItemForm(forms.ModelForm):
             "key": forms.TextInput(attrs={"class": "form-input", "placeholder": "항목 키 예: ex01"}),
             "title": forms.TextInput(attrs={"class": "form-input", "placeholder": "항목 제목"}),
             "item_type": forms.Select(attrs={"class": "form-input"}),
+            "requires_coding": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
             "explain_html": forms.Textarea(
                 attrs={"class": "form-input", "rows": 10, "placeholder": "HTML 형식의 설명을 입력하세요"}
             ),

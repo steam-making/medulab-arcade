@@ -37,7 +37,10 @@
   .fcv-page .lesson{display:none;animation:fcvFadeIn .35s ease}
   .fcv-page .lesson.active{display:block}
   @keyframes fcvFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-  .fcv-page .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin:16px 0;box-shadow:0 6px 20px rgba(30,41,59,.05)}
+  .fcv-page .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin:16px 0;box-shadow:0 6px 20px rgba(30,41,59,.05);
+    /* base.html의 전역 .card(썸네일 카드용 aspect-ratio/overflow:hidden/flex) 상속을 완전히 무효화 -
+       이게 없으면 내용이 카드 높이에 안 맞을 때 아래쪽이 잘려서 안 보이는 문제가 생김 */
+    display:block;overflow:visible;aspect-ratio:auto;position:static;height:auto}
   .fcv-page .chips{display:flex;flex-wrap:wrap;gap:9px}
   .fcv-page .chip{border:1px solid #cbd5e1;background:#fff;color:var(--text);border-radius:999px;padding:9px 15px;cursor:pointer;user-select:none;font-size:13.5px;transition:all .18s}
   .fcv-page .chip:hover{border-color:#93c5fd;background:#f0f6ff}

@@ -27,7 +27,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -100,6 +100,58 @@ def ai_prompts(request):
 def future_career_video(request):
     """AI 미래직업영상 만들기 Web Activity (12차시, 독립형 페이지)"""
     return render(request, 'arcade/tools/future_career_video.html')
+
+
+@require_POST
+def future_career_video_save(request):
+    """이름을 입력해 lesson1Data~lesson12Data(localStorage)를 서버에 저장 - 로그인 불필요"""
+    try:
+        payload = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': '잘못된 요청입니다.'}, status=400)
+
+    name = (payload.get('name') or '').strip()
+    data = payload.get('data') or {}
+    overwrite = bool(payload.get('overwrite'))
+
+    if not name:
+        return JsonResponse({'success': False, 'error': '이름을 입력해 주세요.'}, status=400)
+    if len(name) > 50:
+        return JsonResponse({'success': False, 'error': '이름은 50자 이내로 입력해 주세요.'}, status=400)
+    if not isinstance(data, dict):
+        return JsonResponse({'success': False, 'error': '저장할 데이터 형식이 올바르지 않습니다.'}, status=400)
+
+    existing = FutureCareerSave.objects.filter(name=name).first()
+    if existing and not overwrite:
+        return JsonResponse({
+            'success': False, 'exists': True,
+            'updated_at': timezone.localtime(existing.updated_at).strftime('%Y-%m-%d %H:%M'),
+        })
+
+    obj, _ = FutureCareerSave.objects.update_or_create(name=name, defaults={'data': data})
+    return JsonResponse({'success': True, 'updated_at': timezone.localtime(obj.updated_at).strftime('%Y-%m-%d %H:%M')})
+
+
+@require_POST
+def future_career_video_load(request):
+    """이름으로 저장된 진행 상황 불러오기 - 로그인 불필요"""
+    try:
+        payload = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': '잘못된 요청입니다.'}, status=400)
+
+    name = (payload.get('name') or '').strip()
+    if not name:
+        return JsonResponse({'success': False, 'error': '이름을 입력해 주세요.'}, status=400)
+
+    obj = FutureCareerSave.objects.filter(name=name).first()
+    if not obj:
+        return JsonResponse({'success': False, 'error': f'"{name}" 이름으로 저장된 내용이 없습니다.'})
+
+    return JsonResponse({
+        'success': True, 'data': obj.data,
+        'updated_at': timezone.localtime(obj.updated_at).strftime('%Y-%m-%d %H:%M'),
+    })
 
 
 def ai_favorites(request):

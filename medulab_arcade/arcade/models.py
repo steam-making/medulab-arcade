@@ -1347,3 +1347,17 @@ class InstagramUploadDraftItem(models.Model):
 
     def __str__(self):
         return f'{self.draft_id}번 초안 - {self.order}번 항목'
+
+
+class FutureCareerSave(models.Model):
+    """AI 미래직업영상 Web Activity 진행 상황 저장 (로그인 없이 이름 기반으로 저장/불러오기)"""
+    name = models.CharField('이름', max_length=50, unique=True)
+    data = models.JSONField('진행 데이터(lesson1Data~lesson12Data)', default=dict, blank=True)
+    updated_at = models.DateTimeField('마지막 저장 시각', auto_now=True)
+
+    class Meta:
+        verbose_name = '미래직업영상 저장'
+        verbose_name_plural = '미래직업영상 저장'
+
+    def __str__(self):
+        return f'{self.name} ({self.updated_at:%Y-%m-%d %H:%M})'

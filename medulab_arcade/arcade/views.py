@@ -162,6 +162,32 @@ def future_career_video_load(request):
     })
 
 
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def future_career_video_list(request):
+    """관리자용 - 저장된 진행 상황 목록 (이름/생년월일/마지막 저장 시각)"""
+    rows = FutureCareerSave.objects.order_by('-updated_at')
+    items = [
+        {
+            'id': r.id,
+            'name': r.name,
+            'birthdate': r.birthdate,
+            'updated_at': timezone.localtime(r.updated_at).strftime('%Y-%m-%d %H:%M'),
+        }
+        for r in rows
+    ]
+    return JsonResponse({'success': True, 'items': items})
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def future_career_video_admin_delete(request, save_id):
+    """관리자용 - 저장 항목 삭제"""
+    FutureCareerSave.objects.filter(pk=save_id).delete()
+    return JsonResponse({'success': True})
+
+
 def ai_favorites(request):
     return render(request, 'arcade/ai_favorites.html')
 

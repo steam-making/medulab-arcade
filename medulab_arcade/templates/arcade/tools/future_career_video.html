@@ -90,6 +90,18 @@
   .fcv-modal-btn-load{background:linear-gradient(135deg,var(--primary),#3b82f6);color:#fff}
   .fcv-modal-btn-load:hover{transform:translateY(-1px)}
   .fcv-modal-status{margin-top:14px;font-size:13px;line-height:1.6;color:var(--text);min-height:18px}
+  .fcv-list-body{max-height:55vh;overflow-y:auto}
+  .fcv-list-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 4px;border-bottom:1px solid var(--line)}
+  .fcv-list-row:last-child{border-bottom:none}
+  .fcv-list-info b{color:#111827;font-size:14px}
+  .fcv-list-info .small{display:block;margin-top:2px}
+  .fcv-list-actions{display:flex;gap:6px;flex-shrink:0}
+  .fcv-list-actions button{border:none;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer}
+  .fcv-list-btn-load{background:var(--primary2);color:#1d4ed8}
+  .fcv-list-btn-load:hover{background:#c7ddfd}
+  .fcv-list-btn-del{background:#fee2e2;color:#b91c1c}
+  .fcv-list-btn-del:hover{background:#fecaca}
+  .fcv-list-empty{color:var(--muted);font-size:13px;padding:20px 4px;text-align:center}
 </style>
 {% endblock %}
 
@@ -98,7 +110,12 @@
 <div class="wrap">
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
   <a href="{% url 'ai_prompts' %}" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:700;">← AI 프롬프트 목록으로</a>
-  <button type="button" class="fcv-save-btn" onclick="openFcvSaveModal()">💾 저장 / 불러오기</button>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button type="button" class="fcv-save-btn" onclick="openFcvSaveModal()">💾 저장 / 불러오기</button>
+    {% if user.is_staff %}
+    <button type="button" class="fcv-save-btn" onclick="openFcvListModal()">📋 저장 목록</button>
+    {% endif %}
+  </div>
 </div>
 <section class="hero">
   <h1>AI와 함께하는 미래 직업 프로젝트</h1>
@@ -912,6 +929,17 @@
     <div class="fcv-modal-status" id="fcvSaveStatus"></div>
   </div>
 </div>
+
+{% if user.is_staff %}
+<div class="fcv-modal-overlay" id="fcvListOverlay" onclick="if(event.target===this)closeFcvListModal()">
+  <div class="fcv-modal-box" style="max-width:560px;">
+    <button type="button" class="fcv-modal-close" onclick="closeFcvListModal()">✕</button>
+    <h3>📋 저장 목록</h3>
+    <p class="small">학생들이 이름·생년월일로 저장한 진행 상황 목록입니다. (관리자 전용)</p>
+    <div id="fcvListBody" class="fcv-list-body">불러오는 중...</div>
+  </div>
+</div>
+{% endif %}
 </div>
 </div>
 {% endblock %}
@@ -998,7 +1026,58 @@ function fcvDoLoad(){
     setTimeout(()=>location.reload(), 600);
   }).catch(()=>{ statusEl.textContent = '⚠️ 불러오기 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'; });
 }
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeFcvSaveModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeFcvSaveModal(); closeFcvListModal(); } });
+
+// ── 관리자용 저장 목록 ──
+function openFcvListModal(){
+  const overlay = document.getElementById('fcvListOverlay');
+  if(!overlay) return;
+  overlay.classList.add('show');
+  fcvRefreshList();
+}
+function closeFcvListModal(){
+  const overlay = document.getElementById('fcvListOverlay');
+  if(overlay) overlay.classList.remove('show');
+}
+function fcvRefreshList(){
+  const body = document.getElementById('fcvListBody');
+  body.innerHTML = '불러오는 중...';
+  fetch('{% url "future_career_video_list" %}').then(r=>r.json()).then(res=>{
+    if(!res.success || !res.items.length){
+      body.innerHTML = '<div class="fcv-list-empty">저장된 내용이 없습니다.</div>';
+      return;
+    }
+    body.innerHTML = res.items.map(item=>`
+      <div class="fcv-list-row" data-id="${item.id}">
+        <div class="fcv-list-info">
+          <b>${item.name}</b>
+          <span class="small">생년월일: ${item.birthdate || '-'} · 마지막 저장: ${item.updated_at}</span>
+        </div>
+        <div class="fcv-list-actions">
+          <button type="button" class="fcv-list-btn-load" onclick="fcvLoadFromList('${item.name.replace(/'/g,"\\'")}','${item.birthdate}')">불러오기</button>
+          <button type="button" class="fcv-list-btn-del" onclick="fcvDeleteFromList(${item.id})">삭제</button>
+        </div>
+      </div>
+    `).join('');
+  }).catch(()=>{ body.innerHTML = '<div class="fcv-list-empty">목록을 불러오지 못했습니다.</div>'; });
+}
+function fcvLoadFromList(name, birthdate){
+  closeFcvListModal();
+  openFcvSaveModal();
+  document.getElementById('fcvSaveName').value = name;
+  document.getElementById('fcvSaveBirthdate').value = birthdate;
+  fcvDoLoad();
+}
+function fcvDeleteFromList(id){
+  if(!confirm('이 저장 항목을 삭제할까요? 되돌릴 수 없습니다.')) return;
+  fetch(`/tools/future-career-video/${id}/delete/`, {
+    method:'POST',
+    headers:{'X-CSRFToken':'{{ csrf_token }}'},
+  }).then(r=>r.json()).then(res=>{
+    if(res.success) fcvRefreshList();
+    else alert('삭제에 실패했습니다.');
+  }).catch(()=>alert('삭제 중 오류가 발생했습니다.'));
+}
 
 const selected={};
 document.querySelectorAll('.chips').forEach(group=>{const name=group.dataset.group,max=parseInt(group.dataset.max||'99');selected[name]=[];group.querySelectorAll('.chip').forEach(chip=>{chip.addEventListener('click',()=>{const value=chip.textContent.trim();if(chip.classList.contains('selected')){chip.classList.remove('selected');selected[name]=selected[name].filter(v=>v!==value)}else{if(selected[name].length>=max){alert(`최대 ${max}개까지 선택할 수 있습니다.`);return}chip.classList.add('selected');selected[name].push(value)}if(['likes','fields','workstyle'].includes(name))updateLesson1Summary()})})});

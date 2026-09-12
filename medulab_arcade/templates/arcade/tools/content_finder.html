@@ -37,10 +37,26 @@
   .cf-card h3 { margin:0 0 4px; font-size:18px; font-weight:900; color:var(--ink); }
   .cf-card .cf-desc { font-size:13px; color:#7a7498; margin:0 0 18px; }
 
-  .cf-pick-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
-  .cf-pick-num { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, var(--pink), var(--purple)); color:#fff; font-weight:900; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
-  .cf-pick-row select { flex:1; border:1.5px solid #E5DFFA; border-radius:10px; padding:10px 12px; font-size:13.5px; background:#fff; color:var(--ink); }
-  .cf-pick-row input[type="text"] { flex:1; border:1.5px solid var(--pink); border-radius:10px; padding:10px 12px; font-size:13.5px; }
+  .cf-pick-counter { font-size:13px; font-weight:800; color:var(--purple); margin-bottom:12px; }
+  .cf-tile-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:10px; margin-bottom:20px; }
+  .cf-tile { border:2px solid #E5DFFA; background:#fff; border-radius:14px; padding:14px 8px; text-align:center; cursor:pointer; transition:all .15s; user-select:none; }
+  .cf-tile:hover { border-color:var(--purple); background:#F8F6FF; }
+  .cf-tile.selected { border-color:var(--purple); background:linear-gradient(135deg, var(--pink), var(--purple)); box-shadow:0 6px 16px rgba(140,107,250,0.3); }
+  .cf-tile.selected .cf-tile-label { color:#fff; }
+  .cf-tile.disabled { opacity:.4; cursor:not-allowed; }
+  .cf-tile-icon { font-size:26px; margin-bottom:6px; }
+  .cf-tile-label { font-size:12.5px; font-weight:700; color:var(--ink); line-height:1.3; }
+
+  .cf-custom-section { border-top:1.5px dashed #E5DFFA; padding-top:16px; }
+  .cf-custom-section h4 { margin:0 0 10px; font-size:14px; font-weight:800; color:var(--ink); }
+  .cf-custom-input-row { display:flex; gap:8px; margin-bottom:10px; }
+  .cf-custom-input-row input[type="text"] { flex:1; border:1.5px solid var(--pink); border-radius:10px; padding:10px 12px; font-size:13.5px; }
+  .cf-custom-add-btn { border:none; border-radius:10px; padding:0 18px; background:var(--pink); color:#fff; font-weight:800; font-size:13.5px; cursor:pointer; white-space:nowrap; }
+  .cf-custom-add-btn:hover { transform:translateY(-1px); }
+  .cf-chip-row { display:flex; flex-wrap:wrap; gap:8px; }
+  .cf-chip { display:inline-flex; align-items:center; gap:6px; background:#F1EEFF; color:var(--purple); border-radius:999px; padding:7px 8px 7px 14px; font-size:12.5px; font-weight:700; }
+  .cf-chip button { border:none; background:rgba(140,107,250,0.2); color:var(--purple); width:18px; height:18px; border-radius:50%; cursor:pointer; font-size:11px; line-height:1; display:flex; align-items:center; justify-content:center; }
+  .cf-chip button:hover { background:rgba(140,107,250,0.35); }
 
   .cf-btn { border:none; border-radius:12px; padding:13px 22px; font-weight:800; font-size:14.5px; cursor:pointer; transition:transform .15s; }
   .cf-btn:hover { transform:translateY(-1px); }
@@ -222,55 +238,119 @@
 
 {% block extra_js %}
 <script>
-const CF_KNOWN_OPTIONS = ['요리','게임','운동/스포츠','학교생활','반려동물 키우기','컴퓨터/코딩','문화/예술','여행','음악(악기연주)','그림/디자인','과학/실험','역사','외국어','독서','손재주(만들기)','수학'];
-const CF_LIKED_OPTIONS = ['음악 듣기','영상 보기','그림 그리기','맛집 탐방','친구들과 놀기','동물','패션','IT/신기술','영화/드라마','운동 관람','게임하기','여행 다니기','만화/웹툰','사진 찍기','춤/댄스','요리하기'];
+const CF_KNOWN_OPTIONS = [
+  ['🍳','요리'], ['🎮','게임'], ['⚽','운동/스포츠'], ['🏫','학교생활'],
+  ['🐶','반려동물 키우기'], ['💻','컴퓨터/코딩'], ['🎭','문화/예술'], ['✈️','여행'],
+  ['🎸','음악(악기연주)'], ['🎨','그림/디자인'], ['🔬','과학/실험'], ['📜','역사'],
+  ['🗣️','외국어'], ['📚','독서'], ['🔧','손재주(만들기)'], ['🔢','수학'],
+];
+const CF_LIKED_OPTIONS = [
+  ['🎧','음악 듣기'], ['📺','영상 보기'], ['🖌️','그림 그리기'], ['🍜','맛집 탐방'],
+  ['🧑‍🤝‍🧑','친구들과 놀기'], ['🐾','동물'], ['👗','패션'], ['📱','IT/신기술'],
+  ['🎬','영화/드라마'], ['🏟️','운동 관람'], ['🕹️','게임하기'], ['🧳','여행 다니기'],
+  ['📖','만화/웹툰'], ['📷','사진 찍기'], ['💃','춤/댄스'], ['🍳','요리하기'],
+];
+
+const CF_MAX_PICKS = 3;
+const cfState = { cfKnown: [], cfLiked: [] };
 
 function cfBuildPicker(containerId, options, prefix){
   const box = document.getElementById(containerId);
-  let html = '';
-  for(let i=1;i<=3;i++){
-    html += `<div class="cf-pick-row">
-      <div class="cf-pick-num">${i}</div>
-      <select id="${prefix}Select${i}" onchange="cfToggleCustom('${prefix}',${i})">
-        <option value="">-- 선택해 주세요 --</option>
-        ${options.map(o=>`<option value="${o}">${o}</option>`).join('')}
-        <option value="__custom__">✏️ 직접입력</option>
-      </select>
-      <input type="text" id="${prefix}Custom${i}" placeholder="직접 입력해 주세요" style="display:none;" maxlength="30">
-    </div>`;
-  }
-  box.innerHTML = html;
+  const tilesHtml = options.map(([icon, label]) => `
+    <div class="cf-tile" data-value="${label}" onclick="cfToggleTile('${prefix}', this)">
+      <div class="cf-tile-icon">${icon}</div>
+      <div class="cf-tile-label">${label}</div>
+    </div>
+  `).join('');
+
+  box.innerHTML = `
+    <div class="cf-pick-counter" id="${prefix}Counter">0 / ${CF_MAX_PICKS} 선택됨</div>
+    <div class="cf-tile-grid">${tilesHtml}</div>
+    <div class="cf-custom-section">
+      <h4>✏️ 직접입력 (여러 개 추가 가능)</h4>
+      <div class="cf-custom-input-row">
+        <input type="text" id="${prefix}CustomInput" placeholder="목록에 없다면 직접 입력해 보세요" maxlength="30" onkeydown="if(event.key==='Enter'){event.preventDefault();cfAddCustom('${prefix}');}">
+        <button type="button" class="cf-custom-add-btn" onclick="cfAddCustom('${prefix}')">+ 추가</button>
+      </div>
+      <div class="cf-chip-row" id="${prefix}ChipRow"></div>
+    </div>
+  `;
 }
 
-function cfToggleCustom(prefix, idx){
-  const sel = document.getElementById(`${prefix}Select${idx}`);
-  const input = document.getElementById(`${prefix}Custom${idx}`);
-  if(sel.value === '__custom__'){
-    input.style.display = 'block';
-    input.focus();
+function cfRenderPickerState(prefix){
+  const picks = cfState[prefix];
+  const counterEl = document.getElementById(`${prefix}Counter`);
+  if(counterEl) counterEl.textContent = `${picks.length} / ${CF_MAX_PICKS} 선택됨`;
+
+  const presetValues = picks.filter(p => p.type === 'preset').map(p => p.value);
+  document.querySelectorAll(`#${prefix}Picks .cf-tile`).forEach(tile => {
+    const isSelected = presetValues.includes(tile.dataset.value);
+    tile.classList.toggle('selected', isSelected);
+    tile.classList.toggle('disabled', !isSelected && picks.length >= CF_MAX_PICKS);
+  });
+
+  const chipRow = document.getElementById(`${prefix}ChipRow`);
+  const customPicks = picks.filter(p => p.type === 'custom');
+  chipRow.innerHTML = customPicks.map(p => `
+    <span class="cf-chip">${p.value}<button type="button" onclick="cfRemoveCustom('${prefix}','${p.value.replace(/'/g,"\\'")}')">✕</button></span>
+  `).join('');
+
+  const addBtn = document.querySelector(`#${prefix}Picks .cf-custom-add-btn`);
+  const customInput = document.getElementById(`${prefix}CustomInput`);
+  const maxed = picks.length >= CF_MAX_PICKS;
+  if(addBtn){ addBtn.disabled = maxed; addBtn.style.opacity = maxed ? .5 : 1; }
+  if(customInput){ customInput.disabled = maxed; }
+}
+
+function cfToggleTile(prefix, el){
+  const value = el.dataset.value;
+  const picks = cfState[prefix];
+  const idx = picks.findIndex(p => p.type === 'preset' && p.value === value);
+  if(idx !== -1){
+    picks.splice(idx, 1);
   } else {
-    input.style.display = 'none';
-    input.value = '';
+    if(picks.length >= CF_MAX_PICKS){
+      alert(`최대 ${CF_MAX_PICKS}가지까지만 선택할 수 있어요!`);
+      return;
+    }
+    picks.push({ type:'preset', value });
   }
+  cfRenderPickerState(prefix);
+}
+
+function cfAddCustom(prefix){
+  const input = document.getElementById(`${prefix}CustomInput`);
+  const value = input.value.trim();
+  if(!value) return;
+  const picks = cfState[prefix];
+  if(picks.length >= CF_MAX_PICKS){
+    alert(`최대 ${CF_MAX_PICKS}가지까지만 선택할 수 있어요!`);
+    return;
+  }
+  if(picks.some(p => p.value === value)){
+    alert('이미 추가된 항목이에요!');
+    return;
+  }
+  picks.push({ type:'custom', value });
+  input.value = '';
+  cfRenderPickerState(prefix);
+}
+
+function cfRemoveCustom(prefix, value){
+  const picks = cfState[prefix];
+  const idx = picks.findIndex(p => p.type === 'custom' && p.value === value);
+  if(idx !== -1) picks.splice(idx, 1);
+  cfRenderPickerState(prefix);
 }
 
 function cfGetPicks(prefix){
-  const picks = [];
-  for(let i=1;i<=3;i++){
-    const sel = document.getElementById(`${prefix}Select${i}`);
-    const input = document.getElementById(`${prefix}Custom${i}`);
-    if(!sel) continue;
-    if(sel.value === '__custom__'){
-      if(input.value.trim()) picks.push(input.value.trim());
-    } else if(sel.value){
-      picks.push(sel.value);
-    }
-  }
-  return picks;
+  return cfState[prefix].map(p => p.value);
 }
 
 cfBuildPicker('cfKnownPicks', CF_KNOWN_OPTIONS, 'cfKnown');
 cfBuildPicker('cfLikedPicks', CF_LIKED_OPTIONS, 'cfLiked');
+cfRenderPickerState('cfKnown');
+cfRenderPickerState('cfLiked');
 
 function cfGoStep(n){
   document.querySelectorAll('.cf-tab').forEach((t,i)=>t.classList.toggle('active', i===n-1));

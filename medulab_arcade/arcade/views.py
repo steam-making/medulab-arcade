@@ -27,7 +27,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave, ContentFinderSubmission
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -185,6 +185,91 @@ def future_career_video_list(request):
 def future_career_video_admin_delete(request, save_id):
     """관리자용 - 저장 항목 삭제"""
     FutureCareerSave.objects.filter(pk=save_id).delete()
+    return JsonResponse({'success': True})
+
+
+def content_finder(request):
+    """AI 프롬프트 생성기 - 나만의 콘텐츠 찾기 실습 활동 페이지"""
+    return render(request, 'arcade/tools/content_finder.html')
+
+
+@require_POST
+def content_finder_submit(request):
+    """나만의 콘텐츠 찾기 - 포스터 제출 (로그인 불필요)"""
+    try:
+        payload = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': '잘못된 요청입니다.'}, status=400)
+
+    name = (payload.get('name') or '').strip()
+    known_items = payload.get('known_items') or []
+    liked_items = payload.get('liked_items') or []
+    content_idea = (payload.get('content_idea') or '').strip()
+    poster_b64 = payload.get('poster_image') or ''
+
+    if not name:
+        return JsonResponse({'success': False, 'error': '이름을 입력해 주세요.'}, status=400)
+    if len(name) > 50:
+        return JsonResponse({'success': False, 'error': '이름은 50자 이내로 입력해 주세요.'}, status=400)
+    if not isinstance(known_items, list) or not isinstance(liked_items, list):
+        return JsonResponse({'success': False, 'error': '데이터 형식이 올바르지 않습니다.'}, status=400)
+    if not content_idea:
+        return JsonResponse({'success': False, 'error': '콘텐츠 아이디어를 입력해 주세요.'}, status=400)
+    if not poster_b64:
+        return JsonResponse({'success': False, 'error': '포스터 이미지를 붙여넣어 주세요.'}, status=400)
+
+    submission = ContentFinderSubmission(
+        name=name,
+        known_items=known_items,
+        liked_items=liked_items,
+        content_idea=content_idea,
+    )
+
+    try:
+        header, b64data = poster_b64.split(',', 1) if ',' in poster_b64 else ('', poster_b64)
+        img_bytes = base64.b64decode(b64data)
+        ext = 'png'
+        if 'jpeg' in header or 'jpg' in header:
+            ext = 'jpg'
+        elif 'webp' in header:
+            ext = 'webp'
+        filename = f'poster_{uuid.uuid4().hex[:8]}.{ext}'
+        submission.poster_image = InMemoryUploadedFile(
+            io.BytesIO(img_bytes), 'poster_image', filename, f'image/{ext}', len(img_bytes), None
+        )
+    except Exception:
+        return JsonResponse({'success': False, 'error': '이미지를 처리하지 못했습니다. 다시 붙여넣어 주세요.'}, status=400)
+
+    submission.save()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def content_finder_list(request):
+    """관리자용 - 나만의 콘텐츠 찾기 제출 목록"""
+    rows = ContentFinderSubmission.objects.order_by('-created_at')
+    items = [
+        {
+            'id': r.id,
+            'name': r.name,
+            'known_items': r.known_items,
+            'liked_items': r.liked_items,
+            'content_idea': r.content_idea,
+            'poster_url': r.poster_image.url if r.poster_image else '',
+            'created_at': timezone.localtime(r.created_at).strftime('%Y-%m-%d %H:%M'),
+        }
+        for r in rows
+    ]
+    return JsonResponse({'success': True, 'items': items})
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def content_finder_delete(request, submission_id):
+    """관리자용 - 제출 항목 삭제"""
+    ContentFinderSubmission.objects.filter(pk=submission_id).delete()
     return JsonResponse({'success': True})
 
 

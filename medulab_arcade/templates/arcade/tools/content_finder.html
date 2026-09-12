@@ -1,0 +1,444 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}나만의 콘텐츠 찾기 - AI 프롬프트 생성기 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --yellow:#FFC93C;
+    --green:#3DDC97; --ink:#2E2A4A; --orange:#FF9142;
+  }
+  body { background: linear-gradient(150deg, #FFF6FB 0%, #F1F0FF 45%, #EAF7FF 100%) !important; color: var(--ink); }
+
+  .cf-page { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  .cf-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom: 22px; }
+  .cf-header .badge { display:inline-block; background: linear-gradient(120deg, var(--pink), var(--purple)); color:#fff; font-size:12.5px; font-weight:bold; letter-spacing:1px; padding:5px 14px; border-radius:999px; margin-bottom:10px; }
+  .cf-header h1 { font-size:26px; font-weight:900; margin:0 0 6px; background: linear-gradient(120deg, var(--purple), var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .cf-header p { font-size:14px; color:#6a6486; margin:0; }
+  .cf-admin-btn { border:1px solid var(--purple); background:#fff; color:var(--purple); border-radius:999px; padding:9px 16px; font-weight:800; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .cf-admin-btn:hover { background:#F1EEFF; }
+
+  .cf-name-row { background:#fff; border-radius:18px; padding:16px 20px; box-shadow:0 6px 20px rgba(140,107,250,0.08); margin-bottom:20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .cf-name-row label { font-weight:800; font-size:14px; color:var(--ink); white-space:nowrap; }
+  .cf-name-row input[type="text"] { flex:1; min-width:160px; border:1.5px solid #E5DFFA; border-radius:10px; padding:10px 14px; font-size:14px; }
+
+  .cf-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+  .cf-tab { border:1.5px solid #E5DFFA; background:#fff; color:var(--ink); padding:9px 16px; border-radius:999px; cursor:pointer; font-weight:800; font-size:13px; transition:all .2s; }
+  .cf-tab:hover { background:#F5F2FF; }
+  .cf-tab.active { background: linear-gradient(120deg, var(--purple), var(--blue)); color:#fff; border-color:transparent; box-shadow:0 6px 16px rgba(140,107,250,0.28); }
+
+  .cf-step { display:none; animation: cfFadeIn .3s ease; }
+  .cf-step.active { display:block; }
+  @keyframes cfFadeIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .cf-card { background:#fff; border-radius:22px; padding:26px 24px; box-shadow:0 6px 24px rgba(140,107,250,0.10); border:2px solid rgba(140,107,250,0.08); margin-bottom:18px; }
+  .cf-card h3 { margin:0 0 4px; font-size:18px; font-weight:900; color:var(--ink); }
+  .cf-card .cf-desc { font-size:13px; color:#7a7498; margin:0 0 18px; }
+
+  .cf-pick-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .cf-pick-num { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, var(--pink), var(--purple)); color:#fff; font-weight:900; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .cf-pick-row select { flex:1; border:1.5px solid #E5DFFA; border-radius:10px; padding:10px 12px; font-size:13.5px; background:#fff; color:var(--ink); }
+  .cf-pick-row input[type="text"] { flex:1; border:1.5px solid var(--pink); border-radius:10px; padding:10px 12px; font-size:13.5px; }
+
+  .cf-btn { border:none; border-radius:12px; padding:13px 22px; font-weight:800; font-size:14.5px; cursor:pointer; transition:transform .15s; }
+  .cf-btn:hover { transform:translateY(-1px); }
+  .cf-btn-primary { background:linear-gradient(120deg, var(--purple), var(--blue)); color:#fff; }
+  .cf-btn-copy { background:#F1EEFF; color:var(--purple); }
+  .cf-btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+
+  .cf-prompt-box { background:#F8F7FF; border:1.5px dashed #C9BEFA; border-radius:14px; padding:16px 18px; font-size:13.5px; line-height:1.7; color:#3a3560; white-space:pre-wrap; margin:14px 0; max-height:320px; overflow-y:auto; }
+
+  .cf-status { margin-top:10px; font-size:13px; font-weight:700; min-height:18px; }
+  .cf-status.ok { color:#0f9d78; }
+  .cf-status.err { color:#e0405a; }
+
+  textarea.cf-textarea { width:100%; border:1.5px solid #E5DFFA; border-radius:12px; padding:12px 14px; font-size:13.5px; font-family:inherit; resize:vertical; min-height:110px; box-sizing:border-box; }
+
+  .cf-paste-zone { border:2.5px dashed #C9BEFA; border-radius:16px; padding:28px 20px; text-align:center; color:#8a84ab; font-size:13.5px; cursor:text; background:#FAFAFF; transition:all .2s; outline:none; }
+  .cf-paste-zone:focus, .cf-paste-zone.dragover { border-color:var(--purple); background:#F5F2FF; }
+  .cf-paste-zone img { max-width:100%; border-radius:12px; margin-top:10px; box-shadow:0 6px 20px rgba(0,0,0,0.12); }
+
+  .cf-done-box { text-align:center; padding:30px 20px; }
+  .cf-done-box .emoji { font-size:48px; margin-bottom:10px; }
+
+  /* 관리자 제출 목록 모달 */
+  .cf-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+  .cf-modal-overlay.show { display:flex; }
+  .cf-modal-box { background:#fff; border-radius:20px; padding:28px; max-width:640px; width:100%; max-height:85vh; box-shadow:0 20px 50px rgba(0,0,0,.25); position:relative; display:flex; flex-direction:column; }
+  .cf-modal-box h3 { margin:0 0 6px; font-size:18px; font-weight:900; color:#111827; }
+  .cf-modal-box p.small { color:#7a7498; font-size:12.5px; margin:0 0 16px; }
+  .cf-modal-close { position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; color:#7a7498; cursor:pointer; line-height:1; }
+  .cf-modal-close:hover { color:#111827; }
+  .cf-list-body { overflow-y:auto; flex:1; }
+  .cf-list-row { display:flex; gap:12px; padding:12px 4px; border-bottom:1px solid #eee; align-items:flex-start; }
+  .cf-list-row:last-child { border-bottom:none; }
+  .cf-list-thumb { width:96px; height:54px; border-radius:8px; object-fit:cover; flex-shrink:0; background:#f3f3f3; cursor:pointer; }
+  .cf-list-info { flex:1; min-width:0; }
+  .cf-list-info b { color:#111827; font-size:14px; }
+  .cf-list-info .idea { font-size:12.5px; color:#555; margin-top:2px; white-space:pre-wrap; }
+  .cf-list-info .meta { font-size:11.5px; color:#9a94b8; margin-top:4px; }
+  .cf-list-del { border:none; border-radius:8px; padding:6px 10px; font-size:12px; font-weight:700; cursor:pointer; background:#fee2e2; color:#b91c1c; flex-shrink:0; }
+  .cf-list-del:hover { background:#fecaca; }
+  .cf-list-empty { color:#9a94b8; font-size:13px; padding:24px 4px; text-align:center; }
+
+  @media (max-width: 600px) {
+    .cf-header h1 { font-size:22px; }
+    .cf-pick-row { flex-wrap:wrap; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cf-page">
+
+  <div class="cf-header">
+    <div>
+      <div class="badge">✨ AI 프롬프트 생성기</div>
+      <h1>🎯 나만의 콘텐츠 찾기</h1>
+      <p>나를 알고, 좋아하는 것을 찾아, 나만의 콘텐츠 아이디어와 포스터까지 완성해 보세요!</p>
+    </div>
+    {% if user.is_staff %}
+    <button type="button" class="cf-admin-btn" onclick="cfOpenListModal()">📋 제출 목록</button>
+    {% endif %}
+  </div>
+
+  <div class="cf-name-row">
+    <label for="cfName">✏️ 이름</label>
+    <input type="text" id="cfName" placeholder="이름을 입력해 주세요" maxlength="50">
+  </div>
+
+  <div class="cf-tabs">
+    <button class="cf-tab active" data-target="cfStep1">1. 잘 아는 것</button>
+    <button class="cf-tab" data-target="cfStep2">2. 좋아하는 것</button>
+    <button class="cf-tab" data-target="cfStep3">3. 아이디어 추천</button>
+    <button class="cf-tab" data-target="cfStep4">4. 포스터 프롬프트</button>
+    <button class="cf-tab" data-target="cfStep5">5. 제출하기</button>
+  </div>
+
+  <!-- STEP 1: 내가 잘 아는 것 3가지 -->
+  <section id="cfStep1" class="cf-step active">
+    <div class="cf-card">
+      <h3>✏️ 내가 잘 아는 것 3가지</h3>
+      <p class="cf-desc">지금까지의 경험, 지식, 잘하는 것을 골라 보세요!</p>
+      <div id="cfKnownPicks"></div>
+      <div class="cf-btn-row">
+        <button type="button" class="cf-btn cf-btn-primary" onclick="cfGoStep(2)">다음 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2: 내가 좋아하는 것 3가지 -->
+  <section id="cfStep2" class="cf-step">
+    <div class="cf-card">
+      <h3>❤️ 내가 좋아하는 것 3가지</h3>
+      <p class="cf-desc">마음이 가는 것, 할 때 즐거운 것을 골라 보세요!</p>
+      <div id="cfLikedPicks"></div>
+      <div class="cf-btn-row">
+        <button type="button" class="cf-btn cf-btn-copy" onclick="cfGoStep(1)">← 이전</button>
+        <button type="button" class="cf-btn cf-btn-primary" onclick="cfBuildIdeaPrompt()">다음 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3: 콘텐츠 아이디어 추천 프롬프트 -->
+  <section id="cfStep3" class="cf-step">
+    <div class="cf-card">
+      <h3>💡 콘텐츠 아이디어 추천 프롬프트</h3>
+      <p class="cf-desc">아래 프롬프트를 복사해서 ChatGPT에 붙여넣으면, 나만의 콘텐츠 아이디어 5가지와 추천 채널명을 받을 수 있어요!</p>
+      <div class="cf-prompt-box" id="cfIdeaPrompt"></div>
+      <div class="cf-btn-row">
+        <button type="button" class="cf-btn cf-btn-copy" onclick="cfCopyText('cfIdeaPrompt', 'cfIdeaCopyStatus')">📋 프롬프트 복사하기</button>
+      </div>
+      <div class="cf-status ok" id="cfIdeaCopyStatus"></div>
+
+      <div style="margin-top:22px;">
+        <h3 style="font-size:15px;">👉 마음에 드는 아이디어를 골라 아래에 붙여넣어 주세요</h3>
+        <p class="cf-desc">ChatGPT가 추천해 준 5가지 중 하나를 골라, 제목/채널명/소개를 그대로 복사해서 붙여넣으세요.</p>
+        <textarea class="cf-textarea" id="cfContentIdea" placeholder="예) 제목: 오늘의 초간단 집밥&#10;추천 채널명: 뚝딱요리소&#10;소개: 학교 다녀와서 5분 만에 만드는 초간단 요리를 소개하는 채널..."></textarea>
+      </div>
+
+      <div class="cf-btn-row">
+        <button type="button" class="cf-btn cf-btn-copy" onclick="cfGoStep(2)">← 이전</button>
+        <button type="button" class="cf-btn cf-btn-primary" onclick="cfBuildPosterPrompt()">다음 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 4: 포스터 프롬프트 -->
+  <section id="cfStep4" class="cf-step">
+    <div class="cf-card">
+      <h3>🖼️ 포스터 이미지 프롬프트</h3>
+      <p class="cf-desc">아래 프롬프트를 복사해서 ChatGPT(이미지 생성)에 붙여넣으면, 내 콘텐츠를 소개하는 포스터를 만들어 줘요!</p>
+      <div class="cf-prompt-box" id="cfPosterPrompt"></div>
+      <div class="cf-btn-row">
+        <button type="button" class="cf-btn cf-btn-copy" onclick="cfCopyText('cfPosterPrompt', 'cfPosterCopyStatus')">📋 프롬프트 복사하기</button>
+      </div>
+      <div class="cf-status ok" id="cfPosterCopyStatus"></div>
+      <div class="cf-btn-row">
+        <button type="button" class="cf-btn cf-btn-copy" onclick="cfGoStep(3)">← 이전</button>
+        <button type="button" class="cf-btn cf-btn-primary" onclick="cfGoStep(5)">다음 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 5: 포스터 제출 -->
+  <section id="cfStep5" class="cf-step">
+    <div class="cf-card" id="cfSubmitCard">
+      <h3>📮 완성한 포스터 제출하기</h3>
+      <p class="cf-desc">ChatGPT가 만들어 준 포스터 이미지를 <strong>복사(Ctrl+C)</strong>한 뒤, 아래 상자를 클릭하고 <strong>붙여넣기(Ctrl+V)</strong> 해주세요.</p>
+      <div class="cf-paste-zone" id="cfPasteZone" tabindex="0">📎 여기를 클릭하고 Ctrl+V로 포스터를 붙여넣으세요
+        <div id="cfPastePreview"></div>
+      </div>
+      <div class="cf-btn-row">
+        <button type="button" class="cf-btn cf-btn-copy" onclick="cfGoStep(4)">← 이전</button>
+        <button type="button" class="cf-btn cf-btn-primary" onclick="cfSubmit()">🚀 제출하기</button>
+      </div>
+      <div class="cf-status" id="cfSubmitStatus"></div>
+    </div>
+
+    <div class="cf-card cf-done-box" id="cfDoneBox" style="display:none;">
+      <div class="emoji">🎉</div>
+      <h3>제출이 완료되었어요!</h3>
+      <p class="cf-desc">멋진 콘텐츠 아이디어와 포스터, 정말 특별해요!</p>
+    </div>
+  </section>
+
+</div>
+
+{% if user.is_staff %}
+<div class="cf-modal-overlay" id="cfListOverlay" onclick="if(event.target===this)cfCloseListModal()">
+  <div class="cf-modal-box">
+    <button type="button" class="cf-modal-close" onclick="cfCloseListModal()">✕</button>
+    <h3>📋 제출 목록</h3>
+    <p class="small">학생들이 제출한 콘텐츠 아이디어와 포스터입니다. (관리자 전용)</p>
+    <div id="cfListBody" class="cf-list-body">불러오는 중...</div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CF_KNOWN_OPTIONS = ['요리','게임','운동/스포츠','학교생활','반려동물 키우기','컴퓨터/코딩','문화/예술','여행','음악(악기연주)','그림/디자인','과학/실험','역사','외국어','독서','손재주(만들기)','수학'];
+const CF_LIKED_OPTIONS = ['음악 듣기','영상 보기','그림 그리기','맛집 탐방','친구들과 놀기','동물','패션','IT/신기술','영화/드라마','운동 관람','게임하기','여행 다니기','만화/웹툰','사진 찍기','춤/댄스','요리하기'];
+
+function cfBuildPicker(containerId, options, prefix){
+  const box = document.getElementById(containerId);
+  let html = '';
+  for(let i=1;i<=3;i++){
+    html += `<div class="cf-pick-row">
+      <div class="cf-pick-num">${i}</div>
+      <select id="${prefix}Select${i}" onchange="cfToggleCustom('${prefix}',${i})">
+        <option value="">-- 선택해 주세요 --</option>
+        ${options.map(o=>`<option value="${o}">${o}</option>`).join('')}
+        <option value="__custom__">✏️ 직접입력</option>
+      </select>
+      <input type="text" id="${prefix}Custom${i}" placeholder="직접 입력해 주세요" style="display:none;" maxlength="30">
+    </div>`;
+  }
+  box.innerHTML = html;
+}
+
+function cfToggleCustom(prefix, idx){
+  const sel = document.getElementById(`${prefix}Select${idx}`);
+  const input = document.getElementById(`${prefix}Custom${idx}`);
+  if(sel.value === '__custom__'){
+    input.style.display = 'block';
+    input.focus();
+  } else {
+    input.style.display = 'none';
+    input.value = '';
+  }
+}
+
+function cfGetPicks(prefix){
+  const picks = [];
+  for(let i=1;i<=3;i++){
+    const sel = document.getElementById(`${prefix}Select${i}`);
+    const input = document.getElementById(`${prefix}Custom${i}`);
+    if(!sel) continue;
+    if(sel.value === '__custom__'){
+      if(input.value.trim()) picks.push(input.value.trim());
+    } else if(sel.value){
+      picks.push(sel.value);
+    }
+  }
+  return picks;
+}
+
+cfBuildPicker('cfKnownPicks', CF_KNOWN_OPTIONS, 'cfKnown');
+cfBuildPicker('cfLikedPicks', CF_LIKED_OPTIONS, 'cfLiked');
+
+function cfGoStep(n){
+  document.querySelectorAll('.cf-tab').forEach((t,i)=>t.classList.toggle('active', i===n-1));
+  document.querySelectorAll('.cf-step').forEach((s,i)=>s.classList.toggle('active', i===n-1));
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.querySelectorAll('.cf-tab').forEach((tab, idx)=>{
+  tab.addEventListener('click', ()=>cfGoStep(idx+1));
+});
+
+function cfBuildIdeaPrompt(){
+  const known = cfGetPicks('cfKnown');
+  const liked = cfGetPicks('cfLiked');
+  if(known.length === 0 || liked.length === 0){
+    alert('잘 아는 것과 좋아하는 것을 최소 1가지 이상 선택해 주세요!');
+    return;
+  }
+  const prompt = `나는 초등학생/청소년 유튜브 크리에이터를 꿈꾸는 학생이야.
+
+[내가 잘 아는 것]
+${known.map(v=>'- '+v).join('\n')}
+
+[내가 좋아하는 것]
+${liked.map(v=>'- '+v).join('\n')}
+
+위 내용을 바탕으로, 내가 지금 바로 시작할 수 있는 유튜브 콘텐츠 아이디어를 5가지 추천해 줘.
+각 아이디어는 아래 형식으로 정리해 줘:
+
+1. 제목: (콘텐츠 아이디어 제목)
+   추천 채널명: (창의적이고 기억하기 쉬운 채널 이름)
+   소개: (이 콘텐츠가 어떤 내용인지 2~3문장으로 설명)
+
+초등학생/청소년이 이해하기 쉽고, 실제로 촬영·제작해 볼 수 있는 현실적인 아이디어로 추천해 줘.`;
+  document.getElementById('cfIdeaPrompt').textContent = prompt;
+  cfGoStep(3);
+}
+
+function cfBuildPosterPrompt(){
+  const idea = document.getElementById('cfContentIdea').value.trim();
+  if(!idea){
+    alert('ChatGPT가 추천해 준 콘텐츠 아이디어를 붙여넣어 주세요!');
+    return;
+  }
+  const name = document.getElementById('cfName').value.trim() || '나';
+  const prompt = `아래 유튜브 콘텐츠 아이디어를 소개하는 홍보 포스터(썸네일) 이미지를 만들어 줘.
+
+[콘텐츠 아이디어]
+${idea}
+
+[만든 사람] ${name}
+
+스타일 조건:
+- 밝고 화사한 색감, 손글씨 느낌의 캐치프레이즈 문구 포함
+- 유튜브 썸네일 비율(16:9)의 가로형 포스터
+- 귀엽고 눈에 띄는 일러스트 요소 포함
+- 콘텐츠 제목과 채널명이 큰 글씨로 잘 보이게 디자인해 줘`;
+  document.getElementById('cfPosterPrompt').textContent = prompt;
+  cfGoStep(4);
+}
+
+function cfCopyText(sourceId, statusId){
+  const text = document.getElementById(sourceId).textContent;
+  const statusEl = document.getElementById(statusId);
+  if(!text){ return; }
+  navigator.clipboard.writeText(text).then(()=>{
+    statusEl.textContent = '✅ 복사되었습니다! ChatGPT에 붙여넣어 보세요.';
+    setTimeout(()=>{ statusEl.textContent=''; }, 3000);
+  }).catch(()=>{
+    statusEl.textContent = '복사에 실패했어요. 직접 선택해서 복사해 주세요.';
+  });
+}
+
+// ── 포스터 붙여넣기 ──
+let cfPosterDataUrl = '';
+const cfPasteZone = document.getElementById('cfPasteZone');
+if(cfPasteZone){
+  cfPasteZone.addEventListener('paste', function(e){
+    const items = (e.clipboardData || window.clipboardData).items;
+    for(const item of items){
+      if(item.type.indexOf('image') !== -1){
+        const blob = item.getAsFile();
+        const reader = new FileReader();
+        reader.onload = function(evt){
+          cfPosterDataUrl = evt.target.result;
+          document.getElementById('cfPastePreview').innerHTML = `<img src="${cfPosterDataUrl}" alt="붙여넣은 포스터">`;
+        };
+        reader.readAsDataURL(blob);
+        e.preventDefault();
+        return;
+      }
+    }
+  });
+  cfPasteZone.addEventListener('click', ()=>cfPasteZone.focus());
+}
+
+function cfSubmit(){
+  const name = document.getElementById('cfName').value.trim();
+  const statusEl = document.getElementById('cfSubmitStatus');
+  const known = cfGetPicks('cfKnown');
+  const liked = cfGetPicks('cfLiked');
+  const idea = document.getElementById('cfContentIdea').value.trim();
+
+  if(!name){ statusEl.className='cf-status err'; statusEl.textContent='이름을 입력해 주세요.'; cfGoStep(1); return; }
+  if(!idea){ statusEl.className='cf-status err'; statusEl.textContent='콘텐츠 아이디어를 입력해 주세요.'; cfGoStep(3); return; }
+  if(!cfPosterDataUrl){ statusEl.className='cf-status err'; statusEl.textContent='포스터 이미지를 붙여넣어 주세요.'; return; }
+
+  statusEl.className = 'cf-status'; statusEl.textContent = '제출 중...';
+
+  fetch('{% url "content_finder_submit" %}', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+    body: JSON.stringify({ name, known_items: known, liked_items: liked, content_idea: idea, poster_image: cfPosterDataUrl })
+  }).then(r=>r.json()).then(res=>{
+    if(res.success){
+      document.getElementById('cfSubmitCard').style.display = 'none';
+      document.getElementById('cfDoneBox').style.display = 'block';
+    } else {
+      statusEl.className = 'cf-status err';
+      statusEl.textContent = res.error || '제출에 실패했습니다.';
+    }
+  }).catch(()=>{
+    statusEl.className = 'cf-status err';
+    statusEl.textContent = '제출 중 오류가 발생했습니다.';
+  });
+}
+
+{% if user.is_staff %}
+function cfOpenListModal(){
+  document.getElementById('cfListOverlay').classList.add('show');
+  cfRefreshList();
+}
+function cfCloseListModal(){
+  document.getElementById('cfListOverlay').classList.remove('show');
+}
+function cfRefreshList(){
+  const body = document.getElementById('cfListBody');
+  body.innerHTML = '불러오는 중...';
+  fetch('{% url "content_finder_list" %}').then(r=>r.json()).then(res=>{
+    if(!res.success || !res.items.length){
+      body.innerHTML = '<div class="cf-list-empty">제출된 내용이 없습니다.</div>';
+      return;
+    }
+    body.innerHTML = res.items.map(item=>`
+      <div class="cf-list-row" data-id="${item.id}">
+        ${item.poster_url ? `<img class="cf-list-thumb" src="${item.poster_url}" onclick="window.open('${item.poster_url}','_blank')">` : ''}
+        <div class="cf-list-info">
+          <b>${item.name}</b>
+          <div class="idea">${(item.content_idea || '').slice(0,120)}</div>
+          <div class="meta">잘 아는 것: ${(item.known_items||[]).join(', ')} · 좋아하는 것: ${(item.liked_items||[]).join(', ')}</div>
+          <div class="meta">${item.created_at}</div>
+        </div>
+        <button type="button" class="cf-list-del" onclick="cfDeleteItem(${item.id})">삭제</button>
+      </div>
+    `).join('');
+  }).catch(()=>{ body.innerHTML = '<div class="cf-list-empty">목록을 불러오지 못했습니다.</div>'; });
+}
+function cfDeleteItem(id){
+  if(!confirm('이 제출 항목을 삭제할까요? 되돌릴 수 없습니다.')) return;
+  fetch(`/tools/content-finder/${id}/delete/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+  }).then(r=>r.json()).then(res=>{
+    if(res.success) cfRefreshList();
+    else alert('삭제에 실패했습니다.');
+  }).catch(()=>alert('삭제 중 오류가 발생했습니다.'));
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') cfCloseListModal(); });
+{% endif %}
+</script>
+{% endblock %}

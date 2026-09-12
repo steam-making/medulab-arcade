@@ -1363,3 +1363,21 @@ class FutureCareerSave(models.Model):
 
     def __str__(self):
         return f'{self.name}({self.birthdate}) ({self.updated_at:%Y-%m-%d %H:%M})'
+
+
+class ContentFinderSubmission(models.Model):
+    """AI 프롬프트 생성기 - 나만의 콘텐츠 찾기 실습 활동 제출 (로그인 불필요)"""
+    name = models.CharField('이름', max_length=50)
+    known_items = models.JSONField('내가 잘 아는 것 3가지', default=list, blank=True)
+    liked_items = models.JSONField('내가 좋아하는 것 3가지', default=list, blank=True)
+    content_idea = models.TextField('콘텐츠 아이디어', blank=True, default='')
+    poster_image = models.ImageField('포스터 이미지', upload_to='content_finder/posters/%Y/%m/', blank=True, null=True)
+    created_at = models.DateTimeField('제출 시각', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '나만의 콘텐츠 찾기 제출'
+        verbose_name_plural = '나만의 콘텐츠 찾기 제출'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.name} ({self.created_at:%Y-%m-%d %H:%M})'

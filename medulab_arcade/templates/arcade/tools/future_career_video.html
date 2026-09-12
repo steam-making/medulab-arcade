@@ -46,8 +46,8 @@
   .fcv-page .chip:hover{border-color:#93c5fd;background:#f0f6ff}
   .fcv-page .chip.selected{background:var(--primary2);color:#1d4ed8;border-color:#60a5fa;font-weight:700}
   .fcv-page .note{background:#eff6ff;border-left:4px solid var(--primary);padding:13px 16px;border-radius:10px;margin-top:12px;color:#1e40af}
-  .fcv-page input[type="text"],.fcv-page textarea,.fcv-page select{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:11px 12px;font-size:15px;background:#fff;color:var(--text);outline:none;transition:border-color .18s,box-shadow .18s}
-  .fcv-page input[type="text"]:focus,.fcv-page textarea:focus,.fcv-page select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+  .fcv-page input[type="text"],.fcv-page input[type="date"],.fcv-page textarea,.fcv-page select{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:11px 12px;font-size:15px;background:#fff;color:var(--text);outline:none;transition:border-color .18s,box-shadow .18s;color-scheme:light}
+  .fcv-page input[type="text"]:focus,.fcv-page input[type="date"]:focus,.fcv-page textarea:focus,.fcv-page select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
   .fcv-page textarea{min-height:170px;resize:vertical}
   .fcv-page .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
   .fcv-page .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
@@ -82,7 +82,7 @@
   .fcv-modal-box p.small{color:var(--muted);font-size:12.5px;margin:0 0 16px;line-height:1.6}
   .fcv-modal-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1}
   .fcv-modal-close:hover{color:#111827}
-  .fcv-modal-box input[type="text"]{margin-bottom:14px}
+  .fcv-modal-box input[type="text"],.fcv-modal-box input[type="date"]{margin-bottom:14px}
   .fcv-modal-btn-row{display:flex;gap:10px}
   .fcv-modal-btn-row button{flex:1;border:0;border-radius:10px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;transition:all .18s}
   .fcv-modal-btn-save{background:linear-gradient(135deg,var(--accent),#0f9d78);color:#fff}
@@ -900,10 +900,10 @@
   <div class="fcv-modal-box">
     <button type="button" class="fcv-modal-close" onclick="closeFcvSaveModal()">✕</button>
     <h3>💾 저장 / 불러오기</h3>
-    <p class="small">이름과 학년을 입력하고 저장하면, 나중에 같은 이름·학년으로 다른 날·다른 기기에서도 이어서 진행할 수 있어요.</p>
+    <p class="small">이름과 생년월일을 입력하고 저장하면, 나중에 같은 이름·생년월일로 다른 날·다른 기기에서도 이어서 진행할 수 있어요.</p>
     <div class="grid2">
       <input type="text" id="fcvSaveName" placeholder="이름을 입력하세요">
-      <input type="text" id="fcvSaveGrade" placeholder="학년 (예: 초5, 중2)">
+      <input type="date" id="fcvSaveBirthdate">
     </div>
     <div class="fcv-modal-btn-row">
       <button type="button" class="fcv-modal-btn-save" onclick="fcvDoSave(false)">💾 저장하기</button>
@@ -921,9 +921,9 @@
 // ── 저장 / 불러오기 (이름 기반, 로그인 불필요) ──
 function openFcvSaveModal(){
   const saved = localStorage.getItem('fcvSavedName');
-  const savedGrade = localStorage.getItem('fcvSavedGrade');
+  const savedBirthdate = localStorage.getItem('fcvSavedBirthdate');
   if(saved) document.getElementById('fcvSaveName').value = saved;
-  if(savedGrade) document.getElementById('fcvSaveGrade').value = savedGrade;
+  if(savedBirthdate) document.getElementById('fcvSaveBirthdate').value = savedBirthdate;
   document.getElementById('fcvSaveStatus').textContent = '';
   document.getElementById('fcvSaveOverlay').classList.add('show');
 }
@@ -942,18 +942,18 @@ function fcvCollectAllData(){
 }
 function fcvDoSave(overwrite){
   const name = document.getElementById('fcvSaveName').value.trim();
-  const grade = document.getElementById('fcvSaveGrade').value.trim();
+  const birthdate = document.getElementById('fcvSaveBirthdate').value.trim();
   const statusEl = document.getElementById('fcvSaveStatus');
   if(!name){ alert('이름을 입력해 주세요.'); return; }
-  if(!grade){ alert('학년을 입력해 주세요.'); return; }
+  if(!birthdate){ alert('생년월일을 입력해 주세요.'); return; }
   statusEl.textContent = '저장 중...';
   fetch('{% url "future_career_video_save" %}', {
     method:'POST',
     headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
-    body: JSON.stringify({name, grade, data: fcvCollectAllData(), overwrite: !!overwrite})
+    body: JSON.stringify({name, birthdate, data: fcvCollectAllData(), overwrite: !!overwrite})
   }).then(r=>r.json()).then(res=>{
     if(res.exists){
-      if(confirm(`"${name}(${grade})" 이름으로 이미 저장된 내용이 있습니다 (${res.updated_at} 저장). 덮어쓸까요?`)){
+      if(confirm(`"${name}(${birthdate})" 이름으로 이미 저장된 내용이 있습니다 (${res.updated_at} 저장). 덮어쓸까요?`)){
         fcvDoSave(true);
       } else {
         statusEl.textContent = '저장을 취소했습니다.';
@@ -962,8 +962,8 @@ function fcvDoSave(overwrite){
     }
     if(res.success){
       localStorage.setItem('fcvSavedName', name);
-      localStorage.setItem('fcvSavedGrade', grade);
-      statusEl.textContent = `✅ "${name}(${grade})" 이름으로 저장했습니다. (${res.updated_at})`;
+      localStorage.setItem('fcvSavedBirthdate', birthdate);
+      statusEl.textContent = `✅ "${name}(${birthdate})" 이름으로 저장했습니다. (${res.updated_at})`;
     } else {
       statusEl.textContent = '⚠️ ' + (res.error || '저장에 실패했습니다.');
     }
@@ -971,21 +971,21 @@ function fcvDoSave(overwrite){
 }
 function fcvDoLoad(){
   const name = document.getElementById('fcvSaveName').value.trim();
-  const grade = document.getElementById('fcvSaveGrade').value.trim();
+  const birthdate = document.getElementById('fcvSaveBirthdate').value.trim();
   const statusEl = document.getElementById('fcvSaveStatus');
   if(!name){ alert('이름을 입력해 주세요.'); return; }
-  if(!grade){ alert('학년을 입력해 주세요.'); return; }
+  if(!birthdate){ alert('생년월일을 입력해 주세요.'); return; }
   statusEl.textContent = '불러오는 중...';
   fetch('{% url "future_career_video_load" %}', {
     method:'POST',
     headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
-    body: JSON.stringify({name, grade})
+    body: JSON.stringify({name, birthdate})
   }).then(r=>r.json()).then(res=>{
     if(!res.success){
       statusEl.textContent = '⚠️ ' + (res.error || '불러오기에 실패했습니다.');
       return;
     }
-    if(!confirm(`"${name}(${grade})" 님의 저장된 내용(${res.updated_at})을 불러올까요? 현재 화면에 입력된 내용은 덮어써집니다.`)) {
+    if(!confirm(`"${name}(${birthdate})" 님의 저장된 내용(${res.updated_at})을 불러올까요? 현재 화면에 입력된 내용은 덮어써집니다.`)) {
       statusEl.textContent = '불러오기를 취소했습니다.';
       return;
     }
@@ -993,7 +993,7 @@ function fcvDoLoad(){
       localStorage.setItem(key, JSON.stringify(res.data[key]));
     });
     localStorage.setItem('fcvSavedName', name);
-    localStorage.setItem('fcvSavedGrade', grade);
+    localStorage.setItem('fcvSavedBirthdate', birthdate);
     statusEl.textContent = `✅ 불러왔습니다. 화면을 새로고침합니다...`;
     setTimeout(()=>location.reload(), 600);
   }).catch(()=>{ statusEl.textContent = '⚠️ 불러오기 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'; });

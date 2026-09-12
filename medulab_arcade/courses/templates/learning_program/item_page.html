@@ -108,6 +108,7 @@
             {% if user.is_staff %}
                 <div style="display: flex; gap: 8px;">
                     <a href="{% url 'item_edit' item.id %}" class="btn-nav" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #3b82f6;">✏️ 수정</a>
+                    <a href="{% url 'item_image_manager' item.id %}" class="btn-nav" style="background: rgba(0, 255, 180, 0.1); border-color: rgba(0, 255, 180, 0.3); color: var(--accent-green);">🖼️</a>
                     <a href="{% url 'item_delete' item.id %}" class="btn-nav" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #ef4444;">🗑️</a>
                 </div>
             {% endif %}

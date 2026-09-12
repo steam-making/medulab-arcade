@@ -33,6 +33,8 @@ urlpatterns = [
     path('olympiad/sub/<int:sq_id>/example/add/', views.olympiad_sub_question_example_add, name='olympiad_sub_question_example_add'),
     path('olympiad/sub/<int:sq_id>/edit/', views.olympiad_sub_question_edit, name='olympiad_sub_question_edit'),
     path('item/<int:item_id>/delete/', views.item_delete, name='item_delete'),
+    path('item/<int:item_id>/images/', views.item_image_manager, name='item_image_manager'),
+    path('item/<int:item_id>/images/replace/', views.item_image_replace, name='item_image_replace'),
     
     # 학생용
     path('student/courses/', views.student_course_list, name='student_course_list'),

@@ -1,0 +1,154 @@
+{% extends 'arcade/base.html' %}
+
+{% block title %}이미지 관리 - {{ item.title }} - 메듀랩 Arcade{% endblock %}
+
+{% block extra_css %}
+<style>
+    .img-mgr-container {
+        max-width: 900px;
+        margin: 60px auto;
+        padding: 0 24px;
+    }
+    .img-mgr-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    .img-mgr-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .img-mgr-subtitle {
+        color: var(--text-muted);
+        font-size: 13px;
+        margin-bottom: 28px;
+    }
+    .img-mgr-empty {
+        color: var(--text-muted);
+        font-size: 13.5px;
+        text-align: center;
+        padding: 40px 10px;
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+    }
+    .img-mgr-item {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+    .img-mgr-preview {
+        width: 180px;
+        height: 120px;
+        flex-shrink: 0;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.03);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+    .img-mgr-preview img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    .img-mgr-missing {
+        color: #f87171;
+        font-size: 12px;
+    }
+    .img-mgr-info {
+        flex: 1;
+        min-width: 220px;
+    }
+    .img-mgr-path {
+        font-family: 'JetBrains Mono', 'Consolas', monospace;
+        font-size: 12px;
+        color: var(--text-muted);
+        word-break: break-all;
+        margin-bottom: 10px;
+    }
+    .img-mgr-form {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .img-mgr-form input[type="file"] {
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+    .img-mgr-btn {
+        background: var(--accent-blue);
+        color: #fff;
+        padding: 8px 18px;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .img-mgr-btn:hover {
+        transform: translateY(-1px);
+    }
+    .img-mgr-back {
+        display: block;
+        text-align: center;
+        margin-top: 24px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="img-mgr-container">
+    <div class="img-mgr-card">
+        <h1 class="img-mgr-title">
+            <span>🖼️</span> 이미지 관리
+        </h1>
+        <div class="img-mgr-subtitle">{{ item.title }} — 설명에 들어간 이미지를 같은 자리에서 직접 교체할 수 있어요. (파일을 선택하고 '교체하기'를 누르면 바로 반영됩니다.)</div>
+
+        {% if images %}
+            {% for img in images %}
+            <div class="img-mgr-item">
+                <div class="img-mgr-preview">
+                    {% if img.exists %}
+                        <img src="{{ img.url }}?t={{ img.mtime }}" alt="">
+                    {% else %}
+                        <span class="img-mgr-missing">파일 없음</span>
+                    {% endif %}
+                </div>
+                <div class="img-mgr-info">
+                    <div class="img-mgr-path">{{ img.rel_path }}</div>
+                    <form class="img-mgr-form" method="POST" action="{% url 'item_image_replace' item.id %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="rel_path" value="{{ img.rel_path }}">
+                        <input type="file" name="new_image" accept="image/*" required>
+                        <button type="submit" class="img-mgr-btn">교체하기</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="img-mgr-empty">이 항목의 설명에는 아직 이미지가 없습니다.</div>
+        {% endif %}
+
+        <a href="{% url 'item_page' item.id %}" class="img-mgr-back">← 학습 화면으로 돌아가기</a>
+    </div>
+</main>
+{% endblock %}

@@ -3090,6 +3090,64 @@ def item_delete(request, item_id):
         messages.success(request, f"'{title}' 아이템이 삭제되었습니다.")
         return redirect("chapter_detail", chapter_id=chapter_id)
     return render(request, "courses/item_confirm_delete.html", {"item": item})
+
+# --- (11-1) 아이템 설명(explain_html)에 들어간 이미지 관리 ---
+def _extract_item_image_paths(html):
+    """explain_html에서 /media/ 로 시작하는 이미지 src를 순서대로 추출."""
+    if not html:
+        return []
+    media_url = settings.MEDIA_URL
+    paths = []
+    for src in re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', html):
+        if src.startswith(media_url):
+            rel_path = src[len(media_url):]
+            if rel_path not in paths:
+                paths.append(rel_path)
+    return paths
+
+
+@login_required
+@user_passes_test(is_admin)
+def item_image_manager(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    rel_paths = _extract_item_image_paths(item.explain_html)
+    images = []
+    for rel_path in rel_paths:
+        abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+        exists = os.path.isfile(abs_path)
+        images.append({
+            "rel_path": rel_path,
+            "url": settings.MEDIA_URL + rel_path,
+            "exists": exists,
+            "mtime": int(os.path.getmtime(abs_path)) if exists else 0,
+        })
+    return render(request, "courses/item_image_manager.html", {
+        "item": item,
+        "images": images,
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def item_image_replace(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    if request.method == "POST":
+        rel_path = (request.POST.get("rel_path") or "").strip()
+        uploaded = request.FILES.get("new_image")
+        valid_rel_paths = _extract_item_image_paths(item.explain_html)
+        if rel_path not in valid_rel_paths:
+            messages.error(request, "잘못된 이미지 경로입니다.")
+        elif not uploaded:
+            messages.error(request, "새 이미지 파일을 선택해 주세요.")
+        else:
+            abs_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+            os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+            with open(abs_path, "wb") as dest:
+                for chunk in uploaded.chunks():
+                    dest.write(chunk)
+            messages.success(request, "이미지를 교체했습니다.")
+    return redirect("item_image_manager", item_id=item.id)
+
 # --- (8) 학생용 숙제 관리 (홈플레이) ---
 
 @login_required

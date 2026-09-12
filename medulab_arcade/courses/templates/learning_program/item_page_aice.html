@@ -200,7 +200,8 @@
     </div>
     {% endif %}
 
-    <div class="aice-panel" id="aicePanel">
+    <form id="aiceCsrfForm" style="display:none;">{% csrf_token %}</form>
+    <div class="aice-panel" id="aicePanel" data-item-id="{{ item.id }}">
         {% if not no_coding %}
         <button type="button" class="aice-toggle" id="aiceToggle">›</button>
         {% endif %}

@@ -12,13 +12,29 @@
   body { background:linear-gradient(150deg,#FFF6FB 0%,#F1F0FF 45%,#EAF7FF 100%) !important; color:var(--ink); }
 
   .cif-wrap { max-width:820px; margin:0 auto; padding:40px 20px 80px; }
-  .cif-back { display:inline-flex; align-items:center; gap:6px; color:var(--purple); font-weight:700; font-size:14px; text-decoration:none; margin-bottom:20px; }
+  .cif-topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .cif-back { display:inline-flex; align-items:center; gap:6px; color:var(--purple); font-weight:700; font-size:14px; text-decoration:none; }
   .cif-back:hover { text-decoration:underline; }
+  .cif-admin-btn { border:1px solid var(--purple); background:#fff; color:var(--purple); border-radius:999px; padding:9px 16px; font-weight:800; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .cif-admin-btn:hover { background:#F1EEFF; }
 
-  .cif-hero { text-align:center; padding:20px 20px 28px; margin-bottom:8px; }
+  .cif-hero { text-align:center; padding:8px 20px 28px; margin-bottom:8px; }
   .cif-hero .badge { display:inline-block; background:linear-gradient(120deg,var(--pink),var(--purple)); color:#fff; font-size:13px; font-weight:bold; letter-spacing:1px; padding:5px 16px; border-radius:999px; margin-bottom:16px; }
   .cif-hero h1 { font-size:30px; font-weight:900; margin:0 0 10px; background:linear-gradient(120deg,var(--purple),var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
   .cif-hero p { font-size:15px; color:#6a6486; margin:0; line-height:1.7; }
+
+  .cif-name-row { background:#fff; border-radius:18px; padding:16px 20px; box-shadow:0 6px 20px rgba(140,107,250,.08); margin-bottom:20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .cif-name-row label { font-weight:800; font-size:14px; color:var(--ink); white-space:nowrap; }
+  .cif-name-row input[type="text"] { flex:1; min-width:160px; border:1.5px solid #E5DFFA; border-radius:10px; padding:10px 14px; font-size:14px; }
+
+  .cif-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+  .cif-tab { border:1.5px solid #E5DFFA; background:#fff; color:var(--ink); padding:9px 16px; border-radius:999px; cursor:default; font-weight:800; font-size:13px; opacity:.55; transition:all .2s; }
+  .cif-tab.active { background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; border-color:transparent; opacity:1; box-shadow:0 6px 16px rgba(140,107,250,.28); }
+  .cif-tab.done { opacity:1; }
+
+  .cif-stage { display:none; animation:cifFadeIn .3s ease; }
+  .cif-stage.active { display:block; }
+  @keyframes cifFadeIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
 
   .cif-section { background:#fff; border-radius:20px; padding:26px 28px; margin-bottom:18px; box-shadow:0 4px 20px rgba(140,107,250,.08); }
   .cif-step-label { font-size:16px; font-weight:800; color:var(--ink); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
@@ -44,7 +60,6 @@
   .cif-chip-toggle:hover { border-color:var(--purple); }
   .cif-chip-toggle.on { background:linear-gradient(120deg,var(--green),var(--blue)); color:#fff; border-color:transparent; }
 
-  .cif-section.cif-locked { opacity:.5; pointer-events:none; }
   .cif-section-note { font-size:12.5px; color:#9d96bc; margin-top:-6px; margin-bottom:14px; }
 
   .cif-generate-wrap { text-align:center; margin:28px 0; }
@@ -53,15 +68,49 @@
   .cif-generate-btn:active { transform:translateY(0); }
 
   .cif-prompt-section.hidden { display:none; }
-  .cif-prompt-section { background:#fff; border-radius:20px; padding:26px 28px; box-shadow:0 4px 20px rgba(140,107,250,.08); border:2px dashed rgba(140,107,250,.2); }
+  .cif-prompt-section { background:#fff; border-radius:20px; padding:26px 28px; box-shadow:0 4px 20px rgba(140,107,250,.08); border:2px dashed rgba(140,107,250,.2); margin-bottom:18px; }
   .cif-prompt-header span { font-size:17px; font-weight:800; color:var(--ink); display:block; margin-bottom:4px; }
   .cif-prompt-header small { color:#9d96bc; font-size:13px; }
   .cif-prompt-box { background:#F8F6FF; border-radius:12px; padding:16px; font-size:13px; line-height:1.8; color:#5a5475; white-space:pre-wrap; margin:14px 0 16px; border:1px solid #EBE8FF; word-break:break-word; }
   .cif-copy-btn { padding:12px 32px; background:linear-gradient(120deg,var(--purple),var(--pink)); color:#fff; border:none; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(140,107,250,.3); transition:transform .2s; }
   .cif-copy-btn:hover { transform:translateY(-2px); }
 
+  .cif-nav-row { display:flex; justify-content:space-between; gap:10px; margin:24px 0; }
+  .cif-nav-btn { border:none; border-radius:999px; padding:13px 26px; font-weight:800; font-size:14.5px; cursor:pointer; transition:transform .15s; }
+  .cif-nav-btn:hover { transform:translateY(-1px); }
+  .cif-nav-prev { background:#F1EEFF; color:var(--purple); }
+  .cif-nav-next { background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; margin-left:auto; }
+
+  .cif-paste-zone { border:2.5px dashed #C9BEFA; border-radius:16px; padding:28px 20px; text-align:center; color:#8a84ab; font-size:13.5px; cursor:text; background:#FAFAFF; transition:all .2s; outline:none; }
+  .cif-paste-zone:focus, .cif-paste-zone.dragover { border-color:var(--purple); background:#F5F2FF; }
+  .cif-paste-zone img { max-width:100%; border-radius:12px; margin-top:10px; box-shadow:0 6px 20px rgba(0,0,0,0.12); }
+
+  .cif-status { margin-top:10px; font-size:13px; font-weight:700; min-height:18px; }
+  .cif-status.ok { color:#0f9d78; }
+  .cif-status.err { color:#e0405a; }
+
   .cif-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#1f2430; color:#fff; padding:12px 24px; border-radius:999px; font-size:14px; font-weight:600; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
   .cif-toast.show { opacity:1; }
+
+  /* 관리자 제출 목록 모달 */
+  .cif-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+  .cif-modal-overlay.show { display:flex; }
+  .cif-modal-box { background:#fff; border-radius:20px; padding:28px; max-width:640px; width:100%; max-height:85vh; box-shadow:0 20px 50px rgba(0,0,0,.25); position:relative; display:flex; flex-direction:column; }
+  .cif-modal-box h3 { margin:0 0 6px; font-size:18px; font-weight:900; color:#111827; }
+  .cif-modal-box p.small { color:#7a7498; font-size:12.5px; margin:0 0 16px; }
+  .cif-modal-close { position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; color:#7a7498; cursor:pointer; line-height:1; }
+  .cif-modal-close:hover { color:#111827; }
+  .cif-list-body { overflow-y:auto; flex:1; }
+  .cif-list-row { display:flex; gap:12px; padding:12px 4px; border-bottom:1px solid #eee; align-items:flex-start; }
+  .cif-list-row:last-child { border-bottom:none; }
+  .cif-list-thumb { width:96px; height:54px; border-radius:8px; object-fit:cover; flex-shrink:0; background:#f3f3f3; cursor:pointer; }
+  .cif-list-info { flex:1; min-width:0; }
+  .cif-list-info b { color:#111827; font-size:14px; }
+  .cif-list-info .idea { font-size:12.5px; color:#555; margin-top:2px; white-space:pre-wrap; }
+  .cif-list-info .meta { font-size:11.5px; color:#9a94b8; margin-top:4px; }
+  .cif-list-del { border:none; border-radius:8px; padding:6px 10px; font-size:12px; font-weight:700; cursor:pointer; background:#fee2e2; color:#b91c1c; flex-shrink:0; }
+  .cif-list-del:hover { background:#fecaca; }
+  .cif-list-empty { color:#9a94b8; font-size:13px; padding:24px 4px; text-align:center; }
 
   @media (max-width:600px) {
     .cif-hero h1 { font-size:24px; }
@@ -72,140 +121,214 @@
 
 {% block content %}
 <div class="cif-wrap">
-  <a href="{% url 'ai_prompts' %}" class="cif-back">← AI 프롬프트 생성기</a>
+  <div class="cif-topbar">
+    <a href="{% url 'ai_prompts' %}" class="cif-back">← AI 프롬프트 생성기</a>
+    {% if user.is_staff %}
+    <button type="button" class="cif-admin-btn" onclick="cifOpenListModal()">📋 제출 목록</button>
+    {% endif %}
+  </div>
 
   <div class="cif-hero">
     <div class="badge">💡 AI TOOLS</div>
     <h1>나만의 콘텐츠 아이디어 찾기</h1>
-    <p>콘텐츠 주제와 채널명만 알려주면, ChatGPT에 바로 붙여넣을 수 있는<br>맞춤 아이디어 추천 프롬프트를 만들어 드려요!</p>
+    <p>콘텐츠 주제 → 제목·썸네일 → 대본까지, 단계별로 ChatGPT 프롬프트를 만들어 드려요!</p>
   </div>
 
-  <!-- 콘텐츠 주제 -->
-  <div class="cif-section">
-    <div class="cif-step-label">① 콘텐츠 주제가 무엇인가요?</div>
-    <input type="text" id="cifTopic" class="cif-input" placeholder="예: 직장인을 위한 건강한 식단, 초등학생 과학 실험, 우리 동네 맛집 탐방">
+  <div class="cif-name-row">
+    <label for="cifName">✏️ 이름</label>
+    <input type="text" id="cifName" placeholder="이름을 입력해 주세요" maxlength="50">
   </div>
 
-  <!-- 채널명 -->
-  <div class="cif-section">
-    <div class="cif-step-label">② 채널명(또는 계정명)이 있나요? <span class="opt">(선택)</span></div>
-    <input type="text" id="cifChannel" class="cif-input" placeholder="예: 헬씨쿡, 뚝딱과학실, 동네한바퀴">
+  <div class="cif-tabs">
+    <button type="button" class="cif-tab active" id="cifTabBtn1">1. 아이디어 만들기</button>
+    <button type="button" class="cif-tab" id="cifTabBtn2">2. 제목 · 썸네일</button>
+    <button type="button" class="cif-tab" id="cifTabBtn3">3. 대본 만들기</button>
   </div>
 
-  <!-- 아이디어 개수 -->
-  <div class="cif-section">
-    <div class="cif-step-label">③ 아이디어를 몇 개 추천받을까요?</div>
-    <div class="cif-btn-group" id="cifCountBtns">
-      <button type="button" class="cif-choice-btn" data-value="3">3개</button>
-      <button type="button" class="cif-choice-btn active" data-value="5">5개</button>
-      <button type="button" class="cif-choice-btn" data-value="7">7개</button>
-      <button type="button" class="cif-choice-btn" data-value="10">10개</button>
-    </div>
-  </div>
-
-  <!-- 콘텐츠 형식 -->
-  <div class="cif-section">
-    <div class="cif-step-label">④ 어떤 형식의 콘텐츠인가요?</div>
-    <div class="cif-btn-group" id="cifFormatBtns">
-      <button type="button" class="cif-choice-btn active" data-value="쇼츠/숏폼 영상 (1분 이내 세로형)">쇼츠/숏폼</button>
-      <button type="button" class="cif-choice-btn" data-value="유튜브 롱폼 영상 (5~15분 가로형)">롱폼 영상</button>
-      <button type="button" class="cif-choice-btn" data-value="인스타그램 릴스">인스타 릴스</button>
-      <button type="button" class="cif-choice-btn" data-value="블로그/글 콘텐츠">블로그/글</button>
-      <button type="button" class="cif-choice-btn" data-value="SNS 카드뉴스">카드뉴스</button>
-      <button type="button" class="cif-choice-btn" data-value="__custom__">✏️ 직접입력</button>
-    </div>
-    <div class="cif-custom-input" id="cifFormatCustomWrap">
-      <input type="text" id="cifFormatCustom" class="cif-input" placeholder="원하는 콘텐츠 형식을 입력해 주세요">
-    </div>
-  </div>
-
-  <div class="cif-generate-wrap">
-    <button type="button" class="cif-generate-btn" onclick="cifGenerate()">✨ 추천 프롬프트 만들기</button>
-  </div>
-
-  <div id="cifPromptSection" class="cif-prompt-section hidden">
-    <div class="cif-prompt-header">
-      <span>💬 ChatGPT에 붙여넣을 프롬프트</span>
-      <small>아래 프롬프트를 복사해서 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
-    </div>
-    <div id="cifPromptBox" class="cif-prompt-box"></div>
-    <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt('cifPromptBox')">📋 프롬프트 복사하기</button>
-  </div>
-
-  <!-- STEP 5: 제목 후보 추천 -->
-  <div class="cif-section" style="margin-top:32px;">
-    <div class="cif-step-label">⑤ 마음에 드는 아이디어로 제목 후보를 추천받아요</div>
-    <p class="cif-section-note">ChatGPT가 추천해 준 아이디어 중 마음에 드는 것을 골라 붙여넣어 주세요.</p>
-    <textarea id="cifChosenIdea" class="cif-textarea" placeholder="예) 제목: 5분 만에 끝내는 초간단 아침 도시락&#10;핵심 내용: 바쁜 직장인을 위한 5분 완성 도시락 레시피 소개"></textarea>
-
-    <div class="cif-step-label" style="margin-top:20px;font-size:14px;">제목에 포함하고 싶은 조건을 골라 보세요 <span class="opt">(복수 선택)</span></div>
-    <div class="cif-btn-group" id="cifTitleConditionBtns">
-      <button type="button" class="cif-chip-toggle on" data-value="궁금증을 유발하는 표현을 사용해줘 (예: '어떻게?', '왜?', '이런 방법이?')">❓ 궁금증 유발하기</button>
-      <button type="button" class="cif-chip-toggle on" data-value="'역대급', '무조건' 같은 과장된 표현은 피해줘">🚫 과장하지 않기</button>
-      <button type="button" class="cif-chip-toggle on" data-value="주제와 관련된 핵심 키워드를 자연스럽게 포함해줘">🔑 핵심 키워드 포함</button>
-      <button type="button" class="cif-chip-toggle" data-value="'BEST 5', '3가지 방법'처럼 숫자를 활용해줘">🔢 숫자 활용하기</button>
-      <button type="button" class="cif-chip-toggle" data-value="어울리는 이모지를 1~2개 포함해줘">😀 이모지 활용하기</button>
-      <button type="button" class="cif-chip-toggle" data-value="질문형 문장으로 만들어줘">💬 질문형으로 만들기</button>
+  <!-- STAGE 1 -->
+  <section id="cifStage1" class="cif-stage active">
+    <div class="cif-section">
+      <div class="cif-step-label">① 콘텐츠 주제가 무엇인가요?</div>
+      <input type="text" id="cifTopic" class="cif-input" placeholder="예: 직장인을 위한 건강한 식단, 초등학생 과학 실험, 우리 동네 맛집 탐방">
     </div>
 
-    <div class="cif-step-label" style="margin-top:20px;font-size:14px;">제목을 몇 개 추천받을까요?</div>
-    <div class="cif-btn-group" id="cifTitleCountBtns">
-      <button type="button" class="cif-choice-btn" data-value="3">3개</button>
-      <button type="button" class="cif-choice-btn active" data-value="5">5개</button>
-      <button type="button" class="cif-choice-btn" data-value="7">7개</button>
+    <div class="cif-section">
+      <div class="cif-step-label">② 채널명(또는 계정명)이 있나요? <span class="opt">(선택)</span></div>
+      <input type="text" id="cifChannel" class="cif-input" placeholder="예: 헬씨쿡, 뚝딱과학실, 동네한바퀴">
+    </div>
+
+    <div class="cif-section">
+      <div class="cif-step-label">③ 아이디어를 몇 개 추천받을까요?</div>
+      <div class="cif-btn-group" id="cifCountBtns">
+        <button type="button" class="cif-choice-btn" data-value="3">3개</button>
+        <button type="button" class="cif-choice-btn active" data-value="5">5개</button>
+        <button type="button" class="cif-choice-btn" data-value="7">7개</button>
+        <button type="button" class="cif-choice-btn" data-value="10">10개</button>
+      </div>
+    </div>
+
+    <div class="cif-section">
+      <div class="cif-step-label">④ 어떤 형식의 콘텐츠인가요?</div>
+      <div class="cif-btn-group" id="cifFormatBtns">
+        <button type="button" class="cif-choice-btn active" data-value="쇼츠/숏폼 영상 (1분 이내 세로형)">쇼츠/숏폼</button>
+        <button type="button" class="cif-choice-btn" data-value="유튜브 롱폼 영상 (5~15분 가로형)">롱폼 영상</button>
+        <button type="button" class="cif-choice-btn" data-value="인스타그램 릴스">인스타 릴스</button>
+        <button type="button" class="cif-choice-btn" data-value="블로그/글 콘텐츠">블로그/글</button>
+        <button type="button" class="cif-choice-btn" data-value="SNS 카드뉴스">카드뉴스</button>
+        <button type="button" class="cif-choice-btn" data-value="__custom__">✏️ 직접입력</button>
+      </div>
+      <div class="cif-custom-input" id="cifFormatCustomWrap">
+        <input type="text" id="cifFormatCustom" class="cif-input" placeholder="원하는 콘텐츠 형식을 입력해 주세요">
+      </div>
     </div>
 
     <div class="cif-generate-wrap">
-      <button type="button" class="cif-generate-btn" onclick="cifGenerateTitle()">✨ 제목 후보 프롬프트 만들기</button>
-    </div>
-  </div>
-
-  <div id="cifTitlePromptSection" class="cif-prompt-section hidden">
-    <div class="cif-prompt-header">
-      <span>💬 ChatGPT에 붙여넣을 프롬프트 (제목 후보)</span>
-      <small>아래 프롬프트를 복사해서 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
-    </div>
-    <div id="cifTitlePromptBox" class="cif-prompt-box"></div>
-    <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt('cifTitlePromptBox')">📋 프롬프트 복사하기</button>
-  </div>
-
-  <!-- STEP 6: 대본 만들기 -->
-  <div class="cif-section" style="margin-top:32px;">
-    <div class="cif-step-label">⑥ 주제와 제목에 맞는 대본 만들기</div>
-    <p class="cif-section-note">마음에 드는 제목을 골라 붙여넣고, 원하는 영상 길이를 선택해 보세요.</p>
-    <input type="text" id="cifChosenTitle" class="cif-input" placeholder="예: 5분 만에 끝내는 초간단 아침 도시락 BEST 5">
-
-    <div class="cif-step-label" style="margin-top:20px;font-size:14px;">영상 길이는 얼마나 되나요?</div>
-    <div class="cif-btn-group" id="cifDurationBtns">
-      <button type="button" class="cif-choice-btn" data-value="15초">15초</button>
-      <button type="button" class="cif-choice-btn active" data-value="30초">30초</button>
-      <button type="button" class="cif-choice-btn" data-value="1분">1분</button>
-      <button type="button" class="cif-choice-btn" data-value="3분">3분</button>
-      <button type="button" class="cif-choice-btn" data-value="__custom__">✏️ 직접입력</button>
-    </div>
-    <div class="cif-custom-input" id="cifDurationCustomWrap">
-      <input type="text" id="cifDurationCustom" class="cif-input" placeholder="예: 5분, 45초">
+      <button type="button" class="cif-generate-btn" onclick="cifGenerate()">✨ 추천 프롬프트 만들기</button>
     </div>
 
-    <div class="cif-generate-wrap">
-      <button type="button" class="cif-generate-btn" onclick="cifGenerateScript()">✨ 대본 프롬프트 만들기</button>
+    <div id="cifPromptSection" class="cif-prompt-section hidden">
+      <div class="cif-prompt-header">
+        <span>💬 ChatGPT에 붙여넣을 프롬프트</span>
+        <small>아래 프롬프트를 복사해서 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
+      </div>
+      <div id="cifPromptBox" class="cif-prompt-box"></div>
+      <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt('cifPromptBox')">📋 프롬프트 복사하기</button>
     </div>
-  </div>
 
-  <div id="cifScriptPromptSection" class="cif-prompt-section hidden">
-    <div class="cif-prompt-header">
-      <span>💬 ChatGPT에 붙여넣을 프롬프트 (대본)</span>
-      <small>아래 프롬프트를 복사해서 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
+    <div class="cif-nav-row">
+      <span></span>
+      <button type="button" class="cif-nav-btn cif-nav-next" onclick="cifGoStage(2)">다음: 제목 · 썸네일 만들기 →</button>
     </div>
-    <div id="cifScriptPromptBox" class="cif-prompt-box"></div>
-    <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt('cifScriptPromptBox')">📋 프롬프트 복사하기</button>
-  </div>
+  </section>
+
+  <!-- STAGE 2 -->
+  <section id="cifStage2" class="cif-stage">
+    <div class="cif-section">
+      <div class="cif-step-label">⑤ 마음에 드는 아이디어로 제목 후보를 추천받아요</div>
+      <p class="cif-section-note">ChatGPT가 추천해 준 아이디어 중 마음에 드는 것을 골라 붙여넣어 주세요.</p>
+      <textarea id="cifChosenIdea" class="cif-textarea" placeholder="예) 제목: 5분 만에 끝내는 초간단 아침 도시락&#10;핵심 내용: 바쁜 직장인을 위한 5분 완성 도시락 레시피 소개"></textarea>
+
+      <div class="cif-step-label" style="margin-top:20px;font-size:14px;">제목에 포함하고 싶은 조건을 골라 보세요 <span class="opt">(복수 선택)</span></div>
+      <div class="cif-btn-group" id="cifTitleConditionBtns">
+        <button type="button" class="cif-chip-toggle on" data-value="궁금증을 유발하는 표현을 사용해줘 (예: '어떻게?', '왜?', '이런 방법이?')">❓ 궁금증 유발하기</button>
+        <button type="button" class="cif-chip-toggle on" data-value="'역대급', '무조건' 같은 과장된 표현은 피해줘">🚫 과장하지 않기</button>
+        <button type="button" class="cif-chip-toggle on" data-value="주제와 관련된 핵심 키워드를 자연스럽게 포함해줘">🔑 핵심 키워드 포함</button>
+        <button type="button" class="cif-chip-toggle" data-value="'BEST 5', '3가지 방법'처럼 숫자를 활용해줘">🔢 숫자 활용하기</button>
+        <button type="button" class="cif-chip-toggle" data-value="어울리는 이모지를 1~2개 포함해줘">😀 이모지 활용하기</button>
+        <button type="button" class="cif-chip-toggle" data-value="질문형 문장으로 만들어줘">💬 질문형으로 만들기</button>
+      </div>
+
+      <div class="cif-step-label" style="margin-top:20px;font-size:14px;">제목을 몇 개 추천받을까요?</div>
+      <div class="cif-btn-group" id="cifTitleCountBtns">
+        <button type="button" class="cif-choice-btn" data-value="3">3개</button>
+        <button type="button" class="cif-choice-btn active" data-value="5">5개</button>
+        <button type="button" class="cif-choice-btn" data-value="7">7개</button>
+      </div>
+
+      <div class="cif-generate-wrap">
+        <button type="button" class="cif-generate-btn" onclick="cifGenerateTitle()">✨ 제목 후보 프롬프트 만들기</button>
+      </div>
+    </div>
+
+    <div id="cifTitlePromptSection" class="cif-prompt-section hidden">
+      <div class="cif-prompt-header">
+        <span>💬 ChatGPT에 붙여넣을 프롬프트 (제목 후보)</span>
+        <small>아래 프롬프트를 복사해서 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
+      </div>
+      <div id="cifTitlePromptBox" class="cif-prompt-box"></div>
+      <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt('cifTitlePromptBox')">📋 프롬프트 복사하기</button>
+    </div>
+
+    <div class="cif-section">
+      <div class="cif-step-label">🖼️ 마음에 드는 제목으로 썸네일을 만들어 제출해요</div>
+      <p class="cif-section-note">가장 마음에 드는 제목을 아래에 입력하고, ChatGPT(이미지 생성)로 만든 썸네일을 붙여넣어 주세요.</p>
+      <input type="text" id="cifChosenTitle" class="cif-input" placeholder="예: 5분 만에 끝내는 초간단 아침 도시락 BEST 5" style="margin-bottom:16px;">
+
+      <div class="cif-paste-zone" id="cifPasteZone" tabindex="0">📎 여기를 클릭하고 Ctrl+V로 썸네일을 붙여넣으세요
+        <div id="cifPastePreview"></div>
+      </div>
+
+      <div class="cif-generate-wrap">
+        <button type="button" class="cif-generate-btn" onclick="cifSubmitThumbnail()">🚀 썸네일 제출하기</button>
+      </div>
+      <div class="cif-status" id="cifThumbnailStatus"></div>
+    </div>
+
+    <div class="cif-nav-row">
+      <button type="button" class="cif-nav-btn cif-nav-prev" onclick="cifGoStage(1)">← 이전</button>
+      <button type="button" class="cif-nav-btn cif-nav-next" onclick="cifGoStage(3)">다음: 대본 만들기 →</button>
+    </div>
+  </section>
+
+  <!-- STAGE 3 -->
+  <section id="cifStage3" class="cif-stage">
+    <div class="cif-section">
+      <div class="cif-step-label">⑥ 주제와 제목에 맞는 대본 만들기</div>
+      <p class="cif-section-note">앞에서 정한 제목을 그대로 사용해요. 필요하면 아래에서 수정할 수 있어요.</p>
+      <input type="text" id="cifChosenTitleForScript" class="cif-input" placeholder="예: 5분 만에 끝내는 초간단 아침 도시락 BEST 5">
+
+      <div class="cif-step-label" style="margin-top:20px;font-size:14px;">영상 길이는 얼마나 되나요?</div>
+      <div class="cif-btn-group" id="cifDurationBtns">
+        <button type="button" class="cif-choice-btn" data-value="15초">15초</button>
+        <button type="button" class="cif-choice-btn active" data-value="30초">30초</button>
+        <button type="button" class="cif-choice-btn" data-value="1분">1분</button>
+        <button type="button" class="cif-choice-btn" data-value="3분">3분</button>
+        <button type="button" class="cif-choice-btn" data-value="__custom__">✏️ 직접입력</button>
+      </div>
+      <div class="cif-custom-input" id="cifDurationCustomWrap">
+        <input type="text" id="cifDurationCustom" class="cif-input" placeholder="예: 5분, 45초">
+      </div>
+
+      <div class="cif-generate-wrap">
+        <button type="button" class="cif-generate-btn" onclick="cifGenerateScript()">✨ 대본 프롬프트 만들기</button>
+      </div>
+    </div>
+
+    <div id="cifScriptPromptSection" class="cif-prompt-section hidden">
+      <div class="cif-prompt-header">
+        <span>💬 ChatGPT에 붙여넣을 프롬프트 (대본)</span>
+        <small>아래 프롬프트를 복사해서 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
+      </div>
+      <div id="cifScriptPromptBox" class="cif-prompt-box"></div>
+      <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt('cifScriptPromptBox')">📋 프롬프트 복사하기</button>
+    </div>
+
+    <div class="cif-nav-row">
+      <button type="button" class="cif-nav-btn cif-nav-prev" onclick="cifGoStage(2)">← 이전</button>
+      <span></span>
+    </div>
+  </section>
 </div>
 <div id="cifToast" class="cif-toast"></div>
+
+{% if user.is_staff %}
+<div class="cif-modal-overlay" id="cifListOverlay" onclick="if(event.target===this)cifCloseListModal()">
+  <div class="cif-modal-box">
+    <button type="button" class="cif-modal-close" onclick="cifCloseListModal()">✕</button>
+    <h3>📋 썸네일 제출 목록</h3>
+    <p class="small">학생들이 제출한 콘텐츠 아이디어와 썸네일입니다. (관리자 전용)</p>
+    <div id="cifListBody" class="cif-list-body">불러오는 중...</div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
+/* ── 단계 이동 ── */
+function cifGoStage(n) {
+  document.querySelectorAll('.cif-stage').forEach((s, i) => s.classList.toggle('active', i === n - 1));
+  ['cifTabBtn1','cifTabBtn2','cifTabBtn3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.toggle('active', i === n - 1);
+    el.classList.toggle('done', i < n - 1);
+  });
+  if (n === 3) {
+    document.getElementById('cifChosenTitleForScript').value = document.getElementById('cifChosenTitle').value.trim();
+  }
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
 let cifCount = '5';
 let cifFormat = '쇼츠/숏폼 영상 (1분 이내 세로형)';
 
@@ -304,8 +427,8 @@ function cifGenerateTitle() {
   const idea = document.getElementById('cifChosenIdea').value.trim();
 
   if (!topic) {
-    cifShowToast('먼저 ①번에 콘텐츠 주제를 입력해 주세요!');
-    document.getElementById('cifTopic').focus();
+    cifShowToast('먼저 1단계에서 콘텐츠 주제를 입력해 주세요!');
+    cifGoStage(1);
     return;
   }
   if (!idea) {
@@ -335,6 +458,61 @@ ${conditions || '- 클릭하고 싶은 매력적인 제목으로 만들어줘'}
   setTimeout(() => section.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
 }
 
+// ── 썸네일 붙여넣기 & 제출 ──
+let cifThumbnailDataUrl = '';
+const cifPasteZone = document.getElementById('cifPasteZone');
+if (cifPasteZone) {
+  cifPasteZone.addEventListener('paste', function(e) {
+    const items = (e.clipboardData || window.clipboardData).items;
+    for (const item of items) {
+      if (item.type.indexOf('image') !== -1) {
+        const blob = item.getAsFile();
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          cifThumbnailDataUrl = evt.target.result;
+          document.getElementById('cifPastePreview').innerHTML = `<img src="${cifThumbnailDataUrl}" alt="붙여넣은 썸네일">`;
+        };
+        reader.readAsDataURL(blob);
+        e.preventDefault();
+        return;
+      }
+    }
+  });
+  cifPasteZone.addEventListener('click', () => cifPasteZone.focus());
+}
+
+function cifSubmitThumbnail() {
+  const name = document.getElementById('cifName').value.trim();
+  const topic = document.getElementById('cifTopic').value.trim();
+  const channel = document.getElementById('cifChannel').value.trim();
+  const idea = document.getElementById('cifChosenIdea').value.trim();
+  const title = document.getElementById('cifChosenTitle').value.trim();
+  const statusEl = document.getElementById('cifThumbnailStatus');
+
+  if (!name) { statusEl.className = 'cif-status err'; statusEl.textContent = '이름을 입력해 주세요.'; document.getElementById('cifName').focus(); return; }
+  if (!title) { statusEl.className = 'cif-status err'; statusEl.textContent = '선택한 제목을 입력해 주세요.'; document.getElementById('cifChosenTitle').focus(); return; }
+  if (!cifThumbnailDataUrl) { statusEl.className = 'cif-status err'; statusEl.textContent = '썸네일 이미지를 붙여넣어 주세요.'; return; }
+
+  statusEl.className = 'cif-status'; statusEl.textContent = '제출 중...';
+
+  fetch('{% url "content_idea_thumbnail_submit" %}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+    body: JSON.stringify({ name, topic, channel, chosen_idea: idea, chosen_title: title, thumbnail_image: cifThumbnailDataUrl })
+  }).then(r => r.json()).then(res => {
+    if (res.success) {
+      statusEl.className = 'cif-status ok';
+      statusEl.textContent = '🎉 썸네일이 제출되었습니다!';
+    } else {
+      statusEl.className = 'cif-status err';
+      statusEl.textContent = res.error || '제출에 실패했습니다.';
+    }
+  }).catch(() => {
+    statusEl.className = 'cif-status err';
+    statusEl.textContent = '제출 중 오류가 발생했습니다.';
+  });
+}
+
 // ── STEP 6: 대본 만들기 ──
 let cifDuration = '30초';
 document.querySelectorAll('#cifDurationBtns .cif-choice-btn').forEach(btn => {
@@ -354,16 +532,16 @@ document.querySelectorAll('#cifDurationBtns .cif-choice-btn').forEach(btn => {
 
 function cifGenerateScript() {
   const topic = document.getElementById('cifTopic').value.trim();
-  const title = document.getElementById('cifChosenTitle').value.trim();
+  const title = document.getElementById('cifChosenTitleForScript').value.trim();
 
   if (!topic) {
-    cifShowToast('먼저 ①번에 콘텐츠 주제를 입력해 주세요!');
-    document.getElementById('cifTopic').focus();
+    cifShowToast('먼저 1단계에서 콘텐츠 주제를 입력해 주세요!');
+    cifGoStage(1);
     return;
   }
   if (!title) {
-    cifShowToast('마음에 드는 제목을 붙여넣어 주세요!');
-    document.getElementById('cifChosenTitle').focus();
+    cifShowToast('마음에 드는 제목을 입력해 주세요!');
+    document.getElementById('cifChosenTitleForScript').focus();
     return;
   }
 
@@ -405,5 +583,48 @@ function cifShowToast(msg) {
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 3000);
 }
+
+{% if user.is_staff %}
+function cifOpenListModal() {
+  document.getElementById('cifListOverlay').classList.add('show');
+  cifRefreshList();
+}
+function cifCloseListModal() {
+  document.getElementById('cifListOverlay').classList.remove('show');
+}
+function cifRefreshList() {
+  const body = document.getElementById('cifListBody');
+  body.innerHTML = '불러오는 중...';
+  fetch('{% url "content_idea_thumbnail_list" %}').then(r => r.json()).then(res => {
+    if (!res.success || !res.items.length) {
+      body.innerHTML = '<div class="cif-list-empty">제출된 내용이 없습니다.</div>';
+      return;
+    }
+    body.innerHTML = res.items.map(item => `
+      <div class="cif-list-row" data-id="${item.id}">
+        ${item.thumbnail_url ? `<img class="cif-list-thumb" src="${item.thumbnail_url}" onclick="window.open('${item.thumbnail_url}','_blank')">` : ''}
+        <div class="cif-list-info">
+          <b>${item.name}</b>
+          <div class="idea">${item.chosen_title || ''}</div>
+          <div class="meta">주제: ${item.topic || '-'} ${item.channel ? '· 채널: ' + item.channel : ''}</div>
+          <div class="meta">${item.created_at}</div>
+        </div>
+        <button type="button" class="cif-list-del" onclick="cifDeleteItem(${item.id})">삭제</button>
+      </div>
+    `).join('');
+  }).catch(() => { body.innerHTML = '<div class="cif-list-empty">목록을 불러오지 못했습니다.</div>'; });
+}
+function cifDeleteItem(id) {
+  if (!confirm('이 제출 항목을 삭제할까요? 되돌릴 수 없습니다.')) return;
+  fetch(`/tools/content-idea-finder/thumbnail/${id}/delete/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+  }).then(r => r.json()).then(res => {
+    if (res.success) cifRefreshList();
+    else alert('삭제에 실패했습니다.');
+  }).catch(() => alert('삭제 중 오류가 발생했습니다.'));
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cifCloseListModal(); });
+{% endif %}
 </script>
 {% endblock %}

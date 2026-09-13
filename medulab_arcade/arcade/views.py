@@ -27,7 +27,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave, ContentFinderSubmission
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave, ContentFinderSubmission, ContentIdeaThumbnailSubmission
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -366,6 +366,87 @@ def problem_finder(request):
 
 def content_idea_finder(request):
     return render(request, 'arcade/content_idea_finder.html')
+
+
+@require_POST
+def content_idea_thumbnail_submit(request):
+    """나만의 콘텐츠 아이디어 찾기 - 썸네일 제출 (로그인 불필요)"""
+    try:
+        payload = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': '잘못된 요청입니다.'}, status=400)
+
+    name = (payload.get('name') or '').strip()
+    topic = (payload.get('topic') or '').strip()
+    channel = (payload.get('channel') or '').strip()
+    chosen_idea = (payload.get('chosen_idea') or '').strip()
+    chosen_title = (payload.get('chosen_title') or '').strip()
+    thumbnail_b64 = payload.get('thumbnail_image') or ''
+
+    if not name:
+        return JsonResponse({'success': False, 'error': '이름을 입력해 주세요.'}, status=400)
+    if len(name) > 50:
+        return JsonResponse({'success': False, 'error': '이름은 50자 이내로 입력해 주세요.'}, status=400)
+    if not chosen_title:
+        return JsonResponse({'success': False, 'error': '선택한 제목을 입력해 주세요.'}, status=400)
+    if not thumbnail_b64:
+        return JsonResponse({'success': False, 'error': '썸네일 이미지를 붙여넣어 주세요.'}, status=400)
+
+    submission = ContentIdeaThumbnailSubmission(
+        name=name,
+        topic=topic,
+        channel=channel,
+        chosen_idea=chosen_idea,
+        chosen_title=chosen_title,
+    )
+
+    try:
+        header, b64data = thumbnail_b64.split(',', 1) if ',' in thumbnail_b64 else ('', thumbnail_b64)
+        img_bytes = base64.b64decode(b64data)
+        ext = 'png'
+        if 'jpeg' in header or 'jpg' in header:
+            ext = 'jpg'
+        elif 'webp' in header:
+            ext = 'webp'
+        filename = f'thumb_{uuid.uuid4().hex[:8]}.{ext}'
+        submission.thumbnail_image = InMemoryUploadedFile(
+            io.BytesIO(img_bytes), 'thumbnail_image', filename, f'image/{ext}', len(img_bytes), None
+        )
+    except Exception:
+        return JsonResponse({'success': False, 'error': '이미지를 처리하지 못했습니다. 다시 붙여넣어 주세요.'}, status=400)
+
+    submission.save()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def content_idea_thumbnail_list(request):
+    """관리자용 - 콘텐츠 아이디어 썸네일 제출 목록"""
+    rows = ContentIdeaThumbnailSubmission.objects.order_by('-created_at')
+    items = [
+        {
+            'id': r.id,
+            'name': r.name,
+            'topic': r.topic,
+            'channel': r.channel,
+            'chosen_idea': r.chosen_idea,
+            'chosen_title': r.chosen_title,
+            'thumbnail_url': r.thumbnail_image.url if r.thumbnail_image else '',
+            'created_at': timezone.localtime(r.created_at).strftime('%Y-%m-%d %H:%M'),
+        }
+        for r in rows
+    ]
+    return JsonResponse({'success': True, 'items': items})
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def content_idea_thumbnail_delete(request, submission_id):
+    """관리자용 - 썸네일 제출 항목 삭제"""
+    ContentIdeaThumbnailSubmission.objects.filter(pk=submission_id).delete()
+    return JsonResponse({'success': True})
 
 
 def camp_planner(request):

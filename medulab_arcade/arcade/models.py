@@ -1381,3 +1381,22 @@ class ContentFinderSubmission(models.Model):
 
     def __str__(self):
         return f'{self.name} ({self.created_at:%Y-%m-%d %H:%M})'
+
+
+class ContentIdeaThumbnailSubmission(models.Model):
+    """AI 프롬프트 생성기 - 나만의 콘텐츠 아이디어 찾기 썸네일 제출 (로그인 불필요)"""
+    name = models.CharField('이름', max_length=50)
+    topic = models.CharField('콘텐츠 주제', max_length=200, blank=True, default='')
+    channel = models.CharField('채널명', max_length=100, blank=True, default='')
+    chosen_idea = models.TextField('선택한 아이디어', blank=True, default='')
+    chosen_title = models.CharField('선택한 제목', max_length=200, blank=True, default='')
+    thumbnail_image = models.ImageField('썸네일 이미지', upload_to='content_idea/thumbnails/%Y/%m/', blank=True, null=True)
+    created_at = models.DateTimeField('제출 시각', auto_now_add=True)
+
+    class Meta:
+        verbose_name = '콘텐츠 아이디어 썸네일 제출'
+        verbose_name_plural = '콘텐츠 아이디어 썸네일 제출'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.name} ({self.created_at:%Y-%m-%d %H:%M})'

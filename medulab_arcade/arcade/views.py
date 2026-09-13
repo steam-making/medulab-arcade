@@ -27,7 +27,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave, ContentFinderSubmission, ContentIdeaThumbnailSubmission
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave, ContentFinderSubmission, ContentIdeaThumbnailSubmission, AIPromptCardOrder
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -93,8 +93,105 @@ def home(request):
     return render(request, 'arcade/home.html', context)
 
 
+AI_PROMPT_CARDS = [
+    {
+        'key': 'my_avatar', 'url_name': 'my_avatar', 'icon_class': 'icon-avatar', 'icon': '🤖',
+        'title': 'AI 아바타 만들기',
+        'desc': '나의 성격·꿈·취미를 입력하면 나만의 아바타 이미지 프롬프트가 완성돼요.',
+    },
+    {
+        'key': 'team_name', 'url_name': 'team_name', 'icon_class': 'icon-team', 'icon': '🔤',
+        'title': '조이름 만들기',
+        'desc': '팀의 특징과 키워드를 입력하면 멋진 조이름 후보를 만들어 드려요.',
+    },
+    {
+        'key': 'problem_finder', 'url_name': 'problem_finder', 'icon_class': 'icon-prob', 'icon': '🔍',
+        'title': '생활속 문제 찾기',
+        'desc': '주제나 상황을 입력하면 생활 속 불편함을 발견하는 AI 탐구 질문을 만들어 드려요.',
+    },
+    {
+        'key': 'local_problem_finder', 'url_name': 'local_problem_finder', 'icon_class': 'icon-local', 'icon': '📍',
+        'title': '지역문제 찾기',
+        'desc': '광주 지역의 불편함을 4단계로 탐구해서 우리 동네 문제를 발견하고 팀과 함께 공유해요.',
+    },
+    {
+        'key': 'presentation_script', 'url_name': 'presentation_script', 'icon_class': 'icon-script', 'icon': '📢',
+        'title': '발표대본 작성기',
+        'desc': '발표 자료를 AI에 주면 초등·중고등 맞춤 발표 대본 프롬프트를 바로 복사할 수 있어요.',
+    },
+    {
+        'key': 'gallery_vote', 'url_name': 'gallery_vote', 'icon_class': 'icon-gallery', 'icon': '🖼️',
+        'title': '작품 평가단',
+        'desc': '포스터를 하나씩 보며 하트로 투표! 마지막엔 인기 작품 순위를 확인해요.',
+    },
+    {
+        'key': 'carbon_invention', 'url_name': 'carbon_invention', 'icon_class': 'icon-carbon', 'icon': '🌿',
+        'title': '탄소중립 발명품',
+        'desc': '발명 분야·아이디어·스케치까지 입력하면 이미지 프롬프트와 포스터 프롬프트가 완성돼요.',
+    },
+    {
+        'key': 'survey_home', 'url_name': 'survey_home', 'icon_class': 'icon-survey', 'icon': '📋',
+        'title': '만족도 조사',
+        'desc': '캠프 활동에 대한 만족도를 별점으로 평가하고 의견을 남겨주세요! 관리자는 결과를 확인할 수 있어요.',
+    },
+    {
+        'key': 'camp_planner', 'url_name': 'camp_planner', 'icon_class': 'icon-camp', 'icon': '🚀',
+        'title': 'AI 서비스 기획서',
+        'desc': '광주 지역문제를 선택하고 AI 서비스를 기획하면 바이브 코딩 프롬프트가 자동으로 완성돼요.',
+    },
+    {
+        'key': 'content_finder', 'url_name': 'content_finder', 'icon_class': 'icon-content', 'icon': '🎯',
+        'title': '나만의 콘텐츠 주제 찾기',
+        'desc': '내가 잘 아는 것과 좋아하는 것을 고르면, AI가 콘텐츠 아이디어와 채널명, 포스터까지 만들어 줘요.',
+    },
+    {
+        'key': 'content_idea_finder', 'url_name': 'content_idea_finder', 'icon_class': 'icon-idea', 'icon': '💡',
+        'title': '나만의 콘텐츠 아이디어 찾기',
+        'desc': '콘텐츠 주제와 채널명, 형식을 입력하면 원하는 개수만큼 콘텐츠 아이디어 추천 프롬프트를 만들어 줘요.',
+    },
+    {
+        'key': 'future_career_video', 'url_name': 'future_career_video', 'icon_class': 'icon-career', 'icon': '🎬',
+        'title': 'AI 미래직업영상',
+        'desc': '1~12차시로 나의 미래 직업을 탐구하고 AI 비서가 등장하는 2038년 하루를 짧은 영상으로 완성해요.',
+    },
+]
+
+
 def ai_prompts(request):
-    return render(request, 'arcade/ai_prompts.html')
+    order_obj = AIPromptCardOrder.objects.order_by('id').first()
+    key_order = (order_obj.order if order_obj else []) or []
+    cards_by_key = {c['key']: c for c in AI_PROMPT_CARDS}
+    ordered_keys = [k for k in key_order if k in cards_by_key]
+    remaining_keys = [k for k in cards_by_key if k not in ordered_keys]
+    cards = [cards_by_key[k] for k in ordered_keys + remaining_keys]
+    return render(request, 'arcade/ai_prompts.html', {'cards': cards})
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def ai_prompts_reorder(request):
+    """관리자용 - AI 프롬프트 카드 순서 저장"""
+    try:
+        payload = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': '잘못된 요청입니다.'}, status=400)
+
+    order = payload.get('order')
+    if not isinstance(order, list) or not all(isinstance(k, str) for k in order):
+        return JsonResponse({'success': False, 'error': '순서 데이터가 올바르지 않습니다.'}, status=400)
+
+    valid_keys = {c['key'] for c in AI_PROMPT_CARDS}
+    order = [k for k in order if k in valid_keys]
+
+    order_obj = AIPromptCardOrder.objects.order_by('id').first()
+    if order_obj:
+        order_obj.order = order
+        order_obj.save(update_fields=['order'])
+    else:
+        AIPromptCardOrder.objects.create(order=order)
+
+    return JsonResponse({'success': True})
 
 
 def future_career_video(request):

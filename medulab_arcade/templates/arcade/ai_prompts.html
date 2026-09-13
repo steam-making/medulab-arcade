@@ -85,6 +85,30 @@
     .ap-hero h1 { font-size: 24px; }
     .ap-grid { grid-template-columns: 1fr; }
   }
+
+  /* 관리자 순서 편집 */
+  .ap-arrange-bar { text-align:center; margin:-16px 0 24px; }
+  .ap-arrange-btn {
+    border:1.5px solid #8C6BFA; background:#fff; color:#8C6BFA;
+    padding:9px 20px; border-radius:999px; font-size:13.5px; font-weight:800;
+    cursor:pointer; transition:all .18s;
+  }
+  .ap-arrange-btn:hover { background:#F1EEFF; }
+  .ap-arrange-btn.on { background:linear-gradient(120deg,#8C6BFA,#3FA9F5); color:#fff; border-color:transparent; }
+  .ap-arrange-hint { font-size:12.5px; color:#9d96bc; margin-top:8px; display:none; }
+  .ap-arrange-hint.show { display:block; }
+
+  .ap-grid.arrange-mode .ap-card:not(.coming-soon) {
+    cursor: grab;
+    border: 2px dashed rgba(140,107,250,0.4);
+  }
+  .ap-grid.arrange-mode .ap-card:not(.coming-soon):active { cursor: grabbing; }
+  .ap-card.dragging { opacity: .4; }
+  .ap-card.drag-over { box-shadow: 0 0 0 3px #8C6BFA inset; }
+  .ap-drag-handle {
+    position:absolute; top:14px; right:14px; font-size:18px; color:#c3bbe8;
+    line-height:1; pointer-events:none;
+  }
 </style>
 {% endblock %}
 
@@ -96,91 +120,24 @@
     <p>원하는 도구를 선택하면 ChatGPT에 바로 붙여넣을 수 있는 프롬프트를 만들어 드려요!</p>
   </div>
 
-  <div class="ap-grid">
+  {% if user.is_staff %}
+  <div class="ap-arrange-bar">
+    <button type="button" id="apArrangeToggle" class="ap-arrange-btn" onclick="apToggleArrange()">🔀 카드 순서 편집</button>
+    <div class="ap-arrange-hint" id="apArrangeHint">카드를 드래그해서 순서를 바꾼 뒤, "저장하고 완료" 버튼을 눌러 주세요!</div>
+  </div>
+  {% endif %}
 
-    <a href="{% url 'my_avatar' %}" class="ap-card">
-      <div class="ap-card-icon icon-avatar">🤖</div>
-      <h2>AI 아바타 만들기</h2>
-      <p>나의 성격·꿈·취미를 입력하면 나만의 아바타 이미지 프롬프트가 완성돼요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
+  <div class="ap-grid" id="apGrid">
 
-    <a href="{% url 'team_name' %}" class="ap-card">
-      <div class="ap-card-icon icon-team">🔤</div>
-      <h2>조이름 만들기</h2>
-      <p>팀의 특징과 키워드를 입력하면 멋진 조이름 후보를 만들어 드려요.</p>
+    {% for card in cards %}
+    <a href="{% url card.url_name %}" class="ap-card" data-key="{{ card.key }}">
+      <div class="ap-card-icon {{ card.icon_class }}">{{ card.icon }}</div>
+      <h2>{{ card.title }}</h2>
+      <p>{{ card.desc }}</p>
       <span class="ap-tag active">이용 가능</span>
+      {% if user.is_staff %}<span class="ap-drag-handle">⠿</span>{% endif %}
     </a>
-
-    <a href="{% url 'problem_finder' %}" class="ap-card">
-      <div class="ap-card-icon icon-prob">🔍</div>
-      <h2>생활속 문제 찾기</h2>
-      <p>주제나 상황을 입력하면 생활 속 불편함을 발견하는 AI 탐구 질문을 만들어 드려요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
-
-    <a href="{% url 'local_problem_finder' %}" class="ap-card">
-      <div class="ap-card-icon icon-local">📍</div>
-      <h2>지역문제 찾기</h2>
-      <p>광주 지역의 불편함을 4단계로 탐구해서 우리 동네 문제를 발견하고 팀과 함께 공유해요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
-
-    <a href="{% url 'presentation_script' %}" class="ap-card">
-      <div class="ap-card-icon icon-script">📢</div>
-      <h2>발표대본 작성기</h2>
-      <p>발표 자료를 AI에 주면 초등·중고등 맞춤 발표 대본 프롬프트를 바로 복사할 수 있어요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
-
-    <a href="{% url 'gallery_vote' %}" class="ap-card">
-      <div class="ap-card-icon icon-gallery">🖼️</div>
-      <h2>작품 평가단</h2>
-      <p>포스터를 하나씩 보며 하트로 투표! 마지막엔 인기 작품 순위를 확인해요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
-
-    <a href="{% url 'carbon_invention' %}" class="ap-card">
-      <div class="ap-card-icon icon-carbon">🌿</div>
-      <h2>탄소중립 발명품</h2>
-      <p>발명 분야·아이디어·스케치까지 입력하면 이미지 프롬프트와 포스터 프롬프트가 완성돼요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
-
-    <a href="{% url 'survey_home' %}" class="ap-card">
-      <div class="ap-card-icon icon-survey">📋</div>
-      <h2>만족도 조사</h2>
-      <p>캠프 활동에 대한 만족도를 별점으로 평가하고 의견을 남겨주세요! 관리자는 결과를 확인할 수 있어요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
-
-    <a href="{% url 'camp_planner' %}" class="ap-card">
-      <div class="ap-card-icon icon-camp">🚀</div>
-      <h2>AI 서비스 기획서</h2>
-      <p>광주 지역문제를 선택하고 AI 서비스를 기획하면 바이브 코딩 프롬프트가 자동으로 완성돼요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
-
-    <a href="{% url 'content_finder' %}" class="ap-card">
-      <div class="ap-card-icon icon-content">🎯</div>
-      <h2>나만의 콘텐츠 주제 찾기</h2>
-      <p>내가 잘 아는 것과 좋아하는 것을 고르면, AI가 콘텐츠 아이디어와 채널명, 포스터까지 만들어 줘요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
-
-    <a href="{% url 'content_idea_finder' %}" class="ap-card">
-      <div class="ap-card-icon icon-idea">💡</div>
-      <h2>나만의 콘텐츠 아이디어 찾기</h2>
-      <p>콘텐츠 주제와 채널명, 형식을 입력하면 원하는 개수만큼 콘텐츠 아이디어 추천 프롬프트를 만들어 줘요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
-
-    <a href="{% url 'future_career_video' %}" class="ap-card">
-      <div class="ap-card-icon icon-career">🎬</div>
-      <h2>AI 미래직업영상</h2>
-      <p>1~12차시로 나의 미래 직업을 탐구하고 AI 비서가 등장하는 2038년 하루를 짧은 영상으로 완성해요.</p>
-      <span class="ap-tag active">이용 가능</span>
-    </a>
+    {% endfor %}
 
     <div class="ap-card coming-soon">
       <div class="ap-card-icon icon-story">📖</div>
@@ -191,4 +148,101 @@
 
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if user.is_staff %}
+<script>
+let apArranging = false;
+let apDragSrc = null;
+
+function apToggleArrange() {
+  apArranging = !apArranging;
+  const grid = document.getElementById('apGrid');
+  const btn = document.getElementById('apArrangeToggle');
+  const hint = document.getElementById('apArrangeHint');
+
+  grid.classList.toggle('arrange-mode', apArranging);
+  hint.classList.toggle('show', apArranging);
+
+  if (apArranging) {
+    btn.textContent = '✅ 저장하고 완료';
+    btn.classList.add('on');
+    apEnableDrag();
+  } else {
+    btn.textContent = '🔀 카드 순서 편집';
+    btn.classList.remove('on');
+    apSaveOrder();
+  }
+}
+
+function apEnableDrag() {
+  document.querySelectorAll('#apGrid .ap-card:not(.coming-soon)').forEach(card => {
+    card.setAttribute('draggable', 'true');
+  });
+}
+
+document.getElementById('apGrid').addEventListener('click', function(e) {
+  if (apArranging) e.preventDefault();
+});
+
+document.getElementById('apGrid').addEventListener('dragstart', function(e) {
+  const card = e.target.closest('.ap-card');
+  if (!card || !apArranging) return;
+  apDragSrc = card;
+  card.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+});
+
+document.getElementById('apGrid').addEventListener('dragend', function(e) {
+  const card = e.target.closest('.ap-card');
+  if (card) card.classList.remove('dragging');
+  document.querySelectorAll('#apGrid .ap-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+});
+
+document.getElementById('apGrid').addEventListener('dragover', function(e) {
+  if (!apArranging) return;
+  const target = e.target.closest('.ap-card');
+  if (!target || target === apDragSrc || target.classList.contains('coming-soon')) return;
+  e.preventDefault();
+  target.classList.add('drag-over');
+});
+
+document.getElementById('apGrid').addEventListener('dragleave', function(e) {
+  const target = e.target.closest('.ap-card');
+  if (target) target.classList.remove('drag-over');
+});
+
+document.getElementById('apGrid').addEventListener('drop', function(e) {
+  const target = e.target.closest('.ap-card');
+  if (!target || !apDragSrc || target === apDragSrc || target.classList.contains('coming-soon')) return;
+  e.preventDefault();
+  target.classList.remove('drag-over');
+
+  const grid = document.getElementById('apGrid');
+  const cards = Array.from(grid.children);
+  const srcIndex = cards.indexOf(apDragSrc);
+  const targetIndex = cards.indexOf(target);
+
+  if (srcIndex < targetIndex) {
+    target.after(apDragSrc);
+  } else {
+    target.before(apDragSrc);
+  }
+});
+
+function apSaveOrder() {
+  const keys = Array.from(document.querySelectorAll('#apGrid .ap-card:not(.coming-soon)'))
+    .map(card => card.dataset.key);
+
+  fetch('{% url "ai_prompts_reorder" %}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+    body: JSON.stringify({ order: keys })
+  }).then(r => r.json()).then(res => {
+    if (!res.success) alert('순서 저장에 실패했습니다: ' + (res.error || ''));
+  }).catch(() => alert('순서 저장 중 오류가 발생했습니다.'));
+}
+</script>
+{% endif %}
 {% endblock %}

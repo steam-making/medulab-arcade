@@ -1383,6 +1383,19 @@ class ContentFinderSubmission(models.Model):
         return f'{self.name} ({self.created_at:%Y-%m-%d %H:%M})'
 
 
+class AIPromptCardOrder(models.Model):
+    """AI 프롬프트 생성기 허브 페이지의 카드 노출 순서 (관리자 드래그앤드롭으로 설정, 싱글턴)"""
+    order = models.JSONField('카드 순서(키 목록)', default=list, blank=True)
+    updated_at = models.DateTimeField('마지막 수정 시각', auto_now=True)
+
+    class Meta:
+        verbose_name = 'AI 프롬프트 카드 순서'
+        verbose_name_plural = 'AI 프롬프트 카드 순서'
+
+    def __str__(self):
+        return f'카드 순서 ({self.updated_at:%Y-%m-%d %H:%M})'
+
+
 class ContentIdeaThumbnailSubmission(models.Model):
     """AI 프롬프트 생성기 - 나만의 콘텐츠 아이디어 찾기 썸네일 제출 (로그인 불필요)"""
     name = models.CharField('이름', max_length=50)

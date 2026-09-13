@@ -78,6 +78,7 @@
   .icon-camp    { background: linear-gradient(135deg, #EEF2FF, #C7D2FE); }
   .icon-career  { background: linear-gradient(135deg, #E0F7FA, #B2EBF2); }
   .icon-content { background: linear-gradient(135deg, #FFF0E8, #FFD3B3); }
+  .icon-idea    { background: linear-gradient(135deg, #FFFBE0, #FFE998); }
   .icon-local   { background: linear-gradient(135deg, #FFF7ED, #FED7AA); }
 
   @media (max-width: 600px) {
@@ -164,6 +165,13 @@
       <div class="ap-card-icon icon-content">🎯</div>
       <h2>나만의 콘텐츠 주제 찾기</h2>
       <p>내가 잘 아는 것과 좋아하는 것을 고르면, AI가 콘텐츠 아이디어와 채널명, 포스터까지 만들어 줘요.</p>
+      <span class="ap-tag active">이용 가능</span>
+    </a>
+
+    <a href="{% url 'content_idea_finder' %}" class="ap-card">
+      <div class="ap-card-icon icon-idea">💡</div>
+      <h2>나만의 콘텐츠 아이디어 찾기</h2>
+      <p>콘텐츠 주제와 채널명, 형식을 입력하면 원하는 개수만큼 콘텐츠 아이디어 추천 프롬프트를 만들어 줘요.</p>
       <span class="ap-tag active">이용 가능</span>
     </a>
 

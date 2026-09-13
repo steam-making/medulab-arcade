@@ -1,0 +1,215 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}나만의 콘텐츠 아이디어 찾기 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --yellow:#FFC93C;
+    --green:#3DDC97; --ink:#2E2A4A; --orange:#FF9142;
+  }
+  body { background:linear-gradient(150deg,#FFF6FB 0%,#F1F0FF 45%,#EAF7FF 100%) !important; color:var(--ink); }
+
+  .cif-wrap { max-width:820px; margin:0 auto; padding:40px 20px 80px; }
+  .cif-back { display:inline-flex; align-items:center; gap:6px; color:var(--purple); font-weight:700; font-size:14px; text-decoration:none; margin-bottom:20px; }
+  .cif-back:hover { text-decoration:underline; }
+
+  .cif-hero { text-align:center; padding:20px 20px 28px; margin-bottom:8px; }
+  .cif-hero .badge { display:inline-block; background:linear-gradient(120deg,var(--pink),var(--purple)); color:#fff; font-size:13px; font-weight:bold; letter-spacing:1px; padding:5px 16px; border-radius:999px; margin-bottom:16px; }
+  .cif-hero h1 { font-size:30px; font-weight:900; margin:0 0 10px; background:linear-gradient(120deg,var(--purple),var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .cif-hero p { font-size:15px; color:#6a6486; margin:0; line-height:1.7; }
+
+  .cif-section { background:#fff; border-radius:20px; padding:26px 28px; margin-bottom:18px; box-shadow:0 4px 20px rgba(140,107,250,.08); }
+  .cif-step-label { font-size:16px; font-weight:800; color:var(--ink); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .cif-step-label .opt { font-size:12px; font-weight:600; color:#b0aac8; }
+
+  .cif-input { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #E8E4FF; border-radius:12px; font-size:14.5px; color:var(--ink); transition:border-color .2s; }
+  .cif-input:focus { outline:none; border-color:var(--purple); }
+  .cif-input::placeholder { color:#c0bbd8; }
+
+  .cif-btn-group { display:flex; gap:10px; flex-wrap:wrap; }
+  .cif-choice-btn { padding:10px 22px; border:2px solid #E8E4FF; border-radius:999px; background:#fff; color:var(--ink); font-size:14.5px; font-weight:700; cursor:pointer; transition:all .18s; }
+  .cif-choice-btn:hover { border-color:var(--purple); color:var(--purple); }
+  .cif-choice-btn.active { background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; border-color:transparent; }
+
+  .cif-custom-input { margin-top:12px; display:none; }
+  .cif-custom-input.show { display:block; }
+
+  .cif-generate-wrap { text-align:center; margin:28px 0; }
+  .cif-generate-btn { padding:16px 60px; font-size:19px; font-weight:900; background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; border:none; border-radius:999px; cursor:pointer; box-shadow:0 6px 28px rgba(140,107,250,.35); transition:transform .2s, box-shadow .2s; letter-spacing:.5px; }
+  .cif-generate-btn:hover { transform:translateY(-3px); box-shadow:0 12px 36px rgba(140,107,250,.45); }
+  .cif-generate-btn:active { transform:translateY(0); }
+
+  .cif-prompt-section.hidden { display:none; }
+  .cif-prompt-section { background:#fff; border-radius:20px; padding:26px 28px; box-shadow:0 4px 20px rgba(140,107,250,.08); border:2px dashed rgba(140,107,250,.2); }
+  .cif-prompt-header span { font-size:17px; font-weight:800; color:var(--ink); display:block; margin-bottom:4px; }
+  .cif-prompt-header small { color:#9d96bc; font-size:13px; }
+  .cif-prompt-box { background:#F8F6FF; border-radius:12px; padding:16px; font-size:13px; line-height:1.8; color:#5a5475; white-space:pre-wrap; margin:14px 0 16px; border:1px solid #EBE8FF; word-break:break-word; }
+  .cif-copy-btn { padding:12px 32px; background:linear-gradient(120deg,var(--purple),var(--pink)); color:#fff; border:none; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(140,107,250,.3); transition:transform .2s; }
+  .cif-copy-btn:hover { transform:translateY(-2px); }
+
+  .cif-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#1f2430; color:#fff; padding:12px 24px; border-radius:999px; font-size:14px; font-weight:600; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .cif-toast.show { opacity:1; }
+
+  @media (max-width:600px) {
+    .cif-hero h1 { font-size:24px; }
+    .cif-section, .cif-prompt-section { padding:20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cif-wrap">
+  <a href="{% url 'ai_prompts' %}" class="cif-back">← AI 프롬프트 생성기</a>
+
+  <div class="cif-hero">
+    <div class="badge">💡 AI TOOLS</div>
+    <h1>나만의 콘텐츠 아이디어 찾기</h1>
+    <p>콘텐츠 주제와 채널명만 알려주면, ChatGPT에 바로 붙여넣을 수 있는<br>맞춤 아이디어 추천 프롬프트를 만들어 드려요!</p>
+  </div>
+
+  <!-- 콘텐츠 주제 -->
+  <div class="cif-section">
+    <div class="cif-step-label">① 콘텐츠 주제가 무엇인가요?</div>
+    <input type="text" id="cifTopic" class="cif-input" placeholder="예: 직장인을 위한 건강한 식단, 초등학생 과학 실험, 우리 동네 맛집 탐방">
+  </div>
+
+  <!-- 채널명 -->
+  <div class="cif-section">
+    <div class="cif-step-label">② 채널명(또는 계정명)이 있나요? <span class="opt">(선택)</span></div>
+    <input type="text" id="cifChannel" class="cif-input" placeholder="예: 헬씨쿡, 뚝딱과학실, 동네한바퀴">
+  </div>
+
+  <!-- 아이디어 개수 -->
+  <div class="cif-section">
+    <div class="cif-step-label">③ 아이디어를 몇 개 추천받을까요?</div>
+    <div class="cif-btn-group" id="cifCountBtns">
+      <button type="button" class="cif-choice-btn" data-value="3">3개</button>
+      <button type="button" class="cif-choice-btn active" data-value="5">5개</button>
+      <button type="button" class="cif-choice-btn" data-value="7">7개</button>
+      <button type="button" class="cif-choice-btn" data-value="10">10개</button>
+    </div>
+  </div>
+
+  <!-- 콘텐츠 형식 -->
+  <div class="cif-section">
+    <div class="cif-step-label">④ 어떤 형식의 콘텐츠인가요?</div>
+    <div class="cif-btn-group" id="cifFormatBtns">
+      <button type="button" class="cif-choice-btn active" data-value="쇼츠/숏폼 영상 (1분 이내 세로형)">쇼츠/숏폼</button>
+      <button type="button" class="cif-choice-btn" data-value="유튜브 롱폼 영상 (5~15분 가로형)">롱폼 영상</button>
+      <button type="button" class="cif-choice-btn" data-value="인스타그램 릴스">인스타 릴스</button>
+      <button type="button" class="cif-choice-btn" data-value="블로그/글 콘텐츠">블로그/글</button>
+      <button type="button" class="cif-choice-btn" data-value="SNS 카드뉴스">카드뉴스</button>
+      <button type="button" class="cif-choice-btn" data-value="__custom__">✏️ 직접입력</button>
+    </div>
+    <div class="cif-custom-input" id="cifFormatCustomWrap">
+      <input type="text" id="cifFormatCustom" class="cif-input" placeholder="원하는 콘텐츠 형식을 입력해 주세요">
+    </div>
+  </div>
+
+  <div class="cif-generate-wrap">
+    <button type="button" class="cif-generate-btn" onclick="cifGenerate()">✨ 추천 프롬프트 만들기</button>
+  </div>
+
+  <div id="cifPromptSection" class="cif-prompt-section hidden">
+    <div class="cif-prompt-header">
+      <span>💬 ChatGPT에 붙여넣을 프롬프트</span>
+      <small>아래 프롬프트를 복사해서 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
+    </div>
+    <div id="cifPromptBox" class="cif-prompt-box"></div>
+    <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt()">📋 프롬프트 복사하기</button>
+  </div>
+</div>
+<div id="cifToast" class="cif-toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let cifCount = '5';
+let cifFormat = '쇼츠/숏폼 영상 (1분 이내 세로형)';
+
+document.querySelectorAll('#cifCountBtns .cif-choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#cifCountBtns .cif-choice-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    cifCount = btn.dataset.value;
+  });
+});
+
+document.querySelectorAll('#cifFormatBtns .cif-choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#cifFormatBtns .cif-choice-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const customWrap = document.getElementById('cifFormatCustomWrap');
+    if (btn.dataset.value === '__custom__') {
+      customWrap.classList.add('show');
+      document.getElementById('cifFormatCustom').focus();
+    } else {
+      customWrap.classList.remove('show');
+      cifFormat = btn.dataset.value;
+    }
+  });
+});
+
+function cifGenerate() {
+  const topic = document.getElementById('cifTopic').value.trim();
+  const channel = document.getElementById('cifChannel').value.trim();
+
+  if (!topic) {
+    cifShowToast('콘텐츠 주제를 입력해 주세요!');
+    document.getElementById('cifTopic').focus();
+    return;
+  }
+
+  const activeFormatBtn = document.querySelector('#cifFormatBtns .cif-choice-btn.active');
+  let format = cifFormat;
+  if (activeFormatBtn && activeFormatBtn.dataset.value === '__custom__') {
+    const customVal = document.getElementById('cifFormatCustom').value.trim();
+    if (!customVal) {
+      cifShowToast('원하는 콘텐츠 형식을 입력해 주세요!');
+      document.getElementById('cifFormatCustom').focus();
+      return;
+    }
+    format = customVal;
+  }
+
+  const channelLine = channel ? `나는 '${channel}'라는 채널(계정)을 운영하고 있어.\n` : '나는 새로운 콘텐츠 채널을 시작하려고 해.\n';
+
+  const prompt =
+`${channelLine}
+[콘텐츠 주제] ${topic}
+[콘텐츠 형식] ${format}
+
+위 주제에 어울리는 콘텐츠 아이디어를 ${cifCount}개 추천해 줘.
+각 아이디어는 아래 형식으로 정리해 줘:
+
+1. 제목: (콘텐츠 아이디어 제목)
+   핵심 내용: (이 콘텐츠에서 다룰 내용을 1~2문장으로 설명)
+
+시청자의 흥미를 끌 수 있고, 실제로 바로 촬영·제작해 볼 수 있는 현실적인 아이디어로 추천해 줘.`;
+
+  document.getElementById('cifPromptBox').textContent = prompt;
+  const section = document.getElementById('cifPromptSection');
+  section.classList.remove('hidden');
+  setTimeout(() => section.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+function cifCopyPrompt() {
+  const text = document.getElementById('cifPromptBox').textContent;
+  navigator.clipboard.writeText(text).catch(() => {
+    const t = document.createElement('textarea');
+    t.value = text; document.body.appendChild(t); t.select();
+    document.execCommand('copy'); document.body.removeChild(t);
+  });
+  cifShowToast('프롬프트 복사 완료! ChatGPT에 붙여넣어 보세요 🚀');
+}
+
+function cifShowToast(msg) {
+  const el = document.getElementById('cifToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+{% endblock %}

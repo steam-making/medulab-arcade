@@ -364,6 +364,10 @@ def problem_finder(request):
     return render(request, 'arcade/problem_finder.html')
 
 
+def content_idea_finder(request):
+    return render(request, 'arcade/content_idea_finder.html')
+
+
 def camp_planner(request):
     return render(request, 'arcade/camp_planner.html')
 

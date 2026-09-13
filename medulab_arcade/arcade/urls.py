@@ -22,6 +22,7 @@ urlpatterns = [
     path('tools/team-name/', views.team_name, name='team_name'),
     path('tools/carbon-invention/', views.carbon_invention, name='carbon_invention'),
     path('tools/problem-finder/', views.problem_finder, name='problem_finder'),
+    path('tools/content-idea-finder/', views.content_idea_finder, name='content_idea_finder'),
     path('tools/local-problem-finder/', views.local_problem_finder, name='local_problem_finder'),
     path('api/local-problems/', views.api_local_problems, name='api_local_problems'),
     path('tools/camp-planner/', views.camp_planner, name='camp_planner'),

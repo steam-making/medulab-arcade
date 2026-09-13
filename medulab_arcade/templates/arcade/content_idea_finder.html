@@ -36,6 +36,17 @@
   .cif-custom-input { margin-top:12px; display:none; }
   .cif-custom-input.show { display:block; }
 
+  .cif-textarea { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #E8E4FF; border-radius:12px; font-size:14.5px; color:var(--ink); font-family:inherit; resize:vertical; min-height:80px; transition:border-color .2s; }
+  .cif-textarea:focus { outline:none; border-color:var(--purple); }
+  .cif-textarea::placeholder { color:#c0bbd8; }
+
+  .cif-chip-toggle { padding:9px 16px; border:2px solid #E8E4FF; border-radius:999px; background:#fff; color:var(--ink); font-size:13.5px; font-weight:700; cursor:pointer; transition:all .18s; }
+  .cif-chip-toggle:hover { border-color:var(--purple); }
+  .cif-chip-toggle.on { background:linear-gradient(120deg,var(--green),var(--blue)); color:#fff; border-color:transparent; }
+
+  .cif-section.cif-locked { opacity:.5; pointer-events:none; }
+  .cif-section-note { font-size:12.5px; color:#9d96bc; margin-top:-6px; margin-bottom:14px; }
+
   .cif-generate-wrap { text-align:center; margin:28px 0; }
   .cif-generate-btn { padding:16px 60px; font-size:19px; font-weight:900; background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; border:none; border-radius:999px; cursor:pointer; box-shadow:0 6px 28px rgba(140,107,250,.35); transition:transform .2s, box-shadow .2s; letter-spacing:.5px; }
   .cif-generate-btn:hover { transform:translateY(-3px); box-shadow:0 12px 36px rgba(140,107,250,.45); }
@@ -118,7 +129,76 @@
       <small>아래 프롬프트를 복사해서 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
     </div>
     <div id="cifPromptBox" class="cif-prompt-box"></div>
-    <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt()">📋 프롬프트 복사하기</button>
+    <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt('cifPromptBox')">📋 프롬프트 복사하기</button>
+  </div>
+
+  <!-- STEP 5: 제목 후보 추천 -->
+  <div class="cif-section" style="margin-top:32px;">
+    <div class="cif-step-label">⑤ 마음에 드는 아이디어로 제목 후보를 추천받아요</div>
+    <p class="cif-section-note">ChatGPT가 추천해 준 아이디어 중 마음에 드는 것을 골라 붙여넣어 주세요.</p>
+    <textarea id="cifChosenIdea" class="cif-textarea" placeholder="예) 제목: 5분 만에 끝내는 초간단 아침 도시락&#10;핵심 내용: 바쁜 직장인을 위한 5분 완성 도시락 레시피 소개"></textarea>
+
+    <div class="cif-step-label" style="margin-top:20px;font-size:14px;">제목에 포함하고 싶은 조건을 골라 보세요 <span class="opt">(복수 선택)</span></div>
+    <div class="cif-btn-group" id="cifTitleConditionBtns">
+      <button type="button" class="cif-chip-toggle on" data-value="궁금증을 유발하는 표현을 사용해줘 (예: '어떻게?', '왜?', '이런 방법이?')">❓ 궁금증 유발하기</button>
+      <button type="button" class="cif-chip-toggle on" data-value="'역대급', '무조건' 같은 과장된 표현은 피해줘">🚫 과장하지 않기</button>
+      <button type="button" class="cif-chip-toggle on" data-value="주제와 관련된 핵심 키워드를 자연스럽게 포함해줘">🔑 핵심 키워드 포함</button>
+      <button type="button" class="cif-chip-toggle" data-value="'BEST 5', '3가지 방법'처럼 숫자를 활용해줘">🔢 숫자 활용하기</button>
+      <button type="button" class="cif-chip-toggle" data-value="어울리는 이모지를 1~2개 포함해줘">😀 이모지 활용하기</button>
+      <button type="button" class="cif-chip-toggle" data-value="질문형 문장으로 만들어줘">💬 질문형으로 만들기</button>
+    </div>
+
+    <div class="cif-step-label" style="margin-top:20px;font-size:14px;">제목을 몇 개 추천받을까요?</div>
+    <div class="cif-btn-group" id="cifTitleCountBtns">
+      <button type="button" class="cif-choice-btn" data-value="3">3개</button>
+      <button type="button" class="cif-choice-btn active" data-value="5">5개</button>
+      <button type="button" class="cif-choice-btn" data-value="7">7개</button>
+    </div>
+
+    <div class="cif-generate-wrap">
+      <button type="button" class="cif-generate-btn" onclick="cifGenerateTitle()">✨ 제목 후보 프롬프트 만들기</button>
+    </div>
+  </div>
+
+  <div id="cifTitlePromptSection" class="cif-prompt-section hidden">
+    <div class="cif-prompt-header">
+      <span>💬 ChatGPT에 붙여넣을 프롬프트 (제목 후보)</span>
+      <small>아래 프롬프트를 복사해서 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
+    </div>
+    <div id="cifTitlePromptBox" class="cif-prompt-box"></div>
+    <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt('cifTitlePromptBox')">📋 프롬프트 복사하기</button>
+  </div>
+
+  <!-- STEP 6: 대본 만들기 -->
+  <div class="cif-section" style="margin-top:32px;">
+    <div class="cif-step-label">⑥ 주제와 제목에 맞는 대본 만들기</div>
+    <p class="cif-section-note">마음에 드는 제목을 골라 붙여넣고, 원하는 영상 길이를 선택해 보세요.</p>
+    <input type="text" id="cifChosenTitle" class="cif-input" placeholder="예: 5분 만에 끝내는 초간단 아침 도시락 BEST 5">
+
+    <div class="cif-step-label" style="margin-top:20px;font-size:14px;">영상 길이는 얼마나 되나요?</div>
+    <div class="cif-btn-group" id="cifDurationBtns">
+      <button type="button" class="cif-choice-btn" data-value="15초">15초</button>
+      <button type="button" class="cif-choice-btn active" data-value="30초">30초</button>
+      <button type="button" class="cif-choice-btn" data-value="1분">1분</button>
+      <button type="button" class="cif-choice-btn" data-value="3분">3분</button>
+      <button type="button" class="cif-choice-btn" data-value="__custom__">✏️ 직접입력</button>
+    </div>
+    <div class="cif-custom-input" id="cifDurationCustomWrap">
+      <input type="text" id="cifDurationCustom" class="cif-input" placeholder="예: 5분, 45초">
+    </div>
+
+    <div class="cif-generate-wrap">
+      <button type="button" class="cif-generate-btn" onclick="cifGenerateScript()">✨ 대본 프롬프트 만들기</button>
+    </div>
+  </div>
+
+  <div id="cifScriptPromptSection" class="cif-prompt-section hidden">
+    <div class="cif-prompt-header">
+      <span>💬 ChatGPT에 붙여넣을 프롬프트 (대본)</span>
+      <small>아래 프롬프트를 복사해서 ChatGPT · 제미나이 · 코파일럿에 붙여넣어 보세요!</small>
+    </div>
+    <div id="cifScriptPromptBox" class="cif-prompt-box"></div>
+    <button type="button" class="cif-copy-btn" onclick="cifCopyPrompt('cifScriptPromptBox')">📋 프롬프트 복사하기</button>
   </div>
 </div>
 <div id="cifToast" class="cif-toast"></div>
@@ -195,14 +275,128 @@ function cifGenerate() {
   setTimeout(() => section.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
 }
 
-function cifCopyPrompt() {
-  const text = document.getElementById('cifPromptBox').textContent;
+function cifCopyPrompt(boxId) {
+  const text = document.getElementById(boxId || 'cifPromptBox').textContent;
   navigator.clipboard.writeText(text).catch(() => {
     const t = document.createElement('textarea');
     t.value = text; document.body.appendChild(t); t.select();
     document.execCommand('copy'); document.body.removeChild(t);
   });
   cifShowToast('프롬프트 복사 완료! ChatGPT에 붙여넣어 보세요 🚀');
+}
+
+// ── STEP 5: 제목 후보 추천 ──
+document.querySelectorAll('#cifTitleConditionBtns .cif-chip-toggle').forEach(btn => {
+  btn.addEventListener('click', () => btn.classList.toggle('on'));
+});
+
+let cifTitleCount = '5';
+document.querySelectorAll('#cifTitleCountBtns .cif-choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#cifTitleCountBtns .cif-choice-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    cifTitleCount = btn.dataset.value;
+  });
+});
+
+function cifGenerateTitle() {
+  const topic = document.getElementById('cifTopic').value.trim();
+  const idea = document.getElementById('cifChosenIdea').value.trim();
+
+  if (!topic) {
+    cifShowToast('먼저 ①번에 콘텐츠 주제를 입력해 주세요!');
+    document.getElementById('cifTopic').focus();
+    return;
+  }
+  if (!idea) {
+    cifShowToast('ChatGPT가 추천해 준 아이디어를 붙여넣어 주세요!');
+    document.getElementById('cifChosenIdea').focus();
+    return;
+  }
+
+  const conditions = Array.from(document.querySelectorAll('#cifTitleConditionBtns .cif-chip-toggle.on'))
+    .map(b => `- ${b.dataset.value}`).join('\n');
+
+  const prompt =
+`아래 콘텐츠 아이디어에 어울리는 유튜브 영상 제목을 ${cifTitleCount}개 만들어 줘.
+
+[콘텐츠 주제] ${topic}
+[선택한 아이디어]
+${idea}
+
+제목을 만들 때 아래 조건을 지켜줘:
+${conditions || '- 클릭하고 싶은 매력적인 제목으로 만들어줘'}
+
+각 제목은 번호를 붙여서 보여주고, 어떤 제목이 가장 클릭하고 싶은지 내가 직접 골라볼 수 있게 해줘.`;
+
+  document.getElementById('cifTitlePromptBox').textContent = prompt;
+  const section = document.getElementById('cifTitlePromptSection');
+  section.classList.remove('hidden');
+  setTimeout(() => section.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+// ── STEP 6: 대본 만들기 ──
+let cifDuration = '30초';
+document.querySelectorAll('#cifDurationBtns .cif-choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#cifDurationBtns .cif-choice-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const customWrap = document.getElementById('cifDurationCustomWrap');
+    if (btn.dataset.value === '__custom__') {
+      customWrap.classList.add('show');
+      document.getElementById('cifDurationCustom').focus();
+    } else {
+      customWrap.classList.remove('show');
+      cifDuration = btn.dataset.value;
+    }
+  });
+});
+
+function cifGenerateScript() {
+  const topic = document.getElementById('cifTopic').value.trim();
+  const title = document.getElementById('cifChosenTitle').value.trim();
+
+  if (!topic) {
+    cifShowToast('먼저 ①번에 콘텐츠 주제를 입력해 주세요!');
+    document.getElementById('cifTopic').focus();
+    return;
+  }
+  if (!title) {
+    cifShowToast('마음에 드는 제목을 붙여넣어 주세요!');
+    document.getElementById('cifChosenTitle').focus();
+    return;
+  }
+
+  const activeDurationBtn = document.querySelector('#cifDurationBtns .cif-choice-btn.active');
+  let duration = cifDuration;
+  if (activeDurationBtn && activeDurationBtn.dataset.value === '__custom__') {
+    const customVal = document.getElementById('cifDurationCustom').value.trim();
+    if (!customVal) {
+      cifShowToast('원하는 영상 길이를 입력해 주세요!');
+      document.getElementById('cifDurationCustom').focus();
+      return;
+    }
+    duration = customVal;
+  }
+
+  const prompt =
+`아래 정보를 참고해서 유튜브 영상 대본을 만들어 줘.
+
+[콘텐츠 주제] ${topic}
+[영상 제목] ${title}
+[영상 길이] 약 ${duration}
+
+대본은 아래 순서로 구성해 줘:
+1. 오프닝 — 시청자의 관심을 확 끄는 첫 문장
+2. 본문 — 핵심 내용을 순서대로 전달
+3. 마무리 — 좋아요/구독을 자연스럽게 유도하는 마무리 멘트
+
+실제로 말하는 것처럼 자연스러운 대사체로 작성해 주고, ${duration} 분량에 맞는 길이로 만들어 줘.`;
+
+  document.getElementById('cifScriptPromptBox').textContent = prompt;
+  const section = document.getElementById('cifScriptPromptSection');
+  section.classList.remove('hidden');
+  setTimeout(() => section.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
 }
 
 function cifShowToast(msg) {

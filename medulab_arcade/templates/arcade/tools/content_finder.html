@@ -19,6 +19,9 @@
   .cf-header p { font-size:14px; color:#6a6486; margin:0; }
   .cf-admin-btn { border:1px solid var(--purple); background:#fff; color:var(--purple); border-radius:999px; padding:9px 16px; font-weight:800; font-size:13px; cursor:pointer; white-space:nowrap; }
   .cf-admin-btn:hover { background:#F1EEFF; }
+  .cf-admin-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .cf-header-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .cf-draft-status { font-size:12px; color:#7a7498; width:100%; text-align:right; }
 
   .cf-name-row { background:#fff; border-radius:18px; padding:16px 20px; box-shadow:0 6px 20px rgba(140,107,250,0.08); margin-bottom:20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .cf-name-row label { font-weight:800; font-size:14px; color:var(--ink); white-space:nowrap; }
@@ -115,9 +118,14 @@
       <h1>🎯 나만의 콘텐츠 주제 찾기</h1>
       <p>나를 알고, 좋아하는 것을 찾아, 나만의 콘텐츠 주제와 포스터까지 완성해 보세요!</p>
     </div>
-    {% if user.is_staff %}
-    <button type="button" class="cf-admin-btn" onclick="cfOpenListModal()">📋 제출 목록</button>
-    {% endif %}
+    <div class="cf-header-actions">
+      <button type="button" class="cf-admin-btn" id="cfLoadBtn" onclick="cfLoadDraft()" disabled>📂 불러오기</button>
+      <button type="button" class="cf-admin-btn" id="cfSaveBtn" onclick="cfSaveDraft()">💾 저장</button>
+      {% if user.is_staff %}
+      <button type="button" class="cf-admin-btn" onclick="cfOpenListModal()">📋 제출 목록</button>
+      {% endif %}
+      <div class="cf-draft-status" id="cfDraftStatus"></div>
+    </div>
   </div>
 
   <div class="cf-name-row">
@@ -351,6 +359,89 @@ cfBuildPicker('cfKnownPicks', CF_KNOWN_OPTIONS, 'cfKnown');
 cfBuildPicker('cfLikedPicks', CF_LIKED_OPTIONS, 'cfLiked');
 cfRenderPickerState('cfKnown');
 cfRenderPickerState('cfLiked');
+
+// ── 회원 저장/불러오기 ──
+const CF_IS_LOGGED_IN = {{ user_authenticated|yesno:"true,false" }};
+const CF_SAVE_URL = "{% url 'api_content_finder_draft_save' %}";
+const CF_STORAGE_KEY = 'contentFinderDraft_v1';
+
+function cfCollectFormState(){
+  return {
+    name: document.getElementById('cfName').value,
+    known: cfState.cfKnown,
+    liked: cfState.cfLiked,
+    contentIdea: document.getElementById('cfContentIdea').value,
+  };
+}
+
+function cfRestoreFormState(s){
+  if(!s || !Object.keys(s).length) return;
+  if(s.name !== undefined) document.getElementById('cfName').value = s.name;
+  if(Array.isArray(s.known)){ cfState.cfKnown = s.known; cfRenderPickerState('cfKnown'); }
+  if(Array.isArray(s.liked)){ cfState.cfLiked = s.liked; cfRenderPickerState('cfLiked'); }
+  if(s.contentIdea !== undefined) document.getElementById('cfContentIdea').value = s.contentIdea;
+}
+
+async function cfSaveDraft(){
+  const state = cfCollectFormState();
+  const statusEl = document.getElementById('cfDraftStatus');
+  if(CF_IS_LOGGED_IN){
+    try{
+      const res = await fetch(CF_SAVE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(state),
+      });
+      if(res.ok){
+        localStorage.setItem(CF_STORAGE_KEY, JSON.stringify(state));
+        statusEl.textContent = '✓ 내 계정에 저장됨';
+        document.getElementById('cfLoadBtn').disabled = false;
+      } else {
+        statusEl.textContent = '저장 실패';
+      }
+    }catch{
+      statusEl.textContent = '저장 실패';
+    }
+  } else {
+    localStorage.setItem(CF_STORAGE_KEY, JSON.stringify(state));
+    statusEl.textContent = '✓ 이 브라우저에 저장됨 (로그인하면 계정에 저장돼요)';
+    document.getElementById('cfLoadBtn').disabled = false;
+  }
+}
+
+function cfLoadDraft(){
+  const statusEl = document.getElementById('cfDraftStatus');
+  const dbData = {{ draft_data|safe }};
+  if(dbData && Object.keys(dbData).length){
+    cfRestoreFormState(dbData);
+    statusEl.textContent = '✓ 저장된 내용을 불러왔어요';
+  } else {
+    const local = localStorage.getItem(CF_STORAGE_KEY);
+    if(local){
+      try{ cfRestoreFormState(JSON.parse(local)); statusEl.textContent = '✓ 브라우저 저장 내용을 불러왔어요'; }
+      catch{ statusEl.textContent = '불러오기 실패'; }
+    }
+  }
+}
+
+(function cfInitRestore(){
+  const dbData = {{ draft_data|safe }};
+  const statusEl = document.getElementById('cfDraftStatus');
+  if(dbData && Object.keys(dbData).length){
+    document.getElementById('cfLoadBtn').disabled = false;
+    cfRestoreFormState(dbData);
+    statusEl.textContent = '이전에 저장한 내용을 불러왔어요';
+  } else {
+    const local = localStorage.getItem(CF_STORAGE_KEY);
+    if(local){
+      try{
+        document.getElementById('cfLoadBtn').disabled = false;
+        cfRestoreFormState(JSON.parse(local));
+        statusEl.textContent = '브라우저 저장 내용을 불러왔어요';
+      }catch{}
+    }
+  }
+})();
 
 function cfGoStep(n){
   document.querySelectorAll('.cf-tab').forEach((t,i)=>t.classList.toggle('active', i===n-1));

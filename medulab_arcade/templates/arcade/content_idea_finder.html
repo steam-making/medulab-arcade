@@ -17,6 +17,9 @@
   .cif-back:hover { text-decoration:underline; }
   .cif-admin-btn { border:1px solid var(--purple); background:#fff; color:var(--purple); border-radius:999px; padding:9px 16px; font-weight:800; font-size:13px; cursor:pointer; white-space:nowrap; }
   .cif-admin-btn:hover { background:#F1EEFF; }
+  .cif-admin-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .cif-header-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .cif-draft-status { font-size:12px; color:#7a7498; width:100%; text-align:right; }
 
   .cif-hero { text-align:center; padding:8px 20px 28px; margin-bottom:8px; }
   .cif-hero .badge { display:inline-block; background:linear-gradient(120deg,var(--pink),var(--purple)); color:#fff; font-size:13px; font-weight:bold; letter-spacing:1px; padding:5px 16px; border-radius:999px; margin-bottom:16px; }
@@ -123,9 +126,14 @@
 <div class="cif-wrap">
   <div class="cif-topbar">
     <a href="{% url 'ai_prompts' %}" class="cif-back">← AI 프롬프트 생성기</a>
-    {% if user.is_staff %}
-    <button type="button" class="cif-admin-btn" onclick="cifOpenListModal()">📋 제출 목록</button>
-    {% endif %}
+    <div class="cif-header-actions">
+      <button type="button" class="cif-admin-btn" id="cifLoadBtn" onclick="cifLoadDraft()" disabled>📂 불러오기</button>
+      <button type="button" class="cif-admin-btn" id="cifSaveBtn" onclick="cifSaveDraft()">💾 저장</button>
+      {% if user.is_staff %}
+      <button type="button" class="cif-admin-btn" onclick="cifOpenListModal()">📋 제출 목록</button>
+      {% endif %}
+      <div class="cif-draft-status" id="cifDraftStatus"></div>
+    </div>
   </div>
 
   <div class="cif-hero">
@@ -626,5 +634,128 @@ function cifDeleteItem(id) {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cifCloseListModal(); });
 {% endif %}
+
+// ── 회원 저장/불러오기 ──
+const CIF_IS_LOGGED_IN = {{ user_authenticated|yesno:"true,false" }};
+const CIF_SAVE_URL = "{% url 'api_content_idea_finder_draft_save' %}";
+const CIF_STORAGE_KEY = 'contentIdeaFinderDraft_v1';
+
+function cifClickChoiceByValue(containerId, value) {
+  if (!value) return;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const btn = Array.from(container.querySelectorAll('.cif-choice-btn')).find(b => b.dataset.value === value);
+  if (btn) btn.click();
+}
+
+function cifCollectFormState() {
+  const activeFormatBtn = document.querySelector('#cifFormatBtns .cif-choice-btn.active');
+  const activeDurationBtn = document.querySelector('#cifDurationBtns .cif-choice-btn.active');
+  return {
+    name: document.getElementById('cifName').value,
+    topic: document.getElementById('cifTopic').value,
+    channel: document.getElementById('cifChannel').value,
+    count: cifCount,
+    format: activeFormatBtn ? activeFormatBtn.dataset.value : cifFormat,
+    formatCustom: document.getElementById('cifFormatCustom').value,
+    chosenIdea: document.getElementById('cifChosenIdea').value,
+    titleConditions: Array.from(document.querySelectorAll('#cifTitleConditionBtns .cif-chip-toggle.on')).map(b => b.dataset.value),
+    titleCount: cifTitleCount,
+    chosenTitle: document.getElementById('cifChosenTitle').value,
+    chosenTitleForScript: document.getElementById('cifChosenTitleForScript').value,
+    duration: activeDurationBtn ? activeDurationBtn.dataset.value : cifDuration,
+    durationCustom: document.getElementById('cifDurationCustom').value,
+  };
+}
+
+function cifRestoreFormState(s) {
+  if (!s || !Object.keys(s).length) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+  set('cifName', s.name);
+  set('cifTopic', s.topic);
+  set('cifChannel', s.channel);
+  set('cifChosenIdea', s.chosenIdea);
+  set('cifChosenTitle', s.chosenTitle);
+  set('cifChosenTitleForScript', s.chosenTitleForScript);
+
+  if (s.count) cifClickChoiceByValue('cifCountBtns', s.count);
+  if (s.titleCount) cifClickChoiceByValue('cifTitleCountBtns', s.titleCount);
+
+  if (s.format) {
+    cifClickChoiceByValue('cifFormatBtns', s.format);
+    if (s.format === '__custom__') set('cifFormatCustom', s.formatCustom);
+  }
+  if (s.duration) {
+    cifClickChoiceByValue('cifDurationBtns', s.duration);
+    if (s.duration === '__custom__') set('cifDurationCustom', s.durationCustom);
+  }
+
+  if (Array.isArray(s.titleConditions)) {
+    document.querySelectorAll('#cifTitleConditionBtns .cif-chip-toggle').forEach(btn => {
+      btn.classList.toggle('on', s.titleConditions.includes(btn.dataset.value));
+    });
+  }
+}
+
+async function cifSaveDraft() {
+  const state = cifCollectFormState();
+  const statusEl = document.getElementById('cifDraftStatus');
+  if (CIF_IS_LOGGED_IN) {
+    try {
+      const res = await fetch(CIF_SAVE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(state),
+      });
+      if (res.ok) {
+        localStorage.setItem(CIF_STORAGE_KEY, JSON.stringify(state));
+        statusEl.textContent = '✓ 내 계정에 저장됨';
+        document.getElementById('cifLoadBtn').disabled = false;
+      } else {
+        statusEl.textContent = '저장 실패';
+      }
+    } catch {
+      statusEl.textContent = '저장 실패';
+    }
+  } else {
+    localStorage.setItem(CIF_STORAGE_KEY, JSON.stringify(state));
+    statusEl.textContent = '✓ 이 브라우저에 저장됨 (로그인하면 계정에 저장돼요)';
+    document.getElementById('cifLoadBtn').disabled = false;
+  }
+}
+
+function cifLoadDraft() {
+  const statusEl = document.getElementById('cifDraftStatus');
+  const dbData = {{ draft_data|safe }};
+  if (dbData && Object.keys(dbData).length) {
+    cifRestoreFormState(dbData);
+    statusEl.textContent = '✓ 저장된 내용을 불러왔어요';
+  } else {
+    const local = localStorage.getItem(CIF_STORAGE_KEY);
+    if (local) {
+      try { cifRestoreFormState(JSON.parse(local)); statusEl.textContent = '✓ 브라우저 저장 내용을 불러왔어요'; }
+      catch { statusEl.textContent = '불러오기 실패'; }
+    }
+  }
+}
+
+(function cifInitRestore() {
+  const dbData = {{ draft_data|safe }};
+  const statusEl = document.getElementById('cifDraftStatus');
+  if (dbData && Object.keys(dbData).length) {
+    document.getElementById('cifLoadBtn').disabled = false;
+    cifRestoreFormState(dbData);
+    statusEl.textContent = '이전에 저장한 내용을 불러왔어요';
+  } else {
+    const local = localStorage.getItem(CIF_STORAGE_KEY);
+    if (local) {
+      try {
+        document.getElementById('cifLoadBtn').disabled = false;
+        cifRestoreFormState(JSON.parse(local));
+        statusEl.textContent = '브라우저 저장 내용을 불러왔어요';
+      } catch {}
+    }
+  }
+})();
 </script>
 {% endblock %}

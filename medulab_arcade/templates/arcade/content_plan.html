@@ -208,7 +208,14 @@
       <small>아래 프롬프트를 복사해서 ChatGPT에 붙여넣으면, 제목 후보·장면별 구성·스토리보드 이미지 프롬프트·장면별 영상 생성 프롬프트까지 한 번에 받을 수 있어요!</small>
     </div>
     <div id="cpPromptBox" class="cp-prompt-box"></div>
-    <button type="button" class="cp-copy-btn" onclick="cpCopyPrompt()">📋 프롬프트 복사하기</button>
+    <button type="button" class="cp-copy-btn" onclick="cpCopyPrompt('cpPromptBox')">📋 프롬프트 복사하기</button>
+
+    <div class="cp-prompt-header" style="margin-top:26px;">
+      <span>🌐 영어 버전 프롬프트</span>
+      <small>Sora·Runway·Veo 같은 영상 생성 도구는 영어 프롬프트일 때 더 안정적으로 작동하고, 정책 위반으로 거절되는 경우도 줄어들어요!</small>
+    </div>
+    <div id="cpPromptBoxEn" class="cp-prompt-box"></div>
+    <button type="button" class="cp-copy-btn" onclick="cpCopyPrompt('cpPromptBoxEn')">📋 English 프롬프트 복사하기</button>
   </div>
 </div>
 <div id="cpToast" class="cp-toast"></div>
@@ -319,19 +326,98 @@ ${hookSceneNote}- 정해진 영상 길이(${duration})에 맞는 장면 수와 �
 - 각 칸에는 장면 번호와 간단한 설명이 함께 보이도록 구성해 줘.
 
 4. 장면별 영상 생성 프롬프트
-- 각 장면마다 AI 영상 생성 도구(예: Sora, Runway, Pika)에 바로 사용할 수 있는 개별 프롬프트를 장면 번호와 함께 만들어 줘.
+- 각 장면마다 AI 영상 생성 도구(예: Sora, Runway, Pika, Veo)에 바로 사용할 수 있는 개별 프롬프트를 장면 번호와 함께 만들어 줘.
 - 카메라 앵글, 분위기, 움직임을 구체적으로 묘사해 줘.
+- 중요: 실존 인물, 유명인, 저작권이 있는 캐릭터·게임·브랜드 이름은 절대 사용하지 말고, "귀여운 로봇 캐릭터", "초등학생 또래 캐릭터"처럼 일반적이고 창작된 표현으로 순화해서 작성해 줘.
+- 폭력적이거나 위험하거나 자극적인 내용은 넣지 말고, AI 영상 생성 서비스(구글 Veo, OpenAI Sora 등)의 안전 정책에 위반되지 않는 내용으로만 작성해 줘.
 
 실제로 촬영·제작해 볼 수 있는 현실적인 내용으로, 이해하기 쉽게 작성해 줘.`;
 
   document.getElementById('cpPromptBox').textContent = prompt;
+
+  document.getElementById('cpPromptBoxEn').textContent = cpBuildEnglishPrompt({
+    idea, channel, audience, duration, platform, tone,
+  });
+
   const section = document.getElementById('cpPromptSection');
   section.classList.remove('hidden');
   setTimeout(() => section.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
 }
 
-function cpCopyPrompt() {
-  const text = document.getElementById('cpPromptBox').textContent;
+const CP_PLATFORM_EN = {
+  '유튜브 쇼츠 (세로형 9:16)': 'YouTube Shorts (vertical 9:16)',
+  '틱톡 (세로형 9:16)': 'TikTok (vertical 9:16)',
+  '인스타그램 릴스 (세로형 9:16)': 'Instagram Reels (vertical 9:16)',
+  '유튜브 롱폼 (가로형 16:9)': 'YouTube long-form (horizontal 16:9)',
+};
+const CP_TONE_EN = {
+  '재미있고 유쾌하게': 'fun and upbeat',
+  '차분하고 전문적으로': 'calm and professional',
+  '감동적이고 진지하게': 'touching and sincere',
+  '긴장감 있고 몰입감 있게': 'tense and immersive',
+};
+const CP_DURATION_EN = {
+  '30초': '30 seconds', '1분': '1 minute', '3분': '3 minutes', '15분': '15 minutes', '30분': '30 minutes',
+};
+const CP_HOOK_EN = {
+  '질문형': { label: 'Question-based', example: 'Have you ever imagined this?' },
+  '공감형': { label: 'Empathy-based', example: 'I was totally lost when I first started, too' },
+  '문제제기형': { label: 'Problem-raising', example: "If you don't know this trick, you're wasting your time" },
+  '결과제시형': { label: 'Result-first', example: 'This game gets finished in just 5 minutes!' },
+  '반전형': { label: 'Twist', example: "Actually, you don't need to know any coding for this" },
+  '숫자형': { label: 'Number-based', example: 'Did you know you can build a game with just 3 lines of code?' },
+};
+
+function cpBuildEnglishPrompt({ idea, channel, audience, duration, platform, tone }) {
+  const channelLine = channel ? `[Channel Name] ${channel}\n` : '';
+  const audienceLine = audience ? `[Target Audience] ${audience}\n` : '';
+  const durationEn = CP_DURATION_EN[duration] || duration;
+  const platformEn = CP_PLATFORM_EN[platform] || platform;
+  const toneEn = CP_TONE_EN[tone] || tone;
+
+  let hookLine, hookSceneNote;
+  if (cpHookYesNo === 'yes') {
+    const mapped = CP_HOOK_EN[cpHookStrategy.value];
+    const label = mapped ? mapped.label : cpHookStrategy.value;
+    const example = mapped ? mapped.example : cpHookStrategy.example;
+    hookLine = `[First 3-Second Hook Strategy] ${label} — Example: "${example}"\n`;
+    hookSceneNote = '- Scene 1 in particular should use the hook strategy above to grab the viewer\'s attention right away.\n';
+  } else {
+    hookLine = `[First 3-Second Hook] Not used (start directly with the main content)\n`;
+    hookSceneNote = '';
+  }
+
+  return `I'm planning a video based on the idea below.
+
+[Content Idea] ${idea}
+${channelLine}[Video Length] about ${durationEn}
+[Platform] ${platformEn}
+[Video Mood] ${toneEn}
+${audienceLine}${hookLine}
+Based on the information above, please write the following 4 items in order:
+
+1. 5 Title Candidates
+- Suggest 5 clickable titles, numbered.
+
+2. Scene-by-Scene Structure (Storyboard Script)
+- Break the video into scenes and organize each scene's [Timing] · [What's shown on screen] · [Narration/Dialogue] in a table.
+${hookSceneNote}- Structure the number of scenes and pacing to fit the video length (${durationEn}).
+
+3. One-Page Storyboard Image Prompt
+- Create a single prompt for generating one storyboard image that arranges all the scenes above in a grid (comic-panel) layout.
+- Each panel should show the scene number and a brief description.
+
+4. Scene-by-Scene Video Generation Prompts
+- For each scene, write an individual prompt ready to use with AI video generation tools (e.g. Sora, Runway, Pika, Veo), numbered by scene.
+- Describe the camera angle, mood, and movement specifically.
+- IMPORTANT: Never use real people, celebrities, or copyrighted characters/games/brand names — describe them in generic, original terms instead (e.g. "a cute robot character", "a child around elementary-school age").
+- Avoid violent, dangerous, or sensitive content so the prompts comply with AI video generation platforms' safety policies (e.g. Google Veo, OpenAI Sora).
+
+Please write realistic content that can actually be filmed/produced, in a way that's easy to understand.`;
+}
+
+function cpCopyPrompt(boxId) {
+  const text = document.getElementById(boxId || 'cpPromptBox').textContent;
   navigator.clipboard.writeText(text).catch(() => {
     const t = document.createElement('textarea');
     t.value = text; document.body.appendChild(t); t.select();

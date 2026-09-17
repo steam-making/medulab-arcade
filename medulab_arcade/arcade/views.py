@@ -27,7 +27,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave, ContentFinderSubmission, ContentIdeaThumbnailSubmission, AIPromptCardOrder, ContentFinderDraft, ContentIdeaFinderDraft
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave, ContentFinderSubmission, ContentIdeaThumbnailSubmission, AIPromptCardOrder, ContentFinderDraft, ContentIdeaFinderDraft, ContentPlanDraft
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -148,6 +148,11 @@ AI_PROMPT_CARDS = [
         'key': 'content_idea_finder', 'url_name': 'content_idea_finder', 'icon_class': 'icon-idea', 'icon': '💡',
         'title': '나만의 콘텐츠 아이디어 찾기',
         'desc': '콘텐츠 주제와 채널명, 형식을 입력하면 원하는 개수만큼 콘텐츠 아이디어 추천 프롬프트를 만들어 줘요.',
+    },
+    {
+        'key': 'content_plan', 'url_name': 'content_plan', 'icon_class': 'icon-plan', 'icon': '📝',
+        'title': '콘텐츠 기획안',
+        'desc': '아이디어와 후킹 전략, 영상 길이를 입력하면 제목·장면 구성·스토리보드·영상 생성 프롬프트까지 한 번에 만들어 줘요.',
     },
     {
         'key': 'future_career_video', 'url_name': 'future_career_video', 'icon_class': 'icon-career', 'icon': '🎬',
@@ -588,6 +593,33 @@ def content_idea_thumbnail_delete(request, submission_id):
     """관리자용 - 썸네일 제출 항목 삭제"""
     ContentIdeaThumbnailSubmission.objects.filter(pk=submission_id).delete()
     return JsonResponse({'success': True})
+
+
+def content_plan(request):
+    """AI 프롬프트 생성기 - 콘텐츠 기획안 페이지"""
+    draft_data = {}
+    if request.user.is_authenticated:
+        try:
+            draft_data = request.user.content_plan_draft.data
+        except ContentPlanDraft.DoesNotExist:
+            pass
+    return render(request, 'arcade/content_plan.html', {
+        'draft_data': json.dumps(draft_data),
+        'user_authenticated': request.user.is_authenticated,
+    })
+
+
+@require_POST
+def api_content_plan_draft_save(request):
+    """콘텐츠 기획안 - 회원 임시저장"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'ok': False, 'error': 'login required'}, status=401)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
+    ContentPlanDraft.objects.update_or_create(user=request.user, defaults={'data': data})
+    return JsonResponse({'ok': True})
 
 
 def camp_planner(request):

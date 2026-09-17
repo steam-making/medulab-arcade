@@ -1393,6 +1393,20 @@ class ContentIdeaFinderDraft(models.Model):
         return f'{self.user.username} 콘텐츠 아이디어 찾기 초안'
 
 
+class ContentPlanDraft(models.Model):
+    """콘텐츠 기획안 - 회원 임시저장 (계정당 1개)"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='content_plan_draft')
+    data = models.JSONField('임시저장 데이터', default=dict, blank=True)
+    updated_at = models.DateTimeField('마지막 저장 시각', auto_now=True)
+
+    class Meta:
+        verbose_name = '콘텐츠 기획안 임시저장'
+        verbose_name_plural = '콘텐츠 기획안 임시저장'
+
+    def __str__(self):
+        return f'{self.user.username} 콘텐츠 기획안 초안'
+
+
 class ContentFinderSubmission(models.Model):
     """AI 프롬프트 생성기 - 나만의 콘텐츠 찾기 실습 활동 제출 (로그인 불필요)"""
     name = models.CharField('이름', max_length=50)

@@ -1,0 +1,470 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}콘텐츠 기획안 - AI 프롬프트 생성기 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --yellow:#FFC93C;
+    --green:#3DDC97; --ink:#2E2A4A; --orange:#FF9142;
+  }
+  body { background:linear-gradient(150deg,#FFF6FB 0%,#F1F0FF 45%,#EAF7FF 100%) !important; color:var(--ink); }
+
+  .cp-wrap { max-width:880px; margin:0 auto; padding:40px 20px 80px; }
+  .cp-topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .cp-back { display:inline-flex; align-items:center; gap:6px; color:var(--purple); font-weight:700; font-size:14px; text-decoration:none; }
+  .cp-back:hover { text-decoration:underline; }
+  .cp-admin-btn { border:1px solid var(--purple); background:#fff; color:var(--purple); border-radius:999px; padding:9px 16px; font-weight:800; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .cp-admin-btn:hover { background:#F1EEFF; }
+  .cp-admin-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .cp-header-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .cp-draft-status { font-size:12px; color:#7a7498; width:100%; text-align:right; }
+
+  .cp-hero { text-align:center; padding:8px 20px 28px; margin-bottom:8px; }
+  .cp-hero .badge { display:inline-block; background:linear-gradient(120deg,var(--pink),var(--purple)); color:#fff; font-size:13px; font-weight:bold; letter-spacing:1px; padding:5px 16px; border-radius:999px; margin-bottom:16px; }
+  .cp-hero h1 { font-size:30px; font-weight:900; margin:0 0 10px; background:linear-gradient(120deg,var(--purple),var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .cp-hero p { font-size:15px; color:#6a6486; margin:0; line-height:1.7; }
+
+  .cp-section { background:#fff; border-radius:20px; padding:26px 28px; margin-bottom:18px; box-shadow:0 4px 20px rgba(140,107,250,.08); }
+  .cp-step-label { font-size:16px; font-weight:800; color:var(--ink); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .cp-step-label .opt { font-size:12px; font-weight:600; color:#b0aac8; }
+  .cp-section-note { font-size:12.5px; color:#9d96bc; margin-top:-6px; margin-bottom:14px; }
+
+  .cp-input { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #E8E4FF; border-radius:12px; font-size:14.5px; color:var(--ink); transition:border-color .2s; }
+  .cp-input:focus { outline:none; border-color:var(--purple); }
+  .cp-input::placeholder { color:#c0bbd8; }
+
+  .cp-btn-group { display:flex; gap:10px; flex-wrap:wrap; }
+  .cp-choice-btn { padding:10px 22px; border:2px solid #E8E4FF; border-radius:999px; background:#fff; color:var(--ink); font-size:14.5px; font-weight:700; cursor:pointer; transition:all .18s; }
+  .cp-choice-btn:hover { border-color:var(--purple); color:var(--purple); }
+  .cp-choice-btn.active { background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; border-color:transparent; }
+
+  .cp-custom-input { margin-top:12px; display:none; }
+  .cp-custom-input.show { display:block; }
+
+  .cp-hook-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:12px; }
+  .cp-hook-card { border:2px solid #E8E4FF; background:#fff; border-radius:16px; padding:16px; cursor:pointer; transition:all .18s; }
+  .cp-hook-card:hover { border-color:var(--purple); background:#F8F6FF; }
+  .cp-hook-card.selected { border-color:var(--purple); background:linear-gradient(135deg, var(--pink), var(--purple)); box-shadow:0 6px 16px rgba(140,107,250,0.3); }
+  .cp-hook-card.selected .cp-hook-title, .cp-hook-card.selected .cp-hook-example { color:#fff; }
+  .cp-hook-title { font-size:14.5px; font-weight:800; color:var(--ink); margin-bottom:6px; }
+  .cp-hook-example { font-size:12px; color:#7a7498; line-height:1.5; }
+
+  .cp-hook-section { display:none; margin-top:20px; }
+  .cp-hook-section.show { display:block; }
+
+  .cp-generate-wrap { text-align:center; margin:28px 0; }
+  .cp-generate-btn { padding:16px 60px; font-size:19px; font-weight:900; background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; border:none; border-radius:999px; cursor:pointer; box-shadow:0 6px 28px rgba(140,107,250,.35); transition:transform .2s, box-shadow .2s; letter-spacing:.5px; }
+  .cp-generate-btn:hover { transform:translateY(-3px); box-shadow:0 12px 36px rgba(140,107,250,.45); }
+  .cp-generate-btn:active { transform:translateY(0); }
+
+  .cp-prompt-section.hidden { display:none; }
+  .cp-prompt-section { background:#fff; border-radius:20px; padding:26px 28px; box-shadow:0 4px 20px rgba(140,107,250,.08); border:2px dashed rgba(140,107,250,.2); margin-bottom:18px; }
+  .cp-prompt-header span { font-size:17px; font-weight:800; color:var(--ink); display:block; margin-bottom:4px; }
+  .cp-prompt-header small { color:#9d96bc; font-size:13px; }
+  .cp-prompt-box { background:#F8F6FF; border-radius:12px; padding:16px; font-size:13px; line-height:1.8; color:#5a5475; white-space:pre-wrap; margin:14px 0 16px; border:1px solid #EBE8FF; word-break:break-word; max-height:400px; overflow-y:auto; }
+  .cp-copy-btn { padding:12px 32px; background:linear-gradient(120deg,var(--purple),var(--pink)); color:#fff; border:none; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(140,107,250,.3); transition:transform .2s; }
+  .cp-copy-btn:hover { transform:translateY(-2px); }
+
+  .cp-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#1f2430; color:#fff; padding:12px 24px; border-radius:999px; font-size:14px; font-weight:600; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .cp-toast.show { opacity:1; }
+
+  @media (max-width:600px) {
+    .cp-hero h1 { font-size:24px; }
+    .cp-section, .cp-prompt-section { padding:20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cp-wrap">
+  <div class="cp-topbar">
+    <a href="{% url 'ai_prompts' %}" class="cp-back">← AI 프롬프트 생성기</a>
+    <div class="cp-header-actions">
+      <button type="button" class="cp-admin-btn" id="cpLoadBtn" onclick="cpLoadDraft()" disabled>📂 불러오기</button>
+      <button type="button" class="cp-admin-btn" id="cpSaveBtn" onclick="cpSaveDraft()">💾 저장</button>
+      <div class="cp-draft-status" id="cpDraftStatus"></div>
+    </div>
+  </div>
+
+  <div class="cp-hero">
+    <div class="badge">📝 AI TOOLS</div>
+    <h1>콘텐츠 기획안</h1>
+    <p>아이디어와 후킹 전략, 영상 길이를 입력하면 제목·장면 구성·스토리보드·영상 생성 프롬프트까지 한 번에 만들어 드려요!</p>
+  </div>
+
+  <!-- ① 콘텐츠 아이디어 -->
+  <div class="cp-section">
+    <div class="cp-step-label">① 콘텐츠 아이디어가 무엇인가요?</div>
+    <input type="text" id="cpIdea" class="cp-input" placeholder="예: AI로 비행기 게임 만들기, 5분 만에 끝내는 초간단 아침 도시락">
+  </div>
+
+  <!-- ② 채널명 -->
+  <div class="cp-section">
+    <div class="cp-step-label">② 채널명(또는 계정명)이 있나요? <span class="opt">(선택)</span></div>
+    <input type="text" id="cpChannel" class="cp-input" placeholder="예: 뚝딱코딩소, 헬씨쿡">
+  </div>
+
+  <!-- ③ 첫 3초 후킹 -->
+  <div class="cp-section">
+    <div class="cp-step-label">③ 첫 3초 후킹을 포함할까요?</div>
+    <p class="cp-section-note">영상 도입부에서 시청자의 시선을 확 사로잡는 전략이에요. 짧은 영상일수록 효과적이에요!</p>
+    <div class="cp-btn-group" id="cpHookYesNoBtns">
+      <button type="button" class="cp-choice-btn active" data-value="yes">✅ 포함할래요</button>
+      <button type="button" class="cp-choice-btn" data-value="no">➖ 포함 안 할래요</button>
+    </div>
+
+    <div class="cp-hook-section show" id="cpHookSection">
+      <div class="cp-step-label" style="margin-top:20px;font-size:14px;">어떤 후킹 전략을 사용할까요?</div>
+      <div class="cp-hook-grid" id="cpHookGrid">
+        <div class="cp-hook-card selected" data-value="질문형" data-example="이런 상상 해본 적 있나요?">
+          <div class="cp-hook-title">❓ 질문형</div>
+          <div class="cp-hook-example">예: "이런 상상 해본 적 있나요?"</div>
+        </div>
+        <div class="cp-hook-card" data-value="공감형" data-example="저도 처음엔 완전 막막했어요">
+          <div class="cp-hook-title">💗 공감형</div>
+          <div class="cp-hook-example">예: "저도 처음엔 완전 막막했어요"</div>
+        </div>
+        <div class="cp-hook-card" data-value="문제제기형" data-example="이 방법 모르면 시간만 낭비해요">
+          <div class="cp-hook-title">⚠️ 문제제기형</div>
+          <div class="cp-hook-example">예: "이 방법 모르면 시간만 낭비해요"</div>
+        </div>
+        <div class="cp-hook-card" data-value="결과제시형" data-example="5분 만에 이런 게임이 완성돼요!">
+          <div class="cp-hook-title">🎯 결과제시형</div>
+          <div class="cp-hook-example">예: "5분 만에 이런 게임이 완성돼요!" (완성 결과를 먼저 보여주기)</div>
+        </div>
+        <div class="cp-hook-card" data-value="반전형" data-example="근데 사실 이거, 코딩 1도 몰라도 가능해요">
+          <div class="cp-hook-title">😮 반전형</div>
+          <div class="cp-hook-example">예: "근데 사실 이거, 코딩 1도 몰라도 가능해요"</div>
+        </div>
+        <div class="cp-hook-card" data-value="숫자형" data-example="단 3줄 코드로 게임을 만들 수 있다고요?">
+          <div class="cp-hook-title">🔢 숫자형</div>
+          <div class="cp-hook-example">예: "단 3줄 코드로 게임을 만들 수 있다고요?"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 영상 길이 -->
+  <div class="cp-section">
+    <div class="cp-step-label">④ 영상 길이는 얼마나 되나요?</div>
+    <div class="cp-btn-group" id="cpDurationBtns">
+      <button type="button" class="cp-choice-btn" data-value="30초">30초</button>
+      <button type="button" class="cp-choice-btn active" data-value="1분">1분</button>
+      <button type="button" class="cp-choice-btn" data-value="3분">3분</button>
+      <button type="button" class="cp-choice-btn" data-value="15분">15분</button>
+      <button type="button" class="cp-choice-btn" data-value="30분">30분</button>
+      <button type="button" class="cp-choice-btn" data-value="__custom__">✏️ 직접입력</button>
+    </div>
+    <div class="cp-custom-input" id="cpDurationCustomWrap">
+      <input type="text" id="cpDurationCustom" class="cp-input" placeholder="예: 5분, 45초">
+    </div>
+  </div>
+
+  <!-- ⑤ 플랫폼 -->
+  <div class="cp-section">
+    <div class="cp-step-label">⑤ 어떤 플랫폼에 올릴 건가요?</div>
+    <div class="cp-btn-group" id="cpPlatformBtns">
+      <button type="button" class="cp-choice-btn active" data-value="유튜브 쇼츠 (세로형 9:16)">유튜브 쇼츠</button>
+      <button type="button" class="cp-choice-btn" data-value="틱톡 (세로형 9:16)">틱톡</button>
+      <button type="button" class="cp-choice-btn" data-value="인스타그램 릴스 (세로형 9:16)">인스타 릴스</button>
+      <button type="button" class="cp-choice-btn" data-value="유튜브 롱폼 (가로형 16:9)">유튜브 롱폼</button>
+      <button type="button" class="cp-choice-btn" data-value="__custom__">✏️ 직접입력</button>
+    </div>
+    <div class="cp-custom-input" id="cpPlatformCustomWrap">
+      <input type="text" id="cpPlatformCustom" class="cp-input" placeholder="원하는 플랫폼을 입력해 주세요">
+    </div>
+  </div>
+
+  <!-- ⑥ 톤앤매너 -->
+  <div class="cp-section">
+    <div class="cp-step-label">⑥ 영상의 분위기(톤앤매너)는 어떻게 할까요?</div>
+    <div class="cp-btn-group" id="cpToneBtns">
+      <button type="button" class="cp-choice-btn active" data-value="재미있고 유쾌하게">재미있고 유쾌하게</button>
+      <button type="button" class="cp-choice-btn" data-value="차분하고 전문적으로">차분하고 전문적으로</button>
+      <button type="button" class="cp-choice-btn" data-value="감동적이고 진지하게">감동적이고 진지하게</button>
+      <button type="button" class="cp-choice-btn" data-value="긴장감 있고 몰입감 있게">긴장감 있고 몰입감 있게</button>
+      <button type="button" class="cp-choice-btn" data-value="__custom__">✏️ 직접입력</button>
+    </div>
+    <div class="cp-custom-input" id="cpToneCustomWrap">
+      <input type="text" id="cpToneCustom" class="cp-input" placeholder="원하는 분위기를 입력해 주세요">
+    </div>
+  </div>
+
+  <!-- ⑦ 타겟 시청자 -->
+  <div class="cp-section">
+    <div class="cp-step-label">⑦ 누가 볼 영상인가요? <span class="opt">(선택)</span></div>
+    <input type="text" id="cpAudience" class="cp-input" placeholder="예: 코딩에 관심 있는 초등학생, 자취를 시작한 사회초년생">
+  </div>
+
+  <div class="cp-generate-wrap">
+    <button type="button" class="cp-generate-btn" onclick="cpGenerate()">✨ 기획안 프롬프트 만들기</button>
+  </div>
+
+  <div id="cpPromptSection" class="cp-prompt-section hidden">
+    <div class="cp-prompt-header">
+      <span>💬 ChatGPT에 붙여넣을 프롬프트</span>
+      <small>아래 프롬프트를 복사해서 ChatGPT에 붙여넣으면, 제목 후보·장면별 구성·스토리보드 이미지 프롬프트·장면별 영상 생성 프롬프트까지 한 번에 받을 수 있어요!</small>
+    </div>
+    <div id="cpPromptBox" class="cp-prompt-box"></div>
+    <button type="button" class="cp-copy-btn" onclick="cpCopyPrompt()">📋 프롬프트 복사하기</button>
+  </div>
+</div>
+<div id="cpToast" class="cp-toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let cpDuration = '1분';
+let cpPlatform = '유튜브 쇼츠 (세로형 9:16)';
+let cpTone = '재미있고 유쾌하게';
+let cpHookYesNo = 'yes';
+let cpHookStrategy = { value: '질문형', example: '이런 상상 해본 적 있나요?' };
+
+document.querySelectorAll('#cpHookYesNoBtns .cp-choice-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#cpHookYesNoBtns .cp-choice-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    cpHookYesNo = btn.dataset.value;
+    document.getElementById('cpHookSection').classList.toggle('show', cpHookYesNo === 'yes');
+  });
+});
+
+document.querySelectorAll('#cpHookGrid .cp-hook-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('#cpHookGrid .cp-hook-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    cpHookStrategy = { value: card.dataset.value, example: card.dataset.example };
+  });
+});
+
+function cpSetupChoiceGroup(containerId, customWrapId, customInputId, onSelect) {
+  document.querySelectorAll(`#${containerId} .cp-choice-btn`).forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll(`#${containerId} .cp-choice-btn`).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const customWrap = document.getElementById(customWrapId);
+      if (btn.dataset.value === '__custom__') {
+        customWrap.classList.add('show');
+        document.getElementById(customInputId).focus();
+      } else {
+        customWrap.classList.remove('show');
+        onSelect(btn.dataset.value);
+      }
+    });
+  });
+}
+
+cpSetupChoiceGroup('cpDurationBtns', 'cpDurationCustomWrap', 'cpDurationCustom', v => cpDuration = v);
+cpSetupChoiceGroup('cpPlatformBtns', 'cpPlatformCustomWrap', 'cpPlatformCustom', v => cpPlatform = v);
+cpSetupChoiceGroup('cpToneBtns', 'cpToneCustomWrap', 'cpToneCustom', v => cpTone = v);
+
+function cpResolveChoiceValue(containerId, fallback, customInputId) {
+  const activeBtn = document.querySelector(`#${containerId} .cp-choice-btn.active`);
+  if (activeBtn && activeBtn.dataset.value === '__custom__') {
+    return document.getElementById(customInputId).value.trim();
+  }
+  return activeBtn ? activeBtn.dataset.value : fallback;
+}
+
+function cpGenerate() {
+  const idea = document.getElementById('cpIdea').value.trim();
+  const channel = document.getElementById('cpChannel').value.trim();
+  const audience = document.getElementById('cpAudience').value.trim();
+
+  if (!idea) {
+    cpShowToast('콘텐츠 아이디어를 입력해 주세요!');
+    document.getElementById('cpIdea').focus();
+    return;
+  }
+
+  const duration = cpResolveChoiceValue('cpDurationBtns', cpDuration, 'cpDurationCustom');
+  if (!duration) { cpShowToast('영상 길이를 입력해 주세요!'); document.getElementById('cpDurationCustom').focus(); return; }
+
+  const platform = cpResolveChoiceValue('cpPlatformBtns', cpPlatform, 'cpPlatformCustom');
+  if (!platform) { cpShowToast('플랫폼을 입력해 주세요!'); document.getElementById('cpPlatformCustom').focus(); return; }
+
+  const tone = cpResolveChoiceValue('cpToneBtns', cpTone, 'cpToneCustom');
+  if (!tone) { cpShowToast('영상 분위기를 입력해 주세요!'); document.getElementById('cpToneCustom').focus(); return; }
+
+  const channelLine = channel ? `[채널명] ${channel}\n` : '';
+  const audienceLine = audience ? `[타겟 시청자] ${audience}\n` : '';
+  const hookLine = cpHookYesNo === 'yes'
+    ? `[첫 3초 후킹 전략] ${cpHookStrategy.value} — 예시: "${cpHookStrategy.example}"\n`
+    : `[첫 3초 후킹] 사용하지 않음 (바로 본론으로 시작)\n`;
+  const hookSceneNote = cpHookYesNo === 'yes'
+    ? '- 특히 1번 장면은 위에서 정한 후킹 전략을 살려서, 시청자의 시선을 확 사로잡는 도입부로 만들어 줘.\n'
+    : '';
+
+  const prompt =
+`나는 아래 아이디어로 영상 콘텐츠를 기획하고 있어.
+
+[콘텐츠 아이디어] ${idea}
+${channelLine}[영상 길이] 약 ${duration}
+[플랫폼] ${platform}
+[영상 분위기] ${tone}
+${audienceLine}${hookLine}
+위 정보를 바탕으로 아래 4가지를 순서대로 작성해 줘:
+
+1. 제목 후보 5개
+- 클릭하고 싶은 제목 5개를 번호를 붙여서 제안해 줘.
+
+2. 장면별 구성 (스토리보드 스크립트)
+- 영상을 장면(scene) 단위로 나누고, 각 장면마다 [시간대] · [화면에 보이는 것] · [내레이션/대사]를 표로 정리해 줘.
+${hookSceneNote}- 정해진 영상 길이(${duration})에 맞는 장면 수와 분량으로 구성해 줘.
+
+3. 한 페이지 스토리보드 이미지 프롬프트
+- 위에서 나눈 모든 장면을 한 장의 이미지 안에 그리드(콘티) 형태로 배치해서 보여주는 스토리보드 이미지를 생성할 수 있는 프롬프트를 만들어 줘.
+- 각 칸에는 장면 번호와 간단한 설명이 함께 보이도록 구성해 줘.
+
+4. 장면별 영상 생성 프롬프트
+- 각 장면마다 AI 영상 생성 도구(예: Sora, Runway, Pika)에 바로 사용할 수 있는 개별 프롬프트를 장면 번호와 함께 만들어 줘.
+- 카메라 앵글, 분위기, 움직임을 구체적으로 묘사해 줘.
+
+실제로 촬영·제작해 볼 수 있는 현실적인 내용으로, 이해하기 쉽게 작성해 줘.`;
+
+  document.getElementById('cpPromptBox').textContent = prompt;
+  const section = document.getElementById('cpPromptSection');
+  section.classList.remove('hidden');
+  setTimeout(() => section.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+function cpCopyPrompt() {
+  const text = document.getElementById('cpPromptBox').textContent;
+  navigator.clipboard.writeText(text).catch(() => {
+    const t = document.createElement('textarea');
+    t.value = text; document.body.appendChild(t); t.select();
+    document.execCommand('copy'); document.body.removeChild(t);
+  });
+  cpShowToast('프롬프트 복사 완료! ChatGPT에 붙여넣어 보세요 🚀');
+}
+
+function cpShowToast(msg) {
+  const el = document.getElementById('cpToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── 회원 저장/불러오기 ──
+const CP_IS_LOGGED_IN = {{ user_authenticated|yesno:"true,false" }};
+const CP_SAVE_URL = "{% url 'api_content_plan_draft_save' %}";
+const CP_STORAGE_KEY = 'contentPlanDraft_v1';
+
+function cpClickChoiceByValue(containerId, value) {
+  if (!value) return;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const btn = Array.from(container.querySelectorAll('.cp-choice-btn')).find(b => b.dataset.value === value);
+  if (btn) btn.click();
+}
+
+function cpCollectFormState() {
+  return {
+    idea: document.getElementById('cpIdea').value,
+    channel: document.getElementById('cpChannel').value,
+    audience: document.getElementById('cpAudience').value,
+    hookYesNo: cpHookYesNo,
+    hookStrategy: cpHookStrategy,
+    duration: document.querySelector('#cpDurationBtns .cp-choice-btn.active').dataset.value,
+    durationCustom: document.getElementById('cpDurationCustom').value,
+    platform: document.querySelector('#cpPlatformBtns .cp-choice-btn.active').dataset.value,
+    platformCustom: document.getElementById('cpPlatformCustom').value,
+    tone: document.querySelector('#cpToneBtns .cp-choice-btn.active').dataset.value,
+    toneCustom: document.getElementById('cpToneCustom').value,
+  };
+}
+
+function cpRestoreFormState(s) {
+  if (!s || !Object.keys(s).length) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+  set('cpIdea', s.idea);
+  set('cpChannel', s.channel);
+  set('cpAudience', s.audience);
+
+  if (s.hookYesNo) {
+    const btn = Array.from(document.querySelectorAll('#cpHookYesNoBtns .cp-choice-btn')).find(b => b.dataset.value === s.hookYesNo);
+    if (btn) btn.click();
+  }
+  if (s.hookStrategy && s.hookStrategy.value) {
+    const card = Array.from(document.querySelectorAll('#cpHookGrid .cp-hook-card')).find(c => c.dataset.value === s.hookStrategy.value);
+    if (card) card.click();
+  }
+
+  if (s.duration) {
+    cpClickChoiceByValue('cpDurationBtns', s.duration);
+    if (s.duration === '__custom__') set('cpDurationCustom', s.durationCustom);
+  }
+  if (s.platform) {
+    cpClickChoiceByValue('cpPlatformBtns', s.platform);
+    if (s.platform === '__custom__') set('cpPlatformCustom', s.platformCustom);
+  }
+  if (s.tone) {
+    cpClickChoiceByValue('cpToneBtns', s.tone);
+    if (s.tone === '__custom__') set('cpToneCustom', s.toneCustom);
+  }
+}
+
+async function cpSaveDraft() {
+  const state = cpCollectFormState();
+  const statusEl = document.getElementById('cpDraftStatus');
+  if (CP_IS_LOGGED_IN) {
+    try {
+      const res = await fetch(CP_SAVE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(state),
+      });
+      if (res.ok) {
+        localStorage.setItem(CP_STORAGE_KEY, JSON.stringify(state));
+        statusEl.textContent = '✓ 내 계정에 저장됨';
+        document.getElementById('cpLoadBtn').disabled = false;
+      } else {
+        statusEl.textContent = '저장 실패';
+      }
+    } catch {
+      statusEl.textContent = '저장 실패';
+    }
+  } else {
+    localStorage.setItem(CP_STORAGE_KEY, JSON.stringify(state));
+    statusEl.textContent = '✓ 이 브라우저에 저장됨 (로그인하면 계정에 저장돼요)';
+    document.getElementById('cpLoadBtn').disabled = false;
+  }
+}
+
+function cpLoadDraft() {
+  const statusEl = document.getElementById('cpDraftStatus');
+  const dbData = {{ draft_data|safe }};
+  if (dbData && Object.keys(dbData).length) {
+    cpRestoreFormState(dbData);
+    statusEl.textContent = '✓ 저장된 내용을 불러왔어요';
+  } else {
+    const local = localStorage.getItem(CP_STORAGE_KEY);
+    if (local) {
+      try { cpRestoreFormState(JSON.parse(local)); statusEl.textContent = '✓ 브라우저 저장 내용을 불러왔어요'; }
+      catch { statusEl.textContent = '불러오기 실패'; }
+    }
+  }
+}
+
+(function cpInitRestore() {
+  const dbData = {{ draft_data|safe }};
+  const statusEl = document.getElementById('cpDraftStatus');
+  if (dbData && Object.keys(dbData).length) {
+    document.getElementById('cpLoadBtn').disabled = false;
+    cpRestoreFormState(dbData);
+    statusEl.textContent = '이전에 저장한 내용을 불러왔어요';
+  } else {
+    const local = localStorage.getItem(CP_STORAGE_KEY);
+    if (local) {
+      try {
+        document.getElementById('cpLoadBtn').disabled = false;
+        cpRestoreFormState(JSON.parse(local));
+        statusEl.textContent = '브라우저 저장 내용을 불러왔어요';
+      } catch {}
+    }
+  }
+})();
+</script>
+{% endblock %}

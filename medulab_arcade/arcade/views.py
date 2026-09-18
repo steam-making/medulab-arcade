@@ -27,7 +27,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .badge_service import get_active_badges_with_user_state, get_recent_user_badges, get_user_badge_count
-from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave, ContentFinderSubmission, ContentIdeaThumbnailSubmission, AIPromptCardOrder, ContentFinderDraft, ContentIdeaFinderDraft, ContentPlanDraft
+from .models import Badge, Project, Category, Like, Bookmark, Tag, UserProfile, EmailChangeRequest, SignupEmailVerification, ScheduleAttachment, ScheduleEvent, Notice, Award, Certification, CertInfo, CompetitionType, Contest, SchoolClass, ClassEnrollment, ParentChildLink, TuitionInvoice, ClassAttendance, TuitionBatchPayment, InstagramConfig, InstagramPost, InstagramUploadDraft, InstagramUploadDraftItem, FutureCareerSave, ContentFinderSubmission, ContentIdeaThumbnailSubmission, AIPromptCardOrder, ContentFinderDraft, ContentIdeaFinderDraft, ContentPlanDraft, ChannelBrandingDraft
 from .forms import ProjectUploadForm, SignUpForm, AdminUserForm, AdminUserProfileForm, BadgeForm, ScheduleEventForm, TimetableForm, UserProfileUpdateForm, MedulabParentUpgradeForm, SocialOnboardingForm, SchoolClassForm
 from .holiday_utils import ensure_holidays
 
@@ -153,6 +153,11 @@ AI_PROMPT_CARDS = [
         'key': 'content_plan', 'url_name': 'content_plan', 'icon_class': 'icon-plan', 'icon': '📝',
         'title': '콘텐츠 기획안',
         'desc': '아이디어와 후킹 전략, 영상 길이를 입력하면 제목·장면 구성·스토리보드·영상 생성 프롬프트까지 한 번에 만들어 줘요.',
+    },
+    {
+        'key': 'channel_branding', 'url_name': 'channel_branding', 'icon_class': 'icon-channel', 'icon': '📺',
+        'title': '유튜브 채널 만들기',
+        'desc': '채널 이름과 설명을 입력하면 로고와 배너 이미지를 각각 만들 수 있는 프롬프트를 따로따로 만들어 줘요.',
     },
     {
         'key': 'future_career_video', 'url_name': 'future_career_video', 'icon_class': 'icon-career', 'icon': '🎬',
@@ -619,6 +624,33 @@ def api_content_plan_draft_save(request):
     except (json.JSONDecodeError, ValueError):
         return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
     ContentPlanDraft.objects.update_or_create(user=request.user, defaults={'data': data})
+    return JsonResponse({'ok': True})
+
+
+def channel_branding(request):
+    """AI 프롬프트 생성기 - 유튜브 채널 만들기(로고/배너) 페이지"""
+    draft_data = {}
+    if request.user.is_authenticated:
+        try:
+            draft_data = request.user.channel_branding_draft.data
+        except ChannelBrandingDraft.DoesNotExist:
+            pass
+    return render(request, 'arcade/channel_branding.html', {
+        'draft_data': json.dumps(draft_data),
+        'user_authenticated': request.user.is_authenticated,
+    })
+
+
+@require_POST
+def api_channel_branding_draft_save(request):
+    """유튜브 채널 만들기 - 회원 임시저장"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'ok': False, 'error': 'login required'}, status=401)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
+    ChannelBrandingDraft.objects.update_or_create(user=request.user, defaults={'data': data})
     return JsonResponse({'ok': True})
 
 

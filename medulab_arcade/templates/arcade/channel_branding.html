@@ -1,0 +1,441 @@
+{% extends 'arcade/base.html' %}
+{% load static %}
+
+{% block title %}유튜브 채널 만들기 - AI 프롬프트 생성기 - 메듀랩{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --pink:#FF6FA5; --purple:#8C6BFA; --blue:#3FA9F5; --yellow:#FFC93C;
+    --green:#3DDC97; --ink:#2E2A4A; --orange:#FF9142;
+  }
+  body { background:linear-gradient(150deg,#FFF6FB 0%,#F1F0FF 45%,#EAF7FF 100%) !important; color:var(--ink); }
+
+  .cb-wrap { max-width:880px; margin:0 auto; padding:40px 20px 80px; }
+  .cb-topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  .cb-back { display:inline-flex; align-items:center; gap:6px; color:var(--purple); font-weight:700; font-size:14px; text-decoration:none; }
+  .cb-back:hover { text-decoration:underline; }
+  .cb-admin-btn { border:1px solid var(--purple); background:#fff; color:var(--purple); border-radius:999px; padding:9px 16px; font-weight:800; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .cb-admin-btn:hover { background:#F1EEFF; }
+  .cb-admin-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .cb-header-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .cb-draft-status { font-size:12px; color:#7a7498; width:100%; text-align:right; }
+
+  .cb-hero { text-align:center; padding:8px 20px 28px; margin-bottom:8px; }
+  .cb-hero .badge { display:inline-block; background:linear-gradient(120deg,var(--pink),var(--purple)); color:#fff; font-size:13px; font-weight:bold; letter-spacing:1px; padding:5px 16px; border-radius:999px; margin-bottom:16px; }
+  .cb-hero h1 { font-size:30px; font-weight:900; margin:0 0 10px; background:linear-gradient(120deg,var(--purple),var(--blue)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .cb-hero p { font-size:15px; color:#6a6486; margin:0; line-height:1.7; }
+
+  .cb-section { background:#fff; border-radius:20px; padding:26px 28px; margin-bottom:18px; box-shadow:0 4px 20px rgba(140,107,250,.08); }
+  .cb-section.cb-accent-logo { border:2px solid rgba(255,111,165,0.25); }
+  .cb-section.cb-accent-banner { border:2px solid rgba(63,169,245,0.25); }
+  .cb-step-label { font-size:16px; font-weight:800; color:var(--ink); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .cb-step-label .opt { font-size:12px; font-weight:600; color:#b0aac8; }
+  .cb-section-note { font-size:12.5px; color:#9d96bc; margin-top:-6px; margin-bottom:14px; }
+  .cb-part-title { font-size:19px; font-weight:900; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
+  .cb-part-desc { font-size:13.5px; color:#7a7498; margin:0 0 20px; }
+
+  .cb-input { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #E8E4FF; border-radius:12px; font-size:14.5px; color:var(--ink); transition:border-color .2s; }
+  .cb-input:focus { outline:none; border-color:var(--purple); }
+  .cb-input::placeholder { color:#c0bbd8; }
+
+  .cb-textarea { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #E8E4FF; border-radius:12px; font-size:14.5px; color:var(--ink); font-family:inherit; resize:vertical; min-height:80px; transition:border-color .2s; }
+  .cb-textarea:focus { outline:none; border-color:var(--purple); }
+  .cb-textarea::placeholder { color:#c0bbd8; }
+
+  .cb-btn-group { display:flex; gap:10px; flex-wrap:wrap; }
+  .cb-choice-btn { padding:10px 22px; border:2px solid #E8E4FF; border-radius:999px; background:#fff; color:var(--ink); font-size:14.5px; font-weight:700; cursor:pointer; transition:all .18s; }
+  .cb-choice-btn:hover { border-color:var(--purple); color:var(--purple); }
+  .cb-choice-btn.active { background:linear-gradient(120deg,var(--purple),var(--blue)); color:#fff; border-color:transparent; }
+
+  .cb-custom-input { margin-top:12px; display:none; }
+  .cb-custom-input.show { display:block; }
+
+  .cb-generate-wrap { text-align:center; margin:24px 0 4px; }
+  .cb-generate-btn { padding:15px 44px; font-size:17px; font-weight:900; border:none; border-radius:999px; cursor:pointer; transition:transform .2s, box-shadow .2s; letter-spacing:.5px; color:#fff; }
+  .cb-generate-btn:hover { transform:translateY(-3px); }
+  .cb-generate-btn:active { transform:translateY(0); }
+  .cb-generate-logo { background:linear-gradient(120deg,var(--pink),var(--purple)); box-shadow:0 6px 28px rgba(255,111,165,.35); }
+  .cb-generate-banner { background:linear-gradient(120deg,var(--blue),var(--purple)); box-shadow:0 6px 28px rgba(63,169,245,.35); }
+
+  .cb-prompt-section.hidden { display:none; }
+  .cb-prompt-section { background:#F8F6FF; border-radius:16px; padding:20px 22px; border:2px dashed rgba(140,107,250,.25); margin-top:20px; }
+  .cb-prompt-header { font-size:14.5px; font-weight:800; color:var(--ink); margin-bottom:10px; }
+  .cb-prompt-box { background:#fff; border-radius:12px; padding:16px; font-size:13px; line-height:1.8; color:#5a5475; white-space:pre-wrap; margin-bottom:14px; border:1px solid #EBE8FF; word-break:break-word; max-height:360px; overflow-y:auto; }
+  .cb-copy-btn { padding:11px 28px; background:linear-gradient(120deg,var(--purple),var(--pink)); color:#fff; border:none; border-radius:999px; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 16px rgba(140,107,250,.3); transition:transform .2s; }
+  .cb-copy-btn:hover { transform:translateY(-2px); }
+
+  .cb-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:#1f2430; color:#fff; padding:12px 24px; border-radius:999px; font-size:14px; font-weight:600; z-index:9999; pointer-events:none; opacity:0; transition:opacity .3s; white-space:nowrap; }
+  .cb-toast.show { opacity:1; }
+
+  @media (max-width:600px) {
+    .cb-hero h1 { font-size:24px; }
+    .cb-section { padding:20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cb-wrap">
+  <div class="cb-topbar">
+    <a href="{% url 'ai_prompts' %}" class="cb-back">← AI 프롬프트 생성기</a>
+    <div class="cb-header-actions">
+      <button type="button" class="cb-admin-btn" id="cbLoadBtn" onclick="cbLoadDraft()" disabled>📂 불러오기</button>
+      <button type="button" class="cb-admin-btn" id="cbSaveBtn" onclick="cbSaveDraft()">💾 저장</button>
+      <div class="cb-draft-status" id="cbDraftStatus"></div>
+    </div>
+  </div>
+
+  <div class="cb-hero">
+    <div class="badge">📺 AI TOOLS</div>
+    <h1>유튜브 채널 만들기</h1>
+    <p>채널 이름과 설명을 입력하면, 로고와 배너 이미지를 각각 만들 수 있는 프롬프트를 따로따로 만들어 드려요!</p>
+  </div>
+
+  <!-- 공통 정보 -->
+  <div class="cb-section">
+    <div class="cb-step-label">① 채널 이름이 무엇인가요?</div>
+    <input type="text" id="cbChannelName" class="cb-input" placeholder="예: 뚝딱코딩소, 헬씨쿡" style="margin-bottom:20px;">
+
+    <div class="cb-step-label">② 채널 설명(컨셉)을 알려주세요</div>
+    <textarea id="cbDescription" class="cb-textarea" placeholder="예: 초등학생도 쉽게 따라할 수 있는 AI·코딩 실습 영상을 올리는 채널이에요."></textarea>
+  </div>
+
+  <div class="cb-section">
+    <div class="cb-step-label">③ 채널 카테고리 <span class="opt">(선택)</span></div>
+    <div class="cb-btn-group" id="cbCategoryBtns">
+      <button type="button" class="cb-choice-btn active" data-value="게임">게임</button>
+      <button type="button" class="cb-choice-btn" data-value="브이로그">브이로그</button>
+      <button type="button" class="cb-choice-btn" data-value="교육/정보">교육/정보</button>
+      <button type="button" class="cb-choice-btn" data-value="요리">요리</button>
+      <button type="button" class="cb-choice-btn" data-value="뷰티/패션">뷰티/패션</button>
+      <button type="button" class="cb-choice-btn" data-value="코딩/테크">코딩/테크</button>
+      <button type="button" class="cb-choice-btn" data-value="음악">음악</button>
+      <button type="button" class="cb-choice-btn" data-value="__custom__">✏️ 직접입력</button>
+    </div>
+    <div class="cb-custom-input" id="cbCategoryCustomWrap">
+      <input type="text" id="cbCategoryCustom" class="cb-input" placeholder="채널 카테고리를 입력해 주세요">
+    </div>
+  </div>
+
+  <div class="cb-section">
+    <div class="cb-step-label">④ 선호하는 색상이 있나요? <span class="opt">(선택)</span></div>
+    <input type="text" id="cbColor" class="cb-input" placeholder="예: 블루와 화이트, 파스텔톤, 레드와 블랙">
+  </div>
+
+  <!-- 로고 -->
+  <div class="cb-section cb-accent-logo">
+    <div class="cb-part-title">🎨 로고 만들기</div>
+    <p class="cb-part-desc">유튜브 프로필 사진(1:1 정사각형)으로 사용할 로고 이미지 프롬프트를 만들어요.</p>
+
+    <div class="cb-step-label" style="font-size:14px;">로고 스타일을 선택해 주세요</div>
+    <div class="cb-btn-group" id="cbLogoStyleBtns">
+      <button type="button" class="cb-choice-btn active" data-value="미니멀/심플">미니멀/심플</button>
+      <button type="button" class="cb-choice-btn" data-value="귀엽고 캐릭터형">귀엽고 캐릭터형</button>
+      <button type="button" class="cb-choice-btn" data-value="레트로/빈티지">레트로/빈티지</button>
+      <button type="button" class="cb-choice-btn" data-value="모던/그라디언트">모던/그라디언트</button>
+      <button type="button" class="cb-choice-btn" data-value="손글씨체/캘리그래피">손글씨체/캘리그래피</button>
+      <button type="button" class="cb-choice-btn" data-value="3D/입체형">3D/입체형</button>
+      <button type="button" class="cb-choice-btn" data-value="__custom__">✏️ 직접입력</button>
+    </div>
+    <div class="cb-custom-input" id="cbLogoStyleCustomWrap">
+      <input type="text" id="cbLogoStyleCustom" class="cb-input" placeholder="원하는 로고 스타일을 입력해 주세요">
+    </div>
+
+    <div class="cb-generate-wrap">
+      <button type="button" class="cb-generate-btn cb-generate-logo" onclick="cbGenerateLogo()">🎨 로고 프롬프트 만들기</button>
+    </div>
+
+    <div id="cbLogoPromptSection" class="cb-prompt-section hidden">
+      <div class="cb-prompt-header">💬 ChatGPT(이미지 생성)에 붙여넣을 로고 프롬프트</div>
+      <div id="cbLogoPromptBox" class="cb-prompt-box"></div>
+      <button type="button" class="cb-copy-btn" onclick="cbCopyPrompt('cbLogoPromptBox')">📋 프롬프트 복사하기</button>
+    </div>
+  </div>
+
+  <!-- 배너 -->
+  <div class="cb-section cb-accent-banner">
+    <div class="cb-part-title">🖼️ 배너 만들기</div>
+    <p class="cb-part-desc">유튜브 채널 상단에 들어갈 배너(아트워크) 이미지 프롬프트를 만들어요.</p>
+
+    <div class="cb-step-label" style="font-size:14px;">배너 스타일을 선택해 주세요</div>
+    <div class="cb-btn-group" id="cbBannerStyleBtns">
+      <button type="button" class="cb-choice-btn active" data-value="미니멀/심플">미니멀/심플</button>
+      <button type="button" class="cb-choice-btn" data-value="귀엽고 캐릭터형">귀엽고 캐릭터형</button>
+      <button type="button" class="cb-choice-btn" data-value="레트로/빈티지">레트로/빈티지</button>
+      <button type="button" class="cb-choice-btn" data-value="모던/그라디언트">모던/그라디언트</button>
+      <button type="button" class="cb-choice-btn" data-value="손글씨체/캘리그래피">손글씨체/캘리그래피</button>
+      <button type="button" class="cb-choice-btn" data-value="3D/입체형">3D/입체형</button>
+      <button type="button" class="cb-choice-btn" data-value="__custom__">✏️ 직접입력</button>
+    </div>
+    <div class="cb-custom-input" id="cbBannerStyleCustomWrap">
+      <input type="text" id="cbBannerStyleCustom" class="cb-input" placeholder="원하는 배너 스타일을 입력해 주세요">
+    </div>
+
+    <div class="cb-step-label" style="font-size:14px;margin-top:20px;">배너에 채널 이름 텍스트를 넣을까요?</div>
+    <div class="cb-btn-group" id="cbBannerTextBtns">
+      <button type="button" class="cb-choice-btn active" data-value="yes">✅ 넣을래요</button>
+      <button type="button" class="cb-choice-btn" data-value="no">➖ 이미지만 (텍스트 없이)</button>
+    </div>
+
+    <div class="cb-step-label" style="font-size:14px;margin-top:20px;">슬로건이나 문구가 있나요? <span class="opt">(선택)</span></div>
+    <input type="text" id="cbSlogan" class="cb-input" placeholder="예: 매주 화·목 업로드!, 코딩이 쉬워지는 시간">
+
+    <div class="cb-generate-wrap">
+      <button type="button" class="cb-generate-btn cb-generate-banner" onclick="cbGenerateBanner()">🖼️ 배너 프롬프트 만들기</button>
+    </div>
+
+    <div id="cbBannerPromptSection" class="cb-prompt-section hidden">
+      <div class="cb-prompt-header">💬 ChatGPT(이미지 생성)에 붙여넣을 배너 프롬프트</div>
+      <div id="cbBannerPromptBox" class="cb-prompt-box"></div>
+      <button type="button" class="cb-copy-btn" onclick="cbCopyPrompt('cbBannerPromptBox')">📋 프롬프트 복사하기</button>
+    </div>
+  </div>
+</div>
+<div id="cbToast" class="cb-toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function cbSetupChoiceGroup(containerId, customWrapId, customInputId) {
+  document.querySelectorAll(`#${containerId} .cb-choice-btn`).forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll(`#${containerId} .cb-choice-btn`).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const customWrap = document.getElementById(customWrapId);
+      if (!customWrap) return;
+      if (btn.dataset.value === '__custom__') {
+        customWrap.classList.add('show');
+        document.getElementById(customInputId).focus();
+      } else {
+        customWrap.classList.remove('show');
+      }
+    });
+  });
+}
+
+cbSetupChoiceGroup('cbCategoryBtns', 'cbCategoryCustomWrap', 'cbCategoryCustom');
+cbSetupChoiceGroup('cbLogoStyleBtns', 'cbLogoStyleCustomWrap', 'cbLogoStyleCustom');
+cbSetupChoiceGroup('cbBannerStyleBtns', 'cbBannerStyleCustomWrap', 'cbBannerStyleCustom');
+cbSetupChoiceGroup('cbBannerTextBtns', null, null);
+
+function cbResolveChoiceValue(containerId, customInputId) {
+  const activeBtn = document.querySelector(`#${containerId} .cb-choice-btn.active`);
+  if (!activeBtn) return '';
+  if (activeBtn.dataset.value === '__custom__') {
+    return document.getElementById(customInputId).value.trim();
+  }
+  return activeBtn.dataset.value;
+}
+
+function cbGetCommonInfo() {
+  return {
+    channelName: document.getElementById('cbChannelName').value.trim(),
+    description: document.getElementById('cbDescription').value.trim(),
+    category: cbResolveChoiceValue('cbCategoryBtns', 'cbCategoryCustom'),
+    color: document.getElementById('cbColor').value.trim(),
+  };
+}
+
+function cbValidateCommonInfo(info) {
+  if (!info.channelName) {
+    cbShowToast('채널 이름을 입력해 주세요!');
+    document.getElementById('cbChannelName').focus();
+    return false;
+  }
+  if (!info.description) {
+    cbShowToast('채널 설명을 입력해 주세요!');
+    document.getElementById('cbDescription').focus();
+    return false;
+  }
+  return true;
+}
+
+function cbGenerateLogo() {
+  const info = cbGetCommonInfo();
+  if (!cbValidateCommonInfo(info)) return;
+
+  const style = cbResolveChoiceValue('cbLogoStyleBtns', 'cbLogoStyleCustom');
+  if (!style) { cbShowToast('로고 스타일을 입력해 주세요!'); document.getElementById('cbLogoStyleCustom').focus(); return; }
+
+  const categoryLine = info.category ? `[채널 카테고리] ${info.category}\n` : '';
+  const colorLine = info.color ? `[선호 색상] ${info.color}\n` : '';
+
+  const prompt =
+`유튜브 채널 프로필용 로고 이미지를 만들어 줘.
+
+[채널 이름] ${info.channelName}
+[채널 설명] ${info.description}
+${categoryLine}${colorLine}[로고 스타일] ${style}
+
+디자인 조건:
+- 정사각형(1:1) 비율의 프로필 사진용 로고로 만들어 줘.
+- 아주 작은 크기(유튜브 프로필 아이콘)로 보여도 채널의 특징이 한눈에 보이도록, 심플하고 명확한 디자인으로 만들어 줘.
+- 배경은 단색이나 심플한 그라디언트로 하고, 로고 자체가 또렷하게 눈에 띄도록 해줘.
+- 글자는 최소화하고, 아이콘이나 심볼 중심으로 디자인해 줘. 글자를 넣는다면 짧고 굵게, 읽기 쉽게 넣어줘.
+- 저작권이 있는 캐릭터나 다른 브랜드의 로고를 참고하지 말고, 새롭게 창작된 디자인으로 만들어 줘.`;
+
+  document.getElementById('cbLogoPromptBox').textContent = prompt;
+  const section = document.getElementById('cbLogoPromptSection');
+  section.classList.remove('hidden');
+  setTimeout(() => section.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+function cbGenerateBanner() {
+  const info = cbGetCommonInfo();
+  if (!cbValidateCommonInfo(info)) return;
+
+  const style = cbResolveChoiceValue('cbBannerStyleBtns', 'cbBannerStyleCustom');
+  if (!style) { cbShowToast('배너 스타일을 입력해 주세요!'); document.getElementById('cbBannerStyleCustom').focus(); return; }
+
+  const includeText = document.querySelector('#cbBannerTextBtns .cb-choice-btn.active').dataset.value === 'yes';
+  const slogan = document.getElementById('cbSlogan').value.trim();
+
+  const categoryLine = info.category ? `[채널 카테고리] ${info.category}\n` : '';
+  const colorLine = info.color ? `[선호 색상] ${info.color}\n` : '';
+  const textLine = includeText
+    ? `[텍스트 포함] 예 — "${info.channelName}"라는 채널 이름 글자를 배너 안에 크고 읽기 쉽게 넣어줘.\n`
+    : `[텍스트 포함] 아니오 — 글자 없이 이미지·그래픽 요소로만 구성해 줘.\n`;
+  const sloganLine = slogan ? `[슬로건/문구] ${slogan}\n` : '';
+
+  const prompt =
+`유튜브 채널 배너(아트워크) 이미지를 만들어 줘.
+
+[채널 이름] ${info.channelName}
+[채널 설명] ${info.description}
+${categoryLine}${colorLine}[배너 스타일] ${style}
+${textLine}${sloganLine}
+디자인 조건:
+- 유튜브 배너 규격(2560 x 1440px)에 맞춰, 가로로 넓은 형태로 디자인해 줘.
+- 화면 크기에 따라 양옆이 잘릴 수 있으니, 가장 중요한 텍스트와 요소는 이미지 정중앙의 안전 영역(가로 1546 x 세로 423px)에 배치해 줘.
+- 채널의 분위기와 주제가 한눈에 느껴지도록 배경과 그래픽 요소를 구성해 줘.
+- 저작권이 있는 캐릭터나 다른 브랜드의 이미지를 참고하지 말고, 새롭게 창작된 디자인으로 만들어 줘.`;
+
+  document.getElementById('cbBannerPromptBox').textContent = prompt;
+  const section = document.getElementById('cbBannerPromptSection');
+  section.classList.remove('hidden');
+  setTimeout(() => section.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+function cbCopyPrompt(boxId) {
+  const text = document.getElementById(boxId).textContent;
+  navigator.clipboard.writeText(text).catch(() => {
+    const t = document.createElement('textarea');
+    t.value = text; document.body.appendChild(t); t.select();
+    document.execCommand('copy'); document.body.removeChild(t);
+  });
+  cbShowToast('프롬프트 복사 완료! ChatGPT에 붙여넣어 보세요 🚀');
+}
+
+function cbShowToast(msg) {
+  const el = document.getElementById('cbToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── 회원 저장/불러오기 ──
+const CB_IS_LOGGED_IN = {{ user_authenticated|yesno:"true,false" }};
+const CB_SAVE_URL = "{% url 'api_channel_branding_draft_save' %}";
+const CB_STORAGE_KEY = 'channelBrandingDraft_v1';
+
+function cbClickChoiceByValue(containerId, value) {
+  if (!value) return;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const btn = Array.from(container.querySelectorAll('.cb-choice-btn')).find(b => b.dataset.value === value);
+  if (btn) btn.click();
+}
+
+function cbCollectFormState() {
+  return {
+    channelName: document.getElementById('cbChannelName').value,
+    description: document.getElementById('cbDescription').value,
+    category: document.querySelector('#cbCategoryBtns .cb-choice-btn.active').dataset.value,
+    categoryCustom: document.getElementById('cbCategoryCustom').value,
+    color: document.getElementById('cbColor').value,
+    logoStyle: document.querySelector('#cbLogoStyleBtns .cb-choice-btn.active').dataset.value,
+    logoStyleCustom: document.getElementById('cbLogoStyleCustom').value,
+    bannerStyle: document.querySelector('#cbBannerStyleBtns .cb-choice-btn.active').dataset.value,
+    bannerStyleCustom: document.getElementById('cbBannerStyleCustom').value,
+    bannerText: document.querySelector('#cbBannerTextBtns .cb-choice-btn.active').dataset.value,
+    slogan: document.getElementById('cbSlogan').value,
+  };
+}
+
+function cbRestoreFormState(s) {
+  if (!s || !Object.keys(s).length) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+  set('cbChannelName', s.channelName);
+  set('cbDescription', s.description);
+  set('cbColor', s.color);
+  set('cbSlogan', s.slogan);
+
+  if (s.category) { cbClickChoiceByValue('cbCategoryBtns', s.category); if (s.category === '__custom__') set('cbCategoryCustom', s.categoryCustom); }
+  if (s.logoStyle) { cbClickChoiceByValue('cbLogoStyleBtns', s.logoStyle); if (s.logoStyle === '__custom__') set('cbLogoStyleCustom', s.logoStyleCustom); }
+  if (s.bannerStyle) { cbClickChoiceByValue('cbBannerStyleBtns', s.bannerStyle); if (s.bannerStyle === '__custom__') set('cbBannerStyleCustom', s.bannerStyleCustom); }
+  if (s.bannerText) cbClickChoiceByValue('cbBannerTextBtns', s.bannerText);
+}
+
+async function cbSaveDraft() {
+  const state = cbCollectFormState();
+  const statusEl = document.getElementById('cbDraftStatus');
+  if (CB_IS_LOGGED_IN) {
+    try {
+      const res = await fetch(CB_SAVE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(state),
+      });
+      if (res.ok) {
+        localStorage.setItem(CB_STORAGE_KEY, JSON.stringify(state));
+        statusEl.textContent = '✓ 내 계정에 저장됨';
+        document.getElementById('cbLoadBtn').disabled = false;
+      } else {
+        statusEl.textContent = '저장 실패';
+      }
+    } catch {
+      statusEl.textContent = '저장 실패';
+    }
+  } else {
+    localStorage.setItem(CB_STORAGE_KEY, JSON.stringify(state));
+    statusEl.textContent = '✓ 이 브라우저에 저장됨 (로그인하면 계정에 저장돼요)';
+    document.getElementById('cbLoadBtn').disabled = false;
+  }
+}
+
+function cbLoadDraft() {
+  const statusEl = document.getElementById('cbDraftStatus');
+  const dbData = {{ draft_data|safe }};
+  if (dbData && Object.keys(dbData).length) {
+    cbRestoreFormState(dbData);
+    statusEl.textContent = '✓ 저장된 내용을 불러왔어요';
+  } else {
+    const local = localStorage.getItem(CB_STORAGE_KEY);
+    if (local) {
+      try { cbRestoreFormState(JSON.parse(local)); statusEl.textContent = '✓ 브라우저 저장 내용을 불러왔어요'; }
+      catch { statusEl.textContent = '불러오기 실패'; }
+    }
+  }
+}
+
+(function cbInitRestore() {
+  const dbData = {{ draft_data|safe }};
+  const statusEl = document.getElementById('cbDraftStatus');
+  if (dbData && Object.keys(dbData).length) {
+    document.getElementById('cbLoadBtn').disabled = false;
+    cbRestoreFormState(dbData);
+    statusEl.textContent = '이전에 저장한 내용을 불러왔어요';
+  } else {
+    const local = localStorage.getItem(CB_STORAGE_KEY);
+    if (local) {
+      try {
+        document.getElementById('cbLoadBtn').disabled = false;
+        cbRestoreFormState(JSON.parse(local));
+        statusEl.textContent = '브라우저 저장 내용을 불러왔어요';
+      } catch {}
+    }
+  }
+})();
+</script>
+{% endblock %}

@@ -288,6 +288,19 @@ def future_career_video_list(request):
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
+def future_career_video_admin_load(request, save_id):
+    """관리자용 - 생년월일 유무와 상관없이 id로 저장 내용 불러오기"""
+    obj = FutureCareerSave.objects.filter(pk=save_id).first()
+    if not obj:
+        return JsonResponse({'success': False, 'error': '저장된 내용을 찾을 수 없습니다.'})
+    return JsonResponse({
+        'success': True, 'name': obj.name, 'birthdate': obj.birthdate, 'data': obj.data,
+        'updated_at': timezone.localtime(obj.updated_at).strftime('%Y-%m-%d %H:%M'),
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
 @require_POST
 def future_career_video_admin_delete(request, save_id):
     """관리자용 - 저장 항목 삭제"""

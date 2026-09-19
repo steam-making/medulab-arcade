@@ -9,6 +9,7 @@ urlpatterns = [
     path('tools/future-career-video/save/', views.future_career_video_save, name='future_career_video_save'),
     path('tools/future-career-video/load/', views.future_career_video_load, name='future_career_video_load'),
     path('tools/future-career-video/list/', views.future_career_video_list, name='future_career_video_list'),
+    path('tools/future-career-video/<int:save_id>/admin-load/', views.future_career_video_admin_load, name='future_career_video_admin_load'),
     path('tools/future-career-video/<int:save_id>/delete/', views.future_career_video_admin_delete, name='future_career_video_admin_delete'),
     path('tools/content-finder/', views.content_finder, name='content_finder'),
     path('tools/content-finder/submit/', views.content_finder_submit, name='content_finder_submit'),

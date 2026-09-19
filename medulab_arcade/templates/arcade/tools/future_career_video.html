@@ -1054,19 +1054,25 @@ function fcvRefreshList(){
           <span class="small">생년월일: ${item.birthdate || '-'} · 마지막 저장: ${item.updated_at}</span>
         </div>
         <div class="fcv-list-actions">
-          <button type="button" class="fcv-list-btn-load" onclick="fcvLoadFromList('${item.name.replace(/'/g,"\\'")}','${item.birthdate}')">불러오기</button>
+          <button type="button" class="fcv-list-btn-load" onclick="fcvLoadFromList(${item.id})">불러오기</button>
           <button type="button" class="fcv-list-btn-del" onclick="fcvDeleteFromList(${item.id})">삭제</button>
         </div>
       </div>
     `).join('');
   }).catch(()=>{ body.innerHTML = '<div class="fcv-list-empty">목록을 불러오지 못했습니다.</div>'; });
 }
-function fcvLoadFromList(name, birthdate){
-  closeFcvListModal();
-  openFcvSaveModal();
-  document.getElementById('fcvSaveName').value = name;
-  document.getElementById('fcvSaveBirthdate').value = birthdate;
-  fcvDoLoad();
+function fcvLoadFromList(id){
+  fetch(`/tools/future-career-video/${id}/admin-load/`).then(r=>r.json()).then(res=>{
+    if(!res.success){ alert(res.error || '불러오기에 실패했습니다.'); return; }
+    const label = res.birthdate ? `${res.name}(${res.birthdate})` : res.name;
+    if(!confirm(`"${label}" 님의 저장된 내용(${res.updated_at})을 불러올까요? 현재 화면에 입력된 내용은 덮어써집니다.`)) return;
+    Object.keys(res.data).forEach(key=>{
+      localStorage.setItem(key, JSON.stringify(res.data[key]));
+    });
+    localStorage.setItem('fcvSavedName', res.name);
+    localStorage.setItem('fcvSavedBirthdate', res.birthdate || '');
+    location.reload();
+  }).catch(()=>alert('불러오기 중 오류가 발생했습니다.'));
 }
 function fcvDeleteFromList(id){
   if(!confirm('이 저장 항목을 삭제할까요? 되돌릴 수 없습니다.')) return;

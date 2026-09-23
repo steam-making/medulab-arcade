@@ -4743,17 +4743,24 @@ def instagram_ai_upload_publish(request, draft_id):
     def _public_url(file_field):
         return request.build_absolute_uri(file_field.url)
 
-    videos = [i for i in items if i.media_type == InstagramUploadDraftItem.MEDIA_VIDEO]
-    images = [i for i in items if i.media_type == InstagramUploadDraftItem.MEDIA_IMAGE]
-
-    if videos:
-        # 영상은 1개만 지원 (Reels) - 여러 개 섞인 경우 첫 영상만 게시
-        result = publish_video(_public_url(videos[0].final_file or videos[0].original_file), caption)
-    elif len(images) == 1:
-        result = publish_single_image(_public_url(images[0].final_file or images[0].original_file), caption)
+    if len(items) == 1:
+        # 항목이 하나뿐이면 영상은 릴스로, 이미지는 단일 사진으로 게시
+        only = items[0]
+        url = _public_url(only.final_file or only.original_file)
+        if only.media_type == InstagramUploadDraftItem.MEDIA_VIDEO:
+            result = publish_video(url, caption)
+        else:
+            result = publish_single_image(url, caption)
     else:
-        urls = [_public_url(i.final_file or i.original_file) for i in images]
-        result = publish_carousel(urls, caption)
+        # 사진과 영상이 섞였거나 여러 개인 경우, 선택한 순서 그대로 캐러셀로 게시
+        media_items = [
+            {
+                'url': _public_url(i.final_file or i.original_file),
+                'is_video': i.media_type == InstagramUploadDraftItem.MEDIA_VIDEO,
+            }
+            for i in items
+        ]
+        result = publish_carousel(media_items, caption)
 
     if result.get('success'):
         draft.status = InstagramUploadDraft.STATUS_PUBLISHED

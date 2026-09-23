@@ -228,21 +228,42 @@ def publish_single_image(image_public_url, caption):
     return {'success': True, 'media_id': media_id, 'permalink': permalink}
 
 
-def publish_carousel(image_public_urls, caption):
-    """이미지 여러 장을 캐러셀로 게시. 반환: {success, media_id, permalink, error}"""
+def publish_carousel(media_items, caption):
+    """사진·영상을 섞어 캐러셀로 게시.
+
+    media_items: [{'url': 공개 URL, 'is_video': bool}, ...] (하위 호환을 위해
+    문자열 URL만 담긴 리스트가 오면 전부 이미지로 처리한다.)
+    반환: {success, media_id, permalink, error}
+    """
     config = refresh_token_if_needed(get_config())
     ok, err = _publish_ready(config)
     if not ok:
         return {'success': False, 'error': err}
     api_base = IG_LOGIN_API_BASE if _is_ig_login_token(config.access_token) else FACEBOOK_API_BASE
 
+    normalized = [
+        item if isinstance(item, dict) else {'url': item, 'is_video': False}
+        for item in media_items
+    ]
+    has_video = any(item.get('is_video') for item in normalized)
+    # 동영상이 섞이면 처리 시간이 더 걸릴 수 있어 대기 시간을 넉넉히 준다.
+    child_wait_seconds = 120 if has_video else 60
+
     child_ids = []
-    for url in image_public_urls:
-        child_id, err = _create_container(api_base, config.ig_user_id, config.access_token,
-                                           image_url=url, is_carousel_item='true')
+    for item in normalized:
+        if item.get('is_video'):
+            child_id, err = _create_container(
+                api_base, config.ig_user_id, config.access_token,
+                media_type='VIDEO', video_url=item['url'], is_carousel_item='true',
+            )
+        else:
+            child_id, err = _create_container(
+                api_base, config.ig_user_id, config.access_token,
+                image_url=item['url'], is_carousel_item='true',
+            )
         if err:
             return {'success': False, 'error': err}
-        wait_err = _wait_until_finished(api_base, child_id, config.access_token)
+        wait_err = _wait_until_finished(api_base, child_id, config.access_token, max_wait_seconds=child_wait_seconds)
         if wait_err:
             return {'success': False, 'error': wait_err}
         child_ids.append(child_id)

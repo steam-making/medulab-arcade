@@ -1320,7 +1320,8 @@
 
     {% if show_checkin_modal and user.profile.user_type == 'medulab_member' %}
     <div id="checkinModalOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:2000; display:flex; align-items:center; justify-content:center;">
-        <div style="background:#14161c; border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:28px; width:90%; max-width:360px; text-align:center;">
+        <div style="position:relative; background:#14161c; border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:28px; width:90%; max-width:360px; text-align:center;">
+            <button type="button" onclick="checkinCancelLogin()" title="취소하고 로그아웃" style="position:absolute; top:10px; right:12px; background:transparent; border:none; color:#9ca3af; font-size:20px; line-height:1; cursor:pointer; padding:4px;">×</button>
             <div id="checkinStep1">
                 <div style="font-size:32px; margin-bottom:8px;">🏫</div>
                 <h3 style="color:#fff; margin:0 0 8px; font-size:18px;">지금 학원 안에 있나요?</h3>
@@ -1337,7 +1338,10 @@
             <div id="checkinStep2" style="display:none;">
                 <div id="checkinStep2Icon" style="font-size:32px; margin-bottom:8px;"></div>
                 <p id="checkinStep2Msg" style="color:#e5e7eb; font-size:14px; margin:0 0 16px;"></p>
-                <button type="button" id="checkinStep2Btn" onclick="checkinConfirm()" style="width:100%; padding:12px; border-radius:10px; border:none; background:#10b981; color:#03140e; font-weight:800; cursor:pointer;"></button>
+                <div style="display:flex; gap:10px;">
+                    <button type="button" onclick="checkinBack()" style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.2); background:transparent; color:#e5e7eb; font-weight:800; cursor:pointer;">◀ 뒤로</button>
+                    <button type="button" id="checkinStep2Btn" onclick="checkinConfirm()" style="flex:2; padding:12px; border-radius:10px; border:none; background:#10b981; color:#03140e; font-weight:800; cursor:pointer;"></button>
+                </div>
             </div>
         </div>
     </div>
@@ -1374,6 +1378,26 @@
                     var overlay = document.getElementById('checkinModalOverlay');
                     if (overlay) overlay.remove();
                 });
+            };
+
+            window.checkinBack = function () {
+                chosenType = null;
+                document.getElementById('checkinStep2').style.display = 'none';
+                document.getElementById('checkinStep1').style.display = 'block';
+            };
+
+            // X 버튼: 잘못 로그인했을 때 확인 없이 취소하고 바로 로그아웃
+            window.checkinCancelLogin = function () {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{% url 'logout' %}";
+                var csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = "{{ csrf_token }}";
+                form.appendChild(csrfInput);
+                document.body.appendChild(form);
+                form.submit();
             };
         })();
     </script>

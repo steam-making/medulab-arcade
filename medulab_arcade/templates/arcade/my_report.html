@@ -1379,7 +1379,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 1. 출석체크 연동
     const btnAttend = document.getElementById('btnAttend');
     if (btnAttend) {
-        function submitAttendance(lat, lng) {
+        function submitAttendance(lat, lng, locationFailMsg) {
             fetch("{% url 'api_submit_attendance' %}", {
                 method: "POST",
                 headers: {
@@ -1394,7 +1394,11 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 if (data.status === 'success') {
-                    alert((data.attendance_type_display || '출석') + " 도장이 정상적으로 찍혔습니다! 💚");
+                    if (data.attendance_type === 'access') {
+                        alert("⚠️ 위치 확인이 되지 않아 '접속'으로 기록됐어요." + (locationFailMsg ? ("\n(" + locationFailMsg + ")") : "") + "\n학원 안에서 위치 권한을 허용한 뒤 다시 눌러 주세요. 학원에서 확인되면 '출석'으로 바뀝니다.");
+                    } else {
+                        alert((data.attendance_type_display || '출석') + " 도장이 정상적으로 찍혔습니다! 💚");
+                    }
                     window.location.reload();
                 } else {
                     alert("출석 처리 중 오류가 발생했습니다.");
@@ -1409,11 +1413,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     function(pos) { submitAttendance(pos.coords.latitude, pos.coords.longitude); },
-                    function() { submitAttendance(null, null); },  // 위치 권한 거부/실패 시에도 접속 체크는 진행
-                    { timeout: 8000, maximumAge: 60000 }
+                    function(err) {
+                        // 위치 권한 거부/실패 시에도 접속 체크는 진행하되, 실패 사유를 알려줌
+                        var reasons = { 1: '위치 권한이 거부되어 있어요', 2: '위치를 확인할 수 없어요', 3: '위치 확인이 너무 오래 걸렸어요' };
+                        submitAttendance(null, null, reasons[err.code] || '');
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
                 );
             } else {
-                submitAttendance(null, null);
+                submitAttendance(null, null, '이 브라우저는 위치 확인을 지원하지 않아요');
             }
         });
     }

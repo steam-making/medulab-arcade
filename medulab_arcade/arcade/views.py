@@ -5527,9 +5527,13 @@ def _render_staff_student_dashboard(request):
     )
     student_ids = [s.id for s in students]
 
-    today_attended_ids = set(
-        Attendance.objects.filter(user_id__in=student_ids, date=today).values_list('user_id', flat=True)
+    # date=today인 Attendance는 '접속'(로그인 시 자동 생성)까지 포함되므로, 유형을 구분해서 보관한다.
+    today_attendance_types = dict(
+        Attendance.objects.filter(user_id__in=student_ids, date=today).values_list('user_id', 'attendance_type')
     )
+    today_attended_ids = {
+        uid for uid, t in today_attendance_types.items() if t in (Attendance.TYPE_PRESENT, Attendance.TYPE_MAKEUP)
+    }
     month_attendance_counts = {}
     for row in (
         Attendance.objects.filter(user_id__in=student_ids, date__year=current_year, date__month=current_month)
@@ -5569,6 +5573,7 @@ def _render_staff_student_dashboard(request):
 
     for s in students:
         s.attended_today = s.id in today_attended_ids
+        s.today_attendance_type = today_attendance_types.get(s.id)
         s.month_attendance_count = month_attendance_counts.get(s.id, 0)
         s.scheduled_today = s.id in today_scheduled_ids
         info = today_class_info.get(s.id)

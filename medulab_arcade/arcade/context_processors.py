@@ -13,14 +13,23 @@ def academy_info(request):
 
 
 def checkin_modal(request):
-    """로그인 신호가 세션에 표시해 둔 경우, 다음 페이지 렌더링에서 '학원입니까?' 모달을 한 번 띄운다."""
-    if not request.user.is_authenticated or not request.session.pop('show_checkin_modal', False):
+    """메듀랩 학생이 오늘 출석 기록(출석/보강/접속 중 아무거나)을 아직 남기지 않았다면,
+    확인할 때(또는 X로 로그아웃할 때)까지 모든 페이지에서 '학원입니까?' 모달을 계속 띄운다.
+    새로고침으로 건너뛸 수 없도록, 세션 플래그가 아니라 매 요청마다 DB 상태를 직접 확인한다."""
+    if not request.user.is_authenticated:
+        return {'show_checkin_modal': False}
+
+    profile = getattr(request.user, 'profile', None)
+    if not profile or profile.user_type != 'medulab_member':
         return {'show_checkin_modal': False}
 
     from django.utils import timezone
-    from .models import ClassEnrollment
+    from .models import Attendance, ClassEnrollment
 
     today = timezone.localdate()
+    if Attendance.objects.filter(user=request.user, date=today).exists():
+        return {'show_checkin_modal': False}
+
     code_for_py_weekday = {0: '1', 1: '2', 2: '3', 3: '4', 4: '5', 5: '6', 6: '0'}
     code = code_for_py_weekday[today.weekday()]
 

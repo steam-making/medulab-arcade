@@ -8,7 +8,6 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
-from django.contrib.auth.signals import user_logged_in
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -947,17 +946,9 @@ class AvatarDraft(models.Model):
         return f"{self.user.username} 아바타 초안"
 
 
-@receiver(user_logged_in)
-def flag_daily_checkin_modal(sender, request, user, **kwargs):
-    """메듀랩 학생이 로그인하면, 아직 오늘 출석 기록이 없을 때만 '학원입니까?' 확인 모달을
-    다음 페이지에서 한 번 띄우도록 세션에 표시만 해둔다. 기록 생성은 모달 응답(또는 학생이
-    직접 누르는 출석체크 버튼)에서만 이루어지며, 로그인 자체로는 아무 기록도 만들지 않는다."""
-    profile = getattr(user, 'profile', None)
-    if not profile or profile.user_type != 'medulab_member':
-        return
-    today = timezone.localdate()
-    if not Attendance.objects.filter(user=user, date=today).exists():
-        request.session['show_checkin_modal'] = True
+# '학원입니까?' 모달은 로그인 시점이 아니라 매 요청마다 arcade.context_processors.checkin_modal에서
+# "오늘 출석 기록이 아직 없는가"를 직접 확인해 표시 여부를 정한다(새로고침으로 건너뛰지 못하도록).
+# 로그인 자체는 더 이상 어떤 출석 기록도 만들지 않는다.
 
 
 class SiteConfig(models.Model):

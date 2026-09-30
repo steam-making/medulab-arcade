@@ -165,6 +165,7 @@
                 <tr class="clickable" data-scheduled-today="{{ s.scheduled_today|yesno:'1,0' }}" data-attended-today="{{ s.attended_today|yesno:'1,0' }}" onclick="location.href='{% url 'admin_student_report' s.id %}'">
                     <td style="font-size:12px; color:var(--text-muted); white-space:nowrap;" onclick="event.stopPropagation();">
                         {% if s.today_class_time %}<span style="color:#93c5fd; font-weight:700;">{{ s.today_class_time|time:"H:i" }}</span> {{ s.today_class_name }}
+                        {% elif s.enrolled_class_names %}{{ s.enrolled_class_names|join:", " }} <span style="opacity:0.6;">(오늘 수업 없음)</span>
                         {% elif all_classes %}
                         <button type="button" class="quick-assign-btn" onclick="openClassAssignModal({{ s.id }}, '{{ s.profile.real_name|default:s.username|escapejs }}')">배정</button>
                         {% else %}-{% endif %}

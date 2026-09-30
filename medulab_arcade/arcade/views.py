@@ -5543,13 +5543,15 @@ def _render_staff_student_dashboard(request):
     today_code = code_for_py_weekday[today.weekday()]
     today_scheduled_ids = set()
     today_class_info = {}  # student_id -> (start_time, class_name) — 여러 수업이면 가장 이른 시간
+    enrolled_class_names = {}  # student_id -> [class_name, ...] — 오늘 여부와 무관하게 배정된 모든 수업
     for enrollment in (
         ClassEnrollment.objects.filter(student_id__in=student_ids, is_active=True)
         .select_related('school_class')
     ):
-        codes = enrollment.school_class.days_of_week.split(',') if enrollment.school_class.days_of_week else []
+        sc = enrollment.school_class
+        enrolled_class_names.setdefault(enrollment.student_id, []).append(sc.name)
+        codes = sc.days_of_week.split(',') if sc.days_of_week else []
         if today_code in codes:
-            sc = enrollment.school_class
             today_scheduled_ids.add(enrollment.student_id)
             existing = today_class_info.get(enrollment.student_id)
             if existing is None or (sc.start_time and sc.start_time < existing[0]):
@@ -5567,6 +5569,7 @@ def _render_staff_student_dashboard(request):
         info = today_class_info.get(s.id)
         s.today_class_name = info[1] if info else ''
         s.today_class_time = info[0] if info else None
+        s.enrolled_class_names = enrolled_class_names.get(s.id, [])
         s.parent_link = s.parent_links.all()[0] if s.parent_links.all() else None
 
     # 수업시간 오름차순(수업 없는 학생은 뒤로) → 이름 오름차순

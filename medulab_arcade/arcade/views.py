@@ -5764,6 +5764,47 @@ def api_submit_attendance(request):
 @login_required
 @user_passes_test(staff_check)
 @require_POST
+def api_admin_set_attendance(request, student_id):
+    """관리자가 학생의 특정 날짜 출석 기록을 직접 수정(생성/변경/삭제)한다.
+    위치 확인 실패로 '접속'만 남았지만 실제로는 등원한 경우 등을 보정하기 위함."""
+    from datetime import datetime
+    from .models import Attendance
+
+    student = get_object_or_404(User, pk=student_id)
+    try:
+        payload = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        payload = {}
+
+    date_str = payload.get('date', '')
+    attendance_type = payload.get('attendance_type', '')
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except (TypeError, ValueError):
+        return JsonResponse({'status': 'error', 'message': '날짜 형식이 올바르지 않습니다.'}, status=400)
+
+    if attendance_type == 'none':
+        Attendance.objects.filter(user=student, date=target_date).delete()
+        return JsonResponse({'status': 'success', 'attendance_type': None, 'attendance_type_display': '기록 없음'})
+
+    valid_types = dict(Attendance.TYPE_CHOICES)
+    if attendance_type not in valid_types:
+        return JsonResponse({'status': 'error', 'message': '알 수 없는 출석 구분입니다.'}, status=400)
+
+    attendance, _created = Attendance.objects.update_or_create(
+        user=student, date=target_date,
+        defaults={'attendance_type': attendance_type},
+    )
+    return JsonResponse({
+        'status': 'success',
+        'attendance_type': attendance.attendance_type,
+        'attendance_type_display': attendance.get_attendance_type_display(),
+    })
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
 def api_sync_aice_schedule(request):
     """AICE 공식 시험 일정을 크롤링하여 DB에 동기화해 주는 관리자용 API"""
     from django.core.management import call_command

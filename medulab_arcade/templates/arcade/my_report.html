@@ -801,7 +801,8 @@
                                     {% endif %}
                                     {% if day in class_scheduled_days %}class-day{% endif %}
                                     {% if day in holiday_days %}holiday{% endif %}
-                                    {% if day == today.day %}today{% endif %}" id="day-{{ day }}">
+                                    {% if day == today.day %}today{% endif %}" id="day-{{ day }}"
+                                    {% if viewing_as_admin %}onclick="openAdminAttendanceModal({{ day }})" style="cursor:pointer;" title="클릭해서 출석 기록 수정"{% endif %}>
                                     <span>{{ day }}</span>
                                     {% if day in present_days %}
                                     <span class="attendance-stamp"><span class="stamp-icon">💚</span><span class="stamp-label">출석</span></span>
@@ -822,6 +823,57 @@
                 </div>
             </div>
         </div>
+
+        {% if viewing_as_admin %}
+        <!-- 관리자 전용: 출석 기록 수정 모달 -->
+        <div id="adminAttendanceModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+            <div style="background:var(--bg-card, #14161c); border:1px solid var(--border); border-radius:16px; padding:24px; width:90%; max-width:340px;">
+                <h4 id="adminAttendanceModalTitle" style="margin:0 0 16px; color:#fff; font-size:16px;">출석 기록 수정</h4>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <button type="button" onclick="setAdminAttendance('present')" style="padding:12px; border-radius:10px; border:1px solid rgba(16,185,129,0.35); background:rgba(16,185,129,0.12); color:#10b981; font-weight:700; cursor:pointer;">💚 출석으로 변경</button>
+                    <button type="button" onclick="setAdminAttendance('makeup')" style="padding:12px; border-radius:10px; border:1px solid rgba(96,165,250,0.35); background:rgba(96,165,250,0.12); color:#60a5fa; font-weight:700; cursor:pointer;">💙 보강으로 변경</button>
+                    <button type="button" onclick="setAdminAttendance('access')" style="padding:12px; border-radius:10px; border:1px solid rgba(148,163,184,0.35); background:rgba(148,163,184,0.12); color:#94a3b8; font-weight:700; cursor:pointer;">📶 접속으로 변경</button>
+                    <button type="button" onclick="setAdminAttendance('none')" style="padding:12px; border-radius:10px; border:1px solid rgba(239,68,68,0.35); background:rgba(239,68,68,0.1); color:#f87171; font-weight:700; cursor:pointer;">🗑️ 기록 삭제</button>
+                </div>
+                <button type="button" onclick="closeAdminAttendanceModal()" style="margin-top:16px; width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer;">취소</button>
+            </div>
+        </div>
+        <script>
+            const ADMIN_ATTENDANCE_STUDENT_ID = {{ profile.user.id }};
+            const ADMIN_ATTENDANCE_YEAR = {{ view_year }};
+            const ADMIN_ATTENDANCE_MONTH = {{ view_month }};
+            let _adminAttendanceDay = null;
+
+            function openAdminAttendanceModal(day) {
+                _adminAttendanceDay = day;
+                const dateStr = ADMIN_ATTENDANCE_YEAR + '-' + String(ADMIN_ATTENDANCE_MONTH).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                document.getElementById('adminAttendanceModalTitle').textContent = dateStr + ' 출석 기록 수정';
+                document.getElementById('adminAttendanceModal').style.display = 'flex';
+            }
+            function closeAdminAttendanceModal() {
+                document.getElementById('adminAttendanceModal').style.display = 'none';
+                _adminAttendanceDay = null;
+            }
+            function setAdminAttendance(attendanceType) {
+                if (!_adminAttendanceDay) return;
+                const dateStr = ADMIN_ATTENDANCE_YEAR + '-' + String(ADMIN_ATTENDANCE_MONTH).padStart(2, '0') + '-' + String(_adminAttendanceDay).padStart(2, '0');
+                fetch('/api/attendance/admin-set/' + ADMIN_ATTENDANCE_STUDENT_ID + '/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date: dateStr, attendance_type: attendanceType })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || '수정 중 오류가 발생했습니다.');
+                    }
+                })
+                .catch(err => alert('통신 오류: ' + err.message));
+            }
+        </script>
+        {% endif %}
 
         <!-- 1-1. 대회/자격 접수 이력 -->
         {% if my_exam_registrations %}

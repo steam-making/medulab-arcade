@@ -948,9 +948,16 @@ class AvatarDraft(models.Model):
 
 
 @receiver(user_logged_in)
-def auto_attendance_on_login(sender, request, user, **kwargs):
+def flag_daily_checkin_modal(sender, request, user, **kwargs):
+    """메듀랩 학생이 로그인하면, 아직 오늘 출석 기록이 없을 때만 '학원입니까?' 확인 모달을
+    다음 페이지에서 한 번 띄우도록 세션에 표시만 해둔다. 기록 생성은 모달 응답(또는 학생이
+    직접 누르는 출석체크 버튼)에서만 이루어지며, 로그인 자체로는 아무 기록도 만들지 않는다."""
+    profile = getattr(user, 'profile', None)
+    if not profile or profile.user_type != 'medulab_member':
+        return
     today = timezone.localdate()
-    Attendance.objects.get_or_create(user=user, date=today)
+    if not Attendance.objects.filter(user=user, date=today).exists():
+        request.session['show_checkin_modal'] = True
 
 
 class SiteConfig(models.Model):

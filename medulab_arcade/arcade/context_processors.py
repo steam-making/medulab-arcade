@@ -12,6 +12,34 @@ def academy_info(request):
     }
 
 
+def checkin_modal(request):
+    """로그인 신호가 세션에 표시해 둔 경우, 다음 페이지 렌더링에서 '학원입니까?' 모달을 한 번 띄운다."""
+    if not request.user.is_authenticated or not request.session.pop('show_checkin_modal', False):
+        return {'show_checkin_modal': False}
+
+    from django.utils import timezone
+    from .models import ClassEnrollment
+
+    today = timezone.localdate()
+    code_for_py_weekday = {0: '1', 1: '2', 2: '3', 3: '4', 4: '5', 5: '6', 6: '0'}
+    code = code_for_py_weekday[today.weekday()]
+
+    today_class = None
+    for enrollment in ClassEnrollment.objects.filter(
+        student=request.user, is_active=True
+    ).select_related('school_class'):
+        sc = enrollment.school_class
+        codes = sc.days_of_week.split(',') if sc.days_of_week else []
+        if code in codes:
+            if today_class is None or (sc.start_time and sc.start_time < today_class.start_time):
+                today_class = sc
+
+    return {
+        'show_checkin_modal': True,
+        'checkin_today_class': today_class,
+    }
+
+
 def nav_items(request):
     items = cache.get('nav_items_qs')
     if items is None:

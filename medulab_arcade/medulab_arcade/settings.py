@@ -117,6 +117,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'arcade.context_processors.nav_items',
                 'arcade.context_processors.academy_info',
+                'arcade.context_processors.checkin_modal',
             ],
         },
     },

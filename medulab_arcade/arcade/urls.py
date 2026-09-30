@@ -108,6 +108,7 @@ urlpatterns = [
     path('my-report/child/<int:child_id>/', views.child_report, name='child_report'),
     path('my-report/student/<int:student_id>/', views.admin_student_report, name='admin_student_report'),
     path('api/attendance/submit/', views.api_submit_attendance, name='api_submit_attendance'),
+    path('api/attendance/daily-checkin/', views.api_daily_checkin, name='api_daily_checkin'),
     path('api/attendance/admin-set/<int:student_id>/', views.api_admin_set_attendance, name='api_admin_set_attendance'),
     path('api/session/refresh/', views.api_refresh_session, name='api_refresh_session'),
     path('board/cert/', views.board_cert, name='board_cert'),

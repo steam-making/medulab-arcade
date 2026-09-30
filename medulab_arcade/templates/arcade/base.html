@@ -1318,39 +1318,63 @@
     </script>
     {% endif %}
 
-    {% if user.is_authenticated and user.profile.user_type == 'medulab_member' %}
+    {% if show_checkin_modal and user.profile.user_type == 'medulab_member' %}
+    <div id="checkinModalOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:2000; display:flex; align-items:center; justify-content:center;">
+        <div style="background:#14161c; border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:28px; width:90%; max-width:360px; text-align:center;">
+            <div id="checkinStep1">
+                <div style="font-size:32px; margin-bottom:8px;">🏫</div>
+                <h3 style="color:#fff; margin:0 0 8px; font-size:18px;">지금 학원 안에 있나요?</h3>
+                {% if checkin_today_class %}
+                <p style="color:#10b981; font-size:14px; font-weight:700; margin:0 0 16px;">오늘 수업: {% if checkin_today_class.start_time %}{{ checkin_today_class.start_time|time:"H:i" }} {% endif %}{{ checkin_today_class.name }}</p>
+                {% else %}
+                <p style="color:#9ca3af; font-size:13px; margin:0 0 16px;">오늘은 배정된 수업이 없는 날이에요.</p>
+                {% endif %}
+                <div style="display:flex; gap:10px; justify-content:center;">
+                    <button type="button" onclick="checkinAnswer(true)" style="flex:1; padding:12px; border-radius:10px; border:none; background:#10b981; color:#03140e; font-weight:800; cursor:pointer;">네</button>
+                    <button type="button" onclick="checkinAnswer(false)" style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.2); background:transparent; color:#e5e7eb; font-weight:800; cursor:pointer;">아니요</button>
+                </div>
+            </div>
+            <div id="checkinStep2" style="display:none;">
+                <div id="checkinStep2Icon" style="font-size:32px; margin-bottom:8px;"></div>
+                <p id="checkinStep2Msg" style="color:#e5e7eb; font-size:14px; margin:0 0 16px;"></p>
+                <button type="button" id="checkinStep2Btn" onclick="checkinConfirm()" style="width:100%; padding:12px; border-radius:10px; border:none; background:#10b981; color:#03140e; font-weight:800; cursor:pointer;"></button>
+            </div>
+        </div>
+    </div>
     <script>
         (function () {
-            var today = new Date().toISOString().slice(0, 10);
-            var storageKey = 'medulab_att_checked_' + today;
-            var checked;
-            try { checked = localStorage.getItem(storageKey); } catch (e) { checked = null; }
-            if (checked) return;
+            var hasClassToday = {% if checkin_today_class %}true{% else %}false{% endif %};
+            var chosenType = null;
 
-            function markChecked() {
-                try { localStorage.setItem(storageKey, '1'); } catch (e) {}
-            }
+            window.checkinAnswer = function (atAcademy) {
+                document.getElementById('checkinStep1').style.display = 'none';
+                document.getElementById('checkinStep2').style.display = 'block';
+                var icon = document.getElementById('checkinStep2Icon');
+                var msg = document.getElementById('checkinStep2Msg');
+                var btn = document.getElementById('checkinStep2Btn');
+                if (atAcademy && hasClassToday) {
+                    chosenType = 'present'; icon.textContent = '💚';
+                    msg.textContent = '오늘 수업 출석으로 기록할게요.'; btn.textContent = '수업시작';
+                } else if (atAcademy && !hasClassToday) {
+                    chosenType = 'makeup'; icon.textContent = '💙';
+                    msg.textContent = '보강으로 기록할게요.'; btn.textContent = '보강시작';
+                } else {
+                    chosenType = 'access'; icon.textContent = '📶';
+                    msg.textContent = '학원 출석이 아닌 사이트 접속으로 기록할게요.'; btn.textContent = '사이트 접속';
+                }
+            };
 
-            function submitAttendance(lat, lng) {
-                fetch('{% url "api_submit_attendance" %}', {
+            window.checkinConfirm = function () {
+                if (!chosenType) return;
+                fetch('{% url "api_daily_checkin" %}', {
                     method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ lat: lat, lng: lng })
-                }).then(markChecked).catch(markChecked);
-            }
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    function (pos) { submitAttendance(pos.coords.latitude, pos.coords.longitude); },
-                    function () { submitAttendance(null, null); },
-                    { timeout: 8000, maximumAge: 60000 }
-                );
-            } else {
-                submitAttendance(null, null);
-            }
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ attendance_type: chosenType })
+                }).finally(function () {
+                    var overlay = document.getElementById('checkinModalOverlay');
+                    if (overlay) overlay.remove();
+                });
+            };
         })();
     </script>
     {% endif %}

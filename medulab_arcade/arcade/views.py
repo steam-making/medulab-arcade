@@ -5821,6 +5821,35 @@ def api_submit_attendance(request):
 
 
 @login_required
+@require_POST
+def api_daily_checkin(request):
+    """로그인 직후 뜨는 '학원입니까?' 모달의 응답을 그대로 기록한다.
+    위치 확인 없이 학생이 직접 고른 값(present/makeup/access)을 신뢰한다."""
+    from django.utils import timezone
+    from .models import Attendance
+
+    try:
+        payload = json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        payload = {}
+
+    attendance_type = payload.get('attendance_type')
+    if attendance_type not in dict(Attendance.TYPE_CHOICES):
+        return JsonResponse({'status': 'error', 'message': '알 수 없는 출석 구분입니다.'}, status=400)
+
+    today = timezone.localdate()
+    attendance, _created = Attendance.objects.update_or_create(
+        user=request.user, date=today,
+        defaults={'attendance_type': attendance_type},
+    )
+    return JsonResponse({
+        'status': 'success',
+        'attendance_type': attendance.attendance_type,
+        'attendance_type_display': attendance.get_attendance_type_display(),
+    })
+
+
+@login_required
 @user_passes_test(staff_check)
 @require_POST
 def api_admin_set_attendance(request, student_id):

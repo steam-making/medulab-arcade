@@ -5229,7 +5229,8 @@ def _build_report_context(user, view_year=None, view_month=None):
     current_year = view_year or today.year
     current_month = view_month or today.month
     attendances = Attendance.objects.filter(user=user, date__year=current_year, date__month=current_month)
-    attendance_dates = [att.date.day for att in attendances]
+    # "출석 횟수" 집계에는 실제 등원 확인(출석/보강)만 포함하고, 위치 미확인 접속 체크는 제외한다.
+    attendance_dates = [att.date.day for att in attendances if att.attendance_type != Attendance.TYPE_ACCESS]
     present_days = [att.date.day for att in attendances if att.attendance_type == Attendance.TYPE_PRESENT]
     makeup_days = [att.date.day for att in attendances if att.attendance_type == Attendance.TYPE_MAKEUP]
     access_days = [att.date.day for att in attendances if att.attendance_type == Attendance.TYPE_ACCESS]

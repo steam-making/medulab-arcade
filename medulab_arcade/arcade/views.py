@@ -5184,8 +5184,23 @@ def api_crawl_thinkcontest(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
-def _build_report_context(user):
-    """마이 리포트 통계 집계. 본인 조회(my_report)와 학부모의 자녀 조회(child_report)가 공유."""
+def _parse_report_month_params(request):
+    """마이 리포트 출석 달력의 ?year=&month= 쿼리파라미터를 안전하게 파싱."""
+    try:
+        year = int(request.GET.get('year'))
+        month = int(request.GET.get('month'))
+        if 1 <= month <= 12 and 2000 <= year <= 2100:
+            return year, month
+    except (TypeError, ValueError):
+        pass
+    return None, None
+
+
+def _build_report_context(user, view_year=None, view_month=None):
+    """마이 리포트 통계 집계. 본인 조회(my_report)와 학부모의 자녀 조회(child_report)가 공유.
+
+    view_year/view_month를 지정하면 출석 달력을 해당 월 기준으로 보여준다(기본값: 이번 달).
+    """
     from django.utils import timezone
     from datetime import timedelta
     from typing_practice.models import TypingScore
@@ -5210,9 +5225,9 @@ def _build_report_context(user):
     ).select_related('item__chapter__program')
     coding_count = today_progress_qs.count()
 
-    # 3. 출석 체크 집계 (이번 달)
-    current_year = today.year
-    current_month = today.month
+    # 3. 출석 체크 집계 (조회 월, 기본값 이번 달)
+    current_year = view_year or today.year
+    current_month = view_month or today.month
     attendances = Attendance.objects.filter(user=user, date__year=current_year, date__month=current_month)
     attendance_dates = [att.date.day for att in attendances]
     present_days = [att.date.day for att in attendances if att.attendance_type == Attendance.TYPE_PRESENT]
@@ -5257,6 +5272,9 @@ def _build_report_context(user):
     cal = calendar.Calendar(firstweekday=6) # 일요일 시작
     month_days = cal.monthdayscalendar(current_year, current_month)
     month_name = f"{current_year}년 {current_month}월"
+    is_current_month = (current_year == today.year and current_month == today.month)
+    prev_year, prev_month = (current_year - 1, 12) if current_month == 1 else (current_year, current_month - 1)
+    next_year, next_month = (current_year + 1, 1) if current_month == 12 else (current_year, current_month + 1)
 
     # 4. 날짜별 타속 기록 - 유형×언어별 분리
     CHART_TYPES = [('word', '단어연습'), ('short', '짧은글'), ('long', '긴글')]
@@ -5453,6 +5471,13 @@ def _build_report_context(user):
         'holiday_days_labels': holiday_days_labels,
         'month_days': month_days,
         'month_name': month_name,
+        'view_year': current_year,
+        'view_month': current_month,
+        'is_current_month': is_current_month,
+        'prev_year': prev_year,
+        'prev_month': prev_month,
+        'next_year': next_year,
+        'next_month': next_month,
         'chart_data': chart_data,
         'chart_data_json': chart_data_json,
         'last_practice_type': last_practice_type,
@@ -5591,7 +5616,8 @@ def _render_staff_student_dashboard(request):
 def admin_student_report(request, student_id):
     """관리자가 특정 메듀랩 학생회원의 마이 리포트를 열람"""
     student = get_object_or_404(User, pk=student_id)
-    context = _build_report_context(student)
+    view_year, view_month = _parse_report_month_params(request)
+    context = _build_report_context(student, view_year, view_month)
     context['viewing_as_parent'] = True
     context['viewing_as_admin'] = True
     return render(request, 'arcade/my_report.html', context)
@@ -5634,7 +5660,8 @@ def my_report(request):
     else:
         form = UserProfileUpdateForm(instance=profile, user=user)
 
-    context = _build_report_context(user)
+    view_year, view_month = _parse_report_month_params(request)
+    context = _build_report_context(user, view_year, view_month)
     context['form'] = form
     context['viewing_as_parent'] = False
     return render(request, 'arcade/my_report.html', context)
@@ -5646,7 +5673,8 @@ def child_report(request, child_id):
     from .models import ParentChildLink
     link = get_object_or_404(ParentChildLink, parent=request.user, child_id=child_id)
     all_links = ParentChildLink.objects.filter(parent=request.user).select_related('child__profile')
-    context = _build_report_context(link.child)
+    view_year, view_month = _parse_report_month_params(request)
+    context = _build_report_context(link.child, view_year, view_month)
     context['viewing_as_parent'] = True
     context['viewed_child_id'] = link.child_id
     context['sibling_links'] = all_links

@@ -156,18 +156,28 @@
     </div>
 
     <div class="table-wrap">
+        <div style="display:flex; align-items:center; gap:8px; padding:14px 18px 0;">
+            <a href="?sort=class" style="padding:7px 14px; border-radius:8px; font-size:12px; font-weight:700; text-decoration:none; {% if sort_mode == 'class' %}background:linear-gradient(135deg,var(--accent-green),var(--accent-blue)); color:#03140e;{% else %}background:rgba(255,255,255,0.06); color:var(--text-secondary); border:1px solid var(--border);{% endif %}">📅 수업요일순</a>
+            <a href="?sort=name" style="padding:7px 14px; border-radius:8px; font-size:12px; font-weight:700; text-decoration:none; {% if sort_mode == 'name' %}background:linear-gradient(135deg,var(--accent-green),var(--accent-blue)); color:#03140e;{% else %}background:rgba(255,255,255,0.06); color:var(--text-secondary); border:1px solid var(--border);{% endif %}">🔤 이름순</a>
+        </div>
         <table>
             <thead>
                 <tr><th>수업</th><th>학생</th><th>오늘 출석</th><th>{{ current_month }}월 출석 횟수</th><th>학부모 연동</th><th>승인 상태</th><th>관리</th></tr>
             </thead>
             <tbody>
-                {% for s in students %}
+                {% for row in student_rows %}
+                {% ifchanged row.day_label %}
+                {% if row.day_label %}
+                <tr><td colspan="7" style="background:rgba(255,255,255,0.03); color:var(--text-muted); font-weight:800; font-size:12px; padding:8px 18px; letter-spacing:0.3px;">{{ row.day_label }}</td></tr>
+                {% endif %}
+                {% endifchanged %}
+                {% with s=row.student %}
                 <tr class="clickable" data-scheduled-today="{{ s.scheduled_today|yesno:'1,0' }}" data-attended-today="{{ s.attended_today|yesno:'1,0' }}" onclick="location.href='{% url 'admin_student_report' s.id %}'">
                     <td style="font-size:12px; color:var(--text-muted); white-space:nowrap;" onclick="event.stopPropagation();">
-                        {% if s.today_class_time %}<span style="color:#93c5fd; font-weight:700;">{{ s.today_class_time|time:"H:i" }}</span> {{ s.today_class_name }}
-                        {% elif s.enrolled_class_names %}{{ s.enrolled_class_names|join:", " }} <span style="opacity:0.6;">(오늘 수업 없음)</span>
-                        {% elif all_classes %}
+                        {% if row.show_assign %}
                         <button type="button" class="quick-assign-btn" onclick="openClassAssignModal({{ s.id }}, '{{ s.profile.real_name|default:s.username|escapejs }}')">배정</button>
+                        {% elif row.class_name %}
+                        {% if row.time_label %}<span style="color:#93c5fd; font-weight:700;">{{ row.time_label }}</span>{% endif %} {{ row.class_name }} <span style="opacity:0.6;">{{ row.class_note }}</span>
                         {% else %}-{% endif %}
                     </td>
                     <td style="font-weight:700; color:#fff;">{{ s.profile.real_name|default:s.username }} <span style="color:var(--text-muted); font-size:11px; font-weight:400;">@{{ s.username }}</span></td>
@@ -199,6 +209,7 @@
                         </div>
                     </td>
                 </tr>
+                {% endwith %}
                 {% empty %}
                 <tr><td colspan="7" style="text-align:center; padding:60px; color:var(--text-muted);">등록된 메듀랩 학생회원이 없습니다.</td></tr>
                 {% endfor %}

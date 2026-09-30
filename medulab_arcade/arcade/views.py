@@ -5544,18 +5544,23 @@ def _render_staff_student_dashboard(request):
     today_scheduled_ids = set()
     today_class_info = {}  # student_id -> (start_time, class_name) — 여러 수업이면 가장 이른 시간
     enrolled_class_names = {}  # student_id -> [class_name, ...] — 오늘 여부와 무관하게 배정된 모든 수업
+    per_day_entries = {}  # day_code -> [(start_time, class_name, student_id), ...] — 수업요일별 보기용
+    assigned_student_ids = set()
     for enrollment in (
         ClassEnrollment.objects.filter(student_id__in=student_ids, is_active=True)
         .select_related('school_class')
     ):
         sc = enrollment.school_class
         enrolled_class_names.setdefault(enrollment.student_id, []).append(sc.name)
+        assigned_student_ids.add(enrollment.student_id)
         codes = sc.days_of_week.split(',') if sc.days_of_week else []
         if today_code in codes:
             today_scheduled_ids.add(enrollment.student_id)
             existing = today_class_info.get(enrollment.student_id)
             if existing is None or (sc.start_time and sc.start_time < existing[0]):
                 today_class_info[enrollment.student_id] = (sc.start_time, sc.name)
+        for code in codes:
+            per_day_entries.setdefault(code, []).append((sc.start_time, sc.name, enrollment.student_id))
 
     all_classes = list(
         SchoolClass.objects.filter(is_active=True)
@@ -5578,6 +5583,50 @@ def _render_staff_student_dashboard(request):
         s.today_class_time,
         s.profile.real_name or s.username,
     ))
+
+    # 학생 목록 정렬 기준: 기본은 수업요일별, 선택 시 이름순
+    sort_mode = request.GET.get('sort', 'class')
+    if sort_mode not in ('class', 'name'):
+        sort_mode = 'class'
+
+    students_by_id = {s.id: s for s in students}
+    student_rows = []
+    if sort_mode == 'name':
+        for s in sorted(students, key=lambda s: (s.profile.real_name or s.username)):
+            if s.today_class_time:
+                row = {'time_label': s.today_class_time.strftime('%H:%M'), 'class_name': s.today_class_name, 'class_note': ''}
+            elif s.enrolled_class_names:
+                row = {'time_label': '', 'class_name': ', '.join(s.enrolled_class_names), 'class_note': '(오늘 수업 없음)'}
+            else:
+                row = {'time_label': '', 'class_name': '', 'class_note': ''}
+            row.update({'student': s, 'day_label': None, 'show_assign': not (s.today_class_time or s.enrolled_class_names) and bool(all_classes)})
+            student_rows.append(row)
+    else:
+        day_order = ['1', '2', '3', '4', '5', '6', '0']
+        for code in day_order:
+            entries = per_day_entries.get(code)
+            if not entries:
+                continue
+            entries.sort(key=lambda t: (
+                t[0] is None, t[0],
+                students_by_id[t[2]].profile.real_name or students_by_id[t[2]].username,
+            ))
+            for start_time, class_name, sid in entries:
+                student_rows.append({
+                    'student': students_by_id[sid],
+                    'day_label': f'{SchoolClass.DAY_LABELS[code]}요일',
+                    'time_label': start_time.strftime('%H:%M') if start_time else '',
+                    'class_name': class_name, 'class_note': '', 'show_assign': False,
+                })
+        unassigned = sorted(
+            (s for s in students if s.id not in assigned_student_ids),
+            key=lambda s: (s.profile.real_name or s.username),
+        )
+        for s in unassigned:
+            student_rows.append({
+                'student': s, 'day_label': '미배정', 'time_label': '', 'class_name': '', 'class_note': '',
+                'show_assign': bool(all_classes),
+            })
 
     total_students = len(students)
     today_attended_count = len(today_attended_ids)
@@ -5609,6 +5658,8 @@ def _render_staff_student_dashboard(request):
         'upcoming_exams': upcoming_exams,
         'upcoming_exam_count': upcoming_exam_count,
         'students': students,
+        'student_rows': student_rows,
+        'sort_mode': sort_mode,
         'current_month': current_month,
         'all_classes': all_classes,
     }

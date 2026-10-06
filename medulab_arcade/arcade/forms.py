@@ -15,6 +15,17 @@ BADGE_CRITERIA_HELP = (
 )
 
 
+
+def _check_children_required_fields(form, children):
+    """자녀 정보가 입력된 경우 각 자녀의 이름·생년월일은 필수 (학교/학년은 선택)."""
+    for idx, child in enumerate(children, start=1):
+        if not isinstance(child, dict):
+            continue
+        missing = [label for key, label in (('name', '이름'), ('birth_date', '생년월일')) if not str(child.get(key) or '').strip()]
+        if missing:
+            form.add_error(None, f'자녀 {idx}의 {", ".join(missing)}을(를) 입력해 주세요.')
+
+
 class ProjectUploadForm(forms.ModelForm):
     tags_str = forms.CharField(
         label='태그(쉼표로 구분)',
@@ -280,6 +291,8 @@ class SignUpForm(UserCreationForm):
                 children = []
             if not children:
                 self.add_error(None, '자녀 정보를 1명 이상 입력해 주세요.')
+            else:
+                _check_children_required_fields(self, children)
             cleaned_data['children_info'] = children
         return cleaned_data
 
@@ -572,6 +585,8 @@ class MedulabParentUpgradeForm(forms.Form):
             children = []
         if not children:
             self.add_error(None, '자녀 정보를 1명 이상 입력해 주세요.')
+        else:
+            _check_children_required_fields(self, children)
         cleaned_data['children_info'] = children
         return cleaned_data
 
@@ -646,6 +661,8 @@ class SocialOnboardingForm(forms.Form):
                 children = []
             if not children:
                 self.add_error(None, '자녀 정보를 1명 이상 입력해 주세요.')
+            else:
+                _check_children_required_fields(self, children)
             cleaned_data['children_info'] = children
         return cleaned_data
 

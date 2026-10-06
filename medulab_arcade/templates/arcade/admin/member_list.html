@@ -90,7 +90,7 @@
                 <a href="{% url 'member_list' %}?status=pending" class="type-filter-btn {% if current_status == 'pending' %}active{% endif %}" style="border-color:rgba(255,193,7,0.5); color:#ffc107;">⏳ 승인대기 ({{ pending_count }})</a>
                 <a href="{% url 'member_list' %}{% if search_query %}?q={{ search_query|urlencode }}{% endif %}" class="type-filter-btn {% if not current_type and current_status != 'pending' %}active{% endif %}">모든 회원 유형</a>
                 {% for filter in type_filters %}
-                <a href="{% url 'member_list' %}?type={{ filter.code }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="type-filter-btn {% if filter.active %}active{% endif %}">{{ filter.label }}</a>
+                <a href="{% url 'member_list' %}?type={{ filter.code }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="type-filter-btn {% if filter.active %}active{% endif %}">{{ filter.label }}</a>
                 {% endfor %}
             </div>
         </div>

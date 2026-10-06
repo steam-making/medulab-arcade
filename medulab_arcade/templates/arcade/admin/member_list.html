@@ -54,9 +54,12 @@
     .approval-pending:hover { background: rgba(255,193,7,0.22); }
     .approval-inline { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
+    .signup-info-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .signup-info-table th { width:80px; color:var(--text-muted); text-align:left; padding:6px 8px; font-weight:700; vertical-align:top; white-space:nowrap; }
+    .signup-info-table td { color:#e5e7eb; padding:6px 8px; word-break:break-all; }
     .approve-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; align-items:center; justify-content:center; padding:20px; }
     .approve-modal-overlay.show { display:flex; }
-    .approve-modal-box { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:32px; max-width:380px; width:100%; text-align:center; }
+    .approve-modal-box { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:32px; max-width:460px; max-height:90vh; overflow-y:auto; width:100%; text-align:center; }
     .approve-modal-box .icon { font-size:36px; margin-bottom:14px; }
     .approve-modal-box h3 { color:#fff; font-size:17px; font-weight:900; margin:0 0 8px 0; }
     .approve-modal-box p { color:var(--text-muted); font-size:13px; margin:0 0 24px 0; }
@@ -84,9 +87,10 @@
         </div>
         <div class="type-filter">
             <div class="type-filter-buttons">
-                <a href="{% url 'member_list' %}{% if search_query %}?q={{ search_query|urlencode }}{% endif %}" class="type-filter-btn {% if not current_type %}active{% endif %}">모든 회원 유형</a>
+                <a href="{% url 'member_list' %}?status=pending" class="type-filter-btn {% if current_status == 'pending' %}active{% endif %}" style="border-color:rgba(255,193,7,0.5); color:#ffc107;">⏳ 승인대기 ({{ pending_count }})</a>
+                <a href="{% url 'member_list' %}{% if search_query %}?q={{ search_query|urlencode }}{% endif %}" class="type-filter-btn {% if not current_type and current_status != 'pending' %}active{% endif %}">모든 회원 유형</a>
                 {% for filter in type_filters %}
-                <a href="{% url 'member_list' %}?type={{ filter.code }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="type-filter-btn {% if filter.active %}active{% endif %}">{{ filter.label }}</a>
+                <a href="{% url 'member_list' %}?type={{ filter.code }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="type-filter-btn {% if filter.active %}active{% endif %}">{{ filter.label }}</a>
                 {% endfor %}
             </div>
         </div>
@@ -133,6 +137,26 @@
                             onclick="openApproveModal({{ u.id }}, '{{ u.profile.real_name|default:u.username|escapejs }}', '{{ u.profile.get_user_type_display|escapejs }}')">
                             ⏳ 승인 대기
                         </button>
+                        <div id="signupInfo-{{ u.id }}" style="display:none;">
+                            <table class="signup-info-table">
+                                <tr><th>이름</th><td>{{ u.profile.real_name|default:"-" }}</td></tr>
+                                <tr><th>아이디</th><td>{{ u.username }}</td></tr>
+                                <tr><th>이메일</th><td>{{ u.email|default:"-" }}</td></tr>
+                                <tr><th>생년월일</th><td>{{ u.profile.birth_date|date:"Y.m.d"|default:"-" }}</td></tr>
+                                <tr><th>전화번호</th><td>{{ u.profile.phone_number|default:"-" }}</td></tr>
+                                <tr><th>주소</th><td>{{ u.profile.address|default:"-" }}</td></tr>
+                                <tr><th>회원 유형</th><td>{{ u.profile.get_user_type_display }}</td></tr>
+                                <tr><th>가입 경로</th><td>{{ u.signup_providers }}</td></tr>
+                                <tr><th>가입일</th><td>{{ u.date_joined|date:"Y.m.d H:i" }}</td></tr>
+                                {% if u.children_list %}
+                                <tr><th>자녀 정보</th><td>
+                                    {% for c in u.children_list %}
+                                    <div>{{ c.name|default:"-" }} · {{ c.birth_date|default:"-" }} · {{ c.school|default:"-" }} {{ c.grade|default:"" }}</div>
+                                    {% endfor %}
+                                </td></tr>
+                                {% endif %}
+                            </table>
+                        </div>
                         {% else %}
                         <span style="font-size: 12px; color: var(--text-muted);">○ 미승인</span>
                         {% endif %}
@@ -191,6 +215,7 @@
         <div class="icon">⏳</div>
         <h3 id="approveModalName">-</h3>
         <p id="approveModalType">이 회원을 승인할까요?</p>
+        <div id="approveModalInfo" style="text-align:left; margin:0 0 20px 0;"></div>
         <form id="approveModalForm" method="POST">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -208,6 +233,8 @@ var approveUrlTemplate = "{% url 'member_approve' 999999 %}".replace('999999', '
 function openApproveModal(userId, name, typeLabel) {
     document.getElementById('approveModalName').textContent = name;
     document.getElementById('approveModalType').textContent = typeLabel + ' 회원으로 승인할까요?';
+    var info = document.getElementById('signupInfo-' + userId);
+    document.getElementById('approveModalInfo').innerHTML = info ? info.innerHTML : '';
     document.getElementById('approveModalForm').action = approveUrlTemplate.replace('__ID__', userId);
     document.getElementById('approveModalOverlay').classList.add('show');
 }

@@ -2614,11 +2614,15 @@ def member_list(request):
     """회원 목록 조회"""
     search = request.GET.get('q', '')
     user_type = request.GET.get('type', '')
-    
+    status = request.GET.get('status', '')
+
     users = User.objects.all().select_related('profile').prefetch_related(
-        'child_links__child__profile', 'parent_links__parent__profile',
+        'child_links__child__profile', 'parent_links__parent__profile', 'socialaccount_set',
     ).order_by('-date_joined')
-    
+
+    pending_q = Q(profile__user_type__in=UserProfile.FULL_ACCESS_TYPES, profile__is_approved=False)
+    pending_count = User.objects.filter(pending_q).count()
+
     if search:
         users = users.filter(
             Q(username__icontains=search) |
@@ -2626,6 +2630,14 @@ def member_list(request):
         )
     if user_type:
         users = users.filter(profile__user_type=user_type)
+    if status == 'pending':
+        users = users.filter(pending_q)
+
+    users = list(users)
+    for u in users:
+        children = u.profile.children_info if u.profile else None
+        u.children_list = children if isinstance(children, list) else []
+        u.signup_providers = ', '.join(sorted({a.get_provider().name for a in u.socialaccount_set.all()})) or '이메일/아이디 가입'
 
     type_filters = [
         {
@@ -2640,6 +2652,8 @@ def member_list(request):
         'users': users,
         'search_query': search,
         'current_type': user_type,
+        'current_status': status,
+        'pending_count': pending_count,
         'user_types': UserProfile.USER_TYPE_CHOICES,
         'type_filters': type_filters,
     }

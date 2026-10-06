@@ -3036,7 +3036,10 @@ CLASS_GROUP_ORDER_STEP = 1000
 @user_passes_test(staff_check)
 def class_admin_list(request):
     """수업 관리 목록 (프리셋별 그룹핑 + 그룹 내 드래그 순서 변경)"""
-    classes = SchoolClass.objects.select_related('teacher__profile').prefetch_related('enrollments')
+    classes = SchoolClass.objects.select_related('teacher__profile').prefetch_related('enrollments').annotate(
+        invoice_total=Count('invoices', distinct=True),
+        invoice_unpaid=Count('invoices', filter=Q(invoices__status=TuitionInvoice.STATUS_UNPAID), distinct=True),
+    )
     search = request.GET.get('q', '').strip()
     if search:
         classes = classes.filter(name__icontains=search)
@@ -3226,6 +3229,156 @@ def class_unenroll_student(request, class_id, enrollment_id):
     enrollment.delete()
     messages.success(request, '수업 배정을 해제했습니다.')
     return redirect('class_admin_edit', class_id=school_class.pk)
+
+
+def _class_modal_payload(school_class):
+    enrollments = [
+        {
+            'id': e.id, 'student_id': e.student_id,
+            'name': getattr(e.student.profile, 'real_name', '') or e.student.username,
+            'username': e.student.username,
+            'enrolled_at': e.enrolled_at.strftime('%Y.%m.%d'),
+            'is_active': e.is_active,
+        }
+        for e in school_class.enrollments.select_related('student__profile').order_by('-enrolled_at')
+    ]
+    invoices = [
+        {
+            'id': inv.id, 'student_id': inv.student_id,
+            'student_name': getattr(inv.student.profile, 'real_name', '') or inv.student.username,
+            'amount': inv.amount, 'due_date': inv.due_date.strftime('%Y-%m-%d'),
+            'status': inv.status, 'status_label': inv.get_status_display(),
+            'period': inv.billing_period_label,
+        }
+        for inv in school_class.invoices.select_related('student__profile').order_by('-due_date', '-created_at')
+    ]
+    return {
+        'ok': True,
+        'class': {'id': school_class.id, 'name': school_class.name, 'tuition_fee': school_class.tuition_fee},
+        'enrollments': enrollments,
+        'invoices': invoices,
+        'default_due_date': _month_due_date().strftime('%Y-%m-%d'),
+    }
+
+
+@login_required
+@user_passes_test(staff_check)
+def class_modal_data(request, class_id):
+    """수업 목록의 배정/청구서 모달에 쓰는 현재 상태(JSON)"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    return JsonResponse(_class_modal_payload(school_class))
+
+
+def _json_body(request):
+    try:
+        return json.loads(request.body) if request.body else {}
+    except json.JSONDecodeError:
+        return {}
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def class_modal_enroll(request, class_id):
+    """모달에서 학생 배정 추가"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    added = 0
+    for sid in _json_body(request).get('student_ids', []):
+        student = User.objects.filter(pk=sid).first()
+        if not student:
+            continue
+        enrollment, created = ClassEnrollment.objects.get_or_create(
+            school_class=school_class, student=student, defaults={'is_active': True})
+        if created:
+            added += 1
+        elif not enrollment.is_active:
+            enrollment.is_active = True
+            enrollment.save(update_fields=['is_active'])
+            added += 1
+    payload = _class_modal_payload(school_class)
+    payload['message'] = f'{added}명을 배정했습니다.' if added else '새로 배정된 학생이 없습니다.'
+    return JsonResponse(payload)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def class_modal_unenroll(request, class_id, enrollment_id):
+    """모달에서 학생 배정 해제"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    get_object_or_404(ClassEnrollment, pk=enrollment_id, school_class=school_class).delete()
+    payload = _class_modal_payload(school_class)
+    payload['message'] = '배정을 해제했습니다.'
+    return JsonResponse(payload)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def class_modal_invoice_save(request, class_id):
+    """모달에서 청구서 생성(id 없음) 또는 수정(id 있음)"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    data = _json_body(request)
+    try:
+        amount = int(data.get('amount'))
+        if amount < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return JsonResponse({'ok': False, 'error': '청구 금액을 올바르게 입력해 주세요.'}, status=400)
+    try:
+        due_date = timezone.datetime.strptime(str(data.get('due_date', '')), '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'ok': False, 'error': '납부 기한 형식이 올바르지 않습니다.'}, status=400)
+    status = data.get('status') or TuitionInvoice.STATUS_UNPAID
+    if status not in dict(TuitionInvoice.STATUS_CHOICES):
+        return JsonResponse({'ok': False, 'error': '알 수 없는 상태입니다.'}, status=400)
+
+    invoice_id = data.get('id')
+    if invoice_id:
+        invoice = get_object_or_404(TuitionInvoice, pk=invoice_id, school_class=school_class)
+    else:
+        enrollment = ClassEnrollment.objects.filter(
+            school_class=school_class, student_id=data.get('student_id')).select_related('student').first()
+        if not enrollment:
+            return JsonResponse({'ok': False, 'error': '이 수업에 배정된 학생을 선택해 주세요.'}, status=400)
+        invoice = TuitionInvoice(student=enrollment.student, school_class=school_class,
+                                 base_amount=school_class.tuition_fee)
+
+    invoice.amount = amount
+    invoice.due_date = due_date
+    if status == TuitionInvoice.STATUS_PAID and invoice.status != TuitionInvoice.STATUS_PAID:
+        invoice.paid_at = timezone.now()
+    elif status != TuitionInvoice.STATUS_PAID:
+        invoice.paid_at = None
+    invoice.status = status
+    invoice.save()
+    payload = _class_modal_payload(school_class)
+    payload['message'] = '청구서를 저장했습니다.'
+    return JsonResponse(payload)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def class_modal_invoice_delete(request, class_id, invoice_id):
+    """모달에서 청구서 삭제"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    get_object_or_404(TuitionInvoice, pk=invoice_id, school_class=school_class).delete()
+    payload = _class_modal_payload(school_class)
+    payload['message'] = '청구서를 삭제했습니다.'
+    return JsonResponse(payload)
+
+
+@login_required
+@user_passes_test(staff_check)
+@require_POST
+def class_modal_invoice_generate(request, class_id):
+    """모달에서 이번 달 청구서 일괄 생성(이미 있는 학생은 건너뜀)"""
+    school_class = get_object_or_404(SchoolClass, pk=class_id)
+    created = generate_invoices_for_class(school_class, due_date=_month_due_date())
+    payload = _class_modal_payload(school_class)
+    payload['message'] = f'이번 달 청구서 {created}건을 생성했습니다.' if created else '이번 달 청구서가 이미 모두 생성되어 있습니다.'
+    return JsonResponse(payload)
 
 
 def _month_due_date(today=None):

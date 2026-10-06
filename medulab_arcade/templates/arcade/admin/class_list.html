@@ -84,6 +84,42 @@
 
     .add-btn { padding: 12px 24px; border-radius: 12px; background: var(--accent-green); color: var(--bg-primary); font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0,255,180,0.2); font-size: 14px; }
     .add-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,255,180,0.3); }
+    .count-btn { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 6px 12px; cursor: pointer; font-size: 13px; font-weight: 700; white-space: nowrap; transition: all .15s; }
+    .count-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+    .count-btn.student-count { color: var(--accent-blue); }
+    .count-btn.invoice-count { color: #fcd34d; }
+    .unpaid-mini { margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: rgba(239,68,68,0.18); color: #fca5a5; font-size: 11px; }
+
+    .cm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+    .cm-overlay.show { display: flex; }
+    .cm-box { background: var(--bg-card, #14161c); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 640px; max-height: 88vh; overflow-y: auto; padding: 26px; position: relative; }
+    .cm-close { position: absolute; top: 12px; right: 16px; background: transparent; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; }
+    .cm-title { color: #fff; font-size: 17px; font-weight: 900; margin: 0 0 4px; }
+    .cm-sub { color: var(--text-muted); font-size: 12px; margin: 0 0 16px; }
+    .cm-msg { font-size: 13px; font-weight: 700; margin: 0 0 12px; min-height: 18px; color: var(--accent-green); }
+    .cm-msg.err { color: #f87171; }
+    .cm-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .cm-tab { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--text-secondary); font-weight: 700; font-size: 13px; cursor: pointer; }
+    .cm-tab.active { background: linear-gradient(135deg, var(--accent-green), var(--accent-blue)); color: #03140e; border-color: transparent; }
+    .cm-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+    .cm-table th { text-align: left; color: var(--text-muted); font-size: 11px; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+    .cm-table td { padding: 9px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #e5e7eb; vertical-align: middle; }
+    .cm-input, .cm-select { width: 100%; padding: 9px 11px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 13px; outline: none; box-sizing: border-box; }
+    .cm-select option { background: #14161c; }
+    .cm-btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.06); color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .cm-btn.primary { background: var(--accent-green); color: #03140e; border-color: transparent; }
+    .cm-btn.danger { background: rgba(239,68,68,0.14); color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+    .cm-search-wrap { position: relative; }
+    .cm-dropdown { display: none; position: absolute; left: 0; right: 0; top: 100%; background: #1a1d26; border: 1px solid var(--border); border-radius: 8px; z-index: 5; max-height: 200px; overflow-y: auto; }
+    .cm-dropdown div { padding: 9px 12px; cursor: pointer; font-size: 13px; color: #e5e7eb; }
+    .cm-dropdown div:hover { background: rgba(255,255,255,0.08); }
+    .cm-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+    .cm-chip { background: rgba(99,102,241,0.18); color: #c7d2fe; border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 12px; font-weight: 700; }
+    .cm-chip button { background: transparent; border: none; color: inherit; cursor: pointer; font-size: 14px; }
+    .cm-form-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr auto; gap: 8px; align-items: end; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+    .cm-form-grid label { display: block; font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+    .st-unpaid { color: #fca5a5; } .st-paid { color: var(--accent-green); } .st-canceled { color: var(--text-muted); }
+    @media (max-width: 640px) { .cm-form-grid { grid-template-columns: 1fr 1fr; } }
 </style>
 {% endblock %}
 
@@ -122,6 +158,7 @@
                     <th>요일/시간</th>
                     <th>수업비</th>
                     <th>배정 인원</th>
+                    <th>청구서</th>
                     <th>상태</th>
                     <th>관리</th>
                 </tr>
@@ -130,7 +167,7 @@
             {% if group.label %}
             <tbody>
                 <tr class="group-header">
-                    <td colspan="8">
+                    <td colspan="9">
                         <span class="group-header-label {{ group.css_class }}"><span class="group-header-dot"></span>{{ group.label }}</span>
                     </td>
                 </tr>
@@ -166,7 +203,12 @@
                             <span class="fee-final">{{ c.tuition_fee|intcomma }}원</span>
                         </div>
                     </td>
-                    <td><span class="student-count">👥 {{ c.student_count }}명</span></td>
+                    <td>
+                        <button type="button" class="count-btn student-count" onclick="openClassModal({{ c.id }}, 'enroll')" title="클릭해서 학생 배정 관리">👥 {{ c.student_count }}명</button>
+                    </td>
+                    <td>
+                        <button type="button" class="count-btn invoice-count" onclick="openClassModal({{ c.id }}, 'invoice')" title="클릭해서 청구서 관리">🧾 {{ c.invoice_total }}건{% if c.invoice_unpaid %} <span class="unpaid-mini">미납 {{ c.invoice_unpaid }}</span>{% endif %}</button>
+                    </td>
                     <td>
                         {% if c.is_active %}
                         <span class="status-badge status-active">운영중</span>
@@ -193,13 +235,63 @@
             {% empty %}
             <tbody>
                 <tr>
-                    <td colspan="8" style="text-align:center; padding: 60px; color: var(--text-muted);">
+                    <td colspan="9" style="text-align:center; padding: 60px; color: var(--text-muted);">
                         등록된 수업이 없습니다.
                     </td>
                 </tr>
             </tbody>
             {% endfor %}
         </table>
+    </div>
+</div>
+
+<div class="cm-overlay" id="classModalOverlay" onclick="if(event.target===this) closeClassModal();">
+    <div class="cm-box">
+        <button type="button" class="cm-close" onclick="closeClassModal()">×</button>
+        <h3 class="cm-title" id="cmTitle">-</h3>
+        <p class="cm-sub" id="cmSub"></p>
+        <div class="cm-tabs">
+            <button type="button" class="cm-tab" data-tab="enroll" onclick="switchClassTab('enroll')">👥 학생 배정</button>
+            <button type="button" class="cm-tab" data-tab="invoice" onclick="switchClassTab('invoice')">🧾 청구서</button>
+        </div>
+        <div class="cm-msg" id="cmMsg"></div>
+
+        <div id="cmPaneEnroll">
+            <div class="cm-search-wrap">
+                <input type="text" id="cmSearch" class="cm-input" placeholder="이름 또는 아이디로 학생 검색..." autocomplete="off">
+                <div class="cm-dropdown" id="cmDropdown"></div>
+            </div>
+            <div class="cm-chips" id="cmChips"></div>
+            <button type="button" class="cm-btn primary" onclick="cmEnroll()">＋ 선택한 학생 배정하기</button>
+            <table class="cm-table">
+                <thead><tr><th>학생</th><th>아이디</th><th>배정일</th><th></th></tr></thead>
+                <tbody id="cmEnrollBody"></tbody>
+            </table>
+        </div>
+
+        <div id="cmPaneInvoice" style="display:none;">
+            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                <button type="button" class="cm-btn primary" onclick="cmInvoiceGenerate()">📄 이번 달 청구서 일괄 생성</button>
+            </div>
+            <div class="cm-form-grid">
+                <div><label>학생</label><select id="cmInvStudent" class="cm-select"></select></div>
+                <div><label>금액(원)</label><input type="number" id="cmInvAmount" class="cm-input" min="0"></div>
+                <div><label>납부 기한</label><input type="date" id="cmInvDue" class="cm-input"></div>
+                <div><label>상태</label>
+                    <select id="cmInvStatus" class="cm-select">
+                        <option value="unpaid">미납</option><option value="paid">완납</option><option value="canceled">취소</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="cm-btn primary" id="cmInvSaveBtn" onclick="cmInvoiceSave()">생성</button>
+                    <button type="button" class="cm-btn" id="cmInvCancelBtn" onclick="cmInvoiceReset()" style="display:none;">취소</button>
+                </div>
+            </div>
+            <table class="cm-table">
+                <thead><tr><th>학생</th><th>청구월</th><th>금액</th><th>기한</th><th>상태</th><th></th></tr></thead>
+                <tbody id="cmInvBody"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -250,5 +342,129 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+</script>
+<script>
+(function () {
+    var CSRF = '{{ csrf_token }}';
+    var cur = null, data = null, editingId = null, selected = new Map(), timer = null;
+    var $ = function (id) { return document.getElementById(id); };
+    function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function won(n) { return Number(n).toLocaleString('ko-KR') + '원'; }
+
+    function say(text, isErr) { var m = $('cmMsg'); m.textContent = text || ''; m.className = 'cm-msg' + (isErr ? ' err' : ''); }
+    function api(url, body) {
+        var opt = body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF }, body: JSON.stringify(body) };
+        return fetch(url, opt).then(function (r) { return r.json().then(function (j) { if (!r.ok || j.ok === false) throw new Error(j.error || '처리 중 오류가 발생했습니다.'); return j; }); });
+    }
+    function base(path) { return '/admin-services/classes/' + cur + '/' + path; }
+
+    window.openClassModal = function (id, tab) {
+        cur = id; selected.clear(); editingId = null; say('');
+        $('classModalOverlay').classList.add('show');
+        api(base('modal-data/')).then(function (j) { data = j; render(); switchClassTab(tab); }).catch(function (e) { say(e.message, true); });
+    };
+    window.closeClassModal = function () {
+        $('classModalOverlay').classList.remove('show');
+        location.reload();
+    };
+    window.switchClassTab = function (tab) {
+        document.querySelectorAll('.cm-tab').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === tab); });
+        $('cmPaneEnroll').style.display = tab === 'enroll' ? '' : 'none';
+        $('cmPaneInvoice').style.display = tab === 'invoice' ? '' : 'none';
+    };
+
+    function render() {
+        $('cmTitle').textContent = data.class.name;
+        $('cmSub').textContent = '수업비 ' + won(data.class.tuition_fee) + ' · 배정 ' + data.enrollments.length + '명 · 청구서 ' + data.invoices.length + '건';
+        $('cmEnrollBody').innerHTML = data.enrollments.map(function (e) {
+            return '<tr><td><strong>' + esc(e.name) + '</strong></td><td style="color:var(--text-muted)">@' + esc(e.username) + '</td><td>' + esc(e.enrolled_at) + '</td>' +
+                '<td style="text-align:right"><button class="cm-btn danger" onclick="cmUnenroll(' + e.id + ')">해제</button></td></tr>';
+        }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">배정된 학생이 없습니다.</td></tr>';
+
+        $('cmInvStudent').innerHTML = data.enrollments.map(function (e) { return '<option value="' + e.student_id + '">' + esc(e.name) + '</option>'; }).join('');
+        $('cmInvBody').innerHTML = data.invoices.map(function (v) {
+            return '<tr><td><strong>' + esc(v.student_name) + '</strong></td><td>' + esc(v.period) + '</td><td>' + won(v.amount) + '</td><td>' + esc(v.due_date) + '</td>' +
+                '<td class="st-' + v.status + '">' + esc(v.status_label) + '</td>' +
+                '<td style="text-align:right; white-space:nowrap"><button class="cm-btn" onclick="cmInvoiceEdit(' + v.id + ')">수정</button> <button class="cm-btn danger" onclick="cmInvoiceDelete(' + v.id + ')">삭제</button></td></tr>';
+        }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">청구서가 없습니다.</td></tr>';
+        cmInvoiceReset();
+        renderChips();
+    }
+
+    function renderChips() {
+        $('cmChips').innerHTML = Array.from(selected.values()).map(function (m) {
+            return '<span class="cm-chip">' + esc(m.display) + ' <button type="button" onclick="cmUnselect(' + m.id + ')">×</button></span>';
+        }).join('');
+    }
+    window.cmUnselect = function (id) { selected.delete(id); renderChips(); };
+
+    $('cmSearch').addEventListener('input', function () {
+        clearTimeout(timer);
+        var q = this.value.trim(), dd = $('cmDropdown');
+        if (!q) { dd.style.display = 'none'; return; }
+        timer = setTimeout(function () {
+            api('/api/search-members/?q=' + encodeURIComponent(q)).then(function (j) {
+                var items = j.members || [];
+                if (!items.length) { dd.style.display = 'none'; return; }
+                dd.innerHTML = items.map(function (m, i) { return '<div data-i="' + i + '"><strong>' + esc(m.real_name || m.username) + '</strong> <span style="color:var(--text-muted);font-size:11px">@' + esc(m.username) + '</span></div>'; }).join('');
+                dd.style.display = 'block';
+                dd.querySelectorAll('div').forEach(function (el) {
+                    el.addEventListener('click', function () {
+                        var m = items[el.dataset.i]; selected.set(m.id, m); renderChips();
+                        $('cmSearch').value = ''; dd.style.display = 'none';
+                    });
+                });
+            }).catch(function () {});
+        }, 180);
+    });
+
+    function done(j) { data = j; render(); say(j.message || ''); }
+    function fail(e) { say(e.message, true); }
+
+    window.cmEnroll = function () {
+        if (!selected.size) { say('배정할 학생을 먼저 검색해서 선택해 주세요.', true); return; }
+        api(base('modal-enroll/'), { student_ids: Array.from(selected.keys()) }).then(function (j) { selected.clear(); done(j); }).catch(fail);
+    };
+    window.cmUnenroll = function (id) {
+        if (!confirm('이 학생의 수업 배정을 해제할까요?')) return;
+        api(base('modal-unenroll/' + id + '/'), {}).then(done).catch(fail);
+    };
+
+    window.cmInvoiceReset = function () {
+        editingId = null;
+        $('cmInvAmount').value = data ? data.class.tuition_fee : '';
+        $('cmInvDue').value = data ? data.default_due_date : '';
+        $('cmInvStatus').value = 'unpaid';
+        $('cmInvStudent').disabled = false;
+        $('cmInvSaveBtn').textContent = '생성';
+        $('cmInvCancelBtn').style.display = 'none';
+    };
+    window.cmInvoiceEdit = function (id) {
+        var v = data.invoices.filter(function (x) { return x.id === id; })[0];
+        if (!v) return;
+        editingId = id;
+        $('cmInvStudent').value = v.student_id; $('cmInvStudent').disabled = true;
+        $('cmInvAmount').value = v.amount; $('cmInvDue').value = v.due_date; $('cmInvStatus').value = v.status;
+        $('cmInvSaveBtn').textContent = '수정 저장';
+        $('cmInvCancelBtn').style.display = '';
+        say(v.student_name + ' 님의 청구서를 수정하는 중입니다.');
+    };
+    window.cmInvoiceSave = function () {
+        api(base('modal-invoice/save/'), {
+            id: editingId, student_id: $('cmInvStudent').value, amount: $('cmInvAmount').value,
+            due_date: $('cmInvDue').value, status: $('cmInvStatus').value,
+        }).then(done).catch(fail);
+    };
+    window.cmInvoiceDelete = function (id) {
+        if (!confirm('이 청구서를 삭제할까요? 되돌릴 수 없습니다.')) return;
+        api(base('modal-invoice/' + id + '/delete/'), {}).then(done).catch(fail);
+    };
+    window.cmInvoiceGenerate = function () {
+        if (!confirm('배정된 학생 전원에게 이번 달 청구서를 생성할까요? (이미 있는 학생은 건너뜁니다)')) return;
+        api(base('modal-invoice/generate/'), {}).then(done).catch(fail);
+    };
+
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('classModalOverlay').classList.contains('show')) closeClassModal(); });
+})();
 </script>
 {% endblock %}

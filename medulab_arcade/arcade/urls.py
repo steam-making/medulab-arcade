@@ -185,6 +185,12 @@ urlpatterns = [
     path('admin-services/classes/<int:class_id>/unenroll/<int:enrollment_id>/', views.class_unenroll_student, name='class_unenroll_student'),
     path('admin-services/classes/<int:class_id>/generate-invoices/', views.class_admin_generate_invoices, name='class_admin_generate_invoices'),
     path('admin-services/classes/<int:class_id>/attendance/', views.class_admin_attendance, name='class_admin_attendance'),
+    path('admin-services/classes/<int:class_id>/modal-data/', views.class_modal_data, name='class_modal_data'),
+    path('admin-services/classes/<int:class_id>/modal-enroll/', views.class_modal_enroll, name='class_modal_enroll'),
+    path('admin-services/classes/<int:class_id>/modal-unenroll/<int:enrollment_id>/', views.class_modal_unenroll, name='class_modal_unenroll'),
+    path('admin-services/classes/<int:class_id>/modal-invoice/save/', views.class_modal_invoice_save, name='class_modal_invoice_save'),
+    path('admin-services/classes/<int:class_id>/modal-invoice/<int:invoice_id>/delete/', views.class_modal_invoice_delete, name='class_modal_invoice_delete'),
+    path('admin-services/classes/<int:class_id>/modal-invoice/generate/', views.class_modal_invoice_generate, name='class_modal_invoice_generate'),
 
     # 납부 관리 (관리자 전용)
     path('admin-services/tuition/', views.tuition_admin_dashboard, name='tuition_admin_dashboard'),

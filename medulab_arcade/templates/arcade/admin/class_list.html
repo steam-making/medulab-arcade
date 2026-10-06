@@ -49,13 +49,14 @@
     tr:hover td { background: rgba(255,255,255,0.02); }
 
     th:nth-child(1), td:nth-child(1) { width: 40px; }
-    th:nth-child(2), td:nth-child(2) { width: 24%; }
-    th:nth-child(3), td:nth-child(3) { width: 11%; }
-    th:nth-child(4), td:nth-child(4) { width: 15%; }
-    th:nth-child(5), td:nth-child(5) { width: 13%; }
+    th:nth-child(2), td:nth-child(2) { width: 20%; }
+    th:nth-child(3), td:nth-child(3) { width: 9%; }
+    th:nth-child(4), td:nth-child(4) { width: 14%; }
+    th:nth-child(5), td:nth-child(5) { width: 11%; }
     th:nth-child(6), td:nth-child(6) { width: 9%; }
-    th:nth-child(7), td:nth-child(7) { width: 9%; }
-    th:nth-child(8), td:nth-child(8) { width: 12%; }
+    th:nth-child(7), td:nth-child(7) { width: 13%; }
+    th:nth-child(8), td:nth-child(8) { width: 8%; }
+    th:nth-child(9), td:nth-child(9) { width: 12%; }
 
     .drag-handle { cursor: grab; color: var(--text-muted); font-size: 16px; user-select: none; text-align: center; display: block; }
     .drag-handle.disabled { cursor: not-allowed; opacity: 0.3; }
@@ -101,7 +102,11 @@
     .cm-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
     .cm-tab { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--text-secondary); font-weight: 700; font-size: 13px; cursor: pointer; }
     .cm-tab.active { background: linear-gradient(135deg, var(--accent-green), var(--accent-blue)); color: #03140e; border-color: transparent; }
-    .cm-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; table-layout: auto; }
+    .cm-table { width: 100%; min-width: 0; border-collapse: collapse; font-size: 13px; margin-top: 12px; table-layout: auto; text-align: left; }
+    .cm-table th:nth-child(n), .cm-table td:nth-child(n) { width: auto; }
+    .cm-table th { text-transform: none; letter-spacing: 0; white-space: nowrap; background: transparent; }
+    .cm-table td { font-size: 13px; }
+    .cm-table tr:hover td { background: transparent; }
     .cm-table td, .cm-table th { word-break: keep-all; overflow-wrap: anywhere; }
     .cm-table th { text-align: left; color: var(--text-muted); font-size: 11px; padding: 8px 6px; border-bottom: 1px solid var(--border); }
     .cm-table td { padding: 9px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #e5e7eb; vertical-align: middle; }

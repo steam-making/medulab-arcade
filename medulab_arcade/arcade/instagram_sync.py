@@ -75,19 +75,27 @@ def sync_posts(limit=500):
     config.save(update_fields=['last_attempted_at'])
 
     url = f'{api_base}/{config.ig_user_id}/media'
+    base_fields = (
+        'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,'
+        'children{media_type,media_url,thumbnail_url}'
+    )
+    metric_fields = base_fields + ',like_count,comments_count'
     params = {
-        'fields': (
-            'id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,'
-            'children{media_type,media_url,thumbnail_url}'
-        ),
+        'fields': metric_fields,
         'access_token': config.access_token,
         'limit': min(limit, 100),
     }
     fetched = 0
+    metrics_retry_done = False
     try:
         while url and fetched < limit:
             resp = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
             data = resp.json()
+            if 'error' in data and params and params.get('fields') == metric_fields and not metrics_retry_done:
+                # 계정/토큰이 좋아요·댓글 수 필드를 지원하지 않으면 기존 필드만으로 동기화
+                metrics_retry_done = True
+                params['fields'] = base_fields
+                continue
             if 'error' in data:
                 message = data['error'].get('message', '알 수 없는 오류')
                 config.last_sync_error = message[:300]
@@ -115,6 +123,8 @@ def sync_posts(limit=500):
                         'caption': item.get('caption', ''),
                         'carousel_children': children,
                         'posted_at': parse_datetime(item['timestamp']) if item.get('timestamp') else None,
+                        **({'like_count': item.get('like_count') or 0, 'comments_count': item.get('comments_count') or 0}
+                           if 'like_count' in item or 'comments_count' in item else {}),
                     }
                 )
                 fetched += 1
@@ -310,3 +320,49 @@ def publish_video(video_public_url, caption, max_wait_seconds=120):
 
     permalink = _get_permalink(api_base, media_id, config.access_token)
     return {'success': True, 'media_id': media_id, 'permalink': permalink}
+
+
+def publish_draft(draft, base_url=None):
+    """초안(InstagramUploadDraft)의 항목을 저장된 순서대로 인스타그램에 게시하고 상태를 갱신한다.
+    즉시 게시(뷰)와 예약 게시(management command)가 함께 쓴다. 반환: publish_* 결과 dict"""
+    from django.conf import settings
+    from .models import InstagramUploadDraft, InstagramUploadDraftItem
+
+    base = (base_url or getattr(settings, 'SITE_BASE_URL', '')).rstrip('/')
+    items = list(draft.items.all())
+    if not items:
+        result = {'success': False, 'error': '게시할 항목이 없습니다.'}
+    else:
+        def public_url(file_field):
+            url = file_field.url
+            return url if url.startswith('http') else base + url
+
+        caption = draft.caption_draft
+        if len(items) == 1:
+            only = items[0]
+            url = public_url(only.final_file or only.original_file)
+            if only.media_type == InstagramUploadDraftItem.MEDIA_VIDEO:
+                result = publish_video(url, caption)
+            else:
+                result = publish_single_image(url, caption)
+        else:
+            result = publish_carousel([
+                {
+                    'url': public_url(i.final_file or i.original_file),
+                    'is_video': i.media_type == InstagramUploadDraftItem.MEDIA_VIDEO,
+                }
+                for i in items
+            ], caption)
+
+    if result.get('success'):
+        draft.status = InstagramUploadDraft.STATUS_PUBLISHED
+        draft.published_media_id = result.get('media_id', '')
+        draft.published_permalink = result.get('permalink', '')
+        draft.error_message = ''
+        draft.save(update_fields=['status', 'published_media_id', 'published_permalink', 'error_message'])
+        sync_posts()
+    else:
+        draft.status = InstagramUploadDraft.STATUS_FAILED
+        draft.error_message = (result.get('error') or '알 수 없는 오류')[:500]
+        draft.save(update_fields=['status', 'error_message'])
+    return result

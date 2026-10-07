@@ -4817,7 +4817,16 @@ def instagram_admin_config(request):
 @user_passes_test(staff_check)
 def instagram_ai_upload_start(request):
     """인스타 AI 업로드 1단계: 사진/영상 업로드 + 참고 내용 입력 폼"""
-    return render(request, 'arcade/admin/instagram_ai_upload.html', {'step': 'upload'})
+    from .instagram_schedule import recommend_post_times  # noqa: F401 (미리 import 오류 확인)
+    scheduled = InstagramUploadDraft.objects.filter(
+        status__in=[InstagramUploadDraft.STATUS_SCHEDULED, InstagramUploadDraft.STATUS_PUBLISHING],
+    ).order_by('scheduled_at').prefetch_related('items')
+    failed = InstagramUploadDraft.objects.filter(
+        status=InstagramUploadDraft.STATUS_FAILED, scheduled_at__isnull=False,
+    ).order_by('-scheduled_at')[:5]
+    return render(request, 'arcade/admin/instagram_ai_upload.html', {
+        'step': 'upload', 'scheduled_drafts': scheduled, 'failed_scheduled_drafts': failed,
+    })
 
 
 @login_required
@@ -4874,10 +4883,12 @@ def instagram_ai_upload_analyze(request):
     if ai_error:
         messages.warning(request, f'일부 AI 처리에 문제가 있었습니다: {ai_error}')
 
+    from .instagram_schedule import recommend_post_times
     return render(request, 'arcade/admin/instagram_ai_upload.html', {
         'step': 'review',
         'draft': draft,
         'items': draft.items.all(),
+        'recommend': recommend_post_times(),
     })
 
 
@@ -4885,8 +4896,10 @@ def instagram_ai_upload_analyze(request):
 @user_passes_test(staff_check)
 @require_POST
 def instagram_ai_upload_publish(request, draft_id):
-    """검토 화면에서 확정한 캡션으로 실제 인스타그램에 게시"""
-    from .instagram_sync import publish_single_image, publish_carousel, publish_video, sync_posts
+    """검토 화면에서 확정한 캡션으로 인스타그램에 즉시 게시하거나, 예약 시각에 게시되도록 저장"""
+    from datetime import datetime
+    from .instagram_sync import publish_draft
+    from .instagram_schedule import recommend_post_times
 
     draft = get_object_or_404(InstagramUploadDraft, pk=draft_id)
     caption = request.POST.get('caption', '').strip()
@@ -4896,60 +4909,57 @@ def instagram_ai_upload_publish(request, draft_id):
         messages.error(request, '게시할 항목이 없습니다.')
         return redirect('instagram_ai_upload_start')
 
-    # 검토 화면에서 사용자가 재정렬한 순서(item id 목록)를 반영
+    # 검토 화면에서 사용자가 재정렬한 순서(item id 목록)를 DB에 저장 (예약 게시 때도 같은 순서 사용)
     order_raw = request.POST.get('order', '').strip()
     if order_raw:
         try:
             order_ids = [int(x) for x in order_raw.split(',') if x]
             items_by_id = {i.id: i for i in items}
             if set(order_ids) == set(items_by_id.keys()):
+                for position, item_id in enumerate(order_ids):
+                    InstagramUploadDraftItem.objects.filter(pk=item_id).update(order=position)
                 items = [items_by_id[i] for i in order_ids]
         except (ValueError, TypeError):
             pass
 
-    def _public_url(file_field):
-        return request.build_absolute_uri(file_field.url)
+    draft.caption_draft = caption
 
-    if len(items) == 1:
-        # 항목이 하나뿐이면 영상은 릴스로, 이미지는 단일 사진으로 게시
-        only = items[0]
-        url = _public_url(only.final_file or only.original_file)
-        if only.media_type == InstagramUploadDraftItem.MEDIA_VIDEO:
-            result = publish_video(url, caption)
-        else:
-            result = publish_single_image(url, caption)
-    else:
-        # 사진과 영상이 섞였거나 여러 개인 경우, 선택한 순서 그대로 캐러셀로 게시
-        media_items = [
-            {
-                'url': _public_url(i.final_file or i.original_file),
-                'is_video': i.media_type == InstagramUploadDraftItem.MEDIA_VIDEO,
-            }
-            for i in items
-        ]
-        result = publish_carousel(media_items, caption)
+    def review_page():
+        return render(request, 'arcade/admin/instagram_ai_upload.html', {
+            'step': 'review', 'draft': draft, 'items': items, 'recommend': recommend_post_times(),
+        })
 
+    if request.POST.get('publish_mode') == 'schedule':
+        try:
+            naive = datetime.strptime(request.POST.get('scheduled_at', '').strip(), '%Y-%m-%dT%H:%M')
+            scheduled_at = timezone.make_aware(naive)
+        except (ValueError, TypeError):
+            messages.error(request, '예약 시각을 올바르게 입력해 주세요.')
+            draft.save(update_fields=['caption_draft'])
+            return review_page()
+        if scheduled_at < timezone.now() + timedelta(minutes=2):
+            messages.error(request, '예약 시각은 지금보다 최소 2분 이후여야 합니다.')
+            draft.save(update_fields=['caption_draft'])
+            return review_page()
+        draft.status = InstagramUploadDraft.STATUS_SCHEDULED
+        draft.scheduled_at = scheduled_at
+        draft.error_message = ''
+        draft.save(update_fields=['caption_draft', 'status', 'scheduled_at', 'error_message'])
+        messages.success(
+            request,
+            f'{timezone.localtime(scheduled_at).strftime("%Y.%m.%d %H:%M")}에 게시되도록 예약했습니다. '
+            '서버가 5분 간격으로 확인해 게시하므로 최대 5분 정도 늦을 수 있어요.')
+        return redirect('instagram_ai_upload_start')
+
+    draft.save(update_fields=['caption_draft'])
+    result = publish_draft(draft, base_url=request.build_absolute_uri('/'))
     if result.get('success'):
-        draft.status = InstagramUploadDraft.STATUS_PUBLISHED
-        draft.caption_draft = caption
-        draft.published_media_id = result.get('media_id', '')
-        draft.published_permalink = result.get('permalink', '')
-        draft.save(update_fields=['status', 'caption_draft', 'published_media_id', 'published_permalink'])
-        sync_posts()
         link_text = f" 게시물 보기: {result['permalink']}" if result.get('permalink') else ''
         messages.success(request, '인스타그램에 게시했습니다!' + link_text)
         return redirect('instagram_gallery')
 
-    draft.status = InstagramUploadDraft.STATUS_FAILED
-    draft.error_message = result.get('error', '알 수 없는 오류')[:500]
-    draft.caption_draft = caption
-    draft.save(update_fields=['status', 'error_message', 'caption_draft'])
     messages.error(request, f"게시 실패: {draft.error_message}")
-    return render(request, 'arcade/admin/instagram_ai_upload.html', {
-        'step': 'review',
-        'draft': draft,
-        'items': items,
-    })
+    return review_page()
 
 
 @login_required
@@ -4960,7 +4970,7 @@ def instagram_ai_upload_discard(request, draft_id):
     draft = get_object_or_404(InstagramUploadDraft, pk=draft_id)
     draft.delete()  # FileField는 자동 삭제되지 않지만, 임시 업로드이므로 방치 후 별도 정리 가능
     messages.info(request, '업로드를 취소했습니다.')
-    return redirect('instagram_gallery')
+    return redirect('instagram_ai_upload_start' if request.POST.get('from') == 'scheduled' else 'instagram_gallery')
 
 
 def board_notice(request):

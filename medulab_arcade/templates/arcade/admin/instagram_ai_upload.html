@@ -14,6 +14,11 @@
     .form-input, textarea.form-input { width: 100%; padding: 11px 14px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 13px; outline: none; color-scheme: dark; box-sizing: border-box; font-family: inherit; }
     textarea.form-input { resize: vertical; min-height: 90px; line-height: 1.6; }
     .form-help { font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+    .sched-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.03); }
+    .sched-row img, .sched-row video { width: 54px; height: 54px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+    .sched-caption { color: var(--text-secondary); font-size: 12px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 9px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 13px; cursor: pointer; font-family: inherit; }
+    .slot-btn:hover, .slot-btn.active { border-color: var(--accent-green); background: rgba(0,255,180,0.08); }
     .btn { padding: 13px 20px; border-radius: 10px; font-weight: 800; font-size: 14px; cursor: pointer; border: none; text-align: center; }
     .btn-primary { background: linear-gradient(135deg,#f58529,#dd2a7b,#8134af,#515bd4); color: #fff; width: 100%; }
     .btn-secondary { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
@@ -57,6 +62,43 @@
         </form>
     </div>
 
+    {% if scheduled_drafts or failed_scheduled_drafts %}
+    <div class="ig-card" style="margin-top:18px;">
+        <h3 style="margin:0 0 12px; font-size:15px; color:#fff;">📅 예약된 게시물</h3>
+        {% for d in scheduled_drafts %}
+        <div class="sched-row">
+            {% with first=d.items.all.0 %}
+            {% if first %}{% if first.media_type == 'VIDEO' %}<video src="{{ first.final_file.url|default:first.original_file.url }}" muted></video>{% else %}<img src="{{ first.final_file.url|default:first.original_file.url }}" alt="">{% endif %}{% endif %}
+            {% endwith %}
+            <div style="flex:1; min-width:0;">
+                <div style="font-weight:800; color:var(--accent-green); font-size:13px;">{{ d.scheduled_at|date:"Y.m.d H:i" }} {% if d.status == 'publishing' %}· 게시 중...{% endif %}</div>
+                <div class="sched-caption">{{ d.caption_draft|truncatechars:80 }}</div>
+                <div class="form-help">{{ d.items.count }}개 항목</div>
+            </div>
+            {% if d.status == 'scheduled' %}
+            <form method="post" action="{% url 'instagram_ai_upload_discard' d.id %}" onsubmit="return confirm('이 예약을 취소하고 삭제할까요?')">
+                {% csrf_token %}<input type="hidden" name="from" value="scheduled">
+                <button type="submit" class="btn btn-secondary" style="padding:8px 14px;">예약 취소</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% for d in failed_scheduled_drafts %}
+        <div class="sched-row" style="border-color:rgba(248,113,113,0.35);">
+            <div style="flex:1; min-width:0;">
+                <div style="font-weight:800; color:#fca5a5; font-size:13px;">⚠️ 예약 게시 실패 · {{ d.scheduled_at|date:"Y.m.d H:i" }}</div>
+                <div class="sched-caption">{{ d.caption_draft|truncatechars:80 }}</div>
+                <div class="form-help" style="color:#fca5a5;">{{ d.error_message }}</div>
+            </div>
+            <form method="post" action="{% url 'instagram_ai_upload_discard' d.id %}" onsubmit="return confirm('이 실패한 예약을 삭제할까요?')">
+                {% csrf_token %}<input type="hidden" name="from" value="scheduled">
+                <button type="submit" class="btn btn-secondary" style="padding:8px 14px;">삭제</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {% else %}
     <p class="ig-sub">AI가 만든 결과를 확인하고, 필요하면 캡션을 직접 수정한 뒤 게시해 주세요. 게시하면 실제 인스타그램 계정에 바로 올라갑니다.</p>
 
@@ -94,8 +136,34 @@
                 <label>인스타그램 캡션 (직접 수정 가능)</label>
                 <textarea name="caption" class="form-input" style="min-height:140px;">{{ draft.caption_draft }}</textarea>
             </div>
+            <div class="form-group">
+                <label>게시 시점</label>
+                <div style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:10px;">
+                    <label style="font-weight:600; cursor:pointer;"><input type="radio" name="publish_mode" value="now" checked> 지금 바로 게시</label>
+                    <label style="font-weight:600; cursor:pointer;"><input type="radio" name="publish_mode" value="schedule"> 예약 게시</label>
+                </div>
+                <div id="schedulePanel" style="display:none;">
+                    <input type="datetime-local" name="scheduled_at" id="scheduledAt" class="form-input">
+                    <div class="form-help">서버가 5분 간격으로 확인해서 게시하므로 최대 5분 정도 늦을 수 있어요. 그때까지 사진/영상은 서버에 보관됩니다.</div>
+                    {% if recommend %}
+                    <div style="margin-top:12px;">
+                        <div style="font-size:12px; font-weight:800; color:var(--text-secondary); margin-bottom:8px;">
+                            ⏰ 추천 시간 {% if recommend.data_based %}<span style="color:var(--accent-green);">(이 계정 게시물 {{ recommend.analyzed_posts }}건 반응 기반)</span>{% else %}<span style="color:var(--text-muted);">(일반 추천 - 반응 데이터가 쌓이면 이 계정 기준으로 바뀝니다)</span>{% endif %}
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:6px;">
+                            {% for slot in recommend.slots %}
+                            <button type="button" class="slot-btn" data-value="{{ slot.value }}">
+                                <strong>{{ slot.label }}</strong>
+                                <span style="color:var(--text-muted); font-size:11px;">다음: {{ slot.next_text }} · {{ slot.reason }}</span>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
             <div class="btn-row">
-                <button type="submit" class="btn btn-primary" id="publishBtn" onclick="return confirm('실제 인스타그램 계정에 바로 게시됩니다. 계속할까요?')">🚀 게시하기</button>
+                <button type="submit" class="btn btn-primary" id="publishBtn">🚀 게시하기</button>
             </div>
         </form>
         <form method="post" action="{% url 'instagram_ai_upload_discard' draft.id %}" style="margin-top:8px;">
@@ -127,8 +195,32 @@
 
             var btn = document.getElementById('publishBtn');
             btn.disabled = true;
-            btn.textContent = '🚀 게시 중입니다...';
+            btn.textContent = publishForm.publish_mode.value === 'schedule' ? '📅 예약 중입니다...' : '🚀 게시 중입니다...';
         });
+
+        var panel = document.getElementById('schedulePanel');
+        var scheduledAt = document.getElementById('scheduledAt');
+        var publishBtn = document.getElementById('publishBtn');
+        function syncMode() {
+            var isSchedule = publishForm.publish_mode.value === 'schedule';
+            panel.style.display = isSchedule ? 'block' : 'none';
+            scheduledAt.required = isSchedule;
+            publishBtn.textContent = isSchedule ? '📅 예약하기' : '🚀 게시하기';
+        }
+        publishForm.querySelectorAll('input[name="publish_mode"]').forEach(function (r) { r.addEventListener('change', syncMode); });
+        publishForm.querySelectorAll('.slot-btn').forEach(function (b) {
+            b.addEventListener('click', function () {
+                scheduledAt.value = b.dataset.value;
+                publishForm.querySelectorAll('.slot-btn').forEach(function (x) { x.classList.remove('active'); });
+                b.classList.add('active');
+            });
+        });
+        publishForm.addEventListener('submit', function (e) {
+            var isSchedule = publishForm.publish_mode.value === 'schedule';
+            var msg = isSchedule ? '선택한 시각에 인스타그램에 게시되도록 예약할까요?' : '실제 인스타그램 계정에 바로 게시됩니다. 계속할까요?';
+            if (!confirm(msg)) { e.stopImmediatePropagation(); e.preventDefault(); publishBtn.disabled = false; syncMode(); }
+        }, true);
+        syncMode();
     }
 })();
 

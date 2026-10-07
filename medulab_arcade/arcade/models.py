@@ -1274,6 +1274,8 @@ class InstagramPost(models.Model):
     is_excluded = models.BooleanField('갤러리에서 제외', default=False,
         help_text='인스타그램 프로필 상단 고정 게시물 등, 학원 갤러리에는 노출하지 않을 게시물')
     posted_at = models.DateTimeField('게시일시', null=True, blank=True)
+    like_count = models.PositiveIntegerField('좋아요 수', default=0)
+    comments_count = models.PositiveIntegerField('댓글 수', default=0)
     synced_at = models.DateTimeField('동기화 시각', auto_now=True)
 
     class Meta:
@@ -1296,10 +1298,14 @@ def _instagram_upload_final_path(instance, filename):
 class InstagramUploadDraft(models.Model):
     """AI 인스타 업로드 - 분석/변환 결과를 게시 전 검토하기 위한 임시 초안"""
     STATUS_DRAFT = 'draft'
+    STATUS_SCHEDULED = 'scheduled'
+    STATUS_PUBLISHING = 'publishing'
     STATUS_PUBLISHED = 'published'
     STATUS_FAILED = 'failed'
     STATUS_CHOICES = [
         (STATUS_DRAFT, '검토중'),
+        (STATUS_SCHEDULED, '예약됨'),
+        (STATUS_PUBLISHING, '게시중'),
         (STATUS_PUBLISHED, '게시완료'),
         (STATUS_FAILED, '실패'),
     ]
@@ -1308,6 +1314,7 @@ class InstagramUploadDraft(models.Model):
     caption_draft = models.TextField('AI 생성 캡션(수정 가능)', blank=True)
     user_context = models.TextField('업로드 시 참고 내용', blank=True)
     status = models.CharField('상태', max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    scheduled_at = models.DateTimeField('예약 게시 시각', null=True, blank=True)
     published_media_id = models.CharField('게시된 인스타그램 미디어 ID', max_length=64, blank=True, default='')
     published_permalink = models.URLField('게시된 인스타그램 링크', max_length=500, blank=True, default='')
     error_message = models.CharField('실패 사유', max_length=500, blank=True, default='')

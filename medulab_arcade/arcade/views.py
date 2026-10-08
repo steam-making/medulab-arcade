@@ -174,7 +174,22 @@ def ai_prompts(request):
     ordered_keys = [k for k in key_order if k in cards_by_key]
     remaining_keys = [k for k in cards_by_key if k not in ordered_keys]
     cards = [cards_by_key[k] for k in ordered_keys + remaining_keys]
-    return render(request, 'arcade/ai_prompts.html', {'cards': cards})
+
+    # 20선 프로그램: 이미 만들어진 도구 중 관련 있는 것을 연결, 없으면 '준비 중' 카드
+    from .ai_program_catalog import AI_PROGRAMS
+    mapped_keys = set()
+    programs = []
+    for program in AI_PROGRAMS:
+        tools = [cards_by_key[k] for k in program['tools'] if k in cards_by_key]
+        mapped_keys.update(c['key'] for c in tools)
+        programs.append({**program, 'tool_cards': tools})
+
+    # 20선과 관련 없는 기존 도구는 맨 뒤 '기타 도구'로 (관리자가 정한 순서 유지)
+    other_cards = [c for c in cards if c['key'] not in mapped_keys]
+    return render(request, 'arcade/ai_prompts.html', {
+        'programs': programs, 'other_cards': other_cards,
+        'ready_count': sum(1 for p in programs if p['tool_cards']),
+    })
 
 
 @login_required
